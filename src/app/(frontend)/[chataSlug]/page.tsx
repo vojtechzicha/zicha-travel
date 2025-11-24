@@ -22,8 +22,8 @@ export default function ChataPage() {
   const searchParams = useSearchParams()
   const chataSlug = params.chataSlug as string
 
-  const [currentView, setCurrentView] = useState<'finance' | 'information'>(
-    (searchParams.get('view') as 'finance' | 'information') || 'finance'
+  const [currentView, setCurrentView] = useState<'finance' | 'information' | null>(
+    (searchParams.get('view') as 'finance' | 'information') || null
   )
   const [data, setData] = useState<ChataData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,6 +43,12 @@ export default function ChataPage() {
 
         const result = await response.json()
         setData(result)
+
+        // Set default view based on whether information is enabled
+        if (currentView === null) {
+          const hasInfo = result.chata.informationEnabled === true
+          setCurrentView(hasInfo ? 'information' : 'finance')
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load chata')
       } finally {
@@ -51,7 +57,7 @@ export default function ChataPage() {
     }
 
     fetchData()
-  }, [chataSlug])
+  }, [chataSlug, currentView])
 
   const handleViewChange = (view: 'finance' | 'information') => {
     setCurrentView(view)
@@ -101,6 +107,7 @@ export default function ChataPage() {
 
   const { chata, participants, expenses, prepayments, stats } = data
   const hasInformation = chata.informationEnabled === true
+  const activeView = currentView || (hasInformation ? 'information' : 'finance')
 
   return (
     <div className="min-h-screen relative">
@@ -110,13 +117,14 @@ export default function ChataPage() {
         <Header
           chataName={chata.name}
           location={chata.location}
-          currentView={currentView}
+          bankerName={typeof chata.banker === 'object' && chata.banker ? chata.banker.name : undefined}
+          currentView={activeView}
           onViewChange={handleViewChange}
           showInformationTab={hasInformation}
           onSwitchChata={handleSwitchChata}
         />
 
-        {currentView === 'finance' ? (
+        {activeView === 'finance' ? (
           <FinanceView
             chata={chata}
             participants={participants}
