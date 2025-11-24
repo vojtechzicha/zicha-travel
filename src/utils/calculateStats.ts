@@ -159,13 +159,14 @@ export function calculateStats(
   })
 
   // Calculate debtors and creditors
+  // Only include people with balance >= 1 Kč (to avoid showing small rounding differences)
   const debtors = Object.values(stats)
-    .filter((s) => s.balance < -0.01) // Small epsilon for floating point
+    .filter((s) => s.balance < -1) // Must owe at least 1 Kč
     .map((s) => ({ name: s.name, amount: Math.abs(s.balance) }))
     .sort((a, b) => b.amount - a.amount)
 
   const creditors = Object.values(stats)
-    .filter((s) => s.balance > 0.01)
+    .filter((s) => s.balance > 1) // Must be owed at least 1 Kč
     .map((s) => ({ name: s.name, amount: s.balance }))
     .sort((a, b) => b.amount - a.amount)
 
