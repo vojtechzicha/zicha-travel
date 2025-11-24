@@ -2,7 +2,8 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Your Next.js config here
+  // Allow dev requests from custom domains
+  allowedDevOrigins: ['jeseniky2025.zicha.travel.local'],
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],
