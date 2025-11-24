@@ -18,7 +18,7 @@
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
-    "@payloadcms/db-sqlite": "3.64.0",
+    "@payloadcms/db-postgres": "^3.64.0",
     "@payloadcms/next": "3.64.0",
     "@payloadcms/richtext-lexical": "3.64.0",
     "@payloadcms/ui": "3.64.0",
@@ -47,6 +47,7 @@
     "eslint": "^9.16.0",
     "eslint-config-next": "15.4.7",
     "jsdom": "26.1.0",
+    "pg": "^8.16.3",
     "playwright": "1.56.1",
     "playwright-core": "1.56.1",
     "prettier": "^3.4.2",
@@ -62,7 +63,8 @@
     "onlyBuiltDependencies": [
       "sharp",
       "esbuild",
-      "unrs-resolver"
+      "unrs-resolver",
+      "better-sqlite3"
     ]
   }
 }
