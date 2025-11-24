@@ -109,7 +109,7 @@ export function FinanceView({
       <div className="lg:grid lg:grid-cols-[320px_1fr] lg:gap-8 flex flex-col gap-8">
         {/* Sidebar - now only expenses */}
         <aside className="order-2 lg:order-1">
-          <ExpensesFeed expenses={expenses} />
+          <ExpensesFeed expenses={expenses} selectedParticipantId={selectedParticipantId} />
         </aside>
 
         {/* Main content */}
