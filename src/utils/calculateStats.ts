@@ -39,6 +39,7 @@ export interface ParticipantStats {
   costBreakdown: Array<{
     title: string
     cost: number
+    weight: number
   }>
   balance: number
 }
@@ -122,6 +123,7 @@ export function calculateStats(
           stats[name].costBreakdown.push({
             title: expense.title,
             cost: cost,
+            weight: weight,
           })
         }
       })

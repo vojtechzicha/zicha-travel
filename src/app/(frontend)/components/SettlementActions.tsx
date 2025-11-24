@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowUp, ArrowDown, QrCode, Check } from 'lucide-react'
+import { ArrowUp, ArrowDown, QrCode } from 'lucide-react'
 import { QRPayment } from './QRPayment'
 import { formatCurrency } from '@/lib/formatCurrency'
 import type { Participant, Chata } from '@/payload-types'
@@ -41,23 +41,10 @@ export function SettlementActions({
   participants,
 }: SettlementActionsProps) {
   const [showQr, setShowQr] = useState<string | null>(null)
-  const [checkedDebtors, setCheckedDebtors] = useState<Set<string>>(new Set())
 
-  const isDebtor = balance < -0.01
-  const isCreditor = balance > 0.01
-  const isSettled = Math.abs(balance) <= 0.01
-
-  const toggleDebtor = (name: string) => {
-    setCheckedDebtors((prev) => {
-      const next = new Set(prev)
-      if (next.has(name)) {
-        next.delete(name)
-      } else {
-        next.add(name)
-      }
-      return next
-    })
-  }
+  // Use 1 Kč threshold to match backend - avoids showing small rounding differences
+  const isDebtor = balance < -1
+  const isCreditor = balance > 1
 
   // Banker view - show debtors and creditors
   if (isBanker) {
@@ -66,12 +53,7 @@ export function SettlementActions({
     const activeCreditors = creditors.filter((c) => c.name !== participant.name)
 
     return (
-      <div className="space-y-6">
-        <h3 className="font-serif text-2xl font-bold text-gray-900">
-          Přehled vyrovnání
-        </h3>
-
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
           {/* Debtors - people who owe money */}
           <div>
             <h4 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
@@ -80,43 +62,17 @@ export function SettlementActions({
             </h4>
             <div className="space-y-2">
               {activeDebtors.length > 0 ? (
-                activeDebtors.map((debtor) => {
-                  const isChecked = checkedDebtors.has(debtor.name)
-                  return (
-                    <button
-                      key={debtor.name}
-                      onClick={() => toggleDebtor(debtor.name)}
-                      className={`
-                        w-full flex items-center justify-between p-3 rounded-xl
-                        transition-all border-2
-                        ${
-                          isChecked
-                            ? 'bg-green-50 border-green-500'
-                            : 'bg-white border-gray-200 hover:border-gray-300'
-                        }
-                      `}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`
-                          w-5 h-5 rounded border-2 flex items-center justify-center
-                          ${
-                            isChecked
-                              ? 'bg-green-500 border-green-500'
-                              : 'border-gray-300'
-                          }
-                        `}
-                        >
-                          {isChecked && <Check size={14} className="text-white" />}
-                        </div>
-                        <span className="font-medium">{debtor.name}</span>
-                      </div>
-                      <span className="font-bold text-red-600">
-                        {formatCurrency(debtor.amount)}
-                      </span>
-                    </button>
-                  )
-                })
+                activeDebtors.map((debtor) => (
+                  <div
+                    key={debtor.name}
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white border-2 border-gray-200"
+                  >
+                    <span className="font-medium">{debtor.name}</span>
+                    <span className="font-bold text-red-600">
+                      {formatCurrency(debtor.amount)}
+                    </span>
+                  </div>
+                ))
               ) : (
                 <p className="text-gray-500 text-center py-4">
                   Nikdo nedluží
@@ -167,7 +123,7 @@ export function SettlementActions({
                               <QRPayment
                                 amount={creditor.amount}
                                 iban={creditorParticipant.iban!}
-                                accountNumber={creditorParticipant.accountNumber}
+                                accountNumber={creditorParticipant.accountNumber ?? undefined}
                                 message={`Vyrovnani - ${chataShortName}`}
                               />
                             </div>
@@ -185,28 +141,12 @@ export function SettlementActions({
             </div>
           </div>
         </div>
-      </div>
     )
   }
 
-  // Regular participant view
+  // Regular participant view - only shown when not settled
   return (
-    <div className="space-y-6">
-      <h3 className="font-serif text-2xl font-bold text-gray-900">
-        Vyrovnání
-      </h3>
-
-      {isSettled && (
-        <div className="bg-green-50 border-2 border-green-500 rounded-xl p-6 text-center">
-          <div className="inline-block bg-green-500 p-3 rounded-full mb-3">
-            <Check className="text-white" size={32} />
-          </div>
-          <p className="text-lg font-semibold text-green-800">
-            Vše je vyrovnáno!
-          </p>
-        </div>
-      )}
-
+    <div className="space-y-4">
       {isDebtor && bankerAccount && (
         <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6">
           <div className="flex items-start gap-3 mb-4">

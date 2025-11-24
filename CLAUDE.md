@@ -46,6 +46,28 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
 - Calculates per-participant balances
 - Determines debtors and creditors
 - Handles both equal and weighted expense splits
+- `costBreakdown` includes `title`, `cost`, and `weight` for each expense
+
+**PersonView** (`src/app/(frontend)/components/PersonView.tsx`)
+- Main participant detail/finance view component
+- Layout matches the original `split-expanses/src/App.js` PersonView
+- Summary box with colored background (blue=banker, green=settled/positive, red=negative)
+- Includes: prepayment rows, expandable fair share breakdown, result section, history section
+
+### Settlement Threshold
+
+**IMPORTANT**: The system uses a **1 Kč threshold** for determining debtor/creditor/settled status. This is intentional to avoid showing small rounding differences to users.
+
+- **Debtor**: `balance < -1` (owes more than 1 Kč)
+- **Creditor**: `balance > 1` (owed more than 1 Kč)
+- **Settled**: `Math.abs(balance) <= 1` (within 1 Kč of zero)
+
+This threshold must be consistent across:
+- Backend: `src/utils/calculateStats.ts` (debtors/creditors filtering)
+- Frontend: `src/app/(frontend)/components/SettlementActions.tsx` (isDebtor/isCreditor/isSettled)
+- Frontend: `src/app/(frontend)/components/PersonView.tsx` (isSettled, summaryBgClass logic)
+
+Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold is intentional.
 
 ## Important Implementation Details
 

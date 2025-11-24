@@ -18,13 +18,18 @@ export function ParticipantList({
   onSelectParticipant,
   bankerId,
 }: ParticipantListProps) {
+  // Sort participants alphabetically by name
+  const sortedParticipants = [...participants].sort((a, b) =>
+    a.name.localeCompare(b.name, 'cs')
+  )
+
   return (
     <GlassCard padding="medium">
       <h3 className="font-serif text-xl font-bold text-gray-900 mb-4">
         Účastníci
       </h3>
       <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-        {participants.map((participant) => {
+        {sortedParticipants.map((participant) => {
           const isSelected = participant.id === selectedParticipantId
           const isBanker = participant.id === bankerId
           const avatarColor = getAvatarColor(participant.name)
