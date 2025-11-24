@@ -69,6 +69,10 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    chatas: Chata;
+    participants: Participant;
+    expenses: Expense;
+    prepayments: Prepayment;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,16 +82,24 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    chatas: ChatasSelect<false> | ChatasSelect<true>;
+    participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
+    expenses: ExpensesSelect<false> | ExpensesSelect<true>;
+    prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'domain-mappings': DomainMapping;
+  };
+  globalsSelect: {
+    'domain-mappings': DomainMappingsSelect<false> | DomainMappingsSelect<true>;
+  };
   locale: null;
   user: User & {
     collection: 'users';
@@ -120,7 +132,15 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
+  /**
+   * Admins can manage all chatas, users can only manage assigned chatas
+   */
+  role: 'admin' | 'user';
+  /**
+   * Chatas this user can manage (only applies to non-admin users)
+   */
+  assignedChatas?: (number | Chata)[] | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -141,10 +161,229 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chatas".
+ */
+export interface Chata {
+  id: number;
+  /**
+   * Full name of the chata/trip (e.g., "Chaloupka pod Medem")
+   */
+  name: string;
+  /**
+   * Short name used in QR codes and messages (e.g., "Chaloupka")
+   */
+  shortName: string;
+  /**
+   * Location description (e.g., "Beskydy")
+   */
+  location: string;
+  /**
+   * URL-friendly identifier for this chata
+   */
+  slug: string;
+  /**
+   * Domain names that should automatically load this chata
+   */
+  domains?:
+    | {
+        /**
+         * Domain hostname (e.g., "chata.zicha.name")
+         */
+        domain: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Person managing the money for this trip
+   */
+  banker?: (number | null) | Participant;
+  /**
+   * Banker's account number in Czech format (e.g., "123456/0100")
+   */
+  bankerAccountNumber: string;
+  /**
+   * Banker's IBAN for QR code generation
+   */
+  bankerIban: string;
+  /**
+   * Users who can manage this chata
+   */
+  assignedUsers?:
+    | {
+        user: number | User;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Enable the information/details view for this trip
+   */
+  informationEnabled?: boolean | null;
+  tripDateFrom?: string | null;
+  tripDateTo?: string | null;
+  /**
+   * Name of the accommodation (e.g., "Chaloupka pod Medem")
+   */
+  destinationName?: string | null;
+  /**
+   * Specific location (e.g., "Horní Lomná")
+   */
+  destinationLocation?: string | null;
+  /**
+   * Description of the destination
+   */
+  destinationDescription?: string | null;
+  /**
+   * Useful links about the destination
+   */
+  destinationLinks?:
+    | {
+        title: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Photos of the destination
+   */
+  photos?:
+    | {
+        photo: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Basic information bullets
+   */
+  basicInfo?:
+    | {
+        info: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Parking information
+   */
+  parking?: string | null;
+  /**
+   * Driving directions
+   */
+  carRoutes?:
+    | {
+        from: string;
+        /**
+         * e.g., "3:30"
+         */
+        duration: string;
+        /**
+         * e.g., "300 km"
+         */
+        distance: string;
+        /**
+         * Route description
+         */
+        route: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Public transport options
+   */
+  publicTransportOptions?:
+    | {
+        /**
+         * e.g., "Z Prahy"
+         */
+        title: string;
+        /**
+         * Total journey time
+         */
+        totalDuration?: string | null;
+        /**
+         * Additional notes
+         */
+        notes?: string | null;
+        connections?:
+          | {
+              type: 'vlak' | 'autobus';
+              /**
+               * Train/bus number
+               */
+              number: string;
+              from: string;
+              to: string;
+              /**
+               * Format: HH:MM (e.g., "08:45")
+               */
+              departure: string;
+              /**
+               * Format: HH:MM (e.g., "12:30")
+               */
+              arrival: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Room assignments
+   */
+  bedrooms?:
+    | {
+        /**
+         * Room name (e.g., "Pokoj 1")
+         */
+        name: string;
+        beds?:
+          | {
+              /**
+               * Bed type (e.g., "Manželská postel", "Palanda")
+               */
+              type: string;
+              /**
+               * Who sleeps in this bed
+               */
+              occupants?: (number | Participant)[] | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "participants".
+ */
+export interface Participant {
+  id: number;
+  /**
+   * Participant's full name
+   */
+  name: string;
+  /**
+   * The trip/chata this participant belongs to
+   */
+  chata: number | Chata;
+  /**
+   * Account number in Czech format (e.g., "123456/0100") - only needed for creditors
+   */
+  accountNumber?: string | null;
+  /**
+   * Full IBAN for QR code generation - only needed for creditors
+   */
+  iban?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -160,10 +399,88 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expenses".
+ */
+export interface Expense {
+  id: number;
+  /**
+   * The trip/chata this expense belongs to
+   */
+  chata: number | Chata;
+  /**
+   * Description of the expense
+   */
+  title: string;
+  /**
+   * Total amount (use negative values for refunds)
+   */
+  amount: number;
+  /**
+   * Who paid for this expense
+   */
+  payer: number | Participant;
+  /**
+   * How to split this expense among participants
+   */
+  splitType: 'equal' | 'weighted';
+  /**
+   * Weighted distribution - only used when Split Type is "Weighted"
+   */
+  weights?:
+    | {
+        /**
+         * Participant sharing this expense
+         */
+        participant: number | Participant;
+        /**
+         * Weight multiplier for this participant (e.g., 1, 0.5, 2)
+         */
+        weight: number;
+        id?: string | null;
+      }[]
+    | null;
+  createdAt: string;
+  /**
+   * Optional notes about this expense
+   */
+  note?: string | null;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prepayments".
+ */
+export interface Prepayment {
+  id: number;
+  /**
+   * The trip/chata this prepayment belongs to
+   */
+  chata: number | Chata;
+  /**
+   * Who sent the payment (or who received it if negative)
+   */
+  from: number | Participant;
+  /**
+   * Amount (positive = to banker, negative = from banker/refund)
+   */
+  amount: number;
+  /**
+   * Description (e.g., "Záloha", "Doplatek", "Distribuce")
+   */
+  note?: string | null;
+  /**
+   * Type of prepayment
+   */
+  type: 'advance' | 'supplement' | 'refund' | 'distribution';
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -180,20 +497,36 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'chatas';
+        value: number | Chata;
+      } | null)
+    | ({
+        relationTo: 'participants';
+        value: number | Participant;
+      } | null)
+    | ({
+        relationTo: 'expenses';
+        value: number | Expense;
+      } | null)
+    | ({
+        relationTo: 'prepayments';
+        value: number | Prepayment;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -203,10 +536,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -226,7 +559,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -237,6 +570,8 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  role?: T;
+  assignedChatas?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -271,6 +606,146 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chatas_select".
+ */
+export interface ChatasSelect<T extends boolean = true> {
+  name?: T;
+  shortName?: T;
+  location?: T;
+  slug?: T;
+  domains?:
+    | T
+    | {
+        domain?: T;
+        id?: T;
+      };
+  banker?: T;
+  bankerAccountNumber?: T;
+  bankerIban?: T;
+  assignedUsers?:
+    | T
+    | {
+        user?: T;
+        id?: T;
+      };
+  informationEnabled?: T;
+  tripDateFrom?: T;
+  tripDateTo?: T;
+  destinationName?: T;
+  destinationLocation?: T;
+  destinationDescription?: T;
+  destinationLinks?:
+    | T
+    | {
+        title?: T;
+        url?: T;
+        id?: T;
+      };
+  photos?:
+    | T
+    | {
+        photo?: T;
+        id?: T;
+      };
+  basicInfo?:
+    | T
+    | {
+        info?: T;
+        id?: T;
+      };
+  parking?: T;
+  carRoutes?:
+    | T
+    | {
+        from?: T;
+        duration?: T;
+        distance?: T;
+        route?: T;
+        id?: T;
+      };
+  publicTransportOptions?:
+    | T
+    | {
+        title?: T;
+        totalDuration?: T;
+        notes?: T;
+        connections?:
+          | T
+          | {
+              type?: T;
+              number?: T;
+              from?: T;
+              to?: T;
+              departure?: T;
+              arrival?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  bedrooms?:
+    | T
+    | {
+        name?: T;
+        beds?:
+          | T
+          | {
+              type?: T;
+              occupants?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "participants_select".
+ */
+export interface ParticipantsSelect<T extends boolean = true> {
+  name?: T;
+  chata?: T;
+  accountNumber?: T;
+  iban?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expenses_select".
+ */
+export interface ExpensesSelect<T extends boolean = true> {
+  chata?: T;
+  title?: T;
+  amount?: T;
+  payer?: T;
+  splitType?: T;
+  weights?:
+    | T
+    | {
+        participant?: T;
+        weight?: T;
+        id?: T;
+      };
+  createdAt?: T;
+  note?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prepayments_select".
+ */
+export interface PrepaymentsSelect<T extends boolean = true> {
+  chata?: T;
+  from?: T;
+  amount?: T;
+  note?: T;
+  type?: T;
+  createdAt?: T;
+  updatedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -311,6 +786,29 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "domain-mappings".
+ */
+export interface DomainMapping {
+  id: number;
+  /**
+   * Default chata to use when domain does not match any configured domains
+   */
+  defaultChata?: (number | null) | Chata;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "domain-mappings_select".
+ */
+export interface DomainMappingsSelect<T extends boolean = true> {
+  defaultChata?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
