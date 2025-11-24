@@ -104,6 +104,9 @@ export const Expenses: CollectionConfig = {
       admin: {
         description: 'Weighted distribution - only used when Split Type is "Weighted"',
         condition: (data, siblingData) => siblingData?.splitType === 'weighted',
+        components: {
+          beforeInput: ['@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton'],
+        },
       },
       fields: [
         {
