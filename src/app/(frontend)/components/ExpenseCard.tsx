@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Receipt, ArrowLeft } from 'lucide-react'
+import { Receipt, ArrowLeft, Clock } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatCurrency'
 import type { Expense } from '@/payload-types'
 
@@ -22,6 +22,7 @@ export function ExpenseCard({
 }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false)
   const isRefund = expense.amount < 0
+  const isPlanned = expense.isPlanned || false
   const payerName =
     typeof expense.payer === 'object' && expense.payer !== null
       ? expense.payer.name
@@ -72,10 +73,15 @@ export function ExpenseCard({
         rounded-xl p-4 shadow-md flex gap-3 transition-transform hover:scale-[1.02]
         ${isOther ? 'bg-gray-50 opacity-60' : 'bg-white'}
         ${isRefund ? 'border-2 border-green-200' : ''}
+        ${isPlanned ? 'border-2 border-dashed border-amber-300 bg-amber-50/50' : ''}
       `}
     >
       <div className="flex-shrink-0">
-        {isRefund ? (
+        {isPlanned ? (
+          <div className="bg-amber-100 p-2 rounded-lg">
+            <Clock size={20} className="text-amber-600" />
+          </div>
+        ) : isRefund ? (
           <div className="bg-green-100 p-2 rounded-lg">
             <ArrowLeft size={20} className="text-green-600" />
           </div>
@@ -87,20 +93,27 @@ export function ExpenseCard({
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start mb-1">
-          <span className="font-semibold text-gray-900">{expense.title}</span>
+        <div className="flex justify-between items-start gap-2 mb-1">
+          <span className="font-semibold text-gray-900 truncate min-w-0">{expense.title}</span>
           <span
-            className={`font-bold ml-2 flex-shrink-0 ${
-              isRefund ? 'text-green-600' : 'text-gray-900'
+            className={`font-bold flex-shrink-0 ${
+              isPlanned ? 'text-amber-600' : isRefund ? 'text-green-600' : 'text-gray-900'
             }`}
           >
             {formatCurrency(expense.amount)}
           </span>
         </div>
 
-        <div className="text-sm text-gray-600 mb-2">
-          {isRefund ? 'Peníze vrátil/a ' : 'Platil/a '}
-          <strong>{payerName}</strong>
+        <div className="text-sm text-gray-600 mb-2 flex items-center gap-2 flex-wrap">
+          <span>
+            {isPlanned ? 'Zaplatí ' : isRefund ? 'Peníze vrátil/a ' : 'Platil/a '}
+            <strong>{payerName}</strong>
+          </span>
+          {isPlanned && (
+            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
+              Plánovaný
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-1">

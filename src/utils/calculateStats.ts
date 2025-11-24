@@ -13,6 +13,7 @@ export interface Expense {
     participant: string | { id: string; name: string }
     weight: number
   }>
+  isPlanned?: boolean
 }
 
 export interface Prepayment {
@@ -31,15 +32,18 @@ export interface Participant {
 export interface ParticipantStats {
   name: string
   paidExternal: number
+  plannedPaidExternal: number
   prepaidInternal: number
   prepaidAdvance: number
   prepaidSupplement: number
   prepaidRefund: number
   cost: number
+  plannedCost: number
   costBreakdown: Array<{
     title: string
     cost: number
     weight: number
+    isPlanned?: boolean
   }>
   balance: number
 }
@@ -75,11 +79,13 @@ export function calculateStats(
     stats[p.name] = {
       name: p.name,
       paidExternal: 0,
+      plannedPaidExternal: 0,
       prepaidInternal: 0,
       prepaidAdvance: 0,
       prepaidSupplement: 0,
       prepaidRefund: 0,
       cost: 0,
+      plannedCost: 0,
       costBreakdown: [],
       balance: 0,
     }
@@ -89,10 +95,15 @@ export function calculateStats(
   expenses.forEach((expense) => {
     const payerName = getParticipantName(expense.payer)
     const amount = expense.amount
+    const isPlanned = expense.isPlanned || false
 
-    // Add to payer's paidExternal
+    // Add to payer's paidExternal or plannedPaidExternal
     if (stats[payerName]) {
-      stats[payerName].paidExternal += amount
+      if (isPlanned) {
+        stats[payerName].plannedPaidExternal += amount
+      } else {
+        stats[payerName].paidExternal += amount
+      }
     }
 
     // Calculate cost shares
@@ -114,16 +125,21 @@ export function calculateStats(
     // Calculate total units
     const totalUnits = Object.values(weights).reduce((sum, w) => sum + w, 0)
 
-    // Distribute cost
+    // Distribute cost - track actual and planned separately
     if (totalUnits > 0) {
       Object.entries(weights).forEach(([name, weight]) => {
         if (stats[name]) {
           const cost = (amount / totalUnits) * weight
-          stats[name].cost += cost
+          if (isPlanned) {
+            stats[name].plannedCost += cost
+          } else {
+            stats[name].cost += cost
+          }
           stats[name].costBreakdown.push({
             title: expense.title,
             cost: cost,
             weight: weight,
+            isPlanned: isPlanned,
           })
         }
       })
@@ -168,9 +184,9 @@ export function calculateStats(
     }
   })
 
-  // Calculate final balances
+  // Calculate final balances (including planned expenses for projected state)
   Object.values(stats).forEach((stat) => {
-    stat.balance = stat.paidExternal + stat.prepaidInternal - stat.cost
+    stat.balance = stat.paidExternal + stat.plannedPaidExternal + stat.prepaidInternal - stat.cost - stat.plannedCost
   })
 
   // Calculate debtors and creditors
@@ -209,6 +225,7 @@ export function transformExpense(expense: any): Expense {
     payer: expense.payer,
     splitType: expense.splitType,
     weights: expense.weights,
+    isPlanned: expense.isPlanned || false,
   }
 }
 

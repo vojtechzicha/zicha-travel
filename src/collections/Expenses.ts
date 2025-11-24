@@ -177,5 +177,14 @@ export const Expenses: CollectionConfig = {
         description: 'Optional notes about this expense',
       },
     },
+    {
+      name: 'isPlanned',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Planned expense (not yet paid) - uncheck when actually paid',
+      },
+    },
   ],
 }

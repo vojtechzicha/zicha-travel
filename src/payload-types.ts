@@ -444,6 +444,10 @@ export interface Expense {
    * Optional notes about this expense
    */
   note?: string | null;
+  /**
+   * Planned expense (not yet paid) - uncheck when actually paid
+   */
+  isPlanned?: boolean | null;
   updatedAt: string;
 }
 /**
@@ -732,6 +736,7 @@ export interface ExpensesSelect<T extends boolean = true> {
       };
   createdAt?: T;
   note?: T;
+  isPlanned?: T;
   updatedAt?: T;
 }
 /**

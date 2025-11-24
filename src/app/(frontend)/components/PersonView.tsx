@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Receipt,
   ArrowLeft,
+  Clock,
 } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { SettlementActions } from './SettlementActions'
@@ -46,6 +47,7 @@ export function PersonView({
   showHeader = true,
 }: PersonViewProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
+  const [isPlannedBreakdownOpen, setIsPlannedBreakdownOpen] = useState(false)
 
   const avatarColor = getAvatarColor(participant.name)
   const balance = stats.balance
@@ -83,9 +85,9 @@ export function PersonView({
     return payer.name || ''
   }
 
-  // Filter prepayments and expenses for history
+  // Filter prepayments and expenses for history (exclude planned expenses)
   const myExpenses = expenses.filter((e) => {
-    return getPayerName(e.payer as number | { id: number; name: string }) === participant.name
+    return getPayerName(e.payer as number | { id: number; name: string }) === participant.name && !e.isPlanned
   })
   const myPrepayments = prepayments.filter((p) => {
     return getPayerName(p.from as number | { id: number; name: string }) === participant.name
@@ -132,6 +134,16 @@ export function PersonView({
             </span>
             <strong className="text-gray-900">{formatCurrency(stats.paidExternal)}</strong>
           </div>
+
+          {/* Row: Kolik ještě musíš zaplatit (planned expenses) - only if > 0 */}
+          {stats.plannedPaidExternal > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="flex items-center gap-2 text-amber-600">
+                <Clock size={14} /> Kolik ještě musíš zaplatit:
+              </span>
+              <strong className="text-amber-600">{formatCurrency(stats.plannedPaidExternal)}</strong>
+            </div>
+          )}
 
           {/* Prepayment rows - different for banker vs regular user */}
           {isBanker ? (
@@ -202,7 +214,7 @@ export function PersonView({
             </>
           )}
 
-          {/* Row: Fair Share (expandable) */}
+          {/* Row: Fair Share (expandable) - only actual costs */}
           <div
             className="flex justify-between items-center text-sm bg-white/50 -mx-2 px-2 py-2 rounded-lg cursor-pointer hover:bg-white/80 transition-colors"
             onClick={() => setIsBreakdownOpen(!isBreakdownOpen)}
@@ -218,15 +230,54 @@ export function PersonView({
             <strong className="text-gray-900">- {formatCurrency(stats.cost)}</strong>
           </div>
 
-          {/* Breakdown list (expanded) */}
-          {isBreakdownOpen && stats.costBreakdown && stats.costBreakdown.length > 0 && (
+          {/* Breakdown list for actual costs (expanded) */}
+          {isBreakdownOpen && stats.costBreakdown && stats.costBreakdown.filter(item => !item.isPlanned).length > 0 && (
             <div className="bg-white/40 -mx-2 px-2 py-2 rounded-lg space-y-1 animate-in slide-in-from-top-2 duration-200">
-              {stats.costBreakdown.map((item, idx) => {
+              {stats.costBreakdown.filter(item => !item.isPlanned).map((item, idx) => {
                 const isCredit = item.cost < 0
                 return (
                   <div key={idx} className="flex justify-between text-xs text-gray-600">
                     <span>
-                      {item.title} <small className="text-gray-400">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                      {item.title}
+                      {' '}<small className="text-gray-400">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                    </span>
+                    <span className={isCredit ? 'text-green-600' : ''}>
+                      {isCredit ? '+' : '-'} {formatCurrency(Math.abs(item.cost))}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Row: Planned Fair Share (expandable) - only if there are planned costs */}
+          {stats.plannedCost > 0 && (
+            <div
+              className="flex justify-between items-center text-sm bg-amber-50/50 -mx-2 px-2 py-2 rounded-lg cursor-pointer hover:bg-amber-100/50 transition-colors"
+              onClick={() => setIsPlannedBreakdownOpen(!isPlannedBreakdownOpen)}
+            >
+              <div className="flex items-center gap-2 text-amber-600">
+                <Clock size={14} /> Plánovaná útrata (Fair Share):
+                {isPlannedBreakdownOpen ? (
+                  <ChevronUp size={14} />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
+              </div>
+              <strong className="text-amber-600">- {formatCurrency(stats.plannedCost)}</strong>
+            </div>
+          )}
+
+          {/* Breakdown list for planned costs (expanded) */}
+          {isPlannedBreakdownOpen && stats.costBreakdown && stats.costBreakdown.filter(item => item.isPlanned).length > 0 && (
+            <div className="bg-amber-50/30 -mx-2 px-2 py-2 rounded-lg space-y-1 animate-in slide-in-from-top-2 duration-200">
+              {stats.costBreakdown.filter(item => item.isPlanned).map((item, idx) => {
+                const isCredit = item.cost < 0
+                return (
+                  <div key={idx} className="flex justify-between text-xs text-amber-600">
+                    <span>
+                      {item.title}
+                      {' '}<small className="text-amber-400">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
                     </span>
                     <span className={isCredit ? 'text-green-600' : ''}>
                       {isCredit ? '+' : '-'} {formatCurrency(Math.abs(item.cost))}
@@ -247,7 +298,7 @@ export function PersonView({
           {isBanker && (
             <>
               <span className="uppercase text-xs font-bold tracking-wider text-gray-500">
-                {balance < 0 ? 'Přebýtek k rozdělení' : 'Chybí vybrat'}
+                {balance < 0 ? 'Přebytek k rozdělení' : 'Chybí vybrat'}
               </span>
               <div
                 className={`text-5xl font-black font-serif mt-1 ${
