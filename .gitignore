@@ -48,3 +48,11 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# External repos
+/split-expanses/
