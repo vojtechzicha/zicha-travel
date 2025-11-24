@@ -66,14 +66,6 @@ Admin users with authentication.
 - `role` - "admin" or "user"
 - `assignedChatas[]` - Chatas this user can manage (non-admins only)
 
-### Globals
-
-#### **Domain Mappings** (`/api/globals/domain-mappings`)
-Global configuration for domain routing.
-
-**Fields:**
-- `defaultChata` - Default chata when domain doesn't match
-
 ## API Endpoints
 
 ### Standard Payload Endpoints
@@ -369,7 +361,6 @@ pnpm start
 
 **Solution**:
 - Verify domains are added to chata record
-- Check domain-mappings global for default
 - Use slug-based routing as fallback
 
 ## Future Enhancements

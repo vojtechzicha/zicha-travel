@@ -14,7 +14,6 @@ import { Expenses } from './collections/Expenses'
 import { Prepayments } from './collections/Prepayments'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
-import { DomainMappings } from './globals/DomainMappings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -27,7 +26,6 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
-  globals: [DomainMappings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

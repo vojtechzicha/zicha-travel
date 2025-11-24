@@ -38,35 +38,7 @@ export async function GET(
       })
     }
 
-    // If not found, check for default chata in domain-mappings global
-    try {
-      const domainMappings = await payload.findGlobal({
-        slug: 'domain-mappings',
-      })
-
-      if (domainMappings?.defaultChata) {
-        const defaultChata =
-          typeof domainMappings.defaultChata === 'object' ? domainMappings.defaultChata : null
-
-        if (defaultChata) {
-          return NextResponse.json({
-            found: true,
-            isDefault: true,
-            chata: {
-              id: defaultChata.id,
-              name: defaultChata.name,
-              slug: defaultChata.slug,
-              location: defaultChata.location,
-            },
-          })
-        }
-      }
-    } catch (error) {
-      // Domain mappings global might not exist yet
-      console.warn('Domain mappings global not found:', error)
-    }
-
-    // No matching domain or default
+    // No matching domain found
     return NextResponse.json({
       found: false,
       message: 'No chata found for this domain',

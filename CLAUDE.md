@@ -33,12 +33,6 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Admin users who can manage the system
    - Role-based access control
 
-### Globals
-
-1. **DomainMappings** (`src/globals/DomainMappings.ts`)
-   - Maps domain names to specific Chatas
-   - Allows automatic chata selection based on URL
-
 ### Utilities
 
 **calculateStats** (`src/utils/calculateStats.ts`)

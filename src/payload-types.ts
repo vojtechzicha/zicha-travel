@@ -98,12 +98,8 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  globals: {
-    'domain-mappings': DomainMapping;
-  };
-  globalsSelect: {
-    'domain-mappings': DomainMappingsSelect<false> | DomainMappingsSelect<true>;
-  };
+  globals: {};
+  globalsSelect: {};
   locale: null;
   user: User & {
     collection: 'users';
@@ -889,29 +885,6 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "domain-mappings".
- */
-export interface DomainMapping {
-  id: number;
-  /**
-   * Default chata to use when domain does not match any configured domains
-   */
-  defaultChata?: (number | null) | Chata;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "domain-mappings_select".
- */
-export interface DomainMappingsSelect<T extends boolean = true> {
-  defaultChata?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

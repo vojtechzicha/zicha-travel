@@ -289,21 +289,6 @@ async function migrateJsonConfigs() {
     console.log(`\n  ✅ Successfully imported ${configFile}`)
   }
 
-  // Set default chata in domain-mappings global
-  if (domainMap.default && createdChatas[domainMap.default]) {
-    console.log(`\n=== Setting default chata ===`)
-    console.log(`  Default: ${domainMap.default}`)
-
-    await payload.updateGlobal({
-      slug: 'domain-mappings',
-      data: {
-        defaultChata: createdChatas[domainMap.default].id,
-      },
-    })
-
-    console.log(`  ✓ Default chata set`)
-  }
-
   console.log('\n\n=== Migration Complete ===')
   console.log(`Imported ${Object.keys(createdChatas).length} chatas`)
   console.log('\nYou can now access the Payload admin at http://localhost:3000/admin')
