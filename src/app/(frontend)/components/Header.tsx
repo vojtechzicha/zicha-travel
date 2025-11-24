@@ -1,6 +1,7 @@
 'use client'
 
-import { Mountain, ArrowLeft, Info, Wallet } from 'lucide-react'
+import { ArrowLeft, Info, Wallet } from 'lucide-react'
+import { CottageIcon } from './CottageIcon'
 
 interface HeaderProps {
   chataName: string
@@ -24,7 +25,7 @@ export function Header({
   return (
     <header className="text-center mb-10 text-white">
       <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20 shadow-lg">
-        <Mountain className="text-primary-light" size={48} />
+        <CottageIcon className="text-primary-light" size={48} />
       </div>
       <h1 className="font-serif text-4xl md:text-5xl font-black tracking-tight mb-1" style={{ textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}>
         {chataName}

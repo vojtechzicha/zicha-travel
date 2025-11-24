@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Mountain, MapPin } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { GlassCard } from './GlassCard'
+import { CottageIcon } from './CottageIcon'
 import type { Chata } from '@/payload-types'
 
 interface ChataSelectorProps {
@@ -15,10 +16,10 @@ export function ChataSelector({ chatas }: ChataSelectorProps) {
       <div className="relative z-10 max-w-app mx-auto px-5 py-10">
         <header className="text-center mb-12 text-white animate-slideDown">
           <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20">
-            <Mountain className="text-white" size={48} />
+            <CottageIcon className="text-white" size={48} />
           </div>
           <h1 className="font-serif text-5xl md:text-6xl font-black tracking-tight drop-shadow-lg mb-2">
-            Chata Expenses
+            Aplikace Chata
           </h1>
           <p className="text-white/80 text-lg">Vyberte si chatu</p>
         </header>
@@ -32,7 +33,7 @@ export function ChataSelector({ chatas }: ChataSelectorProps) {
               >
                 <div className="flex flex-col items-center text-center">
                   <div className="bg-primary/10 p-3 rounded-full mb-3">
-                    <Mountain className="text-primary" size={32} />
+                    <CottageIcon className="text-primary" size={32} />
                   </div>
                   <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2">
                     {chata.name}

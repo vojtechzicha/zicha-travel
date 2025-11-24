@@ -1,11 +1,33 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import { ChataView } from '../components/ChataView'
+import { fetchChataBySlug } from '../utils/fetchChata'
 
 interface ChataPageProps {
   params: Promise<{
     chataSlug: string
   }>
+}
+
+export async function generateMetadata({ params }: ChataPageProps): Promise<Metadata> {
+  const { chataSlug } = await params
+  const chata = await fetchChataBySlug(chataSlug)
+
+  if (chata) {
+    return {
+      title: chata.name,
+      description: `${chata.name} - ${chata.location} - plánování, informace, finance`,
+      openGraph: {
+        title: `${chata.name} | Aplikace Chata`,
+        description: `Společně na chatu: ${chata.location}`,
+      },
+    }
+  }
+
+  return {
+    title: 'Chata nenalezena',
+  }
 }
 
 export default async function ChataPage({ params }: ChataPageProps) {
