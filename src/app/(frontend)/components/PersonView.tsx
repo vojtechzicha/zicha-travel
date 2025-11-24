@@ -307,7 +307,7 @@ export function PersonView({
           {/* Banker's incoming prepayments */}
           {isBanker &&
             incomingPrepayments.map((p, i) => {
-              const isRefund = p.amount < 0
+              const isRefund = p.type === 'refund' || p.type === 'distribution'
               const fromName = getPayerName(p.from as number | { id: number; name: string }) || 'Neznámý'
               return (
                 <div key={`inc-${i}`} className="flex items-center gap-4 py-3">
@@ -330,7 +330,7 @@ export function PersonView({
 
           {/* User's prepayments */}
           {myPrepayments.map((p, i) => {
-            const isRefund = p.amount < 0
+            const isRefund = p.type === 'refund' || p.type === 'distribution'
             return (
               <div key={`prep-${i}`} className="flex items-center gap-4 py-3">
                 <div

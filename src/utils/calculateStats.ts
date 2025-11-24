@@ -136,21 +136,34 @@ export function calculateStats(
     const amount = prepayment.amount
 
     if (stats[fromName]) {
-      // Update prepaidInternal
+      // Update prepaidInternal for the person making the prepayment
       stats[fromName].prepaidInternal += amount
 
-      // Update banker's prepaidInternal (opposite direction)
-      if (stats[bankerName] && fromName !== bankerName) {
-        stats[bankerName].prepaidInternal -= amount
-      }
-
-      // Categorize prepayment
+      // Categorize prepayment for the person making it
+      // Note: refunds/distributions have negative amount, advances/supplements are positive
       if (prepayment.type === 'advance') {
         stats[fromName].prepaidAdvance += amount
       } else if (prepayment.type === 'supplement') {
         stats[fromName].prepaidSupplement += amount
-      } else if (prepayment.type === 'refund') {
-        stats[fromName].prepaidRefund += Math.abs(amount)
+      } else if (prepayment.type === 'refund' || prepayment.type === 'distribution') {
+        // Refund/distribution amount is negative, so prepaidRefund becomes negative for the recipient
+        stats[fromName].prepaidRefund += amount
+      }
+    }
+
+    // Update banker's stats (opposite direction)
+    if (stats[bankerName] && fromName !== bankerName) {
+      stats[bankerName].prepaidInternal -= amount
+
+      // Banker's prepaid values are opposite of the participant's
+      // Advances/supplements: banker receives (negative for banker)
+      // Refunds/distributions: banker sends back (positive for banker after -= negative)
+      if (prepayment.type === 'advance') {
+        stats[bankerName].prepaidAdvance -= amount
+      } else if (prepayment.type === 'supplement') {
+        stats[bankerName].prepaidSupplement -= amount
+      } else if (prepayment.type === 'refund' || prepayment.type === 'distribution') {
+        stats[bankerName].prepaidRefund -= amount
       }
     }
   })
