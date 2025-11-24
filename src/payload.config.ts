@@ -24,6 +24,16 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      titleSuffix: '- Chata Admin',
+    },
+    components: {
+      graphics: {
+        Logo: './components/admin/Logo',
+        Icon: './components/admin/Icon',
+      },
+      beforeLogin: ['./components/admin/BeforeLogin'],
+    },
   },
   collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
   editor: lexicalEditor(),
