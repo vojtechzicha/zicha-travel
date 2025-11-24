@@ -155,7 +155,7 @@ export function SettlementActions({
             </div>
             <div>
               <h4 className="font-semibold text-lg text-red-800 mb-1">
-                Zaplatit bankéři
+                Zaplatit pokladníkovi
               </h4>
               <p className="text-3xl font-bold text-red-600">
                 {formatCurrency(Math.abs(balance))}
@@ -207,7 +207,7 @@ export function SettlementActions({
             </div>
             <div>
               <h4 className="font-semibold text-lg text-green-800 mb-1">
-                Máte dostat od bankéře
+                Máte dostat od pokladníka
               </h4>
               <p className="text-3xl font-bold text-green-600">
                 {formatCurrency(balance)}
@@ -215,7 +215,7 @@ export function SettlementActions({
             </div>
           </div>
           <p className="mt-4 text-sm text-gray-600">
-            Bankéř vám pošle peníze po vyrovnání všech dluhů.
+            Pokladník vám pošle peníze po vyrovnání všech dluhů.
           </p>
         </div>
       )}
