@@ -15,7 +15,7 @@ export function ExpensesFeed({ expenses }: ExpensesFeedProps) {
   })
 
   return (
-    <GlassCard padding="medium" className="hidden lg:block">
+    <GlassCard padding="medium">
       <h3 className="font-serif text-xl font-bold text-gray-900 mb-4">
         Výdaje
       </h3>

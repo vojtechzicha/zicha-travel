@@ -30,6 +30,7 @@ interface PersonViewProps {
   debtors: Array<{ name: string; amount: number }>
   prepayments: Prepayment[]
   expenses: Expense[]
+  showHeader?: boolean
 }
 
 export function PersonView({
@@ -42,6 +43,7 @@ export function PersonView({
   debtors,
   prepayments,
   expenses,
+  showHeader = true,
 }: PersonViewProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
 
@@ -96,27 +98,29 @@ export function PersonView({
 
   return (
     <div className="space-y-6">
-      {/* Header with avatar and name */}
-      <GlassCard padding="medium">
-        <div className="flex items-center gap-4">
-          <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${avatarColor}`}
-          >
-            {getInitials(participant.name)}
+      {/* Header with avatar and name - conditionally rendered */}
+      {showHeader && (
+        <GlassCard padding="medium">
+          <div className="flex items-center gap-4">
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${avatarColor}`}
+            >
+              {getInitials(participant.name)}
+            </div>
+            <div className="flex-1">
+              <h2 className="font-serif text-3xl font-bold text-gray-900 flex items-center gap-2">
+                {participant.name}
+                {isBanker && <Crown className="text-primary" size={28} />}
+              </h2>
+              {isBanker && (
+                <span className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md mt-1 uppercase tracking-wide">
+                  Pokladník
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="font-serif text-3xl font-bold text-gray-900 flex items-center gap-2">
-              {participant.name}
-              {isBanker && <Crown className="text-primary" size={28} />}
-            </h2>
-            {isBanker && (
-              <span className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md mt-1 uppercase tracking-wide">
-                Pokladník
-              </span>
-            )}
-          </div>
-        </div>
-      </GlassCard>
+        </GlassCard>
+      )}
 
       {/* Summary Box - Original style with colored background */}
       <div className={`rounded-2xl p-6 ${summaryBgClass}`}>

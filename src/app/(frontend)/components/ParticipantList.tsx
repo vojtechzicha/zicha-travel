@@ -7,9 +7,9 @@ import type { Participant } from '@/payload-types'
 
 interface ParticipantListProps {
   participants: Participant[]
-  selectedParticipantId: string | null
-  onSelectParticipant: (participantId: string) => void
-  bankerId?: string
+  selectedParticipantId: number | null
+  onSelectParticipant: (participantId: number) => void
+  bankerId?: number | null
 }
 
 export function ParticipantList({
