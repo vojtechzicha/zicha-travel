@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from './Header'
 import { FinanceView } from './FinanceView'
 import { InformationView } from './InformationView'
+import { HeaderSkeleton, ContentSkeleton } from './Skeleton'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -21,6 +22,33 @@ interface ChataViewProps {
   allowSwitch: boolean
 }
 
+// Custom hook for delayed loading indicator
+function useDelayedLoading(isLoading: boolean, delay = 200) {
+  const [showLoading, setShowLoading] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    if (isLoading) {
+      timeoutRef.current = setTimeout(() => {
+        setShowLoading(true)
+      }, delay)
+    } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      setShowLoading(false)
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [isLoading, delay])
+
+  return showLoading
+}
+
 export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -31,6 +59,10 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   const [data, setData] = useState<ChataData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  // Only show loading indicator after 200ms delay to avoid flash
+  const showLoadingIndicator = useDelayedLoading(loading, 200)
 
   useEffect(() => {
     async function fetchData() {
@@ -63,7 +95,9 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   }, [slug, currentView])
 
   const handleViewChange = (view: 'finance' | 'information') => {
-    setCurrentView(view)
+    startTransition(() => {
+      setCurrentView(view)
+    })
     // Update URL without reload
     const url = new URL(window.location.href)
     url.searchParams.set('view', view)
@@ -74,15 +108,21 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
     router.push('/')
   }
 
-  if (loading) {
+  // Show skeleton during initial loading - keeps the layout stable
+  if (loading && !data) {
+    // Determine initial view for skeleton
+    const initialView = (searchParams.get('view') as 'finance' | 'information') || 'information'
+
     return (
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
         <div className="relative z-10 max-w-app mx-auto px-5 py-10">
-          <div className="text-center text-white py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p className="text-lg">Načítání...</p>
-          </div>
+          {showLoadingIndicator ? (
+            <>
+              <HeaderSkeleton />
+              <ContentSkeleton view={initialView} />
+            </>
+          ) : null}
         </div>
       </div>
     )
@@ -129,17 +169,22 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
           onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
         />
 
-        {activeView === 'finance' ? (
-          <FinanceView
-            chata={chata}
-            participants={participants}
-            expenses={expenses}
-            prepayments={prepayments}
-            stats={stats}
-          />
-        ) : (
-          <InformationView chata={chata} />
-        )}
+        {/* Content area with smooth transition */}
+        <div
+          className={`transition-opacity duration-150 ${isPending ? 'opacity-70' : 'opacity-100'}`}
+        >
+          {activeView === 'finance' ? (
+            <FinanceView
+              chata={chata}
+              participants={participants}
+              expenses={expenses}
+              prepayments={prepayments}
+              stats={stats}
+            />
+          ) : (
+            <InformationView chata={chata} />
+          )}
+        </div>
       </div>
     </div>
   )

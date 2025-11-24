@@ -5,6 +5,7 @@ import { ParticipantSelector } from './ParticipantSelector'
 import { SelectedParticipantHeader } from './SelectedParticipantHeader'
 import { ExpensesFeed } from './ExpensesFeed'
 import { PersonView } from './PersonView'
+import { FinanceViewSkeleton } from './Skeleton'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -59,13 +60,9 @@ export function FinanceView({
     localStorage.setItem(storageKey, String(participantId))
   }
 
-  // Show loading state during hydration
+  // Show skeleton during hydration (very brief, usually unnoticeable)
   if (!isHydrated) {
-    return (
-      <div className="text-center text-white py-20">
-        <p>Načítání...</p>
-      </div>
-    )
+    return <FinanceViewSkeleton />
   }
 
   // State 1: No participant selected - show full-width selector
