@@ -20,7 +20,7 @@ export async function GET(
     const { slug } = await params
     const payload = await getPayload({ config })
 
-    // Find chata by slug
+    // Find chata by slug (depth: 2 to include background/icon with their nested media)
     const chatasResult = await payload.find({
       collection: 'chatas',
       where: {
@@ -29,7 +29,7 @@ export async function GET(
         },
       },
       limit: 1,
-      depth: 1,
+      depth: 2,
     })
 
     if (chatasResult.docs.length === 0) {

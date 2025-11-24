@@ -2,7 +2,44 @@ import Link from 'next/link'
 import { MapPin } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { CottageIcon } from './CottageIcon'
-import type { Chata } from '@/payload-types'
+import { InlineSvgIcon } from './InlineSvgIcon'
+import type { Chata, Icon, Media } from '@/payload-types'
+
+// Helper to get icon URL from chata
+function getChataIconUrl(chata: Chata): string | null {
+  if (chata.icon && typeof chata.icon === 'object') {
+    const icon = chata.icon as Icon
+    if (icon.svg && typeof icon.svg === 'object') {
+      const media = icon.svg as Media
+      return media.url || null
+    }
+  }
+  return null
+}
+
+// Get the chata's theme color or default
+function getChataColor(chata: Chata): string {
+  return chata.themeColor || '#d97706'
+}
+
+// Render icon for a chata card with its specific color
+function ChataCardIcon({ chata, size = 32 }: { chata: Chata; size?: number }) {
+  const iconUrl = getChataIconUrl(chata)
+  const color = getChataColor(chata)
+
+  if (iconUrl) {
+    return (
+      <InlineSvgIcon
+        url={iconUrl}
+        size={size}
+        color={color}
+        fallback={<CottageIcon size={size} style={{ color }} />}
+      />
+    )
+  }
+
+  return <CottageIcon size={size} style={{ color }} />
+}
 
 interface ChataSelectorProps {
   chatas: Chata[]
@@ -25,29 +62,35 @@ export function ChataSelector({ chatas }: ChataSelectorProps) {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {chatas.map((chata) => (
-            <Link key={chata.id} href={`/${chata.slug}`}>
-              <GlassCard
-                padding="medium"
-                className="h-full hover:scale-105 hover:shadow-2xl transition-all cursor-pointer"
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div className="bg-primary/10 p-3 rounded-full mb-3">
-                    <CottageIcon className="text-primary" size={32} />
-                  </div>
-                  <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2">
-                    {chata.name}
-                  </h2>
-                  {chata.location && (
-                    <div className="flex items-center gap-1 text-gray-600 text-sm">
-                      <MapPin size={14} />
-                      <span>{chata.location}</span>
+          {chatas.map((chata) => {
+            const themeColor = getChataColor(chata)
+            return (
+              <Link key={chata.id} href={`/${chata.slug}`}>
+                <GlassCard
+                  padding="medium"
+                  className="h-full hover:scale-105 hover:shadow-2xl transition-all cursor-pointer"
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className="p-3 rounded-full mb-3"
+                      style={{ backgroundColor: `${themeColor}15` }}
+                    >
+                      <ChataCardIcon chata={chata} size={32} />
                     </div>
-                  )}
-                </div>
-              </GlassCard>
-            </Link>
-          ))}
+                    <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2">
+                      {chata.name}
+                    </h2>
+                    {chata.location && (
+                      <div className="flex items-center gap-1 text-gray-600 text-sm">
+                        <MapPin size={14} />
+                        <span>{chata.location}</span>
+                      </div>
+                    )}
+                  </div>
+                </GlassCard>
+              </Link>
+            )
+          })}
         </div>
 
         {chatas.length === 0 && (

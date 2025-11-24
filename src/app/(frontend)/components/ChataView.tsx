@@ -6,6 +6,7 @@ import { Header } from './Header'
 import { FinanceView } from './FinanceView'
 import { InformationView } from './InformationView'
 import { HeaderSkeleton, ContentSkeleton } from './Skeleton'
+import { ThemeProvider } from './ThemeProvider'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -155,37 +156,39 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   const activeView = currentView || (hasInformation ? 'information' : 'finance')
 
   return (
-    <div className="min-h-screen relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
+    <ThemeProvider chata={chata}>
+      <div className="min-h-screen relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
 
-      <div className="relative z-10 max-w-app mx-auto px-5 py-10">
-        <Header
-          chataName={chata.name}
-          location={chata.location}
-          bankerName={typeof chata.banker === 'object' && chata.banker ? chata.banker.name : undefined}
-          currentView={activeView}
-          onViewChange={handleViewChange}
-          showInformationTab={hasInformation}
-          onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
-        />
+        <div className="relative z-10 max-w-app mx-auto px-5 py-10">
+          <Header
+            chataName={chata.name}
+            location={chata.location}
+            bankerName={typeof chata.banker === 'object' && chata.banker ? chata.banker.name : undefined}
+            currentView={activeView}
+            onViewChange={handleViewChange}
+            showInformationTab={hasInformation}
+            onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
+          />
 
-        {/* Content area with smooth transition */}
-        <div
-          className={`transition-opacity duration-150 ${isPending ? 'opacity-70' : 'opacity-100'}`}
-        >
-          {activeView === 'finance' ? (
-            <FinanceView
-              chata={chata}
-              participants={participants}
-              expenses={expenses}
-              prepayments={prepayments}
-              stats={stats}
-            />
-          ) : (
-            <InformationView chata={chata} />
-          )}
+          {/* Content area with smooth transition */}
+          <div
+            className={`transition-opacity duration-150 ${isPending ? 'opacity-70' : 'opacity-100'}`}
+          >
+            {activeView === 'finance' ? (
+              <FinanceView
+                chata={chata}
+                participants={participants}
+                expenses={expenses}
+                prepayments={prepayments}
+                stats={stats}
+              />
+            ) : (
+              <InformationView chata={chata} />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </ThemeProvider>
   )
 }

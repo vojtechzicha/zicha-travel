@@ -68,7 +68,7 @@ export function InformationView({ chata }: InformationViewProps) {
       {(chata.tripDateFrom || chata.tripDateTo) && (
         <div className="info-hero">
           <div className="info-hero-content">
-            <Calendar size={48} color="#fbbf24" />
+            <Calendar size={48} className="text-primary-light" />
             <h2>Kdy jedeme?</h2>
             <div className="dates-display">
               {chata.tripDateFrom && (
@@ -78,7 +78,7 @@ export function InformationView({ chata }: InformationViewProps) {
                   <span className="date-value">{formatDate(chata.tripDateFrom)}</span>
                 </div>
               )}
-              {chata.tripDateFrom && chata.tripDateTo && <ArrowRight size={32} color="#d97706" />}
+              {chata.tripDateFrom && chata.tripDateTo && <ArrowRight size={32} className="text-primary" />}
               {chata.tripDateTo && (
                 <div className="date-box">
                   <span className="date-label">Odjezd</span>
@@ -98,7 +98,7 @@ export function InformationView({ chata }: InformationViewProps) {
       {(chata.destinationName || chata.destinationLocation || chata.destinationDescription) && (
         <div className="info-section">
           <div className="section-header">
-            <MapPin size={24} color="#d97706" />
+            <MapPin size={24} className="text-primary" />
             <h3>Kam jedeme?</h3>
           </div>
           <div className="destination-card">
@@ -134,7 +134,7 @@ export function InformationView({ chata }: InformationViewProps) {
       {chata.photos && chata.photos.length > 0 && (
         <div className="info-section">
           <div className="section-header">
-            <Mountain size={24} color="#d97706" />
+            <Mountain size={24} className="text-primary" />
             <h3>Jak to tam vypadá</h3>
           </div>
           <div className="photo-gallery">
@@ -156,7 +156,7 @@ export function InformationView({ chata }: InformationViewProps) {
       {chata.basicInfo && chata.basicInfo.length > 0 && (
         <div className="info-section">
           <div className="section-header">
-            <Info size={24} color="#d97706" />
+            <Info size={24} className="text-primary" />
             <h3>Důležité informace</h3>
           </div>
           <ul className="info-list">
@@ -171,7 +171,7 @@ export function InformationView({ chata }: InformationViewProps) {
       {(chata.carRoutes?.length || chata.publicTransportOptions?.length || chata.parking) && (
         <div className="info-section">
           <div className="section-header">
-            <Car size={24} color="#d97706" />
+            <Car size={24} className="text-primary" />
             <h3>Doprava</h3>
           </div>
 
@@ -279,7 +279,7 @@ export function InformationView({ chata }: InformationViewProps) {
       {chata.bedrooms && chata.bedrooms.length > 0 && (
         <div className="info-section">
           <div className="section-header">
-            <Bed size={24} color="#d97706" />
+            <Bed size={24} className="text-primary" />
             <h3>Ubytování - rozdělení pokojů</h3>
           </div>
           <div className="bedrooms-grid">

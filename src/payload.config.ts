@@ -12,6 +12,8 @@ import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
 import { Expenses } from './collections/Expenses'
 import { Prepayments } from './collections/Prepayments'
+import { Backgrounds } from './collections/Backgrounds'
+import { Icons } from './collections/Icons'
 import { DomainMappings } from './globals/DomainMappings'
 
 const filename = fileURLToPath(import.meta.url)
@@ -24,7 +26,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments],
+  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
   globals: [DomainMappings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

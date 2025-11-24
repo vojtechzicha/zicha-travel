@@ -73,6 +73,8 @@ export interface Config {
     participants: Participant;
     expenses: Expense;
     prepayments: Prepayment;
+    backgrounds: Background;
+    icons: Icon;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +88,8 @@ export interface Config {
     participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
     expenses: ExpensesSelect<false> | ExpensesSelect<true>;
     prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
+    backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
+    icons: IconsSelect<false> | IconsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -214,6 +218,18 @@ export interface Chata {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Background image (uses system default if not set)
+   */
+  background?: (number | null) | Background;
+  /**
+   * Icon (uses cottage icon if not set)
+   */
+  icon?: (number | null) | Icon;
+  /**
+   * Theme color (hex)
+   */
+  themeColor?: string | null;
   /**
    * Enable the information/details view for this trip
    */
@@ -380,6 +396,32 @@ export interface Participant {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "backgrounds".
+ */
+export interface Background {
+  id: number;
+  /**
+   * Display name for this background
+   */
+  name: string;
+  /**
+   * System default - cannot be deleted
+   */
+  isDefault?: boolean | null;
+  type: 'url' | 'upload';
+  /**
+   * External image URL (e.g., Unsplash)
+   */
+  url?: string | null;
+  /**
+   * Upload a background image
+   */
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
@@ -396,6 +438,27 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "icons".
+ */
+export interface Icon {
+  id: number;
+  /**
+   * Display name for this icon
+   */
+  name: string;
+  /**
+   * System default - cannot be deleted
+   */
+  isDefault?: boolean | null;
+  /**
+   * Upload an SVG icon file
+   */
+  svg: number | Media;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -526,6 +589,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'prepayments';
         value: number | Prepayment;
+      } | null)
+    | ({
+        relationTo: 'backgrounds';
+        value: number | Background;
+      } | null)
+    | ({
+        relationTo: 'icons';
+        value: number | Icon;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -635,6 +706,9 @@ export interface ChatasSelect<T extends boolean = true> {
         user?: T;
         id?: T;
       };
+  background?: T;
+  icon?: T;
+  themeColor?: T;
   informationEnabled?: T;
   tripDateFrom?: T;
   tripDateTo?: T;
@@ -751,6 +825,30 @@ export interface PrepaymentsSelect<T extends boolean = true> {
   type?: T;
   createdAt?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "backgrounds_select".
+ */
+export interface BackgroundsSelect<T extends boolean = true> {
+  name?: T;
+  isDefault?: T;
+  type?: T;
+  url?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "icons_select".
+ */
+export interface IconsSelect<T extends boolean = true> {
+  name?: T;
+  isDefault?: T;
+  svg?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

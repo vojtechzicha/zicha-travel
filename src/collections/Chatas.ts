@@ -161,6 +161,44 @@ export const Chatas: CollectionConfig = {
       ],
     },
 
+    // Appearance
+    {
+      type: 'collapsible',
+      label: 'Appearance',
+      admin: {
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'background',
+          type: 'relationship',
+          relationTo: 'backgrounds',
+          admin: {
+            description: 'Background image (uses system default if not set)',
+          },
+        },
+        {
+          name: 'icon',
+          type: 'relationship',
+          relationTo: 'icons',
+          admin: {
+            description: 'Icon (uses cottage icon if not set)',
+          },
+        },
+        {
+          name: 'themeColor',
+          type: 'text',
+          defaultValue: '#d97706',
+          admin: {
+            description: 'Theme color (hex)',
+            components: {
+              Field: '@/components/ColorPickerField#ColorPickerField',
+            },
+          },
+        },
+      ],
+    },
+
     // Trip Information
     {
       type: 'collapsible',

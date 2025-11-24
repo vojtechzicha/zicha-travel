@@ -46,10 +46,11 @@ export default async function HomePage() {
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
+  // Depth 2 to include icon → svg (media) with URL
   const chatasResult = await payload.find({
     collection: 'chatas',
     limit: 100,
-    depth: 0,
+    depth: 2,
   })
 
   return <ChataSelector chatas={chatasResult.docs} />
