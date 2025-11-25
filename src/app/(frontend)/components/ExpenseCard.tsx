@@ -94,7 +94,7 @@ export function ExpenseCard({
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start gap-2 mb-1">
-          <span className="font-semibold text-gray-900 truncate min-w-0">{expense.title}</span>
+          <span className="font-semibold text-gray-900">{expense.title}</span>
           <span
             className={`font-bold flex-shrink-0 ${
               isPlanned ? 'text-amber-600' : isRefund ? 'text-green-600' : 'text-gray-900'
