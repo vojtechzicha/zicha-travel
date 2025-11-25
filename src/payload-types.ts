@@ -402,6 +402,55 @@ export interface Chata {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Enable the shared cars organization view for this trip
+   */
+  sharedCarsEnabled?: boolean | null;
+  /**
+   * Cars/rides for this trip
+   */
+  sharedCars?:
+    | {
+        /**
+         * Car/trip name (e.g., "Auto tam - Petr", "Cesta zpět")
+         */
+        name: string;
+        /**
+         * Additional details about this ride
+         */
+        description?: string | null;
+        /**
+         * Who is driving this car
+         */
+        driver: number | Participant;
+        /**
+         * Spolujezdec v předu
+         */
+        frontPassenger?: (number | null) | Participant;
+        /**
+         * Další cestující
+         */
+        passengers?:
+          | {
+              participant: number | Participant;
+              id?: string | null;
+            }[]
+          | null;
+        /**
+         * Vybavení/náklad v autě
+         */
+        equipment?:
+          | {
+              /**
+               * Název vybavení (např. "Pivo", "Kufry")
+               */
+              name: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -819,6 +868,28 @@ export interface ChatasSelect<T extends boolean = true> {
                     nights?: T;
                     id?: T;
                   };
+              id?: T;
+            };
+        id?: T;
+      };
+  sharedCarsEnabled?: T;
+  sharedCars?:
+    | T
+    | {
+        name?: T;
+        description?: T;
+        driver?: T;
+        frontPassenger?: T;
+        passengers?:
+          | T
+          | {
+              participant?: T;
+              id?: T;
+            };
+        equipment?:
+          | T
+          | {
+              name?: T;
               id?: T;
             };
         id?: T;

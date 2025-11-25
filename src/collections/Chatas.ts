@@ -577,5 +577,128 @@ export const Chatas: CollectionConfig = {
         },
       ],
     },
+
+    // Shared Cars Organization
+    {
+      type: 'collapsible',
+      label: 'Shared Cars Organization',
+      admin: {
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'sharedCarsEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description: 'Enable the shared cars organization view for this trip',
+          },
+        },
+        {
+          name: 'sharedCars',
+          type: 'array',
+          admin: {
+            description: 'Cars/rides for this trip',
+            condition: (data) => data.sharedCarsEnabled === true,
+          },
+          fields: [
+            {
+              name: 'name',
+              type: 'text',
+              required: true,
+              admin: {
+                description: 'Car/trip name (e.g., "Auto tam - Petr", "Cesta zpět")',
+              },
+            },
+            {
+              name: 'description',
+              type: 'textarea',
+              admin: {
+                description: 'Additional details about this ride',
+              },
+            },
+            {
+              name: 'driver',
+              type: 'relationship',
+              relationTo: 'participants',
+              required: true,
+              admin: {
+                description: 'Who is driving this car',
+              },
+              filterOptions: ({ data }) => {
+                if (data?.id) {
+                  return {
+                    chata: {
+                      equals: data.id,
+                    },
+                  }
+                }
+                return true
+              },
+            },
+            {
+              name: 'frontPassenger',
+              type: 'relationship',
+              relationTo: 'participants',
+              admin: {
+                description: 'Spolujezdec v předu',
+              },
+              filterOptions: ({ data }) => {
+                if (data?.id) {
+                  return {
+                    chata: {
+                      equals: data.id,
+                    },
+                  }
+                }
+                return true
+              },
+            },
+            {
+              name: 'passengers',
+              type: 'array',
+              admin: {
+                description: 'Další cestující',
+              },
+              fields: [
+                {
+                  name: 'participant',
+                  type: 'relationship',
+                  relationTo: 'participants',
+                  required: true,
+                  filterOptions: ({ data }) => {
+                    if (data?.id) {
+                      return {
+                        chata: {
+                          equals: data.id,
+                        },
+                      }
+                    }
+                    return true
+                  },
+                },
+              ],
+            },
+            {
+              name: 'equipment',
+              type: 'array',
+              admin: {
+                description: 'Vybavení/náklad v autě',
+              },
+              fields: [
+                {
+                  name: 'name',
+                  type: 'text',
+                  required: true,
+                  admin: {
+                    description: 'Název vybavení (např. "Pivo", "Kufry")',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   ],
 }

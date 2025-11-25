@@ -87,7 +87,9 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
         // Set default view based on what's enabled (priority: information > organization > finance)
         if (currentView === null) {
           const hasInfo = result.chata.informationEnabled === true
-          const hasOrg = result.chata.bedroomOrganizationEnabled === true
+          const hasOrg =
+            result.chata.bedroomOrganizationEnabled === true ||
+            result.chata.sharedCarsEnabled === true
           if (hasInfo) {
             setCurrentView('information')
           } else if (hasOrg) {
@@ -184,7 +186,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
 
   const { chata, participants, expenses, prepayments, stats } = data
   const hasInformation = chata.informationEnabled === true
-  const hasOrganization = chata.bedroomOrganizationEnabled === true
+  const hasOrganization =
+    chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true
   const activeView = currentView || (hasInformation ? 'information' : hasOrganization ? 'organization' : 'finance')
 
   return (
