@@ -392,7 +392,7 @@ export function PersonView({
                   {isRefund ? (
                     <ArrowDownLeft size={16} />
                   ) : (
-                    <ArrowRight size={16} style={{ transform: 'rotate(-45deg)' }} />
+                    <ArrowRight size={16} className="-rotate-45" />
                   )}
                 </div>
                 <div className="flex-1 font-medium text-gray-700">

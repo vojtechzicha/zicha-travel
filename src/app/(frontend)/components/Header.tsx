@@ -27,11 +27,11 @@ export function Header({
       <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20 shadow-lg">
         <DynamicIcon className="text-primary-light" size={48} />
       </div>
-      <h1 className="font-serif text-4xl md:text-5xl font-black tracking-tight mb-1" style={{ textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}>
+      <h1 className="font-serif text-4xl md:text-5xl font-black tracking-tight mb-1 text-shadow-heading">
         {chataName}
       </h1>
       {(location || bankerName) && (
-        <p className="text-white/80 text-lg" style={{ textShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' }}>
+        <p className="text-white/80 text-lg text-shadow-subheading">
           {location}
           {location && bankerName && ' • '}
           {bankerName && <>Pokladník: <strong>{bankerName}</strong></>}

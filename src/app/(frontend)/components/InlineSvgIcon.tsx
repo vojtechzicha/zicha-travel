@@ -58,13 +58,11 @@ export function InlineSvgIcon({ url, size = 32, className, color, fallback }: In
 
   return (
     <span
-      className={className}
+      className={`inline-flex w-[var(--icon-size)] h-[var(--icon-size)] ${color ? 'text-[var(--icon-color)]' : ''} ${className || ''}`}
       style={{
-        display: 'inline-flex',
-        width: size,
-        height: size,
-        color: color, // Apply color directly if provided
-      }}
+        '--icon-size': `${size}px`,
+        ...(color ? { '--icon-color': color } : {}),
+      } as React.CSSProperties}
       dangerouslySetInnerHTML={{ __html: svgContent }}
     />
   )

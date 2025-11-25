@@ -96,13 +96,15 @@ export function InformationView({ chata }: InformationViewProps) {
 
       {/* Destination Section */}
       {(chata.destinationName || chata.destinationLocation || chata.destinationDescription) && (
-        <div className="info-section">
-          <div className="section-header">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <MapPin size={24} className="text-primary" />
-            <h3>Kam jedeme?</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Kam jedeme?</h3>
           </div>
-          <div className="destination-card">
-            {chata.destinationName && <h4>{chata.destinationName}</h4>}
+          <div className="bg-white p-8 rounded-2xl shadow-md border-l-[5px] border-primary">
+            {chata.destinationName && (
+              <h4 className="font-serif text-3xl m-0 mb-4 text-gray-900">{chata.destinationName}</h4>
+            )}
             {chata.destinationLocation && (
               <p className="location-text">
                 <MapPin size={16} /> {chata.destinationLocation}
@@ -112,14 +114,14 @@ export function InformationView({ chata }: InformationViewProps) {
               <p className="destination-desc">{chata.destinationDescription}</p>
             )}
             {chata.destinationLinks && chata.destinationLinks.length > 0 && (
-              <div className="destination-links">
+              <div className="flex flex-wrap gap-3 mt-1">
                 {chata.destinationLinks.map((link, idx) => (
                   <a
                     key={idx}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="destination-link"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold transition-all hover:bg-primary-dark hover:-translate-y-0.5 shadow-md"
                   >
                     <ExternalLink size={16} /> {link.title}
                   </a>
@@ -132,10 +134,10 @@ export function InformationView({ chata }: InformationViewProps) {
 
       {/* Photo Gallery */}
       {chata.photos && chata.photos.length > 0 && (
-        <div className="info-section">
-          <div className="section-header">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Mountain size={24} className="text-primary" />
-            <h3>Jak to tam vypadá</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Jak to tam vypadá</h3>
           </div>
           <div className="photo-gallery">
             {chata.photos.map((photoItem, idx) => {
@@ -154,10 +156,10 @@ export function InformationView({ chata }: InformationViewProps) {
 
       {/* Basic Information */}
       {chata.basicInfo && chata.basicInfo.length > 0 && (
-        <div className="info-section">
-          <div className="section-header">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Info size={24} className="text-primary" />
-            <h3>Důležité informace</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Důležité informace</h3>
           </div>
           <ul className="info-list">
             {chata.basicInfo.map((item, idx) => (
@@ -169,21 +171,21 @@ export function InformationView({ chata }: InformationViewProps) {
 
       {/* Transportation */}
       {(chata.carRoutes?.length || chata.publicTransportOptions?.length || chata.parking) && (
-        <div className="info-section">
-          <div className="section-header">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Car size={24} className="text-primary" />
-            <h3>Doprava</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Doprava</h3>
           </div>
 
           {/* Car Routes */}
           {chata.carRoutes && chata.carRoutes.length > 0 && (
-            <div className="transport-subsection">
+            <div className="mb-9 last:mb-0">
               <h4 className="transport-subtitle">
                 <Car size={20} /> Autem
               </h4>
               <div className="car-routes-grid">
                 {chata.carRoutes.map((route, idx) => (
-                  <div key={idx} className="car-route-card">
+                  <div key={idx} className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-primary">
                     <div className="route-header">
                       <strong>{route.from}</strong>
                       <span className="route-duration">{route.duration}</span>
@@ -203,7 +205,7 @@ export function InformationView({ chata }: InformationViewProps) {
 
           {/* Public Transport */}
           {chata.publicTransportOptions && chata.publicTransportOptions.length > 0 && (
-            <div className="transport-subsection">
+            <div className="mb-9 last:mb-0">
               <h4 className="transport-subtitle">
                 <Train size={20} /> Veřejnou dopravou
               </h4>
@@ -214,7 +216,7 @@ export function InformationView({ chata }: InformationViewProps) {
                 const lastArrival = connections[connections.length - 1]?.arrival
 
                 return (
-                  <div key={idx} className="public-transport-option">
+                  <div key={idx} className="bg-white p-6 rounded-2xl shadow-md mb-5 last:mb-0">
                     <div
                       className="option-header clickable"
                       onClick={() => toggleTransport(idx)}
@@ -277,15 +279,17 @@ export function InformationView({ chata }: InformationViewProps) {
 
       {/* Bedroom Assignments */}
       {chata.bedrooms && chata.bedrooms.length > 0 && (
-        <div className="info-section">
-          <div className="section-header">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Bed size={24} className="text-primary" />
-            <h3>Ubytování - rozdělení pokojů</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Ubytování - rozdělení pokojů</h3>
           </div>
           <div className="bedrooms-grid">
             {chata.bedrooms.map((bedroom, idx) => (
-              <div key={idx} className="bedroom-card">
-                <h4>{bedroom.name}</h4>
+              <div key={idx} className="bg-white p-6 rounded-2xl shadow-md border-t-4 border-primary">
+                <h4 className="font-serif text-xl m-0 mb-5 text-gray-900 flex items-center gap-2">
+                  {bedroom.name}
+                </h4>
                 {bedroom.beds && bedroom.beds.length > 0 && (
                   <div className="beds-list">
                     {bedroom.beds.map((bed, bedIdx) => {
@@ -301,12 +305,12 @@ export function InformationView({ chata }: InformationViewProps) {
                           <div className="bed-occupants">
                             {occupantNames.length > 0 ? (
                               occupantNames.map((occupant, occIdx) => (
-                                <span key={occIdx} className="occupant-tag">
+                                <span key={occIdx} className="bg-primary text-white px-3 py-1 rounded-md text-sm font-semibold">
                                   {occupant}
                                 </span>
                               ))
                             ) : (
-                              <span className="occupant-tag empty">Volné</span>
+                              <span className="bg-gray-200 text-gray-500 px-3 py-1 rounded-md text-sm font-semibold">Volné</span>
                             )}
                           </div>
                         </div>

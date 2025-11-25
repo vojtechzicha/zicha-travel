@@ -94,6 +94,39 @@ Collections use `filterOptions` to limit relationship dropdowns:
 - Expenses show only participants from the same Chata
 - Bedroom occupants filtered by Chata
 
+## Styling Guidelines
+
+This project uses **Tailwind CSS v4** with a CSS-first configuration. Prefer Tailwind for all styling.
+
+### Principles
+
+1. **Use Tailwind classes** for all static styling (layout, spacing, colors, typography)
+2. **For dynamic values** (from props), use CSS variables pattern:
+   ```tsx
+   style={{ '--color': value } as React.CSSProperties}
+   className="text-[var(--color)]"
+   ```
+3. **Keep in CSS file** (`src/app/(frontend)/styles.css`) only:
+   - Multi-component reusable classes (used in 2+ files)
+   - Complex CSS Grid with `auto-fit`/`minmax`
+   - Pseudo-elements (::before, ::after)
+   - Custom animations with specific timing functions
+   - Pseudo-class styling for scrollbars
+
+### Theme Configuration
+
+Custom theme values are defined in `styles.css` using `@theme`:
+- Colors: `--color-primary`, `--color-primary-dark`, `--color-primary-light`
+- Fonts: `--font-serif`, `--font-sans`
+- Radii: `--radius-glass`, `--radius-glass-lg`
+
+### Custom Utilities
+
+Available in `@layer utilities`:
+- `.animate-slideDown` - Slide down animation
+- `.max-w-app` - Max width container (1100px)
+- `.text-shadow-heading`, `.text-shadow-subheading` - Text shadows for headers
+
 ## Database
 
 Using SQLite with `@payloadcms/db-sqlite` adapter.

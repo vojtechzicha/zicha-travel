@@ -33,12 +33,26 @@ function ChataCardIcon({ chata, size = 32 }: { chata: Chata; size?: number }) {
         url={iconUrl}
         size={size}
         color={color}
-        fallback={<CottageIcon size={size} style={{ color }} />}
+        fallback={
+          <span
+            style={{ '--icon-color': color } as React.CSSProperties}
+            className="text-[var(--icon-color)]"
+          >
+            <CottageIcon size={size} />
+          </span>
+        }
       />
     )
   }
 
-  return <CottageIcon size={size} style={{ color }} />
+  return (
+    <span
+      style={{ '--icon-color': color } as React.CSSProperties}
+      className="text-[var(--icon-color)]"
+    >
+      <CottageIcon size={size} />
+    </span>
+  )
 }
 
 interface ChataSelectorProps {
@@ -72,8 +86,8 @@ export function ChataSelector({ chatas }: ChataSelectorProps) {
                 >
                   <div className="flex flex-col items-center text-center">
                     <div
-                      className="p-3 rounded-full mb-3"
-                      style={{ backgroundColor: `${themeColor}15` }}
+                      className="p-3 rounded-full mb-3 bg-[var(--theme-bg)]"
+                      style={{ '--theme-bg': `${themeColor}15` } as React.CSSProperties}
                     >
                       <ChataCardIcon chata={chata} size={32} />
                     </div>

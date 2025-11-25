@@ -32,39 +32,31 @@ export function ColorPickerField({ path, label, required }: ColorPickerFieldProp
         </label>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+      <div className="flex items-center gap-3 mt-2">
         {/* Color preview button */}
         <button
           type="button"
           onClick={() => setShowPicker(!showPicker)}
+          className="w-12 h-12 rounded-lg cursor-pointer transition-transform hover:scale-105"
           style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '8px',
             backgroundColor: currentColor,
             border: '2px solid var(--theme-elevation-150)',
-            cursor: 'pointer',
-            transition: 'transform 0.15s ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           title="Click to open color picker"
         />
 
         {/* Hex input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ color: 'var(--theme-elevation-500)', fontFamily: 'monospace' }}>#</span>
+        <div className="flex items-center gap-1">
+          <span className="font-mono" style={{ color: 'var(--theme-elevation-500)' }}>
+            #
+          </span>
           <HexColorInput
             color={currentColor}
             onChange={handleColorChange}
             prefixed={false}
+            className="w-20 px-3 py-2 text-sm font-mono rounded"
             style={{
-              width: '80px',
-              padding: '8px 12px',
-              fontSize: '14px',
-              fontFamily: 'monospace',
               border: '1px solid var(--theme-elevation-150)',
-              borderRadius: '4px',
               backgroundColor: 'var(--theme-input-bg)',
               color: 'var(--theme-text)',
             }}
@@ -74,34 +66,18 @@ export function ColorPickerField({ path, label, required }: ColorPickerFieldProp
 
       {/* Color picker popover */}
       {showPicker && (
-        <div
-          style={{
-            position: 'relative',
-            marginTop: '12px',
-          }}
-        >
+        <div className="relative mt-3">
           <div
+            className="absolute z-[1000] p-4 rounded-lg shadow-lg"
             style={{
-              position: 'absolute',
-              zIndex: 1000,
               backgroundColor: 'var(--theme-elevation-50)',
-              padding: '16px',
-              borderRadius: '8px',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
               border: '1px solid var(--theme-elevation-150)',
             }}
           >
             <HexColorPicker color={currentColor} onChange={handleColorChange} />
 
             {/* Preset colors */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(8, 1fr)',
-                gap: '6px',
-                marginTop: '12px',
-              }}
-            >
+            <div className="grid grid-cols-8 gap-1.5 mt-3">
               {[
                 '#d97706', // orange (default)
                 '#2563eb', // blue
@@ -116,17 +92,13 @@ export function ColorPickerField({ path, label, required }: ColorPickerFieldProp
                   key={presetColor}
                   type="button"
                   onClick={() => handleColorChange(presetColor)}
+                  className="w-6 h-6 rounded cursor-pointer transition-transform hover:scale-110"
                   style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '4px',
                     backgroundColor: presetColor,
                     border:
                       currentColor === presetColor
                         ? '2px solid var(--theme-text)'
                         : '1px solid var(--theme-elevation-200)',
-                    cursor: 'pointer',
-                    transition: 'transform 0.1s ease',
                   }}
                   title={presetColor}
                 />
@@ -136,15 +108,10 @@ export function ColorPickerField({ path, label, required }: ColorPickerFieldProp
             <button
               type="button"
               onClick={() => setShowPicker(false)}
+              className="w-full mt-3 py-2 rounded cursor-pointer text-sm"
               style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '8px',
                 backgroundColor: 'var(--theme-elevation-100)',
                 border: '1px solid var(--theme-elevation-200)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '13px',
               }}
             >
               Close
