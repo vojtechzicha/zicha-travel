@@ -61,9 +61,11 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isNavigating, setIsNavigating] = useState(false)
 
   // Only show loading indicator after 200ms delay to avoid flash
   const showLoadingIndicator = useDelayedLoading(loading, 200)
+  const showNavigatingIndicator = useDelayedLoading(isNavigating, 200)
 
   useEffect(() => {
     async function fetchData() {
@@ -106,22 +108,24 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   }
 
   const handleSwitchChata = () => {
+    setIsNavigating(true)
     router.push('/')
   }
 
-  // Show skeleton during initial loading - keeps the layout stable
-  if (loading && !data) {
-    // Determine initial view for skeleton
-    const initialView = (searchParams.get('view') as 'finance' | 'information') || 'information'
+  // Show skeleton during initial loading or navigation - keeps the layout stable
+  if ((loading && !data) || isNavigating) {
+    // Use current view for navigation, or fall back to URL param / default for initial load
+    const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information') || 'information'
+    const shouldShowSkeleton = loading ? showLoadingIndicator : showNavigatingIndicator
 
     return (
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
         <div className="relative z-10 max-w-app mx-auto px-5 py-10">
-          {showLoadingIndicator ? (
+          {shouldShowSkeleton ? (
             <>
               <HeaderSkeleton />
-              <ContentSkeleton view={initialView} />
+              <ContentSkeleton view={skeletonView} />
             </>
           ) : null}
         </div>
