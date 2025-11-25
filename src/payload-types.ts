@@ -338,24 +338,64 @@ export interface Chata {
       }[]
     | null;
   /**
-   * Room assignments
+   * Enable the bedroom organization view for this trip
    */
-  bedrooms?:
+  bedroomOrganizationEnabled?: boolean | null;
+  /**
+   * Enable per-night occupancy tracking (requires trip dates)
+   */
+  advancedBedroomMode?: boolean | null;
+  /**
+   * Rooms available at this accommodation
+   */
+  rooms?:
     | {
         /**
-         * Room name (e.g., "Pokoj 1")
+         * Room name (e.g., "Pokoj u krbu", "Podkroví")
          */
         name: string;
+        /**
+         * Optional description of the room
+         */
+        description?: string | null;
+        /**
+         * Photo of the room
+         */
+        image?: (number | null) | Media;
+        /**
+         * Maximum number of people who can sleep in this room
+         */
+        maxSleepingSpaces: number;
+        /**
+         * Beds in this room
+         */
         beds?:
           | {
               /**
-               * Bed type (e.g., "Manželská postel", "Palanda")
+               * Bed name/type (e.g., "Manželská postel", "Palanda - horní")
                */
-              type: string;
+              name: string;
               /**
                * Who sleeps in this bed
                */
-              occupants?: (number | Participant)[] | null;
+              occupants?:
+                | {
+                    participant: number | Participant;
+                    /**
+                     * Which nights (1-indexed). Empty = all nights. E.g. [1, 2, 3]
+                     */
+                    nights?:
+                      | {
+                          [k: string]: unknown;
+                        }
+                      | unknown[]
+                      | string
+                      | number
+                      | boolean
+                      | null;
+                    id?: string | null;
+                  }[]
+                | null;
               id?: string | null;
             }[]
           | null;
@@ -759,15 +799,26 @@ export interface ChatasSelect<T extends boolean = true> {
             };
         id?: T;
       };
-  bedrooms?:
+  bedroomOrganizationEnabled?: T;
+  advancedBedroomMode?: T;
+  rooms?:
     | T
     | {
         name?: T;
+        description?: T;
+        image?: T;
+        maxSleepingSpaces?: T;
         beds?:
           | T
           | {
-              type?: T;
-              occupants?: T;
+              name?: T;
+              occupants?:
+                | T
+                | {
+                    participant?: T;
+                    nights?: T;
+                    id?: T;
+                  };
               id?: T;
             };
         id?: T;

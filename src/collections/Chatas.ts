@@ -456,20 +456,38 @@ export const Chatas: CollectionConfig = {
       ],
     },
 
-    // Bedrooms
+    // Bedroom Organization
     {
       type: 'collapsible',
-      label: 'Bedrooms',
+      label: 'Bedroom Organization',
       admin: {
         initCollapsed: true,
-        condition: (data) => data.informationEnabled === true,
       },
       fields: [
         {
-          name: 'bedrooms',
+          name: 'bedroomOrganizationEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description: 'Enable the bedroom organization view for this trip',
+          },
+        },
+        {
+          name: 'advancedBedroomMode',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description: 'Enable per-night occupancy tracking (requires trip dates)',
+            condition: (data) =>
+              data.bedroomOrganizationEnabled === true && data.informationEnabled === true,
+          },
+        },
+        {
+          name: 'rooms',
           type: 'array',
           admin: {
-            description: 'Room assignments',
+            description: 'Rooms available at this accommodation',
+            condition: (data) => data.bedroomOrganizationEnabled === true,
           },
           fields: [
             {
@@ -477,40 +495,81 @@ export const Chatas: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'Room name (e.g., "Pokoj 1")',
+                description: 'Room name (e.g., "Pokoj u krbu", "Podkroví")',
+              },
+            },
+            {
+              name: 'description',
+              type: 'textarea',
+              admin: {
+                description: 'Optional description of the room',
+              },
+            },
+            {
+              name: 'image',
+              type: 'upload',
+              relationTo: 'media',
+              admin: {
+                description: 'Photo of the room',
+              },
+            },
+            {
+              name: 'maxSleepingSpaces',
+              type: 'number',
+              required: true,
+              min: 1,
+              defaultValue: 2,
+              admin: {
+                description: 'Maximum number of people who can sleep in this room',
               },
             },
             {
               name: 'beds',
               type: 'array',
+              admin: {
+                description: 'Beds in this room',
+              },
               fields: [
                 {
-                  name: 'type',
+                  name: 'name',
                   type: 'text',
                   required: true,
                   admin: {
-                    description: 'Bed type (e.g., "Manželská postel", "Palanda")',
+                    description: 'Bed name/type (e.g., "Manželská postel", "Palanda - horní")',
                   },
                 },
                 {
                   name: 'occupants',
-                  type: 'relationship',
-                  relationTo: 'participants',
-                  hasMany: true,
+                  type: 'array',
                   admin: {
                     description: 'Who sleeps in this bed',
                   },
-                  filterOptions: ({ data }) => {
-                    // Only show participants from this chata
-                    if (data?.id) {
-                      return {
-                        chata: {
-                          equals: data.id,
-                        },
-                      }
-                    }
-                    return true
-                  },
+                  fields: [
+                    {
+                      name: 'participant',
+                      type: 'relationship',
+                      relationTo: 'participants',
+                      required: true,
+                      filterOptions: ({ data }) => {
+                        if (data?.id) {
+                          return {
+                            chata: {
+                              equals: data.id,
+                            },
+                          }
+                        }
+                        return true
+                      },
+                    },
+                    {
+                      name: 'nights',
+                      type: 'json',
+                      admin: {
+                        description: 'Which nights (1-indexed). Empty = all nights. E.g. [1, 2, 3]',
+                        condition: (data) => data.advancedBedroomMode === true,
+                      },
+                    },
+                  ],
                 },
               ],
             },

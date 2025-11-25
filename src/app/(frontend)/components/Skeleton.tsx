@@ -66,8 +66,45 @@ export function InformationViewSkeleton() {
   )
 }
 
-export function ContentSkeleton({ view }: { view: 'finance' | 'information' }) {
-  return view === 'finance' ? <FinanceViewSkeleton /> : <InformationViewSkeleton />
+export function OrganizationViewSkeleton() {
+  return (
+    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
+      {/* Hero section skeleton */}
+      <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8">
+        <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
+        <Skeleton className="h-8 w-56 mx-auto mb-6 rounded-lg" />
+        <div className="flex gap-4 sm:gap-8 justify-center flex-wrap">
+          <Skeleton className="h-24 w-28 rounded-2xl" />
+          <Skeleton className="h-24 w-28 rounded-2xl" />
+        </div>
+      </div>
+      {/* Rooms section skeleton */}
+      <div>
+        <Skeleton className="h-8 w-48 mb-6 rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100">
+              <Skeleton className="h-44 w-full" />
+              <div className="p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <Skeleton className="h-6 w-32 rounded-lg" />
+                  <Skeleton className="h-8 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-full mb-2 rounded" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function ContentSkeleton({ view }: { view: 'finance' | 'information' | 'organization' }) {
+  if (view === 'finance') return <FinanceViewSkeleton />
+  if (view === 'organization') return <OrganizationViewSkeleton />
+  return <InformationViewSkeleton />
 }
 
 export function ChataSelectorSkeleton() {

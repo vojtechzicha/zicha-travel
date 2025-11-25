@@ -486,40 +486,11 @@
   font-size: 0.9rem;
 }
 
-/* Bedrooms Grid */
-.bedrooms-grid {
+/* Rooms Grid (Organization View) */
+.rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-.beds-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.bed-item {
-  background: #f9fafb;
-  padding: 15px;
-  border-radius: 10px;
-  border-left: 3px solid #e5e7eb;
-}
-
-.bed-type {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 10px;
-  font-size: 0.95rem;
-}
-
-.bed-occupants {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 25px;
 }
 
 /* Responsive adjustments */
@@ -575,7 +546,7 @@
   }
 
   .car-routes-grid,
-  .bedrooms-grid {
+  .rooms-grid {
     grid-template-columns: 1fr;
   }
 

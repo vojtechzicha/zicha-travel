@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Car,
   Train,
-  Bed,
   ExternalLink,
   Mountain,
   ChevronDown,
@@ -277,52 +276,6 @@ export function InformationView({ chata }: InformationViewProps) {
         </div>
       )}
 
-      {/* Bedroom Assignments */}
-      {chata.bedrooms && chata.bedrooms.length > 0 && (
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
-            <Bed size={24} className="text-primary" />
-            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Ubytování - rozdělení pokojů</h3>
-          </div>
-          <div className="bedrooms-grid">
-            {chata.bedrooms.map((bedroom, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl shadow-md border-t-4 border-primary">
-                <h4 className="font-serif text-xl m-0 mb-5 text-gray-900 flex items-center gap-2">
-                  {bedroom.name}
-                </h4>
-                {bedroom.beds && bedroom.beds.length > 0 && (
-                  <div className="beds-list">
-                    {bedroom.beds.map((bed, bedIdx) => {
-                      const occupantNames =
-                        bed.occupants
-                          ?.map((o) => (typeof o === 'object' && o !== null ? o.name : ''))
-                          .filter((n) => n) || []
-                      return (
-                        <div key={bedIdx} className="bed-item">
-                          <div className="bed-type">
-                            <Bed size={16} /> {bed.type}
-                          </div>
-                          <div className="bed-occupants">
-                            {occupantNames.length > 0 ? (
-                              occupantNames.map((occupant, occIdx) => (
-                                <span key={occIdx} className="bg-primary text-white px-3 py-1 rounded-md text-sm font-semibold">
-                                  {occupant}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="bg-gray-200 text-gray-500 px-3 py-1 rounded-md text-sm font-semibold">Volné</span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

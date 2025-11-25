@@ -147,13 +147,16 @@ export async function GET(
                 notes: pt.notes || '',
               })),
             },
-            bedrooms: (chata.bedrooms || []).map((br) => ({
-              name: br.name,
-              beds: (br.beds || []).map((b) => ({
-                type: b.type,
-                occupants: (b.occupants || [])
-                  .map((o) => (typeof o === 'object' ? o.name : ''))
-                  .filter((n) => n),
+            rooms: (chata.rooms || []).map((room) => ({
+              name: room.name,
+              description: room.description || '',
+              maxSleepingSpaces: room.maxSleepingSpaces,
+              beds: (room.beds || []).map((bed) => ({
+                name: bed.name,
+                occupants: (bed.occupants || []).map((occ) => ({
+                  name: typeof occ.participant === 'object' ? occ.participant.name : '',
+                  nights: occ.nights || null,
+                })).filter((o) => o.name),
               })),
             })),
           }

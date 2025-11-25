@@ -1,15 +1,16 @@
 'use client'
 
-import { ArrowLeft, Info, Wallet } from 'lucide-react'
+import { ArrowLeft, BedDouble, Info, Wallet } from 'lucide-react'
 import { DynamicIcon } from './DynamicIcon'
 
 interface HeaderProps {
   chataName: string
   location?: string
   bankerName?: string
-  currentView?: 'finance' | 'information'
-  onViewChange?: (view: 'finance' | 'information') => void
+  currentView?: 'finance' | 'information' | 'organization'
+  onViewChange?: (view: 'finance' | 'information' | 'organization') => void
   showInformationTab?: boolean
+  showOrganizationTab?: boolean
   onSwitchChata?: () => void
 }
 
@@ -20,6 +21,7 @@ export function Header({
   currentView = 'finance',
   onViewChange,
   showInformationTab = false,
+  showOrganizationTab = false,
   onSwitchChata,
 }: HeaderProps) {
   return (
@@ -39,7 +41,7 @@ export function Header({
       )}
 
       {/* Header actions */}
-      {(showInformationTab || onSwitchChata) && (
+      {(showInformationTab || showOrganizationTab || onSwitchChata) && (
         <div className="flex gap-5 justify-center items-center flex-wrap mt-5">
           {onSwitchChata && (
             <button
@@ -51,22 +53,40 @@ export function Header({
             </button>
           )}
 
-          {showInformationTab && onViewChange && (
+          {(showInformationTab || showOrganizationTab) && onViewChange && (
             <div className="flex gap-1 p-1.5 rounded-xl backdrop-blur-md bg-white/15 border border-white/20">
-              <button
-                onClick={() => onViewChange('information')}
-                className={`
-                  flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
-                  ${
-                    currentView === 'information'
-                      ? 'bg-primary text-white shadow-lg shadow-primary/40'
-                      : 'text-white/80 hover:text-white hover:bg-white/15'
-                  }
-                `}
-              >
-                <Info size={16} />
-                Informace
-              </button>
+              {showInformationTab && (
+                <button
+                  onClick={() => onViewChange('information')}
+                  className={`
+                    flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                    ${
+                      currentView === 'information'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/40'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }
+                  `}
+                >
+                  <Info size={16} />
+                  Informace
+                </button>
+              )}
+              {showOrganizationTab && (
+                <button
+                  onClick={() => onViewChange('organization')}
+                  className={`
+                    flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                    ${
+                      currentView === 'organization'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/40'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }
+                  `}
+                >
+                  <BedDouble size={16} />
+                  Organizace
+                </button>
+              )}
               <button
                 onClick={() => onViewChange('finance')}
                 className={`

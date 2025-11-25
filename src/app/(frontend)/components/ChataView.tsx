@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from './Header'
 import { FinanceView } from './FinanceView'
 import { InformationView } from './InformationView'
+import { OrganizationView } from './OrganizationView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
@@ -56,8 +57,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [currentView, setCurrentView] = useState<'finance' | 'information' | null>(
-    (searchParams.get('view') as 'finance' | 'information') || null
+  const [currentView, setCurrentView] = useState<'finance' | 'information' | 'organization' | null>(
+    (searchParams.get('view') as 'finance' | 'information' | 'organization') || null
   )
   const [data, setData] = useState<ChataData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -83,10 +84,17 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
         const result = await response.json()
         setData(result)
 
-        // Set default view based on whether information is enabled
+        // Set default view based on what's enabled (priority: information > organization > finance)
         if (currentView === null) {
           const hasInfo = result.chata.informationEnabled === true
-          setCurrentView(hasInfo ? 'information' : 'finance')
+          const hasOrg = result.chata.bedroomOrganizationEnabled === true
+          if (hasInfo) {
+            setCurrentView('information')
+          } else if (hasOrg) {
+            setCurrentView('organization')
+          } else {
+            setCurrentView('finance')
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load chata')
@@ -98,7 +106,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     fetchData()
   }, [slug, currentView])
 
-  const handleViewChange = (view: 'finance' | 'information') => {
+  const handleViewChange = (view: 'finance' | 'information' | 'organization') => {
     startTransition(() => {
       setCurrentView(view)
     })
@@ -121,7 +129,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   // Show skeleton during initial loading - keeps the layout stable
   if (loading && !data) {
     // Use current view for navigation, or fall back to URL param / default for initial load
-    const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information') || 'information'
+    const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information' | 'organization') || 'information'
     const skeletonColors = getThemeColors(initialThemeColor)
 
     return (
@@ -176,7 +184,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
 
   const { chata, participants, expenses, prepayments, stats } = data
   const hasInformation = chata.informationEnabled === true
-  const activeView = currentView || (hasInformation ? 'information' : 'finance')
+  const hasOrganization = chata.bedroomOrganizationEnabled === true
+  const activeView = currentView || (hasInformation ? 'information' : hasOrganization ? 'organization' : 'finance')
 
   return (
     <ThemeProvider chata={chata}>
@@ -191,6 +200,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             currentView={activeView}
             onViewChange={handleViewChange}
             showInformationTab={hasInformation}
+            showOrganizationTab={hasOrganization}
             onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
           />
 
@@ -206,6 +216,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 prepayments={prepayments}
                 stats={stats}
               />
+            ) : activeView === 'organization' ? (
+              <OrganizationView chata={chata} />
             ) : (
               <InformationView chata={chata} />
             )}
