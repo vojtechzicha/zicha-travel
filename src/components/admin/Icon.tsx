@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-export const Icon: React.FC = () => {
+const Icon: React.FC = () => {
   return (
     <svg
       width="24"
@@ -29,3 +29,5 @@ export const Icon: React.FC = () => {
     </svg>
   )
 }
+
+export default Icon

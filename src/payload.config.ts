@@ -33,6 +33,7 @@ export default buildConfig({
         Icon: './components/admin/Icon',
       },
       beforeLogin: ['./components/admin/BeforeLogin'],
+      beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
   },
   collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
