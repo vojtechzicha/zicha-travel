@@ -613,7 +613,9 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                     const nightsText =
                       occupantNights === null
                         ? 'celý pobyt'
-                        : `noci ${occupantNights.join(', ')}`
+                        : occupantNights.length === 1
+                          ? `jen noc ${occupantNights[0]}`
+                          : `jen noci ${occupantNights.slice(0, -1).join(', ')} a ${occupantNights[occupantNights.length - 1]}`
                     return (
                       <span key={occupant.id || occIdx} className="mr-3">
                         <span className="font-medium">{name}</span>: {nightsText}
