@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from './Header'
 import { FinanceView } from './FinanceView'
 import { InformationView } from './InformationView'
-import { HeaderSkeleton, ContentSkeleton } from './Skeleton'
+import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
@@ -65,7 +65,6 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
 
   // Only show loading indicator after 200ms delay to avoid flash
   const showLoadingIndicator = useDelayedLoading(loading, 200)
-  const showNavigatingIndicator = useDelayedLoading(isNavigating, 200)
 
   useEffect(() => {
     async function fetchData() {
@@ -112,17 +111,21 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
     router.push('/')
   }
 
-  // Show skeleton during initial loading or navigation - keeps the layout stable
-  if ((loading && !data) || isNavigating) {
+  // Show skeleton immediately when navigating to chata selector (no delay - user expects feedback)
+  if (isNavigating) {
+    return <ChataSelectorSkeleton />
+  }
+
+  // Show skeleton during initial loading - keeps the layout stable
+  if (loading && !data) {
     // Use current view for navigation, or fall back to URL param / default for initial load
     const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information') || 'information'
-    const shouldShowSkeleton = loading ? showLoadingIndicator : showNavigatingIndicator
 
     return (
       <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
         <div className="relative z-10 max-w-app mx-auto px-5 py-10">
-          {shouldShowSkeleton ? (
+          {showLoadingIndicator ? (
             <>
               <HeaderSkeleton />
               <ContentSkeleton view={skeletonView} />
