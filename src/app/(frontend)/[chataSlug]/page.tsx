@@ -42,6 +42,9 @@ export default async function ChataPage({ params }: ChataPageProps) {
 
   const { chataSlug } = await params
 
+  // Fetch chata to get theme color for skeleton
+  const chata = await fetchChataBySlug(chataSlug)
+
   // Multi-chata mode: render with switch capability
-  return <ChataView slug={chataSlug} allowSwitch={true} />
+  return <ChataView slug={chataSlug} allowSwitch={true} initialThemeColor={chata?.themeColor} />
 }

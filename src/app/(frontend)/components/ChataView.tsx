@@ -7,6 +7,7 @@ import { FinanceView } from './FinanceView'
 import { InformationView } from './InformationView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
+import { getThemeColors } from '@/utils/themeColors'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -21,6 +22,7 @@ interface ChataData {
 interface ChataViewProps {
   slug: string
   allowSwitch: boolean
+  initialThemeColor?: string | null
 }
 
 // Custom hook for delayed loading indicator
@@ -50,7 +52,7 @@ function useDelayedLoading(isLoading: boolean, delay = 200) {
   return showLoading
 }
 
-export function ChataView({ slug, allowSwitch }: ChataViewProps) {
+export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -120,19 +122,33 @@ export function ChataView({ slug, allowSwitch }: ChataViewProps) {
   if (loading && !data) {
     // Use current view for navigation, or fall back to URL param / default for initial load
     const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information') || 'information'
+    const skeletonColors = getThemeColors(initialThemeColor)
 
     return (
-      <div className="min-h-screen relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
-        <div className="relative z-10 max-w-app mx-auto px-5 py-10">
-          {showLoadingIndicator ? (
-            <>
-              <HeaderSkeleton />
-              <ContentSkeleton view={skeletonView} />
-            </>
-          ) : null}
+      <>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              :root {
+                --color-primary: ${skeletonColors.primary};
+                --color-primary-dark: ${skeletonColors.primaryDark};
+                --color-primary-light: ${skeletonColors.primaryLight};
+              }
+            `,
+          }}
+        />
+        <div className="min-h-screen relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
+          <div className="relative z-10 max-w-app mx-auto px-5 py-10">
+            {showLoadingIndicator ? (
+              <>
+                <HeaderSkeleton />
+                <ContentSkeleton view={skeletonView} />
+              </>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 

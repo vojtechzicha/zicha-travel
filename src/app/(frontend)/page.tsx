@@ -39,7 +39,8 @@ export default async function HomePage() {
 
   if (matchedSlug) {
     // SINGLE-CHATA MODE: Render chata directly, no switch allowed
-    return <ChataView slug={matchedSlug} allowSwitch={false} />
+    const chata = await fetchChataBySlug(matchedSlug)
+    return <ChataView slug={matchedSlug} allowSwitch={false} initialThemeColor={chata?.themeColor} />
   }
 
   // MULTI-CHATA MODE: Show selector
