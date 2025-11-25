@@ -2,9 +2,9 @@
 
 import React from 'react'
 
-export const Logo: React.FC = () => {
+const Logo: React.FC = () => {
   return (
-    <div className="flex items-center gap-3">
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
       <svg
         width="40"
         height="40"
@@ -14,8 +14,8 @@ export const Logo: React.FC = () => {
       >
         <path
           d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V10.5Z"
-          fill="#4F46E5"
-          stroke="#4F46E5"
+          fill="#6366f1"
+          stroke="#6366f1"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -28,9 +28,20 @@ export const Logo: React.FC = () => {
           strokeLinejoin="round"
         />
       </svg>
-      <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>
-        Chata Expense Tracker
+      <span
+        style={{
+          fontSize: '1.5rem',
+          fontWeight: 700,
+          background: 'linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        Aplikace Chata
       </span>
     </div>
   )
 }
+
+export default Logo
