@@ -469,6 +469,10 @@ export interface Participant {
    */
   chata: number | Chata;
   /**
+   * Participant is travelling with a pet
+   */
+  hasPet?: boolean | null;
+  /**
    * Account number in Czech format (e.g., "123456/0100") - only needed for creditors
    */
   accountNumber?: string | null;
@@ -904,6 +908,7 @@ export interface ChatasSelect<T extends boolean = true> {
 export interface ParticipantsSelect<T extends boolean = true> {
   name?: T;
   chata?: T;
+  hasPet?: T;
   accountNumber?: T;
   iban?: T;
   updatedAt?: T;

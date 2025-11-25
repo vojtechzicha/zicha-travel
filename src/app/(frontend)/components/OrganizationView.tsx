@@ -26,6 +26,22 @@ function getParticipantName(occupant: Occupant): string {
   return ''
 }
 
+// Helper to check if participant has a pet
+function participantHasPet(participant: Participant | number | null | undefined): boolean {
+  if (typeof participant === 'object' && participant !== null) {
+    return participant.hasPet === true
+  }
+  return false
+}
+
+// Helper to get participant object from occupant
+function getOccupantParticipant(occupant: Occupant): Participant | null {
+  if (typeof occupant.participant === 'object' && occupant.participant !== null) {
+    return occupant.participant as Participant
+  }
+  return null
+}
+
 // Helper to get occupant's nights (returns null if all nights)
 function getOccupantNights(occupant: Occupant): number[] | null {
   const nights = occupant.nights
@@ -340,9 +356,9 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                             ) : (
                               // Simple Mode: Bed list with occupant tags
                               room.beds.map((bed, bedIdx) => {
-                                const occupants = (bed.occupants || [])
-                                  .map((o) => getParticipantName(o))
-                                  .filter(Boolean)
+                                const bedOccupants = (bed.occupants || []).filter(
+                                  (o) => getParticipantName(o)
+                                )
 
                                 return (
                                   <div
@@ -354,15 +370,19 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                                       <span className="font-semibold text-gray-900">{bed.name}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                      {occupants.length > 0 ? (
-                                        occupants.map((name, i) => (
-                                          <span
-                                            key={i}
-                                            className="bg-primary text-white px-3 py-1.5 rounded-full text-sm font-semibold"
-                                          >
-                                            {name}
-                                          </span>
-                                        ))
+                                      {bedOccupants.length > 0 ? (
+                                        bedOccupants.map((occupant, i) => {
+                                          const participant = getOccupantParticipant(occupant)
+                                          return (
+                                            <span
+                                              key={occupant.id || i}
+                                              className="bg-primary text-white px-3 py-1.5 rounded-full text-sm font-semibold"
+                                            >
+                                              {participant?.name}
+                                              {participantHasPet(participant) && ' + 🐕'}
+                                            </span>
+                                          )
+                                        })
                                       ) : (
                                         <span className="bg-gray-200 text-gray-500 px-3 py-1.5 rounded-full text-sm font-semibold">
                                           Volné místo 💤
@@ -430,7 +450,10 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                       </div>
                       <div>
                         <span className="text-xs text-gray-500 uppercase font-semibold">Řidič</span>
-                        <p className="font-semibold text-gray-900">{driver?.name || 'Neurčeno'}</p>
+                        <p className="font-semibold text-gray-900">
+                          {driver?.name || 'Neurčeno'}
+                          {participantHasPet(driver) && ' + 🐕'}
+                        </p>
                       </div>
                     </div>
 
@@ -446,7 +469,10 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                           <span className="text-xs text-gray-500 uppercase font-semibold">
                             Spolujezdec
                           </span>
-                          <p className="font-semibold text-gray-900">{frontPassenger.name}</p>
+                          <p className="font-semibold text-gray-900">
+                            {frontPassenger.name}
+                            {participantHasPet(frontPassenger) && ' + 🐕'}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -481,7 +507,10 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                                   >
                                     {getInitials(p.name)}
                                   </div>
-                                  <span className="font-medium text-gray-900">{p.name}</span>
+                                  <span className="font-medium text-gray-900">
+                                    {p.name}
+                                    {participantHasPet(p) && ' + 🐕'}
+                                  </span>
                                 </div>
                               )
                             })}
@@ -569,8 +598,10 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                 {/* Occupant rows */}
                 {occupants.map((occupant, occIdx) => {
                   const name = getParticipantName(occupant)
+                  const participant = getOccupantParticipant(occupant)
                   const occupantNights = getOccupantNights(occupant)
                   const colorClass = getAvatarColor(name)
+                  const hasPet = participantHasPet(participant)
 
                   return (
                     <div key={occupant.id || occIdx} className="flex gap-1 items-center">
@@ -578,7 +609,7 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                         className="w-24 shrink-0 text-sm font-medium text-gray-700 truncate pr-2"
                         title={name}
                       >
-                        {name}
+                        {name}{hasPet && ' + 🐕'}
                       </div>
                       <div className="flex-1 flex gap-0.5">
                         {nights.map((night) => {
@@ -609,6 +640,8 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                 <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
                   {occupants.map((occupant, occIdx) => {
                     const name = getParticipantName(occupant)
+                    const participant = getOccupantParticipant(occupant)
+                    const hasPet = participantHasPet(participant)
                     const occupantNights = getOccupantNights(occupant)
                     const nightsText =
                       occupantNights === null
@@ -618,7 +651,7 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                           : `jen noci ${occupantNights.slice(0, -1).join(', ')} a ${occupantNights[occupantNights.length - 1]}`
                     return (
                       <span key={occupant.id || occIdx} className="mr-3">
-                        <span className="font-medium">{name}</span>: {nightsText}
+                        <span className="font-medium">{name}{hasPet && ' + 🐕'}</span>: {nightsText}
                       </span>
                     )
                   })}

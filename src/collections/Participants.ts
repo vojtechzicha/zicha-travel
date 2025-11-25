@@ -54,6 +54,14 @@ export const Participants: CollectionConfig = {
       },
     },
     {
+      name: 'hasPet',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Participant is travelling with a pet',
+      },
+    },
+    {
       type: 'collapsible',
       label: 'Banking Information',
       admin: {
