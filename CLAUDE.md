@@ -129,7 +129,16 @@ Available in `@layer utilities`:
 
 ## Database
 
-Using PostgreSQL with `@payloadcms/db-postgres` adapter. Connection string is configured via `DATABASE_URI` environment variable.
+Using PostgreSQL with `@payloadcms/db-postgres` adapter.
+
+### Production
+- **Supabase PostgreSQL** (v17)
+- Connection configured in `.env` via `DATABASE_URI`
+
+### Local Development
+- **Docker Compose PostgreSQL 16** on port 5433
+- Connection configured in `.env.local` (auto-loaded by Next.js, overrides `.env`)
+- Data can be synced from production using `pnpm migrate-from-prod`
 
 ## Deployment
 
@@ -144,10 +153,20 @@ Media files are stored on the persistent volume and served via Payload's API at 
 ## Development Commands
 
 ```bash
-pnpm dev          # Start development server (localhost:3000/admin)
-pnpm build        # Build for production
-pnpm generate:types  # Generate TypeScript types from collections
+# Local development (auto-starts/stops Docker PostgreSQL)
+pnpm dev              # Start PostgreSQL + Next.js dev server (DB stops on Ctrl+C)
+pnpm db               # Start only PostgreSQL in background
+pnpm db:stop          # Stop PostgreSQL
+
+# Sync data from production
+pnpm migrate-from-prod  # Copy database from Supabase + media from Fly.io
+
+# Other commands
+pnpm build            # Build for production
+pnpm generate:types   # Generate TypeScript types from collections
 ```
+
+**Note:** If you run `pnpm db` first and then `pnpm dev`, the dev script will detect the existing PostgreSQL container and leave it running when you Ctrl+C.
 
 ## Known Considerations
 

@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "db": "docker compose up -d postgres",
+    "db:stop": "docker compose down",
+    "dev": "WAS_RUNNING=$(docker compose ps -q postgres 2>/dev/null); docker compose up -d postgres && trap '[ -z \"$WAS_RUNNING\" ] && docker compose down' EXIT && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "migrate-from-prod": "./scripts/migrate-from-prod.sh",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
