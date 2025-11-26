@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { Expense } from '../payload-types'
 
 export const Expenses: CollectionConfig = {
   slug: 'expenses',
@@ -69,10 +70,11 @@ export const Expenses: CollectionConfig = {
       },
       filterOptions: ({ siblingData }) => {
         // Only show participants from the selected chata
-        if (siblingData?.chata) {
+        const data = siblingData as Partial<Expense> | undefined
+        if (data?.chata) {
           return {
             chata: {
-              equals: siblingData.chata,
+              equals: data.chata,
             },
           }
         }
@@ -120,7 +122,8 @@ export const Expenses: CollectionConfig = {
           filterOptions: ({ siblingData }) => {
             // Get chata from parent document
             // Note: siblingData here is the weights array item, we need to go up one level
-            const chataId = siblingData?.__parentDoc?.chata
+            const data = siblingData as Record<string, any> | undefined
+            const chataId = data?.__parentDoc?.chata
             if (chataId) {
               return {
                 chata: {
@@ -143,7 +146,8 @@ export const Expenses: CollectionConfig = {
       ],
       validate: (value, { siblingData }) => {
         // Only validate if splitType is weighted
-        if (siblingData?.splitType === 'weighted') {
+        const data = siblingData as Partial<Expense> | undefined
+        if (data?.splitType === 'weighted') {
           if (!value || value.length === 0) {
             return 'At least one participant weight is required for weighted splits'
           }

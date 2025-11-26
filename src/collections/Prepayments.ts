@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { Prepayment } from '../payload-types'
 
 export const Prepayments: CollectionConfig = {
   slug: 'prepayments',
@@ -53,10 +54,11 @@ export const Prepayments: CollectionConfig = {
       },
       filterOptions: ({ siblingData }) => {
         // Only show participants from the selected chata
-        if (siblingData?.chata) {
+        const data = siblingData as Partial<Prepayment> | undefined
+        if (data?.chata) {
           return {
             chata: {
-              equals: siblingData.chata,
+              equals: data.chata,
             },
           }
         }

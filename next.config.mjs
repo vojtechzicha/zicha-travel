@@ -2,6 +2,8 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Required for Docker standalone build
+  output: 'standalone',
   // Allow dev requests from custom domains
   allowedDevOrigins: ['jeseniky2025.zicha.travel.local'],
   webpack: (webpackConfig) => {

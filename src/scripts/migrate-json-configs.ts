@@ -205,7 +205,7 @@ async function migrateJsonConfigs() {
 
     // Create participants with chata reference
     console.log(`\n  Creating ${jsonConfig.participants.length} participants...`)
-    const participantMap: Record<string, string> = {}
+    const participantMap: Record<string, number> = {}
 
     for (const participantName of jsonConfig.participants) {
       const bankingInfo = jsonConfig.config.contacts?.[participantName]

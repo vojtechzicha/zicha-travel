@@ -1,9 +1,12 @@
 // Frontend-specific types for the Chata expense tracker
-// Re-export backend stats types for consistency
-export type {
+// Import backend stats types
+import type {
   ParticipantStats,
   ChataStats as Stats,
 } from '@/utils/calculateStats'
+
+// Re-export for consumers
+export type { ParticipantStats, Stats }
 
 // Extended types for Payload data with stats
 export interface ChataWithStats {

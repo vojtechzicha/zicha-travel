@@ -79,13 +79,14 @@ export async function GET(
         // Transform weights
         let weights: 'ALL' | Record<string, number> = 'ALL'
         if (e.splitType === 'weighted' && e.weights && e.weights.length > 0) {
-          weights = {}
+          const weightMap: Record<string, number> = {}
           e.weights.forEach((w) => {
             const participant = typeof w.participant === 'object' ? w.participant : null
             if (participant) {
-              weights[participant.name] = w.weight
+              weightMap[participant.name] = w.weight
             }
           })
+          weights = weightMap
         }
 
         return {
@@ -174,9 +175,9 @@ export async function GET(
     })
 
     // Add statistics if available
-    const chataWithStats = chata as any
+    const chataWithStats = chata as { _stats?: unknown }
     if (chataWithStats._stats) {
-      response['_stats'] = chataWithStats._stats
+      return NextResponse.json({ ...response, _stats: chataWithStats._stats })
     }
 
     return NextResponse.json(response)

@@ -1,4 +1,5 @@
-import type { AfterReadHook } from 'payload'
+import type { CollectionAfterReadHook } from 'payload'
+import type { Chata } from '../../../payload-types'
 import {
   calculateStats,
   transformExpense,
@@ -9,7 +10,7 @@ import {
 /**
  * After read hook to calculate and append statistics to chata data
  */
-export const afterReadHook: AfterReadHook = async ({ doc, req, context }) => {
+export const afterReadHook: CollectionAfterReadHook<Chata> = async ({ doc, req, context }) => {
   try {
     // Skip expensive calculations for list views
     // Only run on single document reads (viewing/editing a specific chata)
