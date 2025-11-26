@@ -5,6 +5,9 @@ import type { NextRequest } from 'next/server'
 const domainCache = new Map<string, { data: DomainInfo; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
+// Use environment variable for API base URL (fixes Fly.io returning 0.0.0.0:3000 as origin)
+const API_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://zicha.travel'
+
 interface DomainInfo {
   found: boolean
   chata?: {
@@ -15,7 +18,7 @@ interface DomainInfo {
   }
 }
 
-async function getDomainInfo(hostname: string, origin: string): Promise<DomainInfo> {
+async function getDomainInfo(hostname: string): Promise<DomainInfo> {
   const cached = domainCache.get(hostname)
   if (cached && cached.expires > Date.now()) {
     console.log('[Middleware] Cache hit for:', hostname, cached.data)
@@ -23,7 +26,7 @@ async function getDomainInfo(hostname: string, origin: string): Promise<DomainIn
   }
 
   try {
-    const url = `${origin}/api/domains/${encodeURIComponent(hostname)}`
+    const url = `${API_BASE_URL}/api/domains/${encodeURIComponent(hostname)}`
     console.log('[Middleware] Fetching:', url)
     const response = await fetch(url)
     console.log('[Middleware] Response status:', response.status)
@@ -48,7 +51,7 @@ export async function middleware(request: NextRequest) {
   console.log('[Middleware] Request:', hostname, pathname)
 
   // Call existing domain resolution API (with cache)
-  const domainInfo = await getDomainInfo(hostname, request.nextUrl.origin)
+  const domainInfo = await getDomainInfo(hostname)
 
   if (domainInfo.found && domainInfo.chata) {
     // SINGLE-CHATA MODE
