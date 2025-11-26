@@ -129,7 +129,17 @@ Available in `@layer utilities`:
 
 ## Database
 
-Using SQLite with `@payloadcms/db-sqlite` adapter.
+Using PostgreSQL with `@payloadcms/db-postgres` adapter. Connection string is configured via `DATABASE_URI` environment variable.
+
+## Deployment
+
+Deployed on **Fly.io** (`split-expanses.fly.dev`):
+- Region: `fra` (Frankfurt)
+- VM: shared-cpu-1x, 256MB RAM (free tier)
+- Volume: 1GB mounted at `/app/media` for uploaded files
+- Configuration: `fly.toml`
+
+Media files are stored on the persistent volume and served via Payload's API at `/api/media/file/{filename}`.
 
 ## Development Commands
 
