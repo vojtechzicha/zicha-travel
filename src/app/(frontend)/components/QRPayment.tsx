@@ -11,7 +11,8 @@ interface QRPaymentProps {
 
 export function QRPayment({ amount, iban, accountNumber, message }: QRPaymentProps) {
   // Generate SPD (Structured Payment Description) string for Czech banking
-  const qrString = `SPD*1.0*ACC:${iban}*AM:${amount.toFixed(2)}*CC:CZK*MSG:${message}`
+  // Amount must be integer, message must be URL-encoded (matching Paylibo format)
+  const qrString = `SPD*1.0*ACC:${iban}*AM:${Math.round(amount)}*CC:CZK*MSG:${encodeURIComponent(message)}`
 
   return (
     <div className="text-center inline-block">
