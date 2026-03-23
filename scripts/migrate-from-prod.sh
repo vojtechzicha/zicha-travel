@@ -58,7 +58,7 @@ rm -rf media/*
 
 # Get list of files from Fly.io and download each one
 echo "Fetching file list from Fly.io..."
-FILES=$(fly ssh console -a split-expanses -C "ls /app/media" 2>/dev/null || echo "")
+FILES=$(fly ssh console -a zicha-travel -C "ls /app/media" 2>/dev/null || echo "")
 
 if [ -z "$FILES" ]; then
     echo "No media files found on Fly.io or couldn't connect."
@@ -69,7 +69,7 @@ else
             continue
         fi
         echo "  Downloading: $FILE"
-        fly ssh sftp get -a split-expanses "/app/media/$FILE" "media/$FILE" 2>/dev/null || echo "    Failed to download $FILE"
+        fly ssh sftp get -a zicha-travel "/app/media/$FILE" "media/$FILE" 2>/dev/null || echo "    Failed to download $FILE"
     done
 fi
 

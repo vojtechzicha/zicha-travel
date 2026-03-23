@@ -50,6 +50,5 @@ coverage
 *.tar.gz
 
 # Local development
-tomashlavacek/
-split-expanses/
+zicha-travel-legacy/
 media/

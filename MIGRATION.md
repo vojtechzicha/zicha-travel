@@ -1,10 +1,10 @@
-# Split-Expanses to Payload CMS Migration
+# Legacy PoC to Payload CMS Migration
 
-This document explains the migration from the JSON-based split-expanses PoC to a full Payload CMS backend.
+This document explains the migration from the JSON-based legacy PoC to a full Payload CMS backend.
 
 ## Overview
 
-The split-expanses application has been converted from a static JSON-based system to a dynamic Payload CMS backend with the following capabilities:
+The legacy application has been converted from a static JSON-based system to a dynamic Payload CMS backend with the following capabilities:
 
 - **Admin Panel**: Web-based UI for managing chatas, participants, expenses, and prepayments
 - **API Endpoints**: RESTful and GraphQL APIs for data access
@@ -214,7 +214,7 @@ The calculation follows the original PoC logic:
 
 ### Running the Migration
 
-1. Ensure the split-expanses directory is in place
+1. Ensure the legacy PoC directory is in place
 2. Start the Payload dev server:
    ```bash
    pnpm dev
@@ -226,7 +226,7 @@ The calculation follows the original PoC logic:
    ```
 
 The script will:
-- Read `split-expanses/public/configs/domain-map.json`
+- Read `zicha-travel-legacy/public/configs/domain-map.json`
 - Import all referenced config files (except template.json)
 - Create chatas, participants, expenses, and prepayments
 - Set up domain mappings
@@ -263,7 +263,7 @@ The script will:
 
 ### Option 1: Use Existing React App (Minimal Changes)
 
-Update the config loading in `split-expanses/src/App.js`:
+Update the config loading in the legacy app's `src/App.js`:
 
 ```javascript
 // Old: Fetch static JSON

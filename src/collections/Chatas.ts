@@ -94,7 +94,7 @@ export const Chatas: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'Domain hostname (e.g., "chata.zicha.name")',
+            description: 'Domain hostname (e.g., "trips.example.com")',
           },
         },
       ],

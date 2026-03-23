@@ -5,7 +5,7 @@ const nextConfig = {
   // Required for Docker standalone build
   output: 'standalone',
   // Allow dev requests from custom domains
-  allowedDevOrigins: ['jeseniky2025.zicha.travel.local'],
+  allowedDevOrigins: [],
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],

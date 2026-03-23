@@ -55,5 +55,5 @@ node_modules/
 *.db-wal
 
 # External repos
-/split-expanses/
+/zicha-travel-legacy/
 /claude-data/

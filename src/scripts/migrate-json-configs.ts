@@ -106,7 +106,7 @@ async function migrateJsonConfigs() {
   console.log('Payload initialized\n')
 
   // Read domain-map.json
-  const domainMapPath = path.resolve(__dirname, '../../split-expanses/public/configs/domain-map.json')
+  const domainMapPath = path.resolve(__dirname, '../../zicha-travel-legacy/public/configs/domain-map.json')
   const domainMap: DomainMap = JSON.parse(fs.readFileSync(domainMapPath, 'utf-8'))
 
   console.log('Domain map loaded:', Object.keys(domainMap.domains).length, 'domains\n')
@@ -130,7 +130,7 @@ async function migrateJsonConfigs() {
   for (const configFile of configFiles) {
     console.log(`\n=== Importing ${configFile} ===\n`)
 
-    const configPath = path.resolve(__dirname, `../../split-expanses/public/configs/${configFile}`)
+    const configPath = path.resolve(__dirname, `../../zicha-travel-legacy/public/configs/${configFile}`)
 
     if (!fs.existsSync(configPath)) {
       console.log(`  ⚠️  Config file not found: ${configPath}`)

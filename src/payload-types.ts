@@ -187,7 +187,7 @@ export interface Chata {
   domains?:
     | {
         /**
-         * Domain hostname (e.g., "chata.zicha.name")
+         * Domain hostname (e.g., "trips.example.com")
          */
         domain: string;
         id?: string | null;

@@ -1,4 +1,4 @@
-app = 'split-expanses'
+app = 'zicha-travel'
 primary_region = 'fra'
 
 [build]

@@ -44,7 +44,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
 
 **PersonView** (`src/app/(frontend)/components/PersonView.tsx`)
 - Main participant detail/finance view component
-- Layout matches the original `split-expanses/src/App.js` PersonView
+- Layout matches the original legacy PoC PersonView
 - Summary box with colored background (blue=banker, green=settled/positive, red=negative)
 - Includes: prepayment rows, expandable fair share breakdown, result section, history section
 
@@ -142,7 +142,7 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ## Deployment
 
-Deployed on **Fly.io** (`split-expanses.fly.dev`):
+Deployed on **Fly.io** (`zicha-travel.fly.dev`):
 - Region: `fra` (Frankfurt)
 - VM: shared-cpu-1x, 256MB RAM (free tier)
 - Volume: 1GB mounted at `/app/media` for uploaded files
@@ -180,7 +180,7 @@ pnpm generate:types   # Generate TypeScript types from collections
 
 - Add API endpoints for external consumption (`src/app/(payload)/api/`)
 - Implement domain-based auto-selection
-- Add expense splitting script (`split-expanses/`)
+- Add expense splitting script
 - QR code generation for payment requests
 - Email notifications for payment reminders
 

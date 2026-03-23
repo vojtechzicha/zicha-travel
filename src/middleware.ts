@@ -6,7 +6,7 @@ const domainCache = new Map<string, { data: DomainInfo; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 // Use environment variable for API base URL (fixes Fly.io returning 0.0.0.0:3000 as origin)
-const API_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://zicha.travel'
+const API_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
 interface DomainInfo {
   found: boolean
