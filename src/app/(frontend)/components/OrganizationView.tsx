@@ -4,62 +4,24 @@ import { useState } from 'react'
 import { BedDouble, Car, ChevronDown, ChevronUp, Moon } from 'lucide-react'
 import type { Chata, Media, Participant } from '@/payload-types'
 import { getAvatarColor } from '@/lib/formatCurrency'
+import {
+  type Room,
+  type Bed,
+  type Occupant,
+  getParticipantName,
+  participantHasPet,
+  getOccupantParticipant,
+  getOccupantNights,
+  getTripNights,
+} from '../utils/participantHelpers'
 
 interface OrganizationViewProps {
   chata: Chata
 }
 
-// Type helpers for bedrooms
-type Room = NonNullable<Chata['rooms']>[number]
-type Bed = NonNullable<Room['beds']>[number]
-type Occupant = NonNullable<Bed['occupants']>[number]
-
 // Type helpers for shared cars
 type SharedCar = NonNullable<Chata['sharedCars']>[number]
 type CarPassenger = NonNullable<SharedCar['passengers']>[number]
-
-// Helper to get participant name from occupant
-function getParticipantName(occupant: Occupant): string {
-  if (typeof occupant.participant === 'object' && occupant.participant !== null) {
-    return (occupant.participant as Participant).name
-  }
-  return ''
-}
-
-// Helper to check if participant has a pet
-function participantHasPet(participant: Participant | number | null | undefined): boolean {
-  if (typeof participant === 'object' && participant !== null) {
-    return participant.hasPet === true
-  }
-  return false
-}
-
-// Helper to get participant object from occupant
-function getOccupantParticipant(occupant: Occupant): Participant | null {
-  if (typeof occupant.participant === 'object' && occupant.participant !== null) {
-    return occupant.participant as Participant
-  }
-  return null
-}
-
-// Helper to get occupant's nights (returns null if all nights)
-function getOccupantNights(occupant: Occupant): number[] | null {
-  const nights = occupant.nights
-  if (Array.isArray(nights) && nights.length > 0) {
-    return nights as number[]
-  }
-  return null // all nights
-}
-
-// Helper to calculate number of trip nights
-function getTripNights(chata: Chata): number {
-  if (!chata.tripDateFrom || !chata.tripDateTo) return 0
-  const from = new Date(chata.tripDateFrom)
-  const to = new Date(chata.tripDateTo)
-  const diffTime = Math.abs(to.getTime() - from.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays
-}
 
 // Helper to get date for a specific night
 function getNightDate(chata: Chata, nightNumber: number): Date | null {

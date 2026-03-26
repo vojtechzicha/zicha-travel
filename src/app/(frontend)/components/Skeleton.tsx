@@ -101,9 +101,32 @@ export function OrganizationViewSkeleton() {
   )
 }
 
-export function ContentSkeleton({ view }: { view: 'finance' | 'information' | 'organization' }) {
+export function ParticipantsViewSkeleton() {
+  return (
+    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
+      {/* Hero section skeleton */}
+      <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8">
+        <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
+        <Skeleton className="h-8 w-56 mx-auto mb-6 rounded-lg" />
+        <div className="flex gap-4 sm:gap-8 justify-center flex-wrap">
+          <Skeleton className="h-24 w-28 rounded-2xl" />
+          <Skeleton className="h-24 w-28 rounded-2xl" />
+        </div>
+      </div>
+      {/* Participant cards skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function ContentSkeleton({ view }: { view: 'finance' | 'information' | 'organization' | 'participants' }) {
   if (view === 'finance') return <FinanceViewSkeleton />
   if (view === 'organization') return <OrganizationViewSkeleton />
+  if (view === 'participants') return <ParticipantsViewSkeleton />
   return <InformationViewSkeleton />
 }
 

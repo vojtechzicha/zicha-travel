@@ -1,16 +1,17 @@
 'use client'
 
-import { ArrowLeft, BedDouble, Info, Wallet } from 'lucide-react'
+import { ArrowLeft, BedDouble, Info, Users, Wallet } from 'lucide-react'
 import { DynamicIcon } from './DynamicIcon'
 
 interface HeaderProps {
   chataName: string
   location?: string
   bankerName?: string
-  currentView?: 'finance' | 'information' | 'organization'
-  onViewChange?: (view: 'finance' | 'information' | 'organization') => void
+  currentView?: 'finance' | 'information' | 'organization' | 'participants'
+  onViewChange?: (view: 'finance' | 'information' | 'organization' | 'participants') => void
   showInformationTab?: boolean
   showOrganizationTab?: boolean
+  showParticipantsTab?: boolean
   onSwitchChata?: () => void
 }
 
@@ -22,6 +23,7 @@ export function Header({
   onViewChange,
   showInformationTab = false,
   showOrganizationTab = false,
+  showParticipantsTab = false,
   onSwitchChata,
 }: HeaderProps) {
   return (
@@ -41,7 +43,7 @@ export function Header({
       )}
 
       {/* Header actions */}
-      {(showInformationTab || showOrganizationTab || onSwitchChata) && (
+      {(showInformationTab || showOrganizationTab || showParticipantsTab || onSwitchChata) && (
         <div className="flex gap-5 justify-center items-center flex-wrap mt-5">
           {onSwitchChata && (
             <button
@@ -53,7 +55,7 @@ export function Header({
             </button>
           )}
 
-          {(showInformationTab || showOrganizationTab) && onViewChange && (
+          {(showInformationTab || showOrganizationTab || showParticipantsTab) && onViewChange && (
             <div className="flex gap-1 p-1.5 rounded-xl backdrop-blur-md bg-white/15 border border-white/20">
               {showInformationTab && (
                 <button
@@ -85,6 +87,22 @@ export function Header({
                 >
                   <BedDouble size={16} />
                   Organizace
+                </button>
+              )}
+              {showParticipantsTab && (
+                <button
+                  onClick={() => onViewChange('participants')}
+                  className={`
+                    flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                    ${
+                      currentView === 'participants'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/40'
+                        : 'text-white/80 hover:text-white hover:bg-white/15'
+                    }
+                  `}
+                >
+                  <Users size={16} />
+                  Účastníci
                 </button>
               )}
               <button

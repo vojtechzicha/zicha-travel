@@ -6,6 +6,7 @@ import { Header } from './Header'
 import { FinanceView } from './FinanceView'
 import { InformationView } from './InformationView'
 import { OrganizationView } from './OrganizationView'
+import { ParticipantsView } from './ParticipantsView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
@@ -57,8 +58,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [currentView, setCurrentView] = useState<'finance' | 'information' | 'organization' | null>(
-    (searchParams.get('view') as 'finance' | 'information' | 'organization') || null
+  const [currentView, setCurrentView] = useState<'finance' | 'information' | 'organization' | 'participants' | null>(
+    (searchParams.get('view') as 'finance' | 'information' | 'organization' | 'participants') || null
   )
   const [data, setData] = useState<ChataData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -108,7 +109,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     fetchData()
   }, [slug, currentView])
 
-  const handleViewChange = (view: 'finance' | 'information' | 'organization') => {
+  const handleViewChange = (view: 'finance' | 'information' | 'organization' | 'participants') => {
     startTransition(() => {
       setCurrentView(view)
     })
@@ -131,7 +132,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   // Show skeleton during initial loading - keeps the layout stable
   if (loading && !data) {
     // Use current view for navigation, or fall back to URL param / default for initial load
-    const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information' | 'organization') || 'information'
+    const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information' | 'organization' | 'participants') || 'information'
     const skeletonColors = getThemeColors(initialThemeColor)
 
     return (
@@ -188,6 +189,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const hasInformation = chata.informationEnabled === true
   const hasOrganization =
     chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true
+  const hasParticipants = participants.length > 2
   const activeView = currentView || (hasInformation ? 'information' : hasOrganization ? 'organization' : 'finance')
 
   return (
@@ -204,6 +206,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             onViewChange={handleViewChange}
             showInformationTab={hasInformation}
             showOrganizationTab={hasOrganization}
+            showParticipantsTab={hasParticipants}
             onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
           />
 
@@ -221,6 +224,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
               />
             ) : activeView === 'organization' ? (
               <OrganizationView chata={chata} />
+            ) : activeView === 'participants' ? (
+              <ParticipantsView chata={chata} participants={participants} />
             ) : (
               <InformationView chata={chata} />
             )}
