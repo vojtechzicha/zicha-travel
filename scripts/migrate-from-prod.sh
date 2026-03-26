@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+# Start local PostgreSQL if not already running (matching dev script behavior)
+WAS_RUNNING=$(docker compose ps -q postgres 2>/dev/null)
+docker compose up -d postgres
+if [ -z "$WAS_RUNNING" ]; then
+    trap 'docker compose down' EXIT
+fi
+
 # Load production DATABASE_URI from .env
 source .env
 
@@ -37,15 +44,15 @@ echo "  Database: $DB_NAME"
 # 1. Reset local database
 echo ""
 echo "Resetting local database..."
-PGPASSWORD=payload psql -h localhost -p 5433 -U payload -d postgres -c "DROP DATABASE IF EXISTS payload;"
-PGPASSWORD=payload psql -h localhost -p 5433 -U payload -d postgres -c "CREATE DATABASE payload;"
+docker compose exec -T postgres psql -U payload -d postgres -c "DROP DATABASE IF EXISTS payload;"
+docker compose exec -T postgres psql -U payload -d postgres -c "CREATE DATABASE payload;"
 
 # 2. Dump from production and restore to local using Docker (to match PostgreSQL version)
 echo ""
 echo "Dumping production database and restoring to local..."
 docker run --rm --network host postgres:17-alpine \
     sh -c "PGPASSWORD='$DB_PASS' pg_dump -h '$DB_HOST' -p '$DB_PORT' -U '$DB_USER' -d '$DB_NAME' --no-owner --no-acl" \
-    | PGPASSWORD=payload psql -h localhost -p 5433 -U payload -d payload
+    | docker compose exec -T postgres psql -U payload -d payload
 
 echo "Database migration complete!"
 
