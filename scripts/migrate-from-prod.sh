@@ -65,10 +65,19 @@ rm -rf media/*
 
 # Get list of files from Fly.io and download each one
 echo "Fetching file list from Fly.io..."
-FILES=$(fly ssh console -a zicha-travel -C "ls /app/media" 2>/dev/null || echo "")
+RAW_OUTPUT=$(fly ssh console -C "ls /app/media" 2>&1)
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to connect to Fly.io. Output:"
+    echo "$RAW_OUTPUT"
+    echo "Make sure 'fly' CLI is authenticated and fly.toml has the correct app name."
+    exit 1
+fi
+
+# Filter out "Connecting to ..." status line from fly ssh output
+FILES=$(echo "$RAW_OUTPUT" | grep -v "^Connecting to ")
 
 if [ -z "$FILES" ]; then
-    echo "No media files found on Fly.io or couldn't connect."
+    echo "No media files found on Fly.io."
 else
     for FILE in $FILES; do
         # Skip system directories
@@ -76,7 +85,7 @@ else
             continue
         fi
         echo "  Downloading: $FILE"
-        fly ssh sftp get -a zicha-travel "/app/media/$FILE" "media/$FILE" 2>/dev/null || echo "    Failed to download $FILE"
+        fly ssh sftp get "/app/media/$FILE" "media/$FILE" 2>/dev/null || echo "    Failed to download $FILE"
     done
 fi
 
