@@ -120,14 +120,14 @@ export function SettlementActions({
             <div className="space-y-4">
               {activeCreditors.length > 0 ? (
                 activeCreditors.map((creditor) => {
-                  // Find participant to get IBAN
+                  // Find participant to get account number
                   const creditorParticipant = participants.find(
                     (p) => p.name === creditor.name
                   )
-                  const hasIban = creditorParticipant?.iban
+                  const hasAccount = creditorParticipant?.accountNumber
 
                   // No bank account info - simple payment instruction
-                  if (!hasIban) {
+                  if (!hasAccount) {
                     return (
                       <div
                         key={creditor.name}
@@ -178,8 +178,7 @@ export function SettlementActions({
                             <div className="bg-white p-4 rounded-xl shadow-sm">
                               <QRPayment
                                 amount={creditor.amount}
-                                iban={creditorParticipant.iban!}
-                                accountNumber={creditorParticipant.accountNumber ?? undefined}
+                                accountNumber={creditorParticipant.accountNumber!}
                                 message={`Vyrovnani - ${chataShortName}`}
                               />
                             </div>
@@ -238,7 +237,6 @@ export function SettlementActions({
               <div className="bg-white p-4 rounded-xl shadow-sm">
                 <QRPayment
                   amount={Math.abs(balance)}
-                  iban={bankerAccount.iban}
                   accountNumber={bankerAccount.number}
                   message={`Vyrovnani - ${chataShortName}`}
                 />

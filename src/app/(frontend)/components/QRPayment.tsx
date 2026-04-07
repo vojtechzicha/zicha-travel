@@ -1,22 +1,29 @@
-'use client'
-
-import { QRCodeSVG } from 'qrcode.react'
-
 interface QRPaymentProps {
   amount: number
-  iban: string
-  accountNumber?: string
+  accountNumber: string // Czech format: "123456/0100"
   message: string
 }
 
-export function QRPayment({ amount, iban, accountNumber, message }: QRPaymentProps) {
-  // Generate SPD (Structured Payment Description) string for Czech banking
-  // Amount must be integer, message must be URL-encoded (matching Paylibo format)
-  const qrString = `SPD*1.0*ACC:${iban}*AM:${Math.round(amount)}*CC:CZK*MSG:${encodeURIComponent(message)}`
+export function QRPayment({ amount, accountNumber, message }: QRPaymentProps) {
+  // Parse Czech account number format "accountNumber/bankCode"
+  const [accNum, bankCode] = accountNumber.split('/')
+
+  const params = new URLSearchParams({
+    compress: 'false',
+    size: '440',
+    accountNumber: accNum,
+    bankCode: bankCode,
+    amount: Math.round(amount).toString(),
+    currency: 'CZK',
+    message: message,
+  })
+
+  const url = `https://api.paylibo.com/paylibo/generator/czech/image?${params.toString()}`
 
   return (
     <div className="text-center inline-block">
-      <QRCodeSVG value={qrString} size={160} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="QR platba" className="w-full max-w-[220px]" />
     </div>
   )
 }
