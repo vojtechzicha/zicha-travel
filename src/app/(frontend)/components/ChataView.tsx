@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, useRef } from 'react'
+import { useEffect, useState, useTransition, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from './Header'
 import { FinanceView } from './FinanceView'
@@ -58,14 +58,30 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  // If participant param is present but no view, default to finance
+  const initialView = searchParams.get('view') as 'finance' | 'information' | 'organization' | 'participants' | null
   const [currentView, setCurrentView] = useState<'finance' | 'information' | 'organization' | 'participants' | null>(
-    (searchParams.get('view') as 'finance' | 'information' | 'organization' | 'participants') || null
+    initialView || (searchParams.get('participant') ? 'finance' : null)
   )
   const [data, setData] = useState<ChataData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isNavigating, setIsNavigating] = useState(false)
+
+  // Parse participant ID from URL
+  const urlParticipantParam = searchParams.get('participant')
+  const urlParticipantId = urlParticipantParam ? parseInt(urlParticipantParam, 10) : null
+
+  const handleParticipantChange = useCallback((participantId: number | null) => {
+    const url = new URL(window.location.href)
+    if (participantId != null) {
+      url.searchParams.set('participant', String(participantId))
+    } else {
+      url.searchParams.delete('participant')
+    }
+    window.history.replaceState({}, '', url)
+  }, [])
 
   // Only show loading indicator after 200ms delay to avoid flash
   const showLoadingIndicator = useDelayedLoading(loading, 200)
@@ -116,6 +132,10 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     // Update URL without reload
     const url = new URL(window.location.href)
     url.searchParams.set('view', view)
+    // Remove participant param when leaving finance view
+    if (view !== 'finance') {
+      url.searchParams.delete('participant')
+    }
     window.history.pushState({}, '', url)
   }
 
@@ -221,6 +241,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 expenses={expenses}
                 prepayments={prepayments}
                 stats={stats}
+                urlParticipantId={urlParticipantId}
+                onParticipantChange={handleParticipantChange}
               />
             ) : activeView === 'organization' ? (
               <OrganizationView chata={chata} />

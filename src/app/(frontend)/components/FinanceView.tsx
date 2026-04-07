@@ -15,6 +15,8 @@ interface FinanceViewProps {
   expenses: Expense[]
   prepayments: Prepayment[]
   stats: ChataStats
+  urlParticipantId?: number | null
+  onParticipantChange?: (participantId: number | null) => void
 }
 
 // localStorage key prefix for selected participant
@@ -26,6 +28,8 @@ export function FinanceView({
   expenses,
   prepayments,
   stats,
+  urlParticipantId,
+  onParticipantChange,
 }: FinanceViewProps) {
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
@@ -36,8 +40,21 @@ export function FinanceView({
       ? chata.banker.id
       : chata.banker
 
-  // Load from localStorage on mount
+  // Load from URL param (priority) or localStorage on mount
   useEffect(() => {
+    // URL param takes priority over localStorage
+    if (urlParticipantId != null) {
+      const participantExists = participants.some((p) => p.id === urlParticipantId)
+      if (participantExists) {
+        setSelectedParticipantId(urlParticipantId)
+        // Also save to localStorage so it persists
+        const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
+        localStorage.setItem(storageKey, String(urlParticipantId))
+        setIsHydrated(true)
+        return
+      }
+    }
+
     const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
     const stored = localStorage.getItem(storageKey)
 
@@ -47,17 +64,20 @@ export function FinanceView({
       const participantExists = participants.some((p) => p.id === storedId)
       if (participantExists) {
         setSelectedParticipantId(storedId)
+        // Sync URL with localStorage selection
+        onParticipantChange?.(storedId)
       }
     }
 
     setIsHydrated(true)
-  }, [chata.id, participants])
+  }, [chata.id, participants, urlParticipantId, onParticipantChange])
 
-  // Save to localStorage when selection changes
+  // Save to localStorage and notify parent when selection changes
   const handleSelectParticipant = (participantId: number) => {
     setSelectedParticipantId(participantId)
     const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
     localStorage.setItem(storageKey, String(participantId))
+    onParticipantChange?.(participantId)
   }
 
   // Show skeleton during hydration (very brief, usually unnoticeable)
