@@ -131,6 +131,14 @@ export const Chatas: CollectionConfig = {
           required: true,
           admin: {
             description: 'Banker\'s account number in Czech format (e.g., "123456/0100")',
+            components: {
+              Field:
+                '@/components/CzechBankAccountField#CzechBankAccountField',
+            },
+            custom: {
+              siblingPath: 'bankerIban',
+              direction: 'toIban',
+            },
           },
         },
         {
@@ -139,6 +147,14 @@ export const Chatas: CollectionConfig = {
           required: true,
           admin: {
             description: 'Banker\'s IBAN for QR code generation',
+            components: {
+              Field:
+                '@/components/CzechBankAccountField#CzechBankAccountField',
+            },
+            custom: {
+              siblingPath: 'bankerAccountNumber',
+              direction: 'toAccount',
+            },
           },
         },
       ],

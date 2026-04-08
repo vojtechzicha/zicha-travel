@@ -74,6 +74,14 @@ export const Participants: CollectionConfig = {
           type: 'text',
           admin: {
             description: 'Account number in Czech format (e.g., "123456/0100") - only needed for creditors',
+            components: {
+              Field:
+                '@/components/CzechBankAccountField#CzechBankAccountField',
+            },
+            custom: {
+              siblingPath: 'iban',
+              direction: 'toIban',
+            },
           },
         },
         {
@@ -81,6 +89,14 @@ export const Participants: CollectionConfig = {
           type: 'text',
           admin: {
             description: 'Full IBAN for QR code generation - only needed for creditors',
+            components: {
+              Field:
+                '@/components/CzechBankAccountField#CzechBankAccountField',
+            },
+            custom: {
+              siblingPath: 'accountNumber',
+              direction: 'toAccount',
+            },
           },
         },
       ],
