@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: ChataPageProps): Promise<Meta
       title: chata.name,
       description: `${chata.name} - ${chata.location} - plánování, informace, finance`,
       openGraph: {
-        title: `${chata.name} | Aplikace Chata`,
+        title: `${chata.name} | zicha.travel`,
         description: `Společně na chatu: ${chata.location}`,
       },
     }

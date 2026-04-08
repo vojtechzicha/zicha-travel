@@ -70,7 +70,7 @@ export function ChataSelector({ chatas }: ChataSelectorProps) {
             <CottageIcon className="text-white" size={48} />
           </div>
           <h1 className="font-serif text-5xl md:text-6xl font-black tracking-tight drop-shadow-lg mb-2">
-            Aplikace Chata
+            zicha.travel
           </h1>
           <p className="text-white/80 text-lg">Vyberte si chatu</p>
         </header>

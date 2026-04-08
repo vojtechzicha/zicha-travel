@@ -4,8 +4,8 @@ import './styles.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Aplikace Chata',
-    template: '%s | Aplikace Chata',
+    default: 'zicha.travel',
+    template: '%s | zicha.travel',
   },
   description: 'Společně na chatu - plánování, informace, finance',
   icons: {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    siteName: 'Aplikace Chata',
+    siteName: 'zicha.travel',
     description: 'Společně na chatu - plánování, informace, finance',
   },
 }
