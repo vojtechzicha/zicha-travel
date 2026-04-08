@@ -2,6 +2,8 @@ app = 'split-expanses'
 primary_region = 'fra'
 
 [build]
+  [build.args]
+    NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED = "true"
 
 [env]
   NODE_ENV = 'production'

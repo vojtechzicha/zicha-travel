@@ -12,20 +12,10 @@ const Icon: React.FC = () => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V10.5Z"
-        fill="#4F46E5"
-        stroke="#4F46E5"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+        fill="#d97706"
       />
-      <path
-        d="M9 21V14H15V21"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <circle cx="12" cy="9" r="2.5" fill="#fff" />
     </svg>
   )
 }

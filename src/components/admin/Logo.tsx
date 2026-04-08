@@ -4,41 +4,37 @@ import React from 'react'
 
 const Logo: React.FC = () => {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+      }}
+    >
       <svg
-        width="40"
-        height="40"
+        width="36"
+        height="36"
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V10.5Z"
-          fill="#6366f1"
-          stroke="#6366f1"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+          fill="#d97706"
         />
-        <path
-          d="M9 21V14H15V21"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <circle cx="12" cy="9" r="2.5" fill="#fff" />
       </svg>
       <span
         style={{
-          fontSize: '1.5rem',
-          fontWeight: 700,
-          background: 'linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
+          fontSize: '1.4rem',
+          fontFamily: "'Merriweather', Georgia, serif",
+          fontWeight: 900,
+          letterSpacing: '-0.02em',
+          color: 'var(--theme-text)',
         }}
       >
-        Aplikace Chata
+        zicha
+        <span style={{ color: '#d97706', fontWeight: 700 }}>.travel</span>
       </span>
     </div>
   )

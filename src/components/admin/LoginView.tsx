@@ -17,8 +17,16 @@ const LoginView: React.FC = () => {
 
 function OAuthLogin({ error }: { error: string | null }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <div style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: 'var(--theme-bg, #fffbeb)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: '420px', padding: '2rem' }}>
         <WelcomeHeader />
         {error && <ErrorMessage error={error} />}
         <a
@@ -32,13 +40,16 @@ function OAuthLogin({ error }: { error: string | null }) {
             padding: '0.75rem 1.5rem',
             background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
             color: '#fff',
-            borderRadius: '0.5rem',
+            borderRadius: '8px',
             textDecoration: 'none',
             fontWeight: 600,
             fontSize: '0.95rem',
+            fontFamily: "'Inter', sans-serif",
             border: 'none',
             cursor: 'pointer',
-            transition: 'opacity 0.2s',
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+            boxSizing: 'border-box',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
           onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -81,8 +92,16 @@ function LocalLogin({ error }: { error: string | null }) {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <div style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: 'var(--theme-bg, #fffbeb)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: '420px', padding: '2rem' }}>
         <WelcomeHeader />
         {error && <ErrorMessage error={error} />}
         {loginError && <ErrorMessage error={loginError} />}
@@ -90,7 +109,14 @@ function LocalLogin({ error }: { error: string | null }) {
           <div style={{ marginBottom: '1rem' }}>
             <label
               htmlFor="email"
-              style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}
+              style={{
+                display: 'block',
+                marginBottom: '0.4rem',
+                color: 'var(--theme-elevation-600, #57534e)',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                fontFamily: "'Inter', sans-serif",
+              }}
             >
               Email
             </label>
@@ -102,21 +128,38 @@ function LocalLogin({ error }: { error: string | null }) {
               onChange={(e) => setEmail(e.target.value)}
               style={{
                 width: '100%',
-                padding: '0.625rem 0.75rem',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '0.375rem',
-                color: '#fff',
+                padding: '0.7rem 0.85rem',
+                background: 'var(--theme-elevation-0, #fff)',
+                border: '1px solid var(--theme-elevation-200, #e7e5e4)',
+                borderRadius: '8px',
+                color: 'var(--theme-text, #1c1917)',
                 fontSize: '0.95rem',
+                fontFamily: "'Inter', sans-serif",
                 outline: 'none',
                 boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#d97706'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(217, 119, 6, 0.12)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-elevation-200, #e7e5e4)'
+                e.currentTarget.style.boxShadow = 'none'
               }}
             />
           </div>
           <div style={{ marginBottom: '1.5rem' }}>
             <label
               htmlFor="password"
-              style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}
+              style={{
+                display: 'block',
+                marginBottom: '0.4rem',
+                color: 'var(--theme-elevation-600, #57534e)',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                fontFamily: "'Inter', sans-serif",
+              }}
             >
               Password
             </label>
@@ -128,14 +171,24 @@ function LocalLogin({ error }: { error: string | null }) {
               onChange={(e) => setPassword(e.target.value)}
               style={{
                 width: '100%',
-                padding: '0.625rem 0.75rem',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '0.375rem',
-                color: '#fff',
+                padding: '0.7rem 0.85rem',
+                background: 'var(--theme-elevation-0, #fff)',
+                border: '1px solid var(--theme-elevation-200, #e7e5e4)',
+                borderRadius: '8px',
+                color: 'var(--theme-text, #1c1917)',
                 fontSize: '0.95rem',
+                fontFamily: "'Inter', sans-serif",
                 outline: 'none',
                 boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#d97706'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(217, 119, 6, 0.12)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-elevation-200, #e7e5e4)'
+                e.currentTarget.style.boxShadow = 'none'
               }}
             />
           </div>
@@ -145,15 +198,17 @@ function LocalLogin({ error }: { error: string | null }) {
             style={{
               width: '100%',
               padding: '0.75rem 1.5rem',
-              background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+              background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
               color: '#fff',
-              borderRadius: '0.5rem',
+              borderRadius: '8px',
               fontWeight: 600,
               fontSize: '0.95rem',
+              fontFamily: "'Inter', sans-serif",
               border: 'none',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
-              transition: 'opacity 0.2s',
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 8px rgba(180, 83, 9, 0.3)',
             }}
           >
             {loading ? 'Signing in...' : 'Sign in'}
@@ -170,32 +225,47 @@ function WelcomeHeader() {
       style={{
         padding: '1.5rem',
         marginBottom: '1.5rem',
-        background:
-          'linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%)',
-        borderRadius: '0.75rem',
-        border: '1px solid rgba(99, 102, 241, 0.3)',
-        backdropFilter: 'blur(10px)',
+        background: 'var(--admin-brand-50, rgba(217, 119, 6, 0.06))',
+        borderRadius: '12px',
+        border: '1px solid rgba(217, 119, 6, 0.15)',
+        textAlign: 'center',
       }}
     >
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ marginBottom: '0.75rem' }}
+      >
+        <path
+          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+          fill="#d97706"
+        />
+        <circle cx="12" cy="9" r="2.5" fill="#fff" />
+      </svg>
       <h3
         style={{
-          margin: '0 0 0.5rem 0',
-          color: '#a5b4fc',
-          fontSize: '1.1rem',
-          fontWeight: 600,
+          margin: '0 0 0.4rem 0',
+          fontFamily: "'Merriweather', Georgia, serif",
+          fontSize: '1.4rem',
+          fontWeight: 900,
+          color: 'var(--theme-text, #1c1917)',
+          letterSpacing: '-0.02em',
         }}
       >
-        Welcome to Aplikace Chata
+        zicha<span style={{ color: '#d97706', fontWeight: 700 }}>.travel</span>
       </h3>
       <p
         style={{
           margin: 0,
-          color: 'rgba(255, 255, 255, 0.7)',
+          color: 'var(--theme-elevation-500, #78716c)',
           fontSize: '0.875rem',
-          lineHeight: 1.6,
+          lineHeight: 1.5,
         }}
       >
-        Manage your group trips and shared expenses with ease.
+        Group trips & shared expenses
       </p>
     </div>
   )
@@ -216,11 +286,12 @@ function ErrorMessage({ error }: { error: string }) {
       style={{
         padding: '0.75rem 1rem',
         marginBottom: '1rem',
-        background: 'rgba(239, 68, 68, 0.15)',
-        border: '1px solid rgba(239, 68, 68, 0.3)',
-        borderRadius: '0.5rem',
-        color: '#fca5a5',
+        background: 'var(--theme-error-50, rgba(239, 68, 68, 0.08))',
+        border: '1px solid var(--theme-error-200, rgba(239, 68, 68, 0.2))',
+        borderRadius: '8px',
+        color: 'var(--theme-error-500, #dc2626)',
         fontSize: '0.85rem',
+        lineHeight: 1.5,
       }}
     >
       {messages[error] || error}

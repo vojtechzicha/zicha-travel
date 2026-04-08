@@ -30,6 +30,10 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+# NEXT_PUBLIC_* vars must be available at build time for Next.js to inline them
+ARG NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED
+ENV NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=$NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED
+
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \

@@ -1,0 +1,226 @@
+// =============================================
+// zicha.travel Admin Theme
+// Warm amber brand aligned with the frontend
+// =============================================
+
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap');
+
+// ----- Brand tokens -----
+$brand: #d97706;
+$brand-dark: #b45309;
+$brand-light: #fbbf24;
+$brand-50: #fffbeb;
+$brand-100: #fef3c7;
+$brand-200: #fde68a;
+$brand-900: #78350f;
+
+// ----- Custom properties (available in components via var()) -----
+:root {
+  --admin-brand: #{$brand};
+  --admin-brand-dark: #{$brand-dark};
+  --admin-brand-light: #{$brand-light};
+  --admin-brand-50: #{$brand-50};
+  --admin-brand-100: #{$brand-100};
+  --admin-brand-900: #{$brand-900};
+
+  // Font override
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif;
+
+  // Warm tinted base grays (light mode)
+  --color-base-0: rgb(255, 253, 250);
+  --color-base-50: rgb(250, 247, 243);
+  --color-base-100: rgb(240, 236, 230);
+  --color-base-150: rgb(228, 223, 217);
+
+  // Warm selection
+  --color-success-250: #{$brand-200};
+}
+
+html[data-theme='dark'] {
+  --admin-brand-50: rgba(217, 119, 6, 0.08);
+  --admin-brand-100: rgba(217, 119, 6, 0.15);
+
+  // Warm dark backgrounds instead of cool gray
+  --color-base-900: rgb(28, 25, 23);
+  --color-base-850: rgb(41, 37, 33);
+  --color-base-800: rgb(55, 50, 45);
+  --color-base-750: rgb(68, 64, 58);
+  --color-base-700: rgb(82, 77, 70);
+
+  --color-success-250: #{$brand-900};
+}
+
+// ----- Typography -----
+body {
+  font-family: var(--font-body) !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+// Headings use serif
+h1, h2, h3, h4 {
+  font-family: var(--font-serif) !important;
+  font-weight: 700;
+}
+
+// ----- Primary button → amber brand -----
+.btn--style-primary {
+  --bg-color: var(--admin-brand) !important;
+  --color: #fff !important;
+  --hover-bg: var(--admin-brand-dark) !important;
+  --hover-color: #fff !important;
+  --box-shadow: 0 1px 3px rgba(180, 83, 9, 0.25) !important;
+
+  &.btn--disabled {
+    --bg-color: var(--theme-elevation-200) !important;
+    --color: var(--theme-elevation-500) !important;
+    --hover-bg: var(--theme-elevation-200) !important;
+    --hover-color: var(--theme-elevation-500) !important;
+    --box-shadow: none !important;
+  }
+}
+
+// ----- Pill / tag accent -----
+.pill--has-action,
+.pill--style-light-yellow {
+  border-color: var(--admin-brand) !important;
+}
+
+// ----- Nav sidebar -----
+.nav {
+  border-right-color: var(--theme-elevation-150);
+
+  // Active nav group accent
+  .nav-group__toggle {
+    &:hover {
+      color: var(--admin-brand);
+    }
+  }
+}
+
+// Active nav link
+.nav-group .nav__link.active {
+  background-color: var(--admin-brand-50);
+  color: var(--admin-brand);
+  font-weight: 600;
+
+  &::before {
+    background-color: var(--admin-brand);
+  }
+}
+
+.nav-group .nav__link:hover:not(.active) {
+  color: var(--admin-brand);
+}
+
+// ----- App header -----
+.app-header {
+  border-bottom-color: var(--theme-elevation-100);
+}
+
+// ----- Step nav / breadcrumbs -----
+.step-nav a:hover {
+  color: var(--admin-brand);
+}
+
+// ----- Table rows -----
+.row-1:hover,
+.table .row-1:hover {
+  background-color: var(--admin-brand-50);
+}
+
+// ----- Document tabs -----
+.doc-tab--active {
+  border-bottom-color: var(--admin-brand) !important;
+  color: var(--admin-brand) !important;
+}
+
+.doc-tab:hover:not(.doc-tab--active) {
+  color: var(--admin-brand-dark);
+}
+
+// ----- Form field focus -----
+.field-type input:focus,
+.field-type textarea:focus,
+.field-type select:focus,
+.field-type .rs__control--is-focused {
+  border-color: var(--admin-brand) !important;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15) !important;
+}
+
+// ----- Checkbox / toggle accent -----
+.custom-checkbox input:checked + .custom-checkbox__icon {
+  background-color: var(--admin-brand);
+  border-color: var(--admin-brand);
+}
+
+// ----- Relationship & select dropdown -----
+.rs__option--is-focused {
+  background-color: var(--admin-brand-50) !important;
+}
+
+.rs__option--is-selected {
+  background-color: var(--admin-brand) !important;
+  color: #fff !important;
+}
+
+// ----- Date picker accent -----
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: var(--admin-brand) !important;
+  color: #fff !important;
+}
+
+// ----- Dashboard card accent line -----
+.dashboard__card-list li a::after {
+  background-color: var(--admin-brand);
+}
+
+// ----- Version / status pill -----
+.status-pill--published,
+.status-pill--active {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: var(--admin-brand-dark);
+}
+
+// ----- Logo area in nav -----
+.nav__wrapper .template-default__nav .nav__logo {
+  border-bottom-color: var(--theme-elevation-100);
+}
+
+// ----- Scrollbar (webkit) -----
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(217, 119, 6, 0.25);
+  border-radius: 10px;
+
+  &:hover {
+    background: rgba(217, 119, 6, 0.45);
+  }
+}
+
+// Firefox scrollbar
+* {
+  scrollbar-color: rgba(217, 119, 6, 0.25) transparent;
+  scrollbar-width: thin;
+}
+
+// ----- Subtle warm border radius bump -----
+.field-type .text-input,
+.field-type textarea,
+.field-type .rs__control {
+  border-radius: 6px !important;
+}
+
+// ----- Loading bar -----
+.payload-toast-container .payload-toast--success {
+  background-color: var(--admin-brand) !important;
+}
