@@ -12,6 +12,7 @@ import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
+import type { Identity } from '@/lib/auth/identity'
 
 interface ChataData {
   chata: Chata
@@ -64,6 +65,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     initialView || (searchParams.get('participant') ? 'finance' : null)
   )
   const [data, setData] = useState<ChataData | null>(null)
+  const [identity, setIdentity] = useState<Identity | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -124,6 +126,26 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
 
     fetchData()
   }, [slug, currentView])
+
+  // Fetch the current login identity (admin / participant / none) for gating
+  // the finance view. Other tabs are unaffected.
+  useEffect(() => {
+    let cancelled = false
+    async function fetchIdentity() {
+      try {
+        const res = await fetch(`/api/auth/me?slug=${encodeURIComponent(slug)}`)
+        if (!res.ok) return
+        const result: Identity = await res.json()
+        if (!cancelled) setIdentity(result)
+      } catch {
+        if (!cancelled) setIdentity({ type: 'none', providers: [] })
+      }
+    }
+    fetchIdentity()
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
 
   const handleViewChange = (view: 'finance' | 'information' | 'organization' | 'participants') => {
     startTransition(() => {
@@ -241,6 +263,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 expenses={expenses}
                 prepayments={prepayments}
                 stats={stats}
+                identity={identity}
                 urlParticipantId={urlParticipantId}
                 onParticipantChange={handleParticipantChange}
               />

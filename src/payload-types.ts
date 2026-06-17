@@ -64,10 +64,12 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    accounts: AccountAuthOperations;
   };
   blocks: {};
   collections: {
     users: User;
+    accounts: Account;
     media: Media;
     chatas: Chata;
     participants: Participant;
@@ -83,6 +85,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    accounts: AccountsSelect<false> | AccountsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     chatas: ChatasSelect<false> | ChatasSelect<true>;
     participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
@@ -101,15 +104,37 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user: User & {
-    collection: 'users';
-  };
+  user:
+    | (User & {
+        collection: 'users';
+      })
+    | (Account & {
+        collection: 'accounts';
+      });
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface AccountAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -473,6 +498,14 @@ export interface Participant {
    */
   hasPet?: boolean | null;
   /**
+   * Secret token used to build the magic login link
+   */
+  inviteToken?: string | null;
+  /**
+   * Login account linked to this participant (set automatically when they first log in)
+   */
+  account?: (number | null) | Account;
+  /**
    * Account number in Czech format (e.g., "123456/0100") - only needed for creditors
    */
   accountNumber?: string | null;
@@ -480,6 +513,28 @@ export interface Participant {
    * Full IBAN for QR code generation - only needed for creditors
    */
   iban?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts".
+ */
+export interface Account {
+  id: number;
+  /**
+   * Display name for this login account
+   */
+  name?: string | null;
+  /**
+   * Verified email addresses that can sign in via Google/Microsoft
+   */
+  emails?:
+    | {
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -660,6 +715,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'accounts';
+        value: number | Account;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -688,10 +747,15 @@ export interface PayloadLockedDocument {
         value: number | Icon;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'accounts';
+        value: number | Account;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -701,10 +765,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'accounts';
+        value: number | Account;
+      };
   key?: string | null;
   value?:
     | {
@@ -752,6 +821,21 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts_select".
+ */
+export interface AccountsSelect<T extends boolean = true> {
+  name?: T;
+  emails?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -909,6 +993,8 @@ export interface ParticipantsSelect<T extends boolean = true> {
   name?: T;
   chata?: T;
   hasPet?: T;
+  inviteToken?: T;
+  account?: T;
   accountNumber?: T;
   iban?: T;
   updatedAt?: T;

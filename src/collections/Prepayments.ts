@@ -12,11 +12,11 @@ export const Prepayments: CollectionConfig = {
     read: () => true,
     // Users can create/update prepayments for chatas they manage
     create: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       return true
     },
     update: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       if (user.role === 'admin') return true
       return {
         chata: {
@@ -25,7 +25,7 @@ export const Prepayments: CollectionConfig = {
       }
     },
     delete: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       if (user.role === 'admin') return true
       return {
         chata: {

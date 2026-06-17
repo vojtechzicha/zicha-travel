@@ -15,11 +15,11 @@ export const Chatas: CollectionConfig = {
     read: () => true,
     // Admin and per-chata permissions for write operations
     create: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       return user.role === 'admin'
     },
     update: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       if (user.role === 'admin') return true
       // Users can only update chatas they're assigned to
       return {
@@ -29,7 +29,7 @@ export const Chatas: CollectionConfig = {
       }
     },
     delete: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       return user.role === 'admin'
     },
   },

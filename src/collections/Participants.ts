@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import crypto from 'crypto'
 
 export const Participants: CollectionConfig = {
   slug: 'participants',
@@ -6,16 +7,28 @@ export const Participants: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'chata', 'accountNumber'],
   },
+  hooks: {
+    beforeChange: [
+      ({ data, operation }) => {
+        // Generate a magic-link invite token on creation so the organizer
+        // always has a shareable login link for the participant.
+        if (operation === 'create' && !data.inviteToken) {
+          data.inviteToken = crypto.randomBytes(24).toString('hex')
+        }
+        return data
+      },
+    ],
+  },
   access: {
     // Public read access for API consumption
     read: () => true,
     // Users can create/update participants for chatas they manage
     create: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       return true // Will be filtered by chata access
     },
     update: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       if (user.role === 'admin') return true
       // Users can only update participants in chatas they're assigned to
       return {
@@ -26,7 +39,7 @@ export const Participants: CollectionConfig = {
       }
     },
     delete: ({ req: { user } }) => {
-      if (!user) return false
+      if (!user || user.collection !== 'users') return false
       if (user.role === 'admin') return true
       return {
         chata: {
@@ -60,6 +73,42 @@ export const Participants: CollectionConfig = {
       admin: {
         description: 'Participant is travelling with a pet',
       },
+    },
+    {
+      type: 'collapsible',
+      label: 'Login & Invite',
+      admin: {
+        description: 'Magic link and linked login account for this participant',
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'inviteToken',
+          type: 'text',
+          admin: {
+            description: 'Secret token used to build the magic login link',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'magicLink',
+          type: 'ui',
+          admin: {
+            components: {
+              Field: '@/collections/Participants/components/MagicLinkField#MagicLinkField',
+            },
+          },
+        },
+        {
+          name: 'account',
+          type: 'relationship',
+          relationTo: 'accounts',
+          admin: {
+            description:
+              'Login account linked to this participant (set automatically when they first log in)',
+          },
+        },
+      ],
     },
     {
       type: 'collapsible',

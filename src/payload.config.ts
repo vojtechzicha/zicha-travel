@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { Users } from './collections/Users'
+import { Accounts } from './collections/Accounts'
 import { Media } from './collections/Media'
 import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
@@ -40,7 +41,7 @@ export default buildConfig({
       beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
   },
-  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
+  collections: [Users, Accounts, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

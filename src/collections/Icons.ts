@@ -8,10 +8,10 @@ export const Icons: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => !!user && user.role === 'admin',
-    update: ({ req: { user } }) => !!user && user.role === 'admin',
+    create: ({ req: { user } }) => !!user && user.collection === 'users' && user.role === 'admin',
+    update: ({ req: { user } }) => !!user && user.collection === 'users' && user.role === 'admin',
     delete: ({ req: { user }, data }) => {
-      if (!user || user.role !== 'admin') return false
+      if (!user || user.collection !== 'users' || user.role !== 'admin') return false
       return !data?.isDefault // Prevent deletion of default
     },
   },

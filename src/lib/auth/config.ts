@@ -17,6 +17,22 @@ export function isOAuthConfigured(): boolean {
   return !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
 }
 
+export type ProviderName = 'google' | 'microsoft'
+
+export function isProviderConfigured(provider: ProviderName): boolean {
+  if (provider === 'microsoft') {
+    return !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
+  }
+  if (provider === 'google') {
+    return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+  }
+  return false
+}
+
+export function configuredProviders(): ProviderName[] {
+  return (['google', 'microsoft'] as ProviderName[]).filter(isProviderConfigured)
+}
+
 export function getAuthConfig(): AuthConfig {
   const azureRedirectUri = getRequiredEnv('AZURE_REDIRECT_URI')
 
