@@ -4,6 +4,7 @@
   "description": "Expense tracker for group trips and shared accommodations",
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "db": "docker compose up -d postgres",
