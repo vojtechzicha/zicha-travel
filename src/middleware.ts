@@ -5,9 +5,6 @@ import type { NextRequest } from 'next/server'
 const domainCache = new Map<string, { data: DomainInfo; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
-// Use environment variable for API base URL (fixes Fly.io returning 0.0.0.0:3000 as origin)
-const API_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-
 interface DomainInfo {
   found: boolean
   chata?: {
@@ -18,7 +15,7 @@ interface DomainInfo {
   }
 }
 
-async function getDomainInfo(hostname: string): Promise<DomainInfo> {
+async function getDomainInfo(hostname: string, origin: string): Promise<DomainInfo> {
   const cached = domainCache.get(hostname)
   if (cached && cached.expires > Date.now()) {
     console.log('[Middleware] Cache hit for:', hostname, cached.data)
@@ -26,7 +23,11 @@ async function getDomainInfo(hostname: string): Promise<DomainInfo> {
   }
 
   try {
-    const url = `${API_BASE_URL}/api/domains/${encodeURIComponent(hostname)}`
+    // Resolve the domains API relative to the deployment serving this request.
+    // Using the request origin (instead of a hardcoded NEXT_PUBLIC_SITE_URL)
+    // means each deployment — production, Vercel previews, local — queries its
+    // OWN database rather than always hitting production.
+    const url = `${origin}/api/domains/${encodeURIComponent(hostname)}`
     console.log('[Middleware] Fetching:', url)
     const response = await fetch(url)
     console.log('[Middleware] Response status:', response.status)
@@ -50,8 +51,9 @@ export async function middleware(request: NextRequest) {
 
   console.log('[Middleware] Request:', hostname, pathname)
 
-  // Call existing domain resolution API (with cache)
-  const domainInfo = await getDomainInfo(hostname)
+  // Call existing domain resolution API (with cache), targeting this
+  // deployment's own origin.
+  const domainInfo = await getDomainInfo(hostname, request.nextUrl.origin)
 
   if (domainInfo.found && domainInfo.chata) {
     // SINGLE-CHATA MODE
