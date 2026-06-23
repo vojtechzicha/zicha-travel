@@ -2,10 +2,8 @@
 node_modules
 .pnpm-store
 
-# Build outputs. The app is now built on the CI runner; the runtime image
-# copies the prebuilt .next/standalone and .next/static, so only the build
-# cache is excluded here (not the standalone/static output).
-.next/cache
+# Build outputs - rebuilt in Docker
+.next
 out
 dist
 

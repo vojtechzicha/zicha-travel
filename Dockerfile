@@ -1,37 +1,79 @@
-# Runtime-only image.
-#
-# IMPORTANT: the app is NOT built inside this image. Building Next.js inside
-# the Docker container (whether on Fly's Depot remote builder or a local
-# buildx) produced a broken server bundle for this Next 15.4 / Payload 3.85
-# app — the admin's React Server Components flight rendered the page slot as
-# null, so the admin hydrated to a blank screen (the client chunks were
-# byte-identical to a working build; only the server render differed).
-#
-# A normal (non-container) build on the CI runner's OS renders correctly, so
-# the app is built on the GitHub Actions runner (see .github/workflows/
-# deploy.yml) and this image only packages the prebuilt standalone output.
-FROM node:22-bookworm-slim AS runner
+# To use this Dockerfile, you have to set `output: 'standalone'` in your next.config.mjs file.
+# From https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile
+
+FROM node:22.17.0-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-RUN groupadd --system --gid 1001 nodejs
-RUN useradd --system --uid 1001 --gid nodejs nextjs
 
-# Create media directory for the Fly volume mount
-RUN mkdir -p /app/media && chown nextjs:nodejs /app/media
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy the prebuilt output (built on the runner, not here).
-# next.config.mjs uses `output: 'standalone'`, which emits a self-contained
-# server in .next/standalone plus separate .next/static and public assets.
-COPY --chown=nextjs:nodejs public ./public
-COPY --chown=nextjs:nodejs .next/standalone ./
-COPY --chown=nextjs:nodejs .next/static ./.next/static
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+# ENV NEXT_TELEMETRY_DISABLED 1
+
+# NEXT_PUBLIC_* vars must be available at build time for Next.js to inline them
+ARG NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED
+ENV NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=$NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED
+
+RUN \
+  if [ -f yarn.lock ]; then yarn run build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+# Uncomment the following line in case you want to disable telemetry during runtime.
+# ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Remove this line if you do not have this folder
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Create media directory for volume mount
+RUN mkdir -p /app/media
+RUN chown nextjs:nodejs /app/media
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
+
+ENV PORT 3000
 
 # server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
 CMD HOSTNAME="0.0.0.0" node server.js

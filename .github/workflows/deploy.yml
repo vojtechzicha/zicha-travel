@@ -12,26 +12,7 @@ jobs:
     concurrency: deploy-group
     steps:
       - uses: actions/checkout@v4
-
-      # Build the Next.js app on the runner's OS (not inside the Docker
-      # build). Building inside the container produced a broken server bundle
-      # for this Next 15.4 / Payload 3.85 app (blank admin); a normal build on
-      # a standard Linux host renders correctly. The Dockerfile then only
-      # packages this prebuilt output into the runtime image.
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: corepack enable pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Build
-        run: pnpm build
-        env:
-          # NEXT_PUBLIC_* must be set at build time so Next inlines them.
-          NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED: 'true'
-
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      # --local-only builds the (runtime-only) image here on the runner and
-      # pushes it to Fly, avoiding Fly's remote builder entirely.
-      - run: flyctl deploy --local-only
+      - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
