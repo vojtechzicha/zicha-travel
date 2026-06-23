@@ -12,7 +12,12 @@ jobs:
     concurrency: deploy-group
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+        # Build the image on the x86_64 GitHub runner instead of Fly's remote
+        # builder. The remote builder produced a broken (blank admin) image for
+        # this Next.js 15.4 / Payload 3.85 app; a native amd64 build renders
+        # correctly. --local-only forces the build to run here on the runner.
+      - run: flyctl deploy --local-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
