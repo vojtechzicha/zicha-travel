@@ -194,8 +194,8 @@ export function SettlementActions({
                                   <CopyableRow label="IBAN" value={creditorParticipant.iban!} />
                                   <CopyableRow
                                     label="Částka"
-                                    value={`${creditor.amount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`}
-                                    copyValue={creditor.amount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\s/g, '')}
+                                    value={formatCurrency(Math.round(creditor.amount))}
+                                    copyValue={Math.round(creditor.amount).toString()}
                                   />
                                 </div>
                               </div>
@@ -244,7 +244,7 @@ export function SettlementActions({
             </div>
 
             {/* Payment details table */}
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full min-w-0">
               <div className="bg-white rounded-xl p-4 shadow-sm">
                 <h5 className="text-sm font-medium text-gray-500 mb-3">Pro ruční zadání</h5>
                 <div>
@@ -252,8 +252,8 @@ export function SettlementActions({
                   <CopyableRow label="IBAN" value={bankerAccount.iban} />
                   <CopyableRow
                     label="Částka"
-                    value={`${Math.abs(balance).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`}
-                    copyValue={Math.abs(balance).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\s/g, '')}
+                    value={formatCurrency(Math.round(Math.abs(balance)))}
+                    copyValue={Math.round(Math.abs(balance)).toString()}
                   />
                 </div>
               </div>
