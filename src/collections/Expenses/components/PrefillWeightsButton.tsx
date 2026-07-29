@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { useForm, useAllFormFields } from '@payloadcms/ui'
+import { Button, useForm, useAllFormFields } from '@payloadcms/ui'
 
 export const PrefillWeightsButton: React.FC = () => {
   const [loading, setLoading] = useState(false)
@@ -48,22 +48,14 @@ export const PrefillWeightsButton: React.FC = () => {
 
   return (
     <div style={{ marginBottom: '1rem' }}>
-      <button
-        type="button"
+      <Button
+        buttonStyle="secondary"
+        size="small"
         onClick={handlePrefill}
         disabled={loading || !chataId}
-        style={{
-          padding: '8px 16px',
-          fontSize: '14px',
-          backgroundColor: chataId ? '#f0f0f0' : '#e0e0e0',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          cursor: chataId ? 'pointer' : 'not-allowed',
-          opacity: chataId ? 1 : 0.6,
-        }}
       >
         {loading ? 'Načítání...' : 'Předvyplnit všechny účastníky'}
-      </button>
+      </Button>
     </div>
   )
 }
