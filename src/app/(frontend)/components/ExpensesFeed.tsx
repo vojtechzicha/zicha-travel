@@ -76,7 +76,7 @@ export function ExpensesFeed({ expenses, selectedParticipantId }: ExpensesFeedPr
           </button>
         </div>
       </div>
-      <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2">
+      <div className="flex flex-col gap-3 overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
         {filteredExpenses.length > 0 ? (
           filteredExpenses.map((expense) => {
             const isMine =
