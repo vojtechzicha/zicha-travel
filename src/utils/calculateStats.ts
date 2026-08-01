@@ -151,6 +151,13 @@ export function calculateStats(
     const fromName = getParticipantName(prepayment.from)
     const amount = prepayment.amount
 
+    // The banker's own prepayment moves money within the pot they already
+    // hold — counting only the sender side would inflate their balance and
+    // break the zero-sum invariant (phantom "chybí vybrat" with no debtors)
+    if (fromName === bankerName) {
+      return
+    }
+
     if (stats[fromName]) {
       // Update prepaidInternal for the person making the prepayment
       stats[fromName].prepaidInternal += amount
