@@ -56,12 +56,12 @@ export function Header({
           )}
 
           {(showInformationTab || showOrganizationTab || showParticipantsTab) && onViewChange && (
-            <div className="flex gap-1 p-1.5 rounded-xl backdrop-blur-md bg-white/15 border border-white/20">
+            <div className="flex flex-wrap justify-center max-w-full gap-1 p-1.5 rounded-xl backdrop-blur-md bg-white/15 border border-white/20">
               {showInformationTab && (
                 <button
                   onClick={() => onViewChange('information')}
                   className={`
-                    flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                    flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
                     ${
                       currentView === 'information'
                         ? 'bg-primary text-white shadow-lg shadow-primary/40'
@@ -77,7 +77,7 @@ export function Header({
                 <button
                   onClick={() => onViewChange('organization')}
                   className={`
-                    flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                    flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
                     ${
                       currentView === 'organization'
                         ? 'bg-primary text-white shadow-lg shadow-primary/40'
@@ -93,7 +93,7 @@ export function Header({
                 <button
                   onClick={() => onViewChange('participants')}
                   className={`
-                    flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                    flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
                     ${
                       currentView === 'participants'
                         ? 'bg-primary text-white shadow-lg shadow-primary/40'
@@ -108,7 +108,7 @@ export function Header({
               <button
                 onClick={() => onViewChange('finance')}
                 className={`
-                  flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all
+                  flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
                   ${
                     currentView === 'finance'
                       ? 'bg-primary text-white shadow-lg shadow-primary/40'
