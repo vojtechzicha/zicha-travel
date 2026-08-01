@@ -180,10 +180,12 @@ pnpm db:stop          # Stop PostgreSQL
 # Sync data from production
 pnpm migrate-from-prod  # Copy database from Supabase + media from Fly.io
 
-# One-time migration for the polymorphic payer change (joint accounts):
-# backup BEFORE the schema push, restore AFTER — see script header for details
-# (cross-platform Node script; use `status` to inspect, `--db=<uri>` to override)
-pnpm migrate:payer backup|restore|status|cleanup
+# One-time migration for the polymorphic payer change (joint accounts).
+# Production runs it automatically: fly.toml [deploy] release_command runs
+# `migrate:payer auto` (single transaction, idempotent) before each deploy
+# goes live. Locally: backup BEFORE the schema push, restore AFTER — see
+# script header ( `status` to inspect, `--db=<uri>` to override).
+pnpm migrate:payer auto|backup|restore|status|cleanup
 
 # Other commands
 pnpm build            # Build for production
