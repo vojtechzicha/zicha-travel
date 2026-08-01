@@ -182,7 +182,8 @@ pnpm migrate-from-prod  # Copy database from Supabase + media from Fly.io
 
 # One-time migration for the polymorphic payer change (joint accounts):
 # backup BEFORE the schema push, restore AFTER — see script header for details
-./scripts/migrate-payer-polymorphic.sh backup|restore|cleanup
+# (cross-platform Node script; use `status` to inspect, `--db=<uri>` to override)
+pnpm migrate:payer backup|restore|status|cleanup
 
 # Other commands
 pnpm build            # Build for production
