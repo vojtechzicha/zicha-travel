@@ -194,8 +194,8 @@ export function SettlementActions({
                                   <CopyableRow label="IBAN" value={creditorParticipant.iban!} />
                                   <CopyableRow
                                     label="Částka"
-                                    value={`${creditor.amount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`}
-                                    copyValue={creditor.amount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\s/g, '')}
+                                    value={formatCurrency(Math.round(creditor.amount))}
+                                    copyValue={Math.round(creditor.amount).toString()}
                                   />
                                 </div>
                               </div>
@@ -231,7 +231,7 @@ export function SettlementActions({
             </h4>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-5 items-center md:items-start">
+          <div className="flex flex-wrap gap-5 items-start justify-center">
             {/* QR Code - always visible */}
             <div className="flex-shrink-0">
               <div className="bg-white p-4 rounded-xl shadow-sm">
@@ -243,8 +243,8 @@ export function SettlementActions({
               </div>
             </div>
 
-            {/* Payment details table */}
-            <div className="flex-1 w-full">
+            {/* Payment details table — wraps below the QR when too narrow to show the IBAN */}
+            <div className="flex-1 basis-[21rem] min-w-0">
               <div className="bg-white rounded-xl p-4 shadow-sm">
                 <h5 className="text-sm font-medium text-gray-500 mb-3">Pro ruční zadání</h5>
                 <div>
@@ -252,8 +252,8 @@ export function SettlementActions({
                   <CopyableRow label="IBAN" value={bankerAccount.iban} />
                   <CopyableRow
                     label="Částka"
-                    value={`${Math.abs(balance).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč`}
-                    copyValue={Math.abs(balance).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\s/g, '')}
+                    value={formatCurrency(Math.round(Math.abs(balance)))}
+                    copyValue={Math.round(Math.abs(balance)).toString()}
                   />
                 </div>
               </div>

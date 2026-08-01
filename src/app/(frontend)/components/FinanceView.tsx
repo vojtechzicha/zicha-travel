@@ -130,7 +130,7 @@ export function FinanceView({
         </aside>
 
         {/* Main content */}
-        <section className="flex-1 order-1 lg:order-2">
+        <section className="flex-1 order-1 lg:order-2 min-w-0">
           <PersonView
             participant={selectedParticipant}
             stats={selectedStats}

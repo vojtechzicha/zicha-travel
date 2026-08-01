@@ -294,8 +294,16 @@ export function PersonView({
 
         {/* Result Section */}
         <div className="text-center">
-          {/* Banker result */}
-          {isBanker && (
+          {/* Banker result - settled */}
+          {isBanker && isSettled && (
+            <div className="flex flex-col items-center text-green-600">
+              <CheckCircle2 size={48} className="mb-2" />
+              <div className="text-2xl font-bold font-serif">Vše vyrovnáno</div>
+            </div>
+          )}
+
+          {/* Banker result - not settled */}
+          {isBanker && !isSettled && (
             <>
               <span className="uppercase text-xs font-bold tracking-wider text-gray-500">
                 {balance < 0 ? 'Přebytek k rozdělení' : 'Chybí vybrat'}
@@ -370,7 +378,11 @@ export function PersonView({
                     {isRefund ? <ArrowRight size={16} /> : <ArrowDownLeft size={16} />}
                   </div>
                   <div className="flex-1 font-medium text-gray-700">
-                    {isRefund ? `Vrácen přeplatek (${fromName})` : `Přijatá záloha (${fromName})`}
+                    {isRefund
+                      ? `Vrácen přeplatek (${fromName})`
+                      : p.type === 'supplement'
+                        ? `Přijatý doplatek (${fromName})`
+                        : `Přijatá záloha (${fromName})`}
                   </div>
                   <span className={isRefund ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
                     {isRefund ? '-' : '+'} {formatCurrency(Math.abs(p.amount))}
@@ -396,7 +408,11 @@ export function PersonView({
                   )}
                 </div>
                 <div className="flex-1 font-medium text-gray-700">
-                  {isRefund ? `Vrácen přeplatek (${bankerName})` : `Odeslána záloha (${bankerName})`}
+                  {isRefund
+                    ? `Vrácen přeplatek (${bankerName})`
+                    : p.type === 'supplement'
+                      ? `Odeslán doplatek (${bankerName})`
+                      : `Odeslána záloha (${bankerName})`}
                 </div>
                 <span className="text-green-600 font-bold">
                   {isRefund ? 'Přijato ' : '+'} {formatCurrency(Math.abs(p.amount))}

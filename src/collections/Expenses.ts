@@ -119,15 +119,14 @@ export const Expenses: CollectionConfig = {
           admin: {
             description: 'Participant sharing this expense',
           },
-          filterOptions: ({ siblingData }) => {
-            // Get chata from parent document
-            // Note: siblingData here is the weights array item, we need to go up one level
-            const data = siblingData as Record<string, any> | undefined
-            const chataId = data?.__parentDoc?.chata
-            if (chataId) {
+          filterOptions: ({ data }) => {
+            // siblingData is the weights array row - the chata lives on the
+            // full document, which Payload passes as `data`
+            const doc = data as Partial<Expense> | undefined
+            if (doc?.chata) {
               return {
                 chata: {
-                  equals: chataId,
+                  equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata,
                 },
               }
             }
