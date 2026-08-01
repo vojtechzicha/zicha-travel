@@ -23,10 +23,6 @@ async function getDomainInfo(hostname: string, origin: string): Promise<DomainIn
   }
 
   try {
-    // Resolve the domains API relative to the deployment serving this request.
-    // Using the request origin (instead of a hardcoded NEXT_PUBLIC_SITE_URL)
-    // means each deployment — production, Vercel previews, local — queries its
-    // OWN database rather than always hitting production.
     const url = `${origin}/api/domains/${encodeURIComponent(hostname)}`
     console.log('[Middleware] Fetching:', url)
     const response = await fetch(url)
@@ -45,6 +41,22 @@ async function getDomainInfo(hostname: string, origin: string): Promise<DomainIn
   }
 }
 
+/**
+ * Origin to call the domains API on, per platform. Each deployment must
+ * query its OWN database (not a hardcoded NEXT_PUBLIC_SITE_URL):
+ * - Vercel: the middleware runs at the edge, separate from the functions —
+ *   call back through the deployment's public origin.
+ * - Self-hosted Node (Fly / local): the same process serves the API, but
+ *   request.nextUrl.origin is the bind address (e.g. https://0.0.0.0:3000),
+ *   which is unreachable — loop back over plain HTTP instead.
+ */
+function getApiOrigin(request: NextRequest): string {
+  if (process.env.VERCEL) {
+    return request.nextUrl.origin
+  }
+  return `http://127.0.0.1:${process.env.PORT || 3000}`
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host')?.split(':')[0] || ''
   const pathname = request.nextUrl.pathname
@@ -53,7 +65,7 @@ export async function middleware(request: NextRequest) {
 
   // Call existing domain resolution API (with cache), targeting this
   // deployment's own origin.
-  const domainInfo = await getDomainInfo(hostname, request.nextUrl.origin)
+  const domainInfo = await getDomainInfo(hostname, getApiOrigin(request))
 
   if (domainInfo.found && domainInfo.chata) {
     // SINGLE-CHATA MODE
