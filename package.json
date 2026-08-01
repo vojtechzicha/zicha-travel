@@ -7,6 +7,7 @@
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "vercel-build": "node scripts/migrate-payer-polymorphic.mjs auto && pnpm build",
     "db": "docker compose up -d postgres",
     "db:stop": "docker compose down",
     "dev": "WAS_RUNNING=$(docker compose ps -q postgres 2>/dev/null); docker compose up -d postgres && trap '[ -z \"$WAS_RUNNING\" ] && docker compose down' EXIT && cross-env NODE_OPTIONS=--no-deprecation next dev",

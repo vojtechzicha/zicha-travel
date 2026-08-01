@@ -1,5 +1,12 @@
 # Vercel Migration Plan
 
+> **Status (2026-08-01): COMPLETE.** Production runs on Vercel. The in-repo
+> Fly artifacts (`fly.toml`, `.github/workflows/deploy.yml`, `Dockerfile`,
+> `.dockerignore`) have been removed (Phase 4, step 13). Remaining manual
+> step: tear down the Fly app + volume once no rollback window is needed
+> (step 14). DB schema migrations now run in the Vercel build via the
+> `vercel-build` script (`pnpm migrate:payer auto`).
+
 Transition zicha-travel from **Fly.io** to **Vercel** with automatic per-PR
 preview deployments, while preserving the multi-tenant custom-domain routing.
 

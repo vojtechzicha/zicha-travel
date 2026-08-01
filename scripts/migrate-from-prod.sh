@@ -56,39 +56,11 @@ docker run --rm --network host postgres:17-alpine \
 
 echo "Database migration complete!"
 
-# 3. Sync media files from Fly.io
+# 3. Media files
+# Production media lives in Supabase Storage (S3-compatible), not on local
+# disk. Local dev reads it the same way when the S3_* vars are set in
+# .env.local; without them Payload falls back to the local ./media folder,
+# which will simply be empty. Nothing to sync here.
 echo ""
-echo "Syncing media files from Fly.io..."
-
-# Clear local media folder
-rm -rf media/*
-
-# Get list of files from Fly.io and download each one
-echo "Fetching file list from Fly.io..."
-RAW_OUTPUT=$(fly ssh console -C "ls /app/media" 2>&1)
-if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to connect to Fly.io. Output:"
-    echo "$RAW_OUTPUT"
-    echo "Make sure 'fly' CLI is authenticated and fly.toml has the correct app name."
-    exit 1
-fi
-
-# Filter out "Connecting to ..." status line from fly ssh output
-FILES=$(echo "$RAW_OUTPUT" | grep -v "^Connecting to ")
-
-if [ -z "$FILES" ]; then
-    echo "No media files found on Fly.io."
-else
-    for FILE in $FILES; do
-        # Skip system directories
-        if [ "$FILE" = "lost+found" ]; then
-            continue
-        fi
-        echo "  Downloading: $FILE"
-        fly ssh sftp get "/app/media/$FILE" "media/$FILE" 2>/dev/null || echo "    Failed to download $FILE"
-    done
-fi
-
-echo ""
-echo "Media sync complete!"
+echo "Note: media is served from Supabase Storage (set S3_* vars in .env.local to use it locally)."
 echo "Migration from production finished successfully!"

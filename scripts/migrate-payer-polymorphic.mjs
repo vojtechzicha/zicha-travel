@@ -9,7 +9,10 @@
 // values must be backed up BEFORE the new schema is applied and restored
 // into the rels tables AFTER.
 //
-// Automatic mode (production / Fly.io release_command):
+// Automatic mode (production — runs in Vercel's build via the
+// package.json "vercel-build" script, against the deployment's own
+// DATABASE_URI, i.e. prod DB for production builds, preview DB for
+// preview builds):
 //   node scripts/migrate-payer-polymorphic.mjs auto
 // runs the WHOLE migration in one transaction, idempotently: creates the
 // new tables (exact DDL Payload's schema push would generate), copies
@@ -30,8 +33,8 @@
 
 import pg from 'pg'
 
-// dotenv is a convenience for local runs; the production standalone bundle
-// (Fly release_command) provides DATABASE_URI via the environment instead
+// dotenv is a convenience for local runs; CI/Vercel builds provide
+// DATABASE_URI via the environment instead
 try {
   const { config: loadEnv } = await import('dotenv')
   loadEnv({ path: '.env.local' })
