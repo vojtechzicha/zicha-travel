@@ -47,13 +47,15 @@ export const Prepayments: CollectionConfig = {
     {
       name: 'from',
       type: 'relationship',
-      relationTo: 'participants',
+      // Polymorphic: prepayments can be sent from a joint account too; the
+      // amount is attributed equally to the members in calculateStats.
+      relationTo: ['participants', 'joint-accounts'],
       required: true,
       admin: {
-        description: 'Who sent the payment (or who received it if negative)',
+        description: 'Who sent the payment (or who received it if negative) — a participant or a joint account',
       },
       filterOptions: ({ siblingData }) => {
-        // Only show participants from the selected chata
+        // Only show participants/joint accounts from the selected chata
         const data = siblingData as Partial<Prepayment> | undefined
         if (data?.chata) {
           return {

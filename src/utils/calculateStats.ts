@@ -3,11 +3,17 @@
  * Based on the original PoC calculateStats logic
  */
 
+export interface PayerRef {
+  id: string | number
+  name: string
+  relationTo?: 'participants' | 'joint-accounts'
+}
+
 export interface Expense {
   id: string | number
   title: string
   amount: number
-  payer: string | { id: string; name: string }
+  payer: string | PayerRef
   splitType: 'equal' | 'weighted'
   weights?: Array<{
     participant: string | { id: string; name: string }
@@ -18,7 +24,7 @@ export interface Expense {
 
 export interface Prepayment {
   id: string | number
-  from: string | { id: string; name: string }
+  from: string | PayerRef
   amount: number
   note?: string
   type: 'advance' | 'supplement' | 'refund' | 'distribution'
@@ -27,6 +33,12 @@ export interface Prepayment {
 export interface Participant {
   id: string
   name: string
+}
+
+export interface JointAccountInfo {
+  id: string | number
+  name: string
+  memberNames: string[]
 }
 
 export interface ParticipantStats {
@@ -64,14 +76,47 @@ function getParticipantName(participant: string | { id: string; name: string }):
 }
 
 /**
+ * Resolve a payer/from reference to the list of participant names the amount
+ * is attributed to. A participant resolves to itself; a joint account
+ * ("společný účet") resolves to its members — the amount is then split
+ * equally among them.
+ */
+function getContributorNames(
+  ref: string | PayerRef,
+  jointAccountsById: Map<string, JointAccountInfo>,
+  jointAccountsByName: Map<string, JointAccountInfo>
+): string[] {
+  if (typeof ref === 'string') {
+    return [ref]
+  }
+  if (ref.relationTo === 'joint-accounts') {
+    const ja = jointAccountsById.get(String(ref.id)) || jointAccountsByName.get(ref.name)
+    if (ja && ja.memberNames.length > 0) {
+      return ja.memberNames
+    }
+    // Unknown joint account — behave like an unknown participant name
+    // (silently uncredited), matching existing behavior
+    return [ref.name]
+  }
+  return [ref.name]
+}
+
+/**
  * Calculate statistics for a chata
  */
 export function calculateStats(
   participants: Participant[],
   expenses: Expense[],
   prepayments: Prepayment[],
-  bankerName: string
+  bankerName: string,
+  jointAccounts: JointAccountInfo[] = []
 ): ChataStats {
+  const jointAccountsById = new Map<string, JointAccountInfo>()
+  const jointAccountsByName = new Map<string, JointAccountInfo>()
+  jointAccounts.forEach((ja) => {
+    jointAccountsById.set(String(ja.id), ja)
+    jointAccountsByName.set(ja.name, ja)
+  })
   // Initialize stats for each participant
   const stats: Record<string, ParticipantStats> = {}
 
@@ -93,18 +138,23 @@ export function calculateStats(
 
   // Process expenses
   expenses.forEach((expense) => {
-    const payerName = getParticipantName(expense.payer)
     const amount = expense.amount
     const isPlanned = expense.isPlanned || false
 
-    // Add to payer's paidExternal or plannedPaidExternal
-    if (stats[payerName]) {
-      if (isPlanned) {
-        stats[payerName].plannedPaidExternal += amount
-      } else {
-        stats[payerName].paidExternal += amount
+    // Credit the payment: a joint-account payment is attributed equally to
+    // its members; a personal payment is a single contributor with the full
+    // amount (identical to the original behavior)
+    const contributors = getContributorNames(expense.payer, jointAccountsById, jointAccountsByName)
+    const contributorShare = amount / contributors.length
+    contributors.forEach((payerName) => {
+      if (stats[payerName]) {
+        if (isPlanned) {
+          stats[payerName].plannedPaidExternal += contributorShare
+        } else {
+          stats[payerName].paidExternal += contributorShare
+        }
       }
-    }
+    })
 
     // Calculate cost shares
     let weights: Record<string, number> = {}
@@ -146,49 +196,53 @@ export function calculateStats(
     }
   })
 
-  // Process prepayments
+  // Process prepayments — a joint-account prepayment is decomposed into
+  // equal per-member shares, each processed like a personal prepayment
   prepayments.forEach((prepayment) => {
-    const fromName = getParticipantName(prepayment.from)
-    const amount = prepayment.amount
+    const contributors = getContributorNames(prepayment.from, jointAccountsById, jointAccountsByName)
+    const amount = prepayment.amount / contributors.length
 
-    // The banker's own prepayment moves money within the pot they already
-    // hold — counting only the sender side would inflate their balance and
-    // break the zero-sum invariant (phantom "chybí vybrat" with no debtors)
-    if (fromName === bankerName) {
-      return
-    }
-
-    if (stats[fromName]) {
-      // Update prepaidInternal for the person making the prepayment
-      stats[fromName].prepaidInternal += amount
-
-      // Categorize prepayment for the person making it
-      // Note: refunds/distributions have negative amount, advances/supplements are positive
-      if (prepayment.type === 'advance') {
-        stats[fromName].prepaidAdvance += amount
-      } else if (prepayment.type === 'supplement') {
-        stats[fromName].prepaidSupplement += amount
-      } else if (prepayment.type === 'refund' || prepayment.type === 'distribution') {
-        // Refund/distribution amount is negative, so prepaidRefund becomes negative for the recipient
-        stats[fromName].prepaidRefund += amount
+    contributors.forEach((fromName) => {
+      // The banker's own prepayment (share) moves money within the pot they
+      // already hold — counting only the sender side would inflate their
+      // balance and break the zero-sum invariant (phantom "chybí vybrat"
+      // with no debtors)
+      if (fromName === bankerName) {
+        return
       }
-    }
 
-    // Update banker's stats (opposite direction)
-    if (stats[bankerName] && fromName !== bankerName) {
-      stats[bankerName].prepaidInternal -= amount
+      if (stats[fromName]) {
+        // Update prepaidInternal for the person making the prepayment
+        stats[fromName].prepaidInternal += amount
 
-      // Banker's prepaid values are opposite of the participant's
-      // Advances/supplements: banker receives (negative for banker)
-      // Refunds/distributions: banker sends back (positive for banker after -= negative)
-      if (prepayment.type === 'advance') {
-        stats[bankerName].prepaidAdvance -= amount
-      } else if (prepayment.type === 'supplement') {
-        stats[bankerName].prepaidSupplement -= amount
-      } else if (prepayment.type === 'refund' || prepayment.type === 'distribution') {
-        stats[bankerName].prepaidRefund -= amount
+        // Categorize prepayment for the person making it
+        // Note: refunds/distributions have negative amount, advances/supplements are positive
+        if (prepayment.type === 'advance') {
+          stats[fromName].prepaidAdvance += amount
+        } else if (prepayment.type === 'supplement') {
+          stats[fromName].prepaidSupplement += amount
+        } else if (prepayment.type === 'refund' || prepayment.type === 'distribution') {
+          // Refund/distribution amount is negative, so prepaidRefund becomes negative for the recipient
+          stats[fromName].prepaidRefund += amount
+        }
       }
-    }
+
+      // Update banker's stats (opposite direction)
+      if (stats[bankerName] && fromName !== bankerName) {
+        stats[bankerName].prepaidInternal -= amount
+
+        // Banker's prepaid values are opposite of the participant's
+        // Advances/supplements: banker receives (negative for banker)
+        // Refunds/distributions: banker sends back (positive for banker after -= negative)
+        if (prepayment.type === 'advance') {
+          stats[bankerName].prepaidAdvance -= amount
+        } else if (prepayment.type === 'supplement') {
+          stats[bankerName].prepaidSupplement -= amount
+        } else if (prepayment.type === 'refund' || prepayment.type === 'distribution') {
+          stats[bankerName].prepaidRefund -= amount
+        }
+      }
+    })
   })
 
   // Calculate final balances (including planned expenses for projected state)
@@ -257,4 +311,69 @@ export function transformParticipant(participant: any): Participant {
     id: participant.id,
     name: participant.name,
   }
+}
+
+/**
+ * Transform joint account from Payload format to calculation format.
+ * Works with depth 0 (member IDs) and depth 1+ (member docs); pass a
+ * participant name map for the depth-0 case.
+ */
+export function transformJointAccount(
+  jointAccount: any,
+  participantNamesById?: Map<string, string>
+): JointAccountInfo {
+  const members: any[] = jointAccount.members || []
+  return {
+    id: jointAccount.id,
+    name: jointAccount.name,
+    memberNames: members
+      .map((m) =>
+        typeof m === 'object' && m !== null
+          ? m.name
+          : participantNamesById?.get(String(m)) || ''
+      )
+      .filter(Boolean),
+  }
+}
+
+/**
+ * Normalize a payer/from value from Payload into a PayerRef.
+ * Handles every shape Payload can produce:
+ * - bare ID (number/string) from a legacy monomorphic relationship at depth 0
+ * - populated participant doc ({ id, name })
+ * - polymorphic wrapper { relationTo, value } with value as ID or doc
+ */
+export function normalizePayerRef(
+  raw: any,
+  participantNamesById: Map<string, string>,
+  jointAccountsById: Map<string, JointAccountInfo>
+): PayerRef {
+  if (raw === null || raw === undefined) {
+    return { id: '', name: '' }
+  }
+  if (typeof raw === 'string' || typeof raw === 'number') {
+    return {
+      id: raw,
+      name: participantNamesById.get(String(raw)) || String(raw),
+      relationTo: 'participants',
+    }
+  }
+  if ('relationTo' in raw) {
+    const value = raw.value
+    const id = typeof value === 'object' && value !== null ? value.id : value
+    if (raw.relationTo === 'joint-accounts') {
+      const name =
+        typeof value === 'object' && value !== null
+          ? value.name
+          : jointAccountsById.get(String(id))?.name || String(id)
+      return { id, name, relationTo: 'joint-accounts' }
+    }
+    const name =
+      typeof value === 'object' && value !== null
+        ? value.name
+        : participantNamesById.get(String(id)) || String(id)
+    return { id, name, relationTo: 'participants' }
+  }
+  // Already-populated participant doc
+  return { id: raw.id, name: raw.name, relationTo: 'participants' }
 }

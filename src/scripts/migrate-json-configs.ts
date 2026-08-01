@@ -242,7 +242,7 @@ async function migrateJsonConfigs() {
         chata: chata.id,
         title: expense.title,
         amount: expense.amount,
-        payer: participantMap[expense.payer],
+        payer: { relationTo: 'participants', value: participantMap[expense.payer] },
         splitType: expense.weights === 'ALL' ? 'equal' : 'weighted',
       }
 
@@ -277,7 +277,7 @@ async function migrateJsonConfigs() {
         collection: 'prepayments',
         data: {
           chata: chata.id,
-          from: participantMap[prepayment.from],
+          from: { relationTo: 'participants', value: participantMap[prepayment.from] },
           amount: prepayment.amount,
           note: prepayment.note || '',
           type,

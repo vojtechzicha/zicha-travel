@@ -63,13 +63,16 @@ export const Expenses: CollectionConfig = {
     {
       name: 'payer',
       type: 'relationship',
-      relationTo: 'participants',
+      // Polymorphic: a person or a joint account ("společný účet") can pay.
+      // Joint-account payments are attributed equally to the members in
+      // calculateStats; weights below stay participants-only.
+      relationTo: ['participants', 'joint-accounts'],
       required: true,
       admin: {
-        description: 'Who paid for this expense',
+        description: 'Who paid for this expense (a participant or a joint account)',
       },
       filterOptions: ({ siblingData }) => {
-        // Only show participants from the selected chata
+        // Only show participants/joint accounts from the selected chata
         const data = siblingData as Partial<Expense> | undefined
         if (data?.chata) {
           return {

@@ -29,7 +29,19 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Types: advance, supplement, refund, distribution
    - References: Chata, Participant (from)
 
-5. **Users** (`src/collections/Users.ts`)
+5. **JointAccounts** (`src/collections/JointAccounts.ts`)
+   - "Společný účet" — a shared bank account of 2+ participants, defined per Chata
+   - Can be the payer of an Expense or sender of a Prepayment (both fields are
+     polymorphic: `relationTo: ['participants', 'joint-accounts']`)
+   - A joint-account payment is attributed **equally** to its members in
+     `calculateStats`; all balances and settlement stay per person and no
+     payment is ever made to the joint account itself
+   - Expense weights stay participants-only by design
+   - Validation: min 2 members, each participant in at most one joint account
+     per chata
+   - See `docs/PRD-spolecny-ucet.md` for the full design and the approved math
+
+6. **Users** (`src/collections/Users.ts`)
    - Admin users who can manage the system
    - Role-based access control
 
@@ -41,6 +53,13 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
 - Determines debtors and creditors
 - Handles both equal and weighted expense splits
 - `costBreakdown` includes `title`, `cost`, and `weight` for each expense
+- Joint-account ("společný účet") payments/prepayments are decomposed into
+  equal per-member shares before the per-person math runs; a prepayment share
+  from the banker (including the banker's share of a joint-account prepayment)
+  is skipped as pot-internal. Covered by `tests/int/calculateStats.int.spec.ts`
+  (zero-sum invariant asserted in every fixture)
+- `normalizePayerRef`/`transformJointAccount` normalize Payload's polymorphic
+  payer/from values for the hook and API routes
 
 **PersonView** (`src/app/(frontend)/components/PersonView.tsx`)
 - Main participant detail/finance view component
@@ -160,6 +179,13 @@ pnpm db:stop          # Stop PostgreSQL
 
 # Sync data from production
 pnpm migrate-from-prod  # Copy database from Supabase + media from Fly.io
+
+# One-time migration for the polymorphic payer change (joint accounts).
+# Production runs it automatically: fly.toml [deploy] release_command runs
+# `migrate:payer auto` (single transaction, idempotent) before each deploy
+# goes live. Locally: backup BEFORE the schema push, restore AFTER — see
+# script header ( `status` to inspect, `--db=<uri>` to override).
+pnpm migrate:payer auto|backup|restore|status|cleanup
 
 # Other commands
 pnpm build            # Build for production

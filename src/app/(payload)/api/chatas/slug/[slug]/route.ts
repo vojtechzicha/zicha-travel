@@ -6,6 +6,8 @@ import {
   transformExpense,
   transformPrepayment,
   transformParticipant,
+  transformJointAccount,
+  normalizePayerRef,
 } from '@/utils/calculateStats'
 
 /**
@@ -79,40 +81,55 @@ export async function GET(
       depth: 1,
     })
 
+    // Fetch all joint accounts ("společný účet") for this chata
+    const jointAccountsResult = await payload.find({
+      collection: 'joint-accounts',
+      where: {
+        chata: {
+          equals: chata.id,
+        },
+      },
+      limit: 1000,
+      depth: 0,
+    })
+
     // Create participant map for name lookup
     const participantMap = new Map<string, string>()
     participantsResult.docs.forEach((p: any) => {
-      participantMap.set(p.id, p.name)
+      participantMap.set(String(p.id), p.name)
     })
+
+    const jointAccounts = jointAccountsResult.docs.map((ja: any) =>
+      transformJointAccount(ja, participantMap)
+    )
+    const jointAccountMap = new Map(jointAccounts.map((ja) => [String(ja.id), ja]))
 
     // Get banker name
     let bankerName = ''
     if (typeof chata.banker === 'object' && chata.banker !== null) {
       bankerName = chata.banker.name
-    } else if (typeof chata.banker === 'string') {
-      bankerName = participantMap.get(chata.banker) || ''
+    } else if (chata.banker !== null && chata.banker !== undefined) {
+      bankerName = participantMap.get(String(chata.banker)) || ''
     }
 
     // Transform data for calculation
     const participants = participantsResult.docs.map(transformParticipant)
 
-    // Manually populate participant names in expenses
+    // Normalize polymorphic payer/from refs (participant or joint account)
     const expenses = expensesResult.docs.map((expense: any) => {
       const transformed = transformExpense(expense)
-      // Replace payer ID with object containing name
-      if (typeof transformed.payer === 'string') {
-        transformed.payer = {
-          id: transformed.payer,
-          name: participantMap.get(transformed.payer) || transformed.payer,
-        }
-      }
+      transformed.payer = normalizePayerRef(transformed.payer, participantMap, jointAccountMap)
       // Replace participant IDs in weights
       if (transformed.weights) {
         transformed.weights = transformed.weights.map((w: any) => ({
           ...w,
-          participant: typeof w.participant === 'string'
-            ? { id: w.participant, name: participantMap.get(w.participant) || w.participant }
-            : w.participant,
+          participant:
+            typeof w.participant === 'object' && w.participant !== null
+              ? w.participant
+              : {
+                  id: w.participant,
+                  name: participantMap.get(String(w.participant)) || String(w.participant),
+                },
         }))
       }
       return transformed
@@ -120,41 +137,21 @@ export async function GET(
 
     const prepayments = prepaymentsResult.docs.map((prepayment: any) => {
       const transformed = transformPrepayment(prepayment)
-      // Replace from ID with object containing name
-      if (typeof transformed.from === 'string') {
-        transformed.from = {
-          id: transformed.from,
-          name: participantMap.get(transformed.from) || transformed.from,
-        }
-      }
+      transformed.from = normalizePayerRef(transformed.from, participantMap, jointAccountMap)
       return transformed
     })
 
     // Calculate statistics
-    const stats = calculateStats(participants, expenses, prepayments, bankerName)
+    const stats = calculateStats(participants, expenses, prepayments, bankerName, jointAccounts)
 
     // Return data with populated relationships for frontend
+    // (payer/from arrive populated via depth: 1 as { relationTo, value })
     return NextResponse.json({
       chata,
       participants: participantsResult.docs,
-      expenses: expensesResult.docs.map((expense: any) => ({
-        ...expense,
-        payer: typeof expense.payer === 'string'
-          ? participantsResult.docs.find((p) => p.id === expense.payer)
-          : expense.payer,
-        weights: expense.weights?.map((w: any) => ({
-          ...w,
-          participant: typeof w.participant === 'string'
-            ? participantsResult.docs.find((p) => p.id === w.participant)
-            : w.participant,
-        })),
-      })),
-      prepayments: prepaymentsResult.docs.map((prepayment: any) => ({
-        ...prepayment,
-        from: typeof prepayment.from === 'string'
-          ? participantsResult.docs.find((p) => p.id === prepayment.from)
-          : prepayment.from,
-      })),
+      expenses: expensesResult.docs,
+      prepayments: prepaymentsResult.docs,
+      jointAccounts: jointAccountsResult.docs,
       stats,
     })
   } catch (error) {

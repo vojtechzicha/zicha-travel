@@ -18,6 +18,7 @@ import {
 import { GlassCard } from './GlassCard'
 import { SettlementActions } from './SettlementActions'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
+import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
 import type { Participant, Chata, Prepayment, Expense } from '@/payload-types'
 import type { ParticipantStats } from '@/utils/calculateStats'
 
@@ -75,26 +76,38 @@ export function PersonView({
     summaryBgClass = 'bg-gradient-to-br from-green-50 to-green-100 border border-green-200'
   }
 
-  // Helper to get name from payer/from field (can be number or object)
-  const getPayerName = (payer: number | { id: number; name: string } | null | undefined): string => {
-    if (!payer) return ''
-    if (typeof payer === 'number') {
-      const p = allParticipants.find((part) => part.id === payer)
+  // Helper to get display name from a payer/from ref (participant or joint
+  // account), falling back to a participant lookup for bare IDs
+  const getPayerName = (ref: unknown): string => {
+    const info = getPayerDisplay(ref)
+    if (info.name) return info.name
+    if (info.id !== null) {
+      const p = allParticipants.find((part) => part.id === info.id)
       return p?.name || ''
     }
-    return payer.name || ''
+    return ''
   }
 
-  // Filter prepayments and expenses for history (exclude planned expenses)
+  // Filter prepayments and expenses for history (exclude planned expenses).
+  // Joint-account ("společný účet") payments count for each member.
   const myExpenses = expenses.filter((e) => {
-    return getPayerName(e.payer as number | { id: number; name: string }) === participant.name && !e.isPlanned
+    return getPayerDisplay(e.payer).memberIds.includes(participant.id) && !e.isPlanned
   })
   const myPrepayments = prepayments.filter((p) => {
-    return getPayerName(p.from as number | { id: number; name: string }) === participant.name
+    const info = getPayerDisplay(p.from)
+    if (info.kind === 'participant') return info.memberIds.includes(participant.id)
+    // A joint-account prepayment shows the member's own share — except for
+    // the banker, whose share is pot-internal (the same prepayment already
+    // appears in the incoming list with the counted part)
+    return !isBanker && info.memberIds.includes(participant.id)
   })
   const incomingPrepayments = isBanker
     ? prepayments.filter((p) => {
-        return getPayerName(p.from as number | { id: number; name: string }) !== participant.name
+        const info = getPayerDisplay(p.from)
+        // Everything except the banker's own personal prepayments; a
+        // joint-account prepayment stays even when the banker is a member
+        // (the co-members' shares are real income for the pot)
+        return info.kind === 'jointAccount' || !info.memberIds.includes(participant.id)
       })
     : []
 
@@ -367,7 +380,17 @@ export function PersonView({
           {isBanker &&
             incomingPrepayments.map((p, i) => {
               const isRefund = p.type === 'refund' || p.type === 'distribution'
-              const fromName = getPayerName(p.from as number | { id: number; name: string }) || 'Neznámý'
+              const fromInfo = getPayerDisplay(p.from)
+              const fromName = getPayerName(p.from) || 'Neznámý'
+              const isJointAccount = fromInfo.kind === 'jointAccount'
+              // For a joint-account prepayment, only the non-banker members'
+              // shares move money into the pot (the banker's share is
+              // pot-internal) — show the counted part
+              const countedAmount =
+                isJointAccount && fromInfo.memberIds.length > 0
+                  ? (p.amount * fromInfo.memberIds.filter((id) => id !== participant.id).length) /
+                    fromInfo.memberIds.length
+                  : p.amount
               return (
                 <div key={`inc-${i}`} className="flex items-center gap-4 py-3">
                   <div
@@ -383,9 +406,12 @@ export function PersonView({
                       : p.type === 'supplement'
                         ? `Přijatý doplatek (${fromName})`
                         : `Přijatá záloha (${fromName})`}
+                    {isJointAccount && (
+                      <span className="text-gray-400 text-sm"> – společný účet</span>
+                    )}
                   </div>
                   <span className={isRefund ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
-                    {isRefund ? '-' : '+'} {formatCurrency(Math.abs(p.amount))}
+                    {isRefund ? '-' : '+'} {formatCurrency(Math.abs(countedAmount))}
                   </span>
                 </div>
               )
@@ -394,6 +420,9 @@ export function PersonView({
           {/* User's prepayments */}
           {myPrepayments.map((p, i) => {
             const isRefund = p.type === 'refund' || p.type === 'distribution'
+            const isJointAccount = getPayerDisplay(p.from).kind === 'jointAccount'
+            // A joint-account prepayment counts the member's equal share only
+            const myShare = attributedShare(p.from, p.amount)
             return (
               <div key={`prep-${i}`} className="flex items-center gap-4 py-3">
                 <div
@@ -413,9 +442,12 @@ export function PersonView({
                     : p.type === 'supplement'
                       ? `Odeslán doplatek (${bankerName})`
                       : `Odeslána záloha (${bankerName})`}
+                  {isJointAccount && (
+                    <span className="text-gray-400 text-sm"> – společný účet, tvá část</span>
+                  )}
                 </div>
                 <span className="text-green-600 font-bold">
-                  {isRefund ? 'Přijato ' : '+'} {formatCurrency(Math.abs(p.amount))}
+                  {isRefund ? 'Přijato ' : '+'} {formatCurrency(Math.abs(myShare))}
                 </span>
               </div>
             )
@@ -424,6 +456,9 @@ export function PersonView({
           {/* User's expenses */}
           {myExpenses.map((e) => {
             const isRefund = e.amount < 0
+            const isJointAccount = getPayerDisplay(e.payer).kind === 'jointAccount'
+            // A joint-account payment counts the member's equal share only
+            const myShare = attributedShare(e.payer, e.amount)
             return (
               <div key={e.id} className="flex items-center gap-4 py-3">
                 <div
@@ -437,9 +472,17 @@ export function PersonView({
                     <Receipt size={16} />
                   )}
                 </div>
-                <div className="flex-1 font-medium text-gray-700">{e.title}</div>
+                <div className="flex-1 font-medium text-gray-700">
+                  {e.title}
+                  {isJointAccount && (
+                    <span className="text-gray-400 text-sm">
+                      {' '}
+                      – společný účet, tvá část (celkem {formatCurrency(Math.abs(e.amount))})
+                    </span>
+                  )}
+                </div>
                 <span className={isRefund ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                  {isRefund ? 'Vráceno ' : 'Platba '} {formatCurrency(Math.abs(e.amount))}
+                  {isRefund ? 'Vráceno ' : 'Platba '} {formatCurrency(Math.abs(myShare))}
                 </span>
               </div>
             )
