@@ -161,10 +161,19 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ## Deployment
 
-Deployed on **Vercel** (`zicha.travel` + per-chata custom domains), production
-branch `main`, via Vercel's GitHub integration — no deploy workflow in the
-repo. See `docs/VERCEL_MIGRATION.md` for the setup (env vars, preview DB,
-domain routing).
+**Interim dual-platform state** (see `docs/VERCEL_MIGRATION.md`): DNS for
+`zicha.travel` still points at the **Fly.io** app (`split-expanses`,
+deployed by `.github/workflows/deploy.yml` on push to `main`, config in
+`fly.toml`). A parallel **Vercel** deployment (`zicha-travel.vercel.app`,
+via Vercel's GitHub integration) is stood up and becomes production once
+the DNS cutover happens — media must be migrated to Supabase Storage
+first (Fly serves media from its volume; the Vercel side currently 500s
+on media). After cutover: delete the Fly workflow + `fly.toml` +
+`Dockerfile` + `.dockerignore` and tear down the Fly app.
+
+Both platforms deploy from `main` and both run the idempotent
+`migrate:payer auto` against the shared production database (advisory
+lock prevents races).
 
 - Database: Supabase PostgreSQL via the **pooled** connection
   (`...pooler.supabase.com:6543`) — required for serverless.

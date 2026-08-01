@@ -1,0 +1,32 @@
+app = 'split-expanses'
+primary_region = 'fra'
+
+[build]
+  [build.args]
+    NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED = "true"
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '3000'
+
+[deploy]
+  # Runs on a temporary machine (with secrets, before the new version goes
+  # live) — applies pending DB schema/data migrations; no-op once migrated
+  release_command = 'node scripts/migrate-payer-polymorphic.mjs auto'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[mounts]
+  source = 'media_data'
+  destination = '/app/media'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
