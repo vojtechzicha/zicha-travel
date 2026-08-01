@@ -240,17 +240,18 @@ for "the math must remain correct":
 
 1. Schema + collection + `pnpm generate:types`.
 2. Data migration for polymorphic payer/from — **automatic on deploy**: the
-   Fly `release_command` (fly.toml `[deploy]`) runs
-   `node scripts/migrate-payer-polymorphic.mjs auto` on a temporary machine
-   with the production `DATABASE_URI` before the new version goes live. It
-   migrates in one transaction (schema DDL identical to Payload's push,
+   Vercel build (`vercel-build` script in package.json) runs
+   `node scripts/migrate-payer-polymorphic.mjs auto` before `next build`,
+   against that deployment's own `DATABASE_URI` (production or preview DB).
+   It migrates in one transaction (schema DDL identical to Payload's push,
    verified by drizzle diff), keeps a `_migration.payer_backup` safety copy,
-   and no-ops on every subsequent deploy. For local dev, the manual
-   `backup`/`restore` flow applies (see the script header).
+   and no-ops on every subsequent deploy. Production was migrated on
+   2026-08-01. For local dev, the manual `backup`/`restore` flow applies
+   (see the script header).
 3. Calculation layer + tests.
 4. Admin + frontend UI.
-5. Deploy to Fly.io (migration runs itself); define joint accounts for
-   affected chatas.
+5. Deploy (Vercel auto-deploys `main`; migration runs itself); define joint
+   accounts for affected chatas.
 
 ## 10. Open questions — all resolved 2026-08-01
 

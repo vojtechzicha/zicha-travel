@@ -64,9 +64,8 @@ export default buildConfig({
     // configured) would fail at runtime with "PayloadComponent not found in
     // importMap" — rendering the admin panel blank.
     //
-    // Behaviour is gated via `enabled`: when S3_ENDPOINT is unset (local dev,
-    // or Fly before S3 was configured) the plugin is disabled and Payload
-    // falls back to local-disk storage.
+    // Behaviour is gated via `enabled`: when S3_ENDPOINT is unset (local dev)
+    // the plugin is disabled and Payload falls back to local-disk storage.
     s3Storage({
       enabled: Boolean(process.env.S3_ENDPOINT),
       disableLocalStorage: Boolean(process.env.S3_ENDPOINT),

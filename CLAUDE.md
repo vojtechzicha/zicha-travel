@@ -161,13 +161,18 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ## Deployment
 
-Deployed on **Fly.io** (`zicha-travel.fly.dev`):
-- Region: `fra` (Frankfurt)
-- VM: shared-cpu-1x, 256MB RAM (free tier)
-- Volume: 1GB mounted at `/app/media` for uploaded files
-- Configuration: `fly.toml`
+Deployed on **Vercel** (`zicha.travel` + per-chata custom domains), production
+branch `main`, via Vercel's GitHub integration — no deploy workflow in the
+repo. See `docs/VERCEL_MIGRATION.md` for the setup (env vars, preview DB,
+domain routing).
 
-Media files are stored on the persistent volume and served via Payload's API at `/api/media/file/{filename}`.
+- Database: Supabase PostgreSQL via the **pooled** connection
+  (`...pooler.supabase.com:6543`) — required for serverless.
+- Media: **Supabase Storage** (S3-compatible) through `@payloadcms/storage-s3`,
+  gated on `S3_ENDPOINT`; local dev without it falls back to disk.
+- DB migrations run automatically during the Vercel build: the
+  `vercel-build` script executes `migrate:payer auto` (idempotent) before
+  `next build`, against that deployment's own `DATABASE_URI` (prod or preview).
 
 ## Development Commands
 
@@ -178,12 +183,12 @@ pnpm db               # Start only PostgreSQL in background
 pnpm db:stop          # Stop PostgreSQL
 
 # Sync data from production
-pnpm migrate-from-prod  # Copy database from Supabase + media from Fly.io
+pnpm migrate-from-prod  # Copy database from production Supabase
 
 # One-time migration for the polymorphic payer change (joint accounts).
-# Production runs it automatically: fly.toml [deploy] release_command runs
-# `migrate:payer auto` (single transaction, idempotent) before each deploy
-# goes live. Locally: backup BEFORE the schema push, restore AFTER — see
+# Production runs it automatically: the Vercel build (`vercel-build` script)
+# runs `migrate:payer auto` (single transaction, idempotent) before
+# `next build`. Locally: backup BEFORE the schema push, restore AFTER — see
 # script header ( `status` to inspect, `--db=<uri>` to override).
 pnpm migrate:payer auto|backup|restore|status|cleanup
 

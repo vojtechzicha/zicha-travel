@@ -72,22 +72,22 @@ Once configured, Microsoft OAuth becomes the **only** login method. Only users w
 | `AZURE_REDIRECT_URI`                 | `https://your-domain/api/auth/callback` |
 | `NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED` | Set to `true` to show Microsoft button  |
 
-#### Fly.io Deployment
+#### Production Deployment (Vercel)
 
 Add a production redirect URI in Azure Portal > your app > **Authentication** > **Add a redirect URI**:
 
 ```
-https://your-app.fly.dev/api/auth/callback
+https://your-domain/api/auth/callback
 ```
 
-Set the secrets on Fly.io:
+Set the environment variables in the Vercel project (Settings → Environment
+Variables → Production):
 
-```bash
-fly secrets set \
-  AZURE_CLIENT_ID=your-client-id \
-  AZURE_CLIENT_SECRET=your-client-secret \
-  AZURE_REDIRECT_URI=https://your-app.fly.dev/api/auth/callback \
-  NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true
+```
+AZURE_CLIENT_ID=your-client-id
+AZURE_CLIENT_SECRET=your-client-secret
+AZURE_REDIRECT_URI=https://your-domain/api/auth/callback
+NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true
 ```
 
 > **Note:** After setting these secrets, the email/password login is disabled. Make sure you have at least one user in the Users collection with a matching Microsoft account email before enabling OAuth.
@@ -98,7 +98,7 @@ fly secrets set \
 - **CMS**: [Payload CMS](https://payloadcms.com/) 3
 - **Database**: PostgreSQL
 - **Styling**: Tailwind CSS v4
-- **Deployment**: Fly.io
+- **Deployment**: Vercel (media on Supabase Storage)
 
 ## License
 
