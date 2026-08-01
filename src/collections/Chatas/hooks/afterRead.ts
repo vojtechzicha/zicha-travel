@@ -5,6 +5,8 @@ import {
   transformExpense,
   transformPrepayment,
   transformParticipant,
+  transformJointAccount,
+  normalizePayerRef,
 } from '../../../utils/calculateStats'
 
 /**
@@ -57,41 +59,57 @@ export const afterReadHook: CollectionAfterReadHook<Chata> = async ({ doc, req, 
       depth: 0, // Avoid circular dependencies - we'll map names manually
     })
 
+    // Fetch all joint accounts ("společný účet") for this chata
+    const jointAccountsResult = await payload.find({
+      collection: 'joint-accounts',
+      where: {
+        chata: {
+          equals: doc.id,
+        },
+      },
+      limit: 1000,
+      depth: 0, // Avoid circular dependencies - we'll map names manually
+    })
+
     // Create a map of participant IDs to names for manual population
     const participantMap = new Map<string, string>()
     participantsResult.docs.forEach((p: any) => {
-      participantMap.set(p.id, p.name)
+      participantMap.set(String(p.id), p.name)
     })
+
+    const jointAccounts = jointAccountsResult.docs.map((ja: any) =>
+      transformJointAccount(ja, participantMap)
+    )
+    const jointAccountMap = new Map(jointAccounts.map((ja) => [String(ja.id), ja]))
 
     // Get banker name
     let bankerName = ''
     if (typeof doc.banker === 'object' && doc.banker !== null) {
       bankerName = doc.banker.name
-    } else if (typeof doc.banker === 'string') {
+    } else if (doc.banker !== null && doc.banker !== undefined) {
       // Look up banker name from our participant map
-      bankerName = participantMap.get(doc.banker) || ''
+      bankerName = participantMap.get(String(doc.banker)) || ''
     }
 
     // Transform data for calculation
     const participants = participantsResult.docs.map(transformParticipant)
 
-    // Manually populate participant names in expenses and prepayments
+    // Manually populate payer/participant names in expenses and prepayments
+    // (payer/from are polymorphic: participant or joint account)
     const expenses = expensesResult.docs.map((expense: any) => {
       const transformed = transformExpense(expense)
-      // Replace payer ID with object containing name
-      if (typeof transformed.payer === 'string') {
-        transformed.payer = {
-          id: transformed.payer,
-          name: participantMap.get(transformed.payer) || transformed.payer,
-        }
-      }
+      transformed.payer = normalizePayerRef(transformed.payer, participantMap, jointAccountMap)
       // Replace participant IDs in weights
       if (transformed.weights) {
         transformed.weights = transformed.weights.map((w: any) => ({
           ...w,
-          participant: typeof w.participant === 'string'
-            ? { id: w.participant, name: participantMap.get(w.participant) || w.participant }
-            : w.participant,
+          participant:
+            typeof w.participant === 'object' && w.participant !== null
+              ? w.participant
+              : {
+                  id: w.participant,
+                  name: participantMap.get(String(w.participant)) || String(w.participant),
+                },
         }))
       }
       return transformed
@@ -99,18 +117,12 @@ export const afterReadHook: CollectionAfterReadHook<Chata> = async ({ doc, req, 
 
     const prepayments = prepaymentsResult.docs.map((prepayment: any) => {
       const transformed = transformPrepayment(prepayment)
-      // Replace from ID with object containing name
-      if (typeof transformed.from === 'string') {
-        transformed.from = {
-          id: transformed.from,
-          name: participantMap.get(transformed.from) || transformed.from,
-        }
-      }
+      transformed.from = normalizePayerRef(transformed.from, participantMap, jointAccountMap)
       return transformed
     })
 
     // Calculate statistics
-    const stats = calculateStats(participants, expenses, prepayments, bankerName)
+    const stats = calculateStats(participants, expenses, prepayments, bankerName, jointAccounts)
 
     // Append statistics to the document
     return {

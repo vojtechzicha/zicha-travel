@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Receipt, ArrowLeft, Clock } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatCurrency'
+import { getPayerDisplay } from '@/lib/payerRef'
 import type { Expense } from '@/payload-types'
 
 const MAX_VISIBLE_OTHERS = 5
@@ -23,10 +24,8 @@ export function ExpenseCard({
   const [expanded, setExpanded] = useState(false)
   const isRefund = expense.amount < 0
   const isPlanned = expense.isPlanned || false
-  const payerName =
-    typeof expense.payer === 'object' && expense.payer !== null
-      ? expense.payer.name
-      : ''
+  const payer = getPayerDisplay(expense.payer)
+  const payerName = payer.name
 
   // Muted styling for "other" expenses when showing all
   const isOther = showAll && !isMine
@@ -108,8 +107,19 @@ export function ExpenseCard({
 
         <div className="text-sm text-gray-600 mb-2 flex items-center gap-2 flex-wrap">
           <span>
-            {isPlanned ? 'Zaplatí ' : isRefund ? 'Peníze vrátil/a ' : 'Platil/a '}
+            {isPlanned
+              ? 'Zaplatí '
+              : isRefund
+                ? payer.kind === 'jointAccount'
+                  ? 'Peníze vrátili '
+                  : 'Peníze vrátil/a '
+                : payer.kind === 'jointAccount'
+                  ? 'Platili '
+                  : 'Platil/a '}
             <strong>{payerName}</strong>
+            {payer.kind === 'jointAccount' && (
+              <span className="text-gray-400"> (společný účet)</span>
+            )}
           </span>
           {isPlanned && (
             <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-md uppercase">

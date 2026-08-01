@@ -1,8 +1,15 @@
 # PRD: Společný účet (Joint Account) Support
 
-**Status:** Draft v2 — awaiting approval
+**Status:** Approved (v2 + decisions below)
 **Author:** Claude (requested by Vojtěch Zicha)
 **Date:** 2026-08-01
+
+**Approved decisions:**
+
+1. Attribution rule: **Option A — equal split of the payment among members**
+   (§4.2); the same equal split applies to JA prepayments (§4.3).
+2. Data model: **polymorphic payer + one-time migration** (§5.2).
+3. Joint accounts carry **no banking fields** (§10.3 resolved: dropped).
 
 > v2: reworked after clarification. Settlement stays **fully per person**
 > (each member gets their own QR code / transfer; no payment is ever made to
@@ -65,12 +72,16 @@ exactly as today.
 - Banker rules, including "skip prepayments sent by the banker".
 - All results when no joint account is defined (regression-tested).
 
-### 4.2 Attribution rule for a JA-paid expense — **decision needed**
+### 4.2 Attribution rule for a JA-paid expense — **decided: equal split**
 
 When JA `J` with members M pays expense `E` (amount `X`, per-person shares
 `s_p` from E's split), how much of `X` counts as paid by each member?
 
-**Option C (recommended): own share first, remainder equally.**
+**Decision: Option A (equal split of the payment) — approved 2026-08-01.**
+Rationale: the joint account is jointly owned; predictable, applies uniformly
+to prepayments, no degenerate cases. Options kept below for the record.
+
+**Option C: own share first, remainder equally.**
 Each member is credited their own fair share of E; the remainder
 (`X − Σ_{m∈M} s_m`, i.e. the part covering non-members) is split equally
 among members:
@@ -104,8 +115,8 @@ Worked comparison — dinner 900 Kč, weighted split Alice 2 / Bob 1 / Cedric 1
 
 | Rule | Alice credited | Bob credited | Alice Δ | Bob Δ | Cedric Δ |
 |---|---|---|---|---|---|
-| C (recommended) | 450 + 112.5 = 562.5 | 225 + 112.5 = 337.5 | +112.5 | +112.5 | −225 |
-| A (equal) | 450 | 450 | 0 | +225 | −225 |
+| C | 450 + 112.5 = 562.5 | 225 + 112.5 = 337.5 | +112.5 | +112.5 | −225 |
+| **A (approved)** | 450 | 450 | 0 | +225 | −225 |
 | B (proportional) | 600 | 300 | +150 | +75 | −225 |
 
 All rules are globally correct (Cedric's debt is identical); they differ only
@@ -115,8 +126,7 @@ settlements.
 ### 4.3 Prepayments from a joint account
 
 Supported (confirmed). Prepayments have no weights, so a JA-sent prepayment
-is split **equally among members** (or by the configured ratio if Option D is
-chosen), then processed per person as today. Consequence of the existing
+is split **equally among members**, then processed per person as today. Consequence of the existing
 banker rule: if the banker is a JA member, the banker's part of a JA
 prepayment is skipped (money already in the pot) and co-members' parts count
 normally — which is exactly right.
@@ -126,13 +136,13 @@ normally — which is exactly right.
 No special handling needed. The banker's attributed part of a JA payment is
 ordinary personal `paidExternal`; the existing banker logic does the rest.
 
-### 4.5 Worked end-to-end example (Option C)
+### 4.5 Worked end-to-end example (approved equal-split rule)
 
 Chata: Alice (banker) + Bob — couple with JA "AB"; Cedric solo.
 
 | Event | Detail |
 |---|---|
-| Accommodation 3 000 | payer **JA AB**, equal split → 1 000/head. Attribution: own shares 1 000 + 1 000, remainder 1 000 split equally → Alice credited 1 500, Bob 1 500 |
+| Accommodation 3 000 | payer **JA AB**, equal split → 1 000/head. Attribution: 3 000 / 2 members → Alice credited 1 500, Bob 1 500 |
 | Dinner 600 | payer Cedric, weighted 1/1/1 → 200 each |
 | Advance 800 | from Cedric to banker |
 
@@ -207,7 +217,7 @@ migration.** (Open question §10.2.)
 | Participant in 2 JAs of one chata | Validation error |
 | JA with < 2 members | Validation error |
 | Member from another chata | Prevented by `filterOptions` + validate |
-| JA pays expense where members have zero/no weight | Remainder rule still attributes the full amount (Option C: split equally) |
+| JA pays expense where members have zero/no weight | Irrelevant to the equal-split rule — the payment is always split amount / member count |
 | Negative (refund) expense paid by JA | Attribution formula sign-flips consistently |
 | Planned expense paid by JA | Attributed the same way into `plannedPaidExternal` |
 | Prepayment from JA containing the banker | Banker's part skipped, co-members' parts counted (§4.3) |
@@ -234,13 +244,10 @@ for "the math must remain correct":
 4. Admin + frontend UI.
 5. Deploy to Fly.io; define joint accounts for affected chatas.
 
-## 10. Open questions
+## 10. Open questions — all resolved 2026-08-01
 
-1. **Attribution rule (§4.2)** — Option C recommended. This decides real
-   transfer amounts whenever the members' shares in a JA-paid expense are
-   unequal.
-2. **Polymorphic payer vs. parallel field (§5.2)** — polymorphic + one-time
-   migration recommended.
-3. **JA banking fields:** under this model no payment is ever made to the
-   joint account, so the fields chosen in the v1 review have no consumer.
-   Recommendation: drop them (can be added later if a use appears).
+1. **Attribution rule (§4.2)** → Option A, equal split of the payment.
+2. **Polymorphic payer vs. parallel field (§5.2)** → polymorphic + one-time
+   migration.
+3. **JA banking fields** → dropped (no payment is ever made to the joint
+   account; can be added later if a use appears).

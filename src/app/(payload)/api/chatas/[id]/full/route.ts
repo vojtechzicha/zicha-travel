@@ -59,6 +59,19 @@ export async function GET(
     // Get banker info
     const banker = typeof chata.banker === 'object' ? chata.banker : null
 
+    // Unwrap a populated polymorphic payer/from ({ relationTo, value }) to
+    // the referenced doc's name (participant or joint account)
+    const getRefName = (ref: unknown): string => {
+      if (typeof ref !== 'object' || ref === null) return ''
+      if ('relationTo' in ref) {
+        const value = (ref as { relationTo: string; value?: unknown }).value
+        return typeof value === 'object' && value !== null
+          ? ((value as { name?: string }).name ?? '')
+          : ''
+      }
+      return (ref as { name?: string }).name ?? ''
+    }
+
     // Transform to match original JSON structure
     const response = {
       name: chata.name,
@@ -74,8 +87,6 @@ export async function GET(
       },
       participants: participantsResult.docs.map((p) => p.name),
       expenses: expensesResult.docs.map((e) => {
-        const payer = typeof e.payer === 'object' ? e.payer : null
-
         // Transform weights
         let weights: 'ALL' | Record<string, number> = 'ALL'
         if (e.splitType === 'weighted' && e.weights && e.weights.length > 0) {
@@ -93,14 +104,13 @@ export async function GET(
           id: e.id,
           title: e.title,
           amount: e.amount,
-          payer: payer?.name || '',
+          payer: getRefName(e.payer),
           weights,
         }
       }),
       prepayments: prepaymentsResult.docs.map((p) => {
-        const from = typeof p.from === 'object' ? p.from : null
         return {
-          from: from?.name || '',
+          from: getRefName(p.from),
           amount: p.amount,
           note: p.note || '',
         }

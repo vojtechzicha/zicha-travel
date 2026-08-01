@@ -73,6 +73,7 @@ export interface Config {
     participants: Participant;
     expenses: Expense;
     prepayments: Prepayment;
+    'joint-accounts': JointAccount;
     backgrounds: Background;
     icons: Icon;
     'payload-kv': PayloadKv;
@@ -88,6 +89,7 @@ export interface Config {
     participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
     expenses: ExpensesSelect<false> | ExpensesSelect<true>;
     prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
+    'joint-accounts': JointAccountsSelect<false> | JointAccountsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -571,9 +573,17 @@ export interface Expense {
    */
   amount: number;
   /**
-   * Who paid for this expense
+   * Who paid for this expense (a participant or a joint account)
    */
-  payer: number | Participant;
+  payer:
+    | {
+        relationTo: 'participants';
+        value: number | Participant;
+      }
+    | {
+        relationTo: 'joint-accounts';
+        value: number | JointAccount;
+      };
   /**
    * How to split this expense among participants
    */
@@ -606,6 +616,29 @@ export interface Expense {
   updatedAt: string;
 }
 /**
+ * Shared bank accounts ("společný účet") of 2+ participants. Can be selected as the payer of an expense or sender of a prepayment; the amount is attributed equally to the members.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "joint-accounts".
+ */
+export interface JointAccount {
+  id: number;
+  /**
+   * Display name of the joint account (e.g., "Alice + Bob")
+   */
+  name: string;
+  /**
+   * The trip/chata this joint account belongs to
+   */
+  chata: number | Chata;
+  /**
+   * Participants sharing this account (at least 2)
+   */
+  members: (number | Participant)[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "prepayments".
  */
@@ -616,9 +649,17 @@ export interface Prepayment {
    */
   chata: number | Chata;
   /**
-   * Who sent the payment (or who received it if negative)
+   * Who sent the payment (or who received it if negative) — a participant or a joint account
    */
-  from: number | Participant;
+  from:
+    | {
+        relationTo: 'participants';
+        value: number | Participant;
+      }
+    | {
+        relationTo: 'joint-accounts';
+        value: number | JointAccount;
+      };
   /**
    * Amount (positive = to banker, negative = from banker/refund)
    */
@@ -681,6 +722,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'prepayments';
         value: number | Prepayment;
+      } | null)
+    | ({
+        relationTo: 'joint-accounts';
+        value: number | JointAccount;
       } | null)
     | ({
         relationTo: 'backgrounds';
@@ -951,6 +996,17 @@ export interface PrepaymentsSelect<T extends boolean = true> {
   type?: T;
   createdAt?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "joint-accounts_select".
+ */
+export interface JointAccountsSelect<T extends boolean = true> {
+  name?: T;
+  chata?: T;
+  members?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

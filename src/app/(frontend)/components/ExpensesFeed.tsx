@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ExpenseCard } from './ExpenseCard'
 import { GlassCard } from './GlassCard'
+import { isPayerOrMember } from '@/lib/payerRef'
 import type { Expense } from '@/payload-types'
 
 interface ExpensesFeedProps {
@@ -11,12 +12,8 @@ interface ExpensesFeedProps {
 }
 
 function isParticipantInExpense(expense: Expense, participantId: number): boolean {
-  // Check if participant is the payer
-  const payerId =
-    typeof expense.payer === 'object' && expense.payer !== null
-      ? expense.payer.id
-      : expense.payer
-  if (payerId === participantId) return true
+  // Check if participant is the payer (or a member of the paying joint account)
+  if (isPayerOrMember(expense.payer, participantId)) return true
 
   // For equal split, everyone is included
   if (expense.splitType === 'equal') return true

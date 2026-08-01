@@ -12,6 +12,7 @@ import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
 import { Expenses } from './collections/Expenses'
 import { Prepayments } from './collections/Prepayments'
+import { JointAccounts } from './collections/JointAccounts'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
 
@@ -40,7 +41,7 @@ export default buildConfig({
       beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
   },
-  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, Backgrounds, Icons],
+  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, JointAccounts, Backgrounds, Icons],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
