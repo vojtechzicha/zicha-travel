@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Receipt, ArrowLeft, Clock } from 'lucide-react'
+import { Receipt, ArrowLeft, Clock, HeartHandshake } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { getPayerDisplay } from '@/lib/payerRef'
 import type { Expense } from '@/payload-types'
@@ -46,6 +46,15 @@ export function ExpenseCard({
         : w.participant
     return participantId !== selectedParticipantId
   })
+
+  // Invitations ("pozvání") - the host covers the guest's share
+  const invitations = (expense.invitations ?? []).filter(
+    (inv) =>
+      typeof inv.host === 'object' &&
+      inv.host !== null &&
+      typeof inv.guest === 'object' &&
+      inv.guest !== null
+  )
 
   const totalOthers = otherWeights.length
   const visibleOthers = expanded ? otherWeights : otherWeights.slice(0, MAX_VISIBLE_OTHERS)
@@ -159,6 +168,24 @@ export function ExpenseCard({
             </>
           )}
         </div>
+
+        {invitations.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {invitations.map((inv, i) => {
+              const hostName = typeof inv.host === 'object' && inv.host !== null ? inv.host.name : ''
+              const guestName =
+                typeof inv.guest === 'object' && inv.guest !== null ? inv.guest.name : ''
+              return (
+                <span
+                  key={inv.id ?? i}
+                  className="bg-pink-50 text-pink-700 text-xs px-2 py-1 rounded-md flex items-center gap-1"
+                >
+                  <HeartHandshake size={12} /> {hostName} zve {guestName}
+                </span>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

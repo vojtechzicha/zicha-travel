@@ -158,6 +158,80 @@ export const Expenses: CollectionConfig = {
       },
     },
     {
+      name: 'invitations',
+      type: 'array',
+      admin: {
+        description:
+          'Pozvání – the host pays the guest\'s share of this expense. ' +
+          'A host can invite multiple guests; each guest can be invited only once per expense.',
+      },
+      fields: [
+        {
+          name: 'host',
+          type: 'relationship',
+          relationTo: 'participants',
+          required: true,
+          admin: {
+            description: 'Who covers the share (the inviter)',
+          },
+          filterOptions: ({ data }) => {
+            const doc = data as Partial<Expense> | undefined
+            if (doc?.chata) {
+              return {
+                chata: {
+                  equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata,
+                },
+              }
+            }
+            return true
+          },
+        },
+        {
+          name: 'guest',
+          type: 'relationship',
+          relationTo: 'participants',
+          required: true,
+          admin: {
+            description: 'Whose share is covered (the invited one)',
+          },
+          filterOptions: ({ data }) => {
+            const doc = data as Partial<Expense> | undefined
+            if (doc?.chata) {
+              return {
+                chata: {
+                  equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata,
+                },
+              }
+            }
+            return true
+          },
+        },
+      ],
+      validate: (value) => {
+        const rows = (value || []) as Array<{ host?: unknown; guest?: unknown }>
+        const refId = (ref: unknown): string | null => {
+          if (ref === null || ref === undefined) return null
+          if (typeof ref === 'object') return String((ref as { id: unknown }).id)
+          return String(ref)
+        }
+        const seenGuests = new Set<string>()
+        for (const row of rows) {
+          const host = refId(row.host)
+          const guest = refId(row.guest)
+          if (host && guest && host === guest) {
+            return 'A participant cannot invite themselves'
+          }
+          if (guest) {
+            if (seenGuests.has(guest)) {
+              return 'Each guest can be invited only once per expense'
+            }
+            seenGuests.add(guest)
+          }
+        }
+        return true
+      },
+    },
+    {
       name: 'createdAt',
       type: 'date',
       admin: {

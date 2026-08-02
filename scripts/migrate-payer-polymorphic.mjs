@@ -274,6 +274,27 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_joint_accounts_id_idx
   ON payload_locked_documents_rels USING btree (joint_accounts_id);
+
+-- "Pozvání" (invitations) feature: Expenses.invitations array — the host
+-- covers the guest's share of the expense. Additive only (new table), so it
+-- needs no data migration.
+CREATE TABLE IF NOT EXISTS expenses_invitations (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  host_id integer NOT NULL,
+  guest_id integer NOT NULL,
+  CONSTRAINT expenses_invitations_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES expenses(id) ON DELETE CASCADE,
+  CONSTRAINT expenses_invitations_host_id_participants_id_fk
+    FOREIGN KEY (host_id) REFERENCES participants(id) ON DELETE SET NULL,
+  CONSTRAINT expenses_invitations_guest_id_participants_id_fk
+    FOREIGN KEY (guest_id) REFERENCES participants(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS expenses_invitations_order_idx ON expenses_invitations USING btree (_order);
+CREATE INDEX IF NOT EXISTS expenses_invitations_parent_id_idx ON expenses_invitations USING btree (_parent_id);
+CREATE INDEX IF NOT EXISTS expenses_invitations_host_idx ON expenses_invitations USING btree (host_id);
+CREATE INDEX IF NOT EXISTS expenses_invitations_guest_idx ON expenses_invitations USING btree (guest_id);
 `
 
 async function auto() {

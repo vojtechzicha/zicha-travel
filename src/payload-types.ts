@@ -604,6 +604,22 @@ export interface Expense {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Pozvání – the host pays the guest's share of this expense. A host can invite multiple guests; each guest can be invited only once per expense.
+   */
+  invitations?:
+    | {
+        /**
+         * Who covers the share (the inviter)
+         */
+        host: number | Participant;
+        /**
+         * Whose share is covered (the invited one)
+         */
+        guest: number | Participant;
+        id?: string | null;
+      }[]
+    | null;
   createdAt: string;
   /**
    * Optional notes about this expense
@@ -977,6 +993,13 @@ export interface ExpensesSelect<T extends boolean = true> {
     | {
         participant?: T;
         weight?: T;
+        id?: T;
+      };
+  invitations?:
+    | T
+    | {
+        host?: T;
+        guest?: T;
         id?: T;
       };
   createdAt?: T;
