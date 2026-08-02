@@ -1,3 +1,4 @@
+import { PrefillParticipantsButton as PrefillParticipantsButton_2ce241fd2ada445640ca571d7192d139 } from '@/collections/Chatas/components/PrefillParticipantsButton'
 import { CzechBankAccountField as CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249 } from '@/components/CzechBankAccountField'
 import { ColorPickerField as ColorPickerField_37fac220471b04d5e6dda304975d2c1e } from '@/components/ColorPickerField'
 import { CopyFromParticipantButton as CopyFromParticipantButton_bcbffcfd059f63a5b1188dfd4c7290db } from '@/collections/Participants/components/CopyFromParticipantButton'
@@ -14,6 +15,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "@/collections/Chatas/components/PrefillParticipantsButton#PrefillParticipantsButton": PrefillParticipantsButton_2ce241fd2ada445640ca571d7192d139,
   "@/components/CzechBankAccountField#CzechBankAccountField": CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249,
   "@/components/ColorPickerField#ColorPickerField": ColorPickerField_37fac220471b04d5e6dda304975d2c1e,
   "@/collections/Participants/components/CopyFromParticipantButton#CopyFromParticipantButton": CopyFromParticipantButton_bcbffcfd059f63a5b1188dfd4c7290db,

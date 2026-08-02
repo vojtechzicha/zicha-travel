@@ -28,6 +28,13 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      (labelled "Name (Chata)") and prefill name, declension forms and
      banking info — for people who repeat across trips. Trip-specific
      fields (chata, paidBy, hasPet) are never copied
+   - Bulk variant on the Chata edit form ("Prefill participants",
+     `src/collections/Chatas/components/PrefillParticipantsButton.tsx`):
+     multiselect participants from previous chatas →
+     `POST /chatas/:id/prefill-participants` creates them as new
+     participants of that chata, copying the same fields; names already
+     present in the chata are skipped (dedupe is case-insensitive,
+     application-level — the compound unique constraint isn't in the DB)
    - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
      expense shares are covered by another participant (e.g. a child).
      Materialized as `auto: true` invitation rows on expenses: a create hook
