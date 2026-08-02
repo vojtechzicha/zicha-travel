@@ -1,5 +1,6 @@
 import { CzechBankAccountField as CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249 } from '@/components/CzechBankAccountField'
 import { ColorPickerField as ColorPickerField_37fac220471b04d5e6dda304975d2c1e } from '@/components/ColorPickerField'
+import { CopyFromParticipantButton as CopyFromParticipantButton_bcbffcfd059f63a5b1188dfd4c7290db } from '@/collections/Participants/components/CopyFromParticipantButton'
 import { ApplyPaidByButton as ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487 } from '@/collections/Participants/components/ApplyPaidByButton'
 import { WeightShareHint as WeightShareHint_63963a60997a410a90a159d982c94f8a } from '@/collections/Expenses/components/WeightShareHint'
 import { WeightsSumIndicator as WeightsSumIndicator_912a7196dce9ce4494e48dbd389777da } from '@/collections/Expenses/components/WeightsSumIndicator'
@@ -15,6 +16,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 export const importMap = {
   "@/components/CzechBankAccountField#CzechBankAccountField": CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249,
   "@/components/ColorPickerField#ColorPickerField": ColorPickerField_37fac220471b04d5e6dda304975d2c1e,
+  "@/collections/Participants/components/CopyFromParticipantButton#CopyFromParticipantButton": CopyFromParticipantButton_bcbffcfd059f63a5b1188dfd4c7290db,
   "@/collections/Participants/components/ApplyPaidByButton#ApplyPaidByButton": ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487,
   "@/collections/Expenses/components/WeightShareHint#WeightShareHint": WeightShareHint_63963a60997a410a90a159d982c94f8a,
   "@/collections/Expenses/components/WeightsSumIndicator#WeightsSumIndicator": WeightsSumIndicator_912a7196dce9ce4494e48dbd389777da,

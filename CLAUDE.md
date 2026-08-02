@@ -18,6 +18,16 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - People involved in a trip
    - Belongs to a specific Chata
    - Contains banking information for settlements
+   - Czech declension ("skloňování"): optional `akuzativ` ("Katku") and
+     `vokativ` ("Katko") name forms. Frontend uses the accusative where
+     grammar needs it (invitation texts: "Vojta zve Katku", "platíš za
+     Katku") via `src/lib/czechNames.ts`, always falling back to `name`;
+     `vokativ` is stored for future greetings, not rendered yet
+   - "Copy from" prefill (`components/CopyFromParticipantButton.tsx`, UI
+     field shown only on create): pick any participant across chatas
+     (labelled "Name (Chata)") and prefill name, declension forms and
+     banking info — for people who repeat across trips. Trip-specific
+     fields (chata, paidBy, hasPet) are never copied
    - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
      expense shares are covered by another participant (e.g. a child).
      Materialized as `auto: true` invitation rows on expenses: a create hook

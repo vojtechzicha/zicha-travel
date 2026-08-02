@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Crown,
   ChevronDown,
@@ -19,6 +19,7 @@ import { GlassCard } from './GlassCard'
 import { SettlementActions } from './SettlementActions'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
+import { akuzativByName } from '@/lib/czechNames'
 import type { Participant, Chata, Prepayment, Expense } from '@/payload-types'
 import type { ParticipantStats } from '@/utils/calculateStats'
 
@@ -52,6 +53,11 @@ export function PersonView({
 
   const avatarColor = getAvatarColor(participant.name)
   const balance = stats.balance
+
+  // Breakdown entries carry plain names; "platíš za …" / "pozvání pro …"
+  // need the guest in the accusative case ("za Katku")
+  const akuzativNames = useMemo(() => akuzativByName(allParticipants), [allParticipants])
+  const inAkuzativ = (name: string) => akuzativNames.get(name) ?? name
 
   // Settlement threshold: 1 Kč to avoid small rounding differences
   const isSettled = Math.abs(balance) <= 1
@@ -255,7 +261,7 @@ export function PersonView({
                       {' '}<small className="text-gray-500">({item.weightIsAmount ? `podíl ${formatCurrency(item.weight)}` : `${item.weight} ${item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'}`})</small>
                       {item.invitedGuest && (
                         <small className="text-pink-600">
-                          {' '}· {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}
+                          {' '}· {item.auto ? `platíš za ${inAkuzativ(item.invitedGuest)}` : `pozvání pro ${inAkuzativ(item.invitedGuest)}`}
                         </small>
                       )}
                       {item.invitedBy && (
@@ -305,7 +311,7 @@ export function PersonView({
                       {' '}<small className="text-amber-700/80">({item.weightIsAmount ? `podíl ${formatCurrency(item.weight)}` : `${item.weight} ${item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'}`})</small>
                       {item.invitedGuest && (
                         <small className="text-pink-700">
-                          {' '}· {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}
+                          {' '}· {item.auto ? `platíš za ${inAkuzativ(item.invitedGuest)}` : `pozvání pro ${inAkuzativ(item.invitedGuest)}`}
                         </small>
                       )}
                       {item.invitedBy && (

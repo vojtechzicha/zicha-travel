@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Receipt, ArrowLeft, Clock, HeartHandshake, FileText, X } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { getPayerDisplay } from '@/lib/payerRef'
+import { akuzativName } from '@/lib/czechNames'
 import type { Expense, ExpenseAttachment } from '@/payload-types'
 
 const MAX_VISIBLE_OTHERS = 5
@@ -196,8 +197,9 @@ export function ExpenseCard({
           <div className="flex flex-wrap gap-1 mt-1">
             {invitations.map((inv, i) => {
               const hostName = typeof inv.host === 'object' && inv.host !== null ? inv.host.name : ''
+              // Guest is the object of "zve" — accusative ("Vojta zve Katku")
               const guestName =
-                typeof inv.guest === 'object' && inv.guest !== null ? inv.guest.name : ''
+                typeof inv.guest === 'object' && inv.guest !== null ? akuzativName(inv.guest) : ''
               return (
                 <span
                   key={inv.id ?? i}

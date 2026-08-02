@@ -352,6 +352,12 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_expense_attachments_id_idx
   ON payload_locked_documents_rels USING btree (expense_attachments_id);
+
+-- Czech declension ("skloňování"): optional accusative ("Katku") and
+-- vocative ("Katko") forms of the participant's name; the frontend falls
+-- back to the plain name when empty. Additive only — no data migration.
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS akuzativ character varying;
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS vokativ character varying;
 `
 
 async function auto() {
