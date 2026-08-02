@@ -151,10 +151,10 @@ export function PersonView({
           {/* Row: Kolik ještě musíš zaplatit (planned expenses) - only if > 0 */}
           {stats.plannedPaidExternal > 0 && (
             <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2 text-amber-600">
+              <span className="flex items-center gap-2 text-amber-700">
                 <Clock size={14} /> Kolik ještě musíš zaplatit:
               </span>
-              <strong className="text-amber-600">{formatCurrency(stats.plannedPaidExternal)}</strong>
+              <strong className="text-amber-700">{formatCurrency(stats.plannedPaidExternal)}</strong>
             </div>
           )}
 
@@ -266,10 +266,10 @@ export function PersonView({
           {/* Row: Planned Fair Share (expandable) - only if there are planned costs */}
           {stats.plannedCost > 0 && (
             <div
-              className="flex justify-between items-center text-sm bg-amber-50/50 -mx-2 px-2 py-2 rounded-lg cursor-pointer hover:bg-amber-100/50 transition-colors"
+              className="flex justify-between items-center text-sm bg-amber-50/70 -mx-2 px-2 py-2 rounded-lg cursor-pointer hover:bg-amber-100/70 transition-colors"
               onClick={() => setIsPlannedBreakdownOpen(!isPlannedBreakdownOpen)}
             >
-              <div className="flex items-center gap-2 text-amber-600">
+              <div className="flex items-center gap-2 text-amber-700">
                 <Clock size={14} /> Plánovaná útrata (Fair Share):
                 {isPlannedBreakdownOpen ? (
                   <ChevronUp size={14} />
@@ -277,22 +277,22 @@ export function PersonView({
                   <ChevronDown size={14} />
                 )}
               </div>
-              <strong className="text-amber-600">- {formatCurrency(stats.plannedCost)}</strong>
+              <strong className="text-amber-700">- {formatCurrency(stats.plannedCost)}</strong>
             </div>
           )}
 
           {/* Breakdown list for planned costs (expanded) */}
           {isPlannedBreakdownOpen && stats.costBreakdown && stats.costBreakdown.filter(item => item.isPlanned).length > 0 && (
-            <div className="bg-amber-50/30 -mx-2 px-2 py-2 rounded-lg space-y-1 animate-in slide-in-from-top-2 duration-200">
+            <div className="bg-white/60 -mx-2 px-2 py-2 rounded-lg space-y-1 animate-in slide-in-from-top-2 duration-200">
               {stats.costBreakdown.filter(item => item.isPlanned).map((item, idx) => {
                 const isCredit = item.cost < 0
                 return (
-                  <div key={idx} className="flex justify-between text-xs text-amber-600">
+                  <div key={idx} className="flex justify-between text-xs text-amber-800">
                     <span>
                       {item.title}
-                      {' '}<small className="text-amber-400">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                      {' '}<small className="text-amber-700/80">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
                     </span>
-                    <span className={isCredit ? 'text-green-600' : ''}>
+                    <span className={isCredit ? 'text-green-700' : ''}>
                       {isCredit ? '+' : '-'} {formatCurrency(Math.abs(item.cost))}
                     </span>
                   </div>
