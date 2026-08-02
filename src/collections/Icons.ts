@@ -5,6 +5,7 @@ export const Icons: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'isDefault'],
+    group: 'Appearance',
   },
   access: {
     read: () => true,

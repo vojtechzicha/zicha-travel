@@ -37,6 +37,7 @@ export const Participants: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'chata', 'accountNumber'],
+    group: 'Expense Tracking',
   },
   access: {
     // Public read access for API consumption

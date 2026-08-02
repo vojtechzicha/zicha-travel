@@ -27,6 +27,7 @@ export const Expenses: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'amount', 'payer', 'chata'],
+    group: 'Expense Tracking',
   },
   access: {
     // Public read access for API consumption

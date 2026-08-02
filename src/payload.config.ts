@@ -42,7 +42,21 @@ export default buildConfig({
       beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
   },
-  collections: [Users, Media, Chatas, Participants, Expenses, ExpenseAttachments, Prepayments, JointAccounts, Backgrounds, Icons],
+  // Order matters for the admin UI: nav/dashboard groups appear in the order
+  // of their first collection here (Chata → Expense Tracking → Appearance →
+  // System). Purely cosmetic — no schema or API impact.
+  collections: [
+    Chatas,
+    Participants,
+    Expenses,
+    Prepayments,
+    JointAccounts,
+    ExpenseAttachments,
+    Backgrounds,
+    Icons,
+    Users,
+    Media,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

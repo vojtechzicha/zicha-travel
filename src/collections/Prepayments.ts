@@ -6,6 +6,7 @@ export const Prepayments: CollectionConfig = {
   admin: {
     useAsTitle: 'note',
     defaultColumns: ['from', 'amount', 'type', 'chata'],
+    group: 'Expense Tracking',
   },
   access: {
     // Public read access for API consumption
