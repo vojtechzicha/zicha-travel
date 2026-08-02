@@ -59,3 +59,21 @@ export function ibanToAccount(input: string): string | null {
   }
   return `${accountNumber}/${bankCode}`
 }
+
+/**
+ * Resolve a possibly partial pair of banking fields into both formats,
+ * deriving the missing side (account ↔ IBAN) when possible. Returns null
+ * when neither field is filled in; an underivable side stays ''.
+ */
+export function resolveBankAccount(
+  accountNumber?: string | null,
+  iban?: string | null,
+): { accountNumber: string; iban: string } | null {
+  const account = accountNumber?.trim() || ''
+  const cleanIban = iban?.trim() || ''
+  if (!account && !cleanIban) return null
+  return {
+    accountNumber: account || ibanToAccount(cleanIban) || '',
+    iban: cleanIban || accountToIban(account) || '',
+  }
+}

@@ -14,7 +14,7 @@ export const ExpenseAttachments: CollectionConfig = {
   },
   admin: {
     description: 'Účtenky a další přílohy výdajů (fotky, PDF)',
-    group: 'Expense Tracking',
+    group: 'System',
   },
   access: {
     // Public read access for API consumption (consistent with all other

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowUp, ArrowDown, QrCode, Copy, Check } from 'lucide-react'
 import { QRPayment } from './QRPayment'
 import { formatCurrency } from '@/lib/formatCurrency'
+import { resolveBankAccount } from '@/utils/czechBankAccount'
 import type { Participant, Chata } from '@/payload-types'
 
 interface Creditor {
@@ -120,14 +121,19 @@ export function SettlementActions({
             <div className="space-y-4">
               {activeCreditors.length > 0 ? (
                 activeCreditors.map((creditor) => {
-                  // Find participant to get account number
+                  // Find participant to get banking info; derive the missing
+                  // half (account ↔ IBAN) — participants often fill only one.
+                  // The QR generator needs the Czech account number format
                   const creditorParticipant = participants.find(
                     (p) => p.name === creditor.name
                   )
-                  const hasAccount = creditorParticipant?.accountNumber
+                  const creditorBank = resolveBankAccount(
+                    creditorParticipant?.accountNumber,
+                    creditorParticipant?.iban
+                  )
 
-                  // No bank account info - simple payment instruction
-                  if (!hasAccount) {
+                  // No (usable) bank account info - simple payment instruction
+                  if (!creditorBank?.accountNumber) {
                     return (
                       <div
                         key={creditor.name}
@@ -178,7 +184,7 @@ export function SettlementActions({
                             <div className="bg-white p-4 rounded-xl shadow-sm">
                               <QRPayment
                                 amount={creditor.amount}
-                                accountNumber={creditorParticipant.accountNumber!}
+                                accountNumber={creditorBank.accountNumber}
                                 message={`Vyrovnani - ${chataShortName}`}
                               />
                             </div>
@@ -188,10 +194,10 @@ export function SettlementActions({
                               <div className="bg-white rounded-xl p-4 shadow-sm">
                                 <h5 className="text-sm font-medium text-gray-500 mb-3">Pro ruční zadání</h5>
                                 <div>
-                                  {creditorParticipant.accountNumber && (
-                                    <CopyableRow label="Číslo účtu" value={creditorParticipant.accountNumber} />
+                                  <CopyableRow label="Číslo účtu" value={creditorBank.accountNumber} />
+                                  {creditorBank.iban && (
+                                    <CopyableRow label="IBAN" value={creditorBank.iban} />
                                   )}
-                                  <CopyableRow label="IBAN" value={creditorParticipant.iban!} />
                                   <CopyableRow
                                     label="Částka"
                                     value={formatCurrency(Math.round(creditor.amount))}
@@ -220,7 +226,7 @@ export function SettlementActions({
   // Regular participant view - only shown when not settled
   return (
     <div className="space-y-4">
-      {isDebtor && bankerAccount && (
+      {isDebtor && bankerAccount?.number && (
         <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="bg-red-500 p-2 rounded-lg">
@@ -249,7 +255,7 @@ export function SettlementActions({
                 <h5 className="text-sm font-medium text-gray-500 mb-3">Pro ruční zadání</h5>
                 <div>
                   <CopyableRow label="Číslo účtu" value={bankerAccount.number} />
-                  <CopyableRow label="IBAN" value={bankerAccount.iban} />
+                  {bankerAccount.iban && <CopyableRow label="IBAN" value={bankerAccount.iban} />}
                   <CopyableRow
                     label="Částka"
                     value={formatCurrency(Math.round(Math.abs(balance)))}

@@ -1,8 +1,87 @@
 import type { CollectionConfig } from 'payload'
 import { afterReadHook } from './Chatas/hooks/afterRead'
 
+const refId = (value: unknown): string =>
+  typeof value === 'object' && value !== null
+    ? String((value as { id: unknown }).id)
+    : String(value)
+
 export const Chatas: CollectionConfig = {
   slug: 'chatas',
+  endpoints: [
+    {
+      // Bulk prefill: clone selected participants from previous chatas into
+      // this one — copies name, declension forms and banking info; skips
+      // names already present in this chata (see PrefillParticipantsButton
+      // on the edit form)
+      path: '/:id/prefill-participants',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing chata id' }, { status: 400 })
+        }
+        const assigned = ((req.user.assignedChatas as unknown[]) || []).map(refId)
+        if (req.user.role !== 'admin' && !assigned.includes(String(id))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        let participantIds: unknown
+        try {
+          const body = await req.json?.()
+          participantIds = body?.participantIds
+        } catch {
+          participantIds = undefined
+        }
+        if (!Array.isArray(participantIds) || participantIds.length === 0) {
+          return Response.json(
+            { error: 'participantIds must be a non-empty array' },
+            { status: 400 }
+          )
+        }
+        const sources = await req.payload.find({
+          collection: 'participants',
+          where: { id: { in: participantIds } },
+          limit: 1000,
+          depth: 0,
+        })
+        const existing = await req.payload.find({
+          collection: 'participants',
+          where: { chata: { equals: id } },
+          limit: 1000,
+          depth: 0,
+        })
+        // The chata+name unique constraint is application-level only —
+        // dedupe against existing participants AND within the selection
+        const taken = new Set(existing.docs.map((p) => p.name.trim().toLowerCase()))
+        let created = 0
+        const skipped: string[] = []
+        for (const source of sources.docs) {
+          const key = source.name.trim().toLowerCase()
+          if (taken.has(key)) {
+            skipped.push(source.name)
+            continue
+          }
+          taken.add(key)
+          await req.payload.create({
+            collection: 'participants',
+            data: {
+              name: source.name,
+              akuzativ: source.akuzativ ?? undefined,
+              vokativ: source.vokativ ?? undefined,
+              accountNumber: source.accountNumber ?? undefined,
+              iban: source.iban ?? undefined,
+              chata: Number(id),
+            },
+          })
+          created++
+        }
+        return Response.json({ created, skipped })
+      },
+    },
+  ],
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'location', 'slug'],
@@ -101,6 +180,20 @@ export const Chatas: CollectionConfig = {
       ],
     },
 
+    // Participants prefill (bulk clone from previous chatas)
+    {
+      name: 'prefillParticipants',
+      type: 'ui',
+      admin: {
+        components: {
+          Field:
+            '@/collections/Chatas/components/PrefillParticipantsButton#PrefillParticipantsButton',
+        },
+        // Creating related participants needs a saved chata id
+        condition: (data) => Boolean(data?.id),
+      },
+    },
+
     // Banking Configuration
     {
       type: 'collapsible',
@@ -112,10 +205,20 @@ export const Chatas: CollectionConfig = {
           relationTo: 'participants',
           required: false,
           admin: {
-            description: 'Person managing the money for this trip',
+            description:
+              'Person managing the money for this trip. On a new chata the list is ' +
+              'empty — save the chata, add participants (e.g. via "Prefill ' +
+              'participants" above), then pick the banker. Selecting one prefills ' +
+              'the account fields below from their banking info.',
+            components: {
+              afterInput: [
+                '@/collections/Chatas/components/BankerBankingPrefill#BankerBankingPrefill',
+              ],
+            },
           },
           filterOptions: ({ data }) => {
-            // Only show participants from this chata
+            // Only show participants from this chata; an unsaved chata has
+            // no participants yet — show none instead of every chata's
             if (data?.id) {
               return {
                 chata: {
@@ -123,7 +226,7 @@ export const Chatas: CollectionConfig = {
                 },
               }
             }
-            return true
+            return false
           },
         },
         {
@@ -575,7 +678,7 @@ export const Chatas: CollectionConfig = {
                             },
                           }
                         }
-                        return true
+                        return false
                       },
                     },
                     {
@@ -650,7 +753,7 @@ export const Chatas: CollectionConfig = {
                     },
                   }
                 }
-                return true
+                return false
               },
             },
             {
@@ -668,7 +771,7 @@ export const Chatas: CollectionConfig = {
                     },
                   }
                 }
-                return true
+                return false
               },
             },
             {
@@ -691,7 +794,7 @@ export const Chatas: CollectionConfig = {
                         },
                       }
                     }
-                    return true
+                    return false
                   },
                 },
               ],

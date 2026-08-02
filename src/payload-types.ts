@@ -67,16 +67,16 @@ export interface Config {
   };
   blocks: {};
   collections: {
-    users: User;
-    media: Media;
     chatas: Chata;
     participants: Participant;
     expenses: Expense;
-    'expense-attachments': ExpenseAttachment;
     prepayments: Prepayment;
     'joint-accounts': JointAccount;
+    'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
+    users: User;
+    media: Media;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,16 +84,16 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
-    users: UsersSelect<false> | UsersSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
     chatas: ChatasSelect<false> | ChatasSelect<true>;
     participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
     expenses: ExpensesSelect<false> | ExpensesSelect<true>;
-    'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
     'joint-accounts': JointAccountsSelect<false> | JointAccountsSelect<true>;
+    'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
+    users: UsersSelect<false> | UsersSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -132,39 +132,6 @@ export interface UserAuthOperations {
     email: string;
     password: string;
   };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
-export interface User {
-  id: number;
-  /**
-   * Admins can manage all chatas, users can only manage assigned chatas
-   */
-  role: 'admin' | 'user';
-  /**
-   * Chatas this user can manage (only applies to non-admin users)
-   */
-  assignedChatas?: (number | Chata)[] | null;
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -472,6 +439,14 @@ export interface Participant {
    */
   name: string;
   /**
+   * Name in the accusative case, e.g. "Katku" — used in phrases like "Vojta zve Katku". Falls back to the plain name when empty.
+   */
+  akuzativ?: string | null;
+  /**
+   * Name in the vocative case, e.g. "Katko" — stored for future greetings, not displayed anywhere yet.
+   */
+  vokativ?: string | null;
+  /**
    * The trip/chata this participant belongs to
    */
   chata: number | Chata;
@@ -493,6 +468,39 @@ export interface Participant {
   iban?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  /**
+   * Admins can manage all chatas, users can only manage assigned chatas
+   */
+  role: 'admin' | 'user';
+  /**
+   * Chatas this user can manage (only applies to non-admin users)
+   */
+  assignedChatas?: (number | Chata)[] | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -521,6 +529,8 @@ export interface Background {
   createdAt: string;
 }
 /**
+ * Files backing Backgrounds and Icons (not expense receipts)
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
@@ -604,7 +614,7 @@ export interface Expense {
          */
         participant: number | Participant;
         /**
-         * Weight multiplier for this participant (e.g., 1, 0.5, 2)
+         * Weight multiplier for this participant (e.g., 1, 0.5, 2). If all weights add up to the total amount (±1 Kč), they are displayed as Kč amounts.
          */
         weight: number;
         id?: string | null;
@@ -754,14 +764,6 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
-        relationTo: 'users';
-        value: number | User;
-      } | null)
-    | ({
-        relationTo: 'media';
-        value: number | Media;
-      } | null)
-    | ({
         relationTo: 'chatas';
         value: number | Chata;
       } | null)
@@ -774,10 +776,6 @@ export interface PayloadLockedDocument {
         value: number | Expense;
       } | null)
     | ({
-        relationTo: 'expense-attachments';
-        value: number | ExpenseAttachment;
-      } | null)
-    | ({
         relationTo: 'prepayments';
         value: number | Prepayment;
       } | null)
@@ -786,12 +784,24 @@ export interface PayloadLockedDocument {
         value: number | JointAccount;
       } | null)
     | ({
+        relationTo: 'expense-attachments';
+        value: number | ExpenseAttachment;
+      } | null)
+    | ({
         relationTo: 'backgrounds';
         value: number | Background;
       } | null)
     | ({
         relationTo: 'icons';
         value: number | Icon;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null)
+    | ({
+        relationTo: 'media';
+        value: number | Media;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -834,48 +844,6 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users_select".
- */
-export interface UsersSelect<T extends boolean = true> {
-  role?: T;
-  assignedChatas?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
-  sessions?:
-    | T
-    | {
-        id?: T;
-        createdAt?: T;
-        expiresAt?: T;
-      };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
- */
-export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1013,6 +981,8 @@ export interface ChatasSelect<T extends boolean = true> {
  */
 export interface ParticipantsSelect<T extends boolean = true> {
   name?: T;
+  akuzativ?: T;
+  vokativ?: T;
   chata?: T;
   hasPet?: T;
   paidBy?: T;
@@ -1054,24 +1024,6 @@ export interface ExpensesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "expense-attachments_select".
- */
-export interface ExpenseAttachmentsSelect<T extends boolean = true> {
-  alt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "prepayments_select".
  */
 export interface PrepaymentsSelect<T extends boolean = true> {
@@ -1096,6 +1048,24 @@ export interface JointAccountsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expense-attachments_select".
+ */
+export interface ExpenseAttachmentsSelect<T extends boolean = true> {
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "backgrounds_select".
  */
 export interface BackgroundsSelect<T extends boolean = true> {
@@ -1117,6 +1087,48 @@ export interface IconsSelect<T extends boolean = true> {
   svg?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users_select".
+ */
+export interface UsersSelect<T extends boolean = true> {
+  role?: T;
+  assignedChatas?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

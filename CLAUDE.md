@@ -18,6 +18,23 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - People involved in a trip
    - Belongs to a specific Chata
    - Contains banking information for settlements
+   - Czech declension ("skloňování"): optional `akuzativ` ("Katku") and
+     `vokativ` ("Katko") name forms. Frontend uses the accusative where
+     grammar needs it (invitation texts: "Vojta zve Katku", "platíš za
+     Katku") via `src/lib/czechNames.ts`, always falling back to `name`;
+     `vokativ` is stored for future greetings, not rendered yet
+   - "Copy from" prefill (`components/CopyFromParticipantButton.tsx`, UI
+     field shown only on create): pick any participant across chatas
+     (labelled "Name (Chata)") and prefill name, declension forms and
+     banking info — for people who repeat across trips. Trip-specific
+     fields (chata, paidBy, hasPet) are never copied
+   - Bulk variant on the Chata edit form ("Prefill participants",
+     `src/collections/Chatas/components/PrefillParticipantsButton.tsx`):
+     multiselect participants from previous chatas →
+     `POST /chatas/:id/prefill-participants` creates them as new
+     participants of that chata, copying the same fields; names already
+     present in the chata are skipped (dedupe is case-insensitive,
+     application-level — the compound unique constraint isn't in the DB)
    - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
      expense shares are covered by another participant (e.g. a child).
      Materialized as `auto: true` invitation rows on expenses: a create hook
@@ -58,6 +75,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - See `docs/PRD-spolecny-ucet.md` for the full design and the approved math
 
 6. **ExpenseAttachments** (`src/collections/ExpenseAttachments.ts`)
+   - Admin group: System (infrastructure, not day-to-day expense tracking)
    - Upload collection for receipts ("účtenky") attached to expenses —
      images + PDF only, no required alt text, public read (files are
      publicly readable by URL, like all data here)
@@ -257,7 +275,22 @@ pnpm generate:types   # Generate TypeScript types from collections
 
 2. **Unique Constraints**: Payload 3.x doesn't support compound unique indexes in config. The unique constraint on `chata+participant name` is documented but not enforced at the database level.
 
-3. **Banker Field**: Currently the banker is a relationship to Participants. This creates a chicken-and-egg problem when creating a new Chata (no participants exist yet). Consider making it optional or handling differently.
+3. **Banker Field**: The banker is an optional relationship to Participants,
+   so a new Chata is created without one. All participant dropdowns on the
+   Chata form (banker, bedroom occupants, car driver/passengers) filter to
+   the chata's own participants and show NONE while the chata is unsaved
+   (`filterOptions` returns `false` without `data.id`) — never other chatas'
+   participants. Flow: save the chata → add participants (e.g. "Prefill
+   participants") → pick the banker. Selecting a banker prefills
+   `bankerAccountNumber`/`bankerIban` from that participant's banking info
+   (`BankerBankingPrefill`, afterInput on the field; only fires on an actual
+   change, values stay editable, missing half derived account ↔ IBAN).
+
+4. **Partial banking info**: `resolveBankAccount` in
+   `src/utils/czechBankAccount.ts` derives the missing half of an
+   account-number/IBAN pair. The frontend (PersonView banker box,
+   SettlementActions creditor cards) uses it so a participant who filled
+   only an IBAN still gets a QR code and both manual-entry rows.
 
 ## Future Enhancements
 

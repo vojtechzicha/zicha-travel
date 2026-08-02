@@ -70,12 +70,49 @@ export const Participants: CollectionConfig = {
   },
   fields: [
     {
+      name: 'copyFrom',
+      type: 'ui',
+      admin: {
+        components: {
+          Field:
+            '@/collections/Participants/components/CopyFromParticipantButton#CopyFromParticipantButton',
+        },
+        // Prefill helper for repeating participants — only relevant on create
+        condition: (data) => !data?.id,
+      },
+    },
+    {
       name: 'name',
       type: 'text',
       required: true,
       admin: {
         description: 'Participant\'s full name',
       },
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'akuzativ',
+          type: 'text',
+          label: 'Akuzativ (4. pád)',
+          admin: {
+            description:
+              'Name in the accusative case, e.g. "Katku" — used in phrases like ' +
+              '"Vojta zve Katku". Falls back to the plain name when empty.',
+          },
+        },
+        {
+          name: 'vokativ',
+          type: 'text',
+          label: 'Vokativ (5. pád)',
+          admin: {
+            description:
+              'Name in the vocative case, e.g. "Katko" — stored for future ' +
+              'greetings, not displayed anywhere yet.',
+          },
+        },
+      ],
     },
     {
       name: 'chata',
