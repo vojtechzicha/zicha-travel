@@ -478,7 +478,7 @@ export interface Participant {
    */
   hasPet?: boolean | null;
   /**
-   * Platí za něj/ni – this participant's expense shares are permanently covered by another participant (e.g. a child paid by a parent). New expenses automatically get a standing invitation; use the button below to apply the SAVED value to existing expenses.
+   * This participant's expense shares are permanently covered by another participant (e.g. a child paid by a parent). New expenses automatically get a standing invitation; use the button below to apply the SAVED value to existing expenses.
    */
   paidBy?: (number | null) | Participant;
   /**
@@ -609,7 +609,7 @@ export interface Expense {
       }[]
     | null;
   /**
-   * Pozvání – the host pays the guest's share of this expense. A host can invite multiple guests; each guest can be invited only once per expense.
+   * The host pays the guest's share of this expense. A host can invite multiple guests; each guest can be invited only once per expense.
    */
   invitations?:
     | {
@@ -622,7 +622,7 @@ export interface Expense {
          */
         guest: number | Participant;
         /**
-         * Stálé placení ("platí za něj/ni", e.g. a parent paying for a child) – managed automatically from Participant.paidBy and hidden on the expense card. Leave unchecked for one-off invitations, which are shown.
+         * Standing arrangement (e.g. a parent paying for a child) - managed automatically from the participant's "Paid By" field and hidden on the expense card. Leave unchecked for one-off invitations, which are shown.
          */
         auto?: boolean | null;
         id?: string | null;

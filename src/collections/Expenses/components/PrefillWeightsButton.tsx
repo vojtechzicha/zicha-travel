@@ -13,7 +13,7 @@ export const PrefillWeightsButton: React.FC = () => {
 
   const handlePrefill = useCallback(async () => {
     if (!chataId) {
-      alert('Nejdříve vyberte chatu')
+      alert('Select a chata first')
       return
     }
 
@@ -36,11 +36,11 @@ export const PrefillWeightsButton: React.FC = () => {
           value: weights,
         })
       } else {
-        alert('Žádní účastníci nenalezeni pro tuto chatu')
+        alert('No participants found for this chata')
       }
     } catch (error) {
       console.error('Error fetching participants:', error)
-      alert('Chyba při načítání účastníků')
+      alert('Error loading participants')
     } finally {
       setLoading(false)
     }
@@ -54,7 +54,7 @@ export const PrefillWeightsButton: React.FC = () => {
         onClick={handlePrefill}
         disabled={loading || !chataId}
       >
-        {loading ? 'Načítání...' : 'Předvyplnit všechny účastníky'}
+        {loading ? 'Loading...' : 'Prefill all participants'}
       </Button>
     </div>
   )

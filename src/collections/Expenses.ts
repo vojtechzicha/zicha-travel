@@ -183,8 +183,8 @@ export const Expenses: CollectionConfig = {
       type: 'array',
       admin: {
         description:
-          'Pozvání – the host pays the guest\'s share of this expense. ' +
-          'A host can invite multiple guests; each guest can be invited only once per expense.',
+          'The host pays the guest\'s share of this expense. A host can invite ' +
+          'multiple guests; each guest can be invited only once per expense.',
       },
       fields: [
         {
@@ -233,9 +233,9 @@ export const Expenses: CollectionConfig = {
           defaultValue: false,
           admin: {
             description:
-              'Stálé placení ("platí za něj/ni", e.g. a parent paying for a child) – ' +
-              'managed automatically from Participant.paidBy and hidden on the expense ' +
-              'card. Leave unchecked for one-off invitations, which are shown.',
+              'Standing arrangement (e.g. a parent paying for a child) - managed ' +
+              'automatically from the participant\'s "Paid By" field and hidden on ' +
+              'the expense card. Leave unchecked for one-off invitations, which are shown.',
           },
         },
       ],
