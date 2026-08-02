@@ -309,6 +309,49 @@ DO $$ BEGIN
     FOREIGN KEY (paid_by_id) REFERENCES participants(id) ON DELETE SET NULL;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS participants_paid_by_idx ON participants USING btree (paid_by_id);
+
+-- "Účtenky" (expense attachments) feature: upload collection for receipts
+-- (photos, PDFs) attached to expenses via Expenses.attachments (hasMany
+-- upload → rows in expenses_rels). Additive only — no data migration. The
+-- prefix column is added by the S3 storage plugin (enabled in production);
+-- it stays unused (NULL) where uploads go to local disk.
+CREATE TABLE IF NOT EXISTS expense_attachments (
+  id serial PRIMARY KEY,
+  alt character varying,
+  prefix character varying DEFAULT 'expense-attachments',
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  url character varying,
+  thumbnail_u_r_l character varying,
+  filename character varying,
+  mime_type character varying,
+  filesize numeric,
+  width numeric,
+  height numeric,
+  focal_x numeric,
+  focal_y numeric
+);
+CREATE INDEX IF NOT EXISTS expense_attachments_updated_at_idx ON expense_attachments USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS expense_attachments_created_at_idx ON expense_attachments USING btree (created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS expense_attachments_filename_idx ON expense_attachments USING btree (filename);
+
+ALTER TABLE expenses_rels ADD COLUMN IF NOT EXISTS expense_attachments_id integer;
+DO $$ BEGIN
+  ALTER TABLE expenses_rels
+    ADD CONSTRAINT expenses_rels_expense_attachments_fk
+    FOREIGN KEY (expense_attachments_id) REFERENCES expense_attachments(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS expenses_rels_expense_attachments_id_idx
+  ON expenses_rels USING btree (expense_attachments_id);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS expense_attachments_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_expense_attachments_fk
+    FOREIGN KEY (expense_attachments_id) REFERENCES expense_attachments(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_expense_attachments_id_idx
+  ON payload_locked_documents_rels USING btree (expense_attachments_id);
 `
 
 async function auto() {

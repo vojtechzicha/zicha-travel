@@ -29,6 +29,10 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Individual expenses paid by participants
    - Supports equal split (ALL) or weighted split
    - References: Chata, Participant (payer), Participants (weights)
+   - `attachments` ("účtenky"): hasMany upload → `ExpenseAttachments`.
+     Shown on the expense card as small thumbnails (images open a lightbox,
+     portaled to `body` — glass-card `backdrop-filter` would clip
+     `position: fixed`) and PDF chips
    - `invitations` array ("pozvání"): `{ host, guest, auto }` rows — the
      host covers the guest's share of this expense. A host can invite
      multiple guests; each guest at most once per expense; `host ≠ guest`
@@ -53,7 +57,26 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      per chata
    - See `docs/PRD-spolecny-ucet.md` for the full design and the approved math
 
-6. **Users** (`src/collections/Users.ts`)
+6. **ExpenseAttachments** (`src/collections/ExpenseAttachments.ts`)
+   - Upload collection for receipts ("účtenky") attached to expenses —
+     images + PDF only, no required alt text, public read (files are
+     publicly readable by URL, like all data here)
+   - Separate from `media` (icons/backgrounds) so field uploads stay quick;
+     `mimeTypes: ['image/*', ...]` keeps the mobile file picker offering
+     "Take Photo" — that's the camera path, no custom admin component
+   - No generated `imageSizes`: with S3 `clientUploads` the file bypasses
+     the server, so sharp resizing would only run on some deployments; the
+     frontend renders originals scaled down with `loading="lazy"` instead
+   - S3 plugin: registered with prefix `expense-attachments`;
+     `clientUploads: true` (plugin-wide) uploads straight from the browser
+     to the bucket — Vercel serverless caps request bodies at ~4.5 MB,
+     which phone photos exceed. No effect where the plugin is disabled
+     (Fly / local dev)
+   - Schema DDL appended to `scripts/migrate-payer-polymorphic.mjs`
+     (`NEW_SCHEMA_DDL`) so both platforms create the table on deploy;
+     includes the plugin's `prefix` column (S3-enabled shape)
+
+7. **Users** (`src/collections/Users.ts`)
    - Admin users who can manage the system
    - Role-based access control
 

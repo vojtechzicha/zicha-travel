@@ -72,6 +72,7 @@ export interface Config {
     chatas: Chata;
     participants: Participant;
     expenses: Expense;
+    'expense-attachments': ExpenseAttachment;
     prepayments: Prepayment;
     'joint-accounts': JointAccount;
     backgrounds: Background;
@@ -88,6 +89,7 @@ export interface Config {
     chatas: ChatasSelect<false> | ChatasSelect<true>;
     participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
     expenses: ExpensesSelect<false> | ExpensesSelect<true>;
+    'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
     'joint-accounts': JointAccountsSelect<false> | JointAccountsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
@@ -634,6 +636,10 @@ export interface Expense {
    */
   note?: string | null;
   /**
+   * Účtenky a další přílohy (fotky, PDF) - on mobile the file picker offers taking a photo directly
+   */
+  attachments?: (number | ExpenseAttachment)[] | null;
+  /**
    * Planned expense (not yet paid) - uncheck when actually paid
    */
   isPlanned?: boolean | null;
@@ -661,6 +667,30 @@ export interface JointAccount {
   members: (number | Participant)[];
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Účtenky a další přílohy výdajů (fotky, PDF)
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expense-attachments".
+ */
+export interface ExpenseAttachment {
+  id: number;
+  /**
+   * Optional description of the attachment
+   */
+  alt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -742,6 +772,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'expenses';
         value: number | Expense;
+      } | null)
+    | ({
+        relationTo: 'expense-attachments';
+        value: number | ExpenseAttachment;
       } | null)
     | ({
         relationTo: 'prepayments';
@@ -1014,8 +1048,27 @@ export interface ExpensesSelect<T extends boolean = true> {
       };
   createdAt?: T;
   note?: T;
+  attachments?: T;
   isPlanned?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "expense-attachments_select".
+ */
+export interface ExpenseAttachmentsSelect<T extends boolean = true> {
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
