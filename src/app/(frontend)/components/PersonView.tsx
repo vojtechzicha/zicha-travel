@@ -20,6 +20,7 @@ import { SettlementActions } from './SettlementActions'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
 import { akuzativByName } from '@/lib/czechNames'
+import { resolveBankAccount } from '@/utils/czechBankAccount'
 import type { Participant, Chata, Prepayment, Expense } from '@/payload-types'
 import type { ParticipantStats } from '@/utils/calculateStats'
 
@@ -67,11 +68,16 @@ export function PersonView({
   const bankerId = typeof chata.banker === 'number' ? chata.banker : chata.banker?.id
   const bankerParticipant = allParticipants.find((p) => p.id === bankerId)
   const bankerName = bankerParticipant?.name || ''
-  const bankerAccount = bankerParticipant
-    ? {
-        number: bankerParticipant.accountNumber || chata.bankerAccountNumber || '',
-        iban: bankerParticipant.iban || chata.bankerIban || '',
-      }
+  // Participants often fill only one of account number / IBAN — derive the
+  // missing side so QR codes and manual-entry rows always have what they need
+  const bankerBank = bankerParticipant
+    ? resolveBankAccount(
+        bankerParticipant.accountNumber || chata.bankerAccountNumber,
+        bankerParticipant.iban || chata.bankerIban
+      )
+    : null
+  const bankerAccount = bankerBank
+    ? { number: bankerBank.accountNumber, iban: bankerBank.iban }
     : undefined
 
   // Determine summary box background color

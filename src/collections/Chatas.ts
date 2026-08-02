@@ -205,10 +205,20 @@ export const Chatas: CollectionConfig = {
           relationTo: 'participants',
           required: false,
           admin: {
-            description: 'Person managing the money for this trip',
+            description:
+              'Person managing the money for this trip. On a new chata the list is ' +
+              'empty — save the chata, add participants (e.g. via "Prefill ' +
+              'participants" above), then pick the banker. Selecting one prefills ' +
+              'the account fields below from their banking info.',
+            components: {
+              afterInput: [
+                '@/collections/Chatas/components/BankerBankingPrefill#BankerBankingPrefill',
+              ],
+            },
           },
           filterOptions: ({ data }) => {
-            // Only show participants from this chata
+            // Only show participants from this chata; an unsaved chata has
+            // no participants yet — show none instead of every chata's
             if (data?.id) {
               return {
                 chata: {
@@ -216,7 +226,7 @@ export const Chatas: CollectionConfig = {
                 },
               }
             }
-            return true
+            return false
           },
         },
         {
@@ -668,7 +678,7 @@ export const Chatas: CollectionConfig = {
                             },
                           }
                         }
-                        return true
+                        return false
                       },
                     },
                     {
@@ -743,7 +753,7 @@ export const Chatas: CollectionConfig = {
                     },
                   }
                 }
-                return true
+                return false
               },
             },
             {
@@ -761,7 +771,7 @@ export const Chatas: CollectionConfig = {
                     },
                   }
                 }
-                return true
+                return false
               },
             },
             {
@@ -784,7 +794,7 @@ export const Chatas: CollectionConfig = {
                         },
                       }
                     }
-                    return true
+                    return false
                   },
                 },
               ],

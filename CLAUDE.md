@@ -75,6 +75,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - See `docs/PRD-spolecny-ucet.md` for the full design and the approved math
 
 6. **ExpenseAttachments** (`src/collections/ExpenseAttachments.ts`)
+   - Admin group: System (infrastructure, not day-to-day expense tracking)
    - Upload collection for receipts ("účtenky") attached to expenses —
      images + PDF only, no required alt text, public read (files are
      publicly readable by URL, like all data here)
@@ -274,7 +275,22 @@ pnpm generate:types   # Generate TypeScript types from collections
 
 2. **Unique Constraints**: Payload 3.x doesn't support compound unique indexes in config. The unique constraint on `chata+participant name` is documented but not enforced at the database level.
 
-3. **Banker Field**: Currently the banker is a relationship to Participants. This creates a chicken-and-egg problem when creating a new Chata (no participants exist yet). Consider making it optional or handling differently.
+3. **Banker Field**: The banker is an optional relationship to Participants,
+   so a new Chata is created without one. All participant dropdowns on the
+   Chata form (banker, bedroom occupants, car driver/passengers) filter to
+   the chata's own participants and show NONE while the chata is unsaved
+   (`filterOptions` returns `false` without `data.id`) — never other chatas'
+   participants. Flow: save the chata → add participants (e.g. "Prefill
+   participants") → pick the banker. Selecting a banker prefills
+   `bankerAccountNumber`/`bankerIban` from that participant's banking info
+   (`BankerBankingPrefill`, afterInput on the field; only fires on an actual
+   change, values stay editable, missing half derived account ↔ IBAN).
+
+4. **Partial banking info**: `resolveBankAccount` in
+   `src/utils/czechBankAccount.ts` derives the missing half of an
+   account-number/IBAN pair. The frontend (PersonView banker box,
+   SettlementActions creditor cards) uses it so a participant who filled
+   only an IBAN still gets a QR code and both manual-entry rows.
 
 ## Future Enhancements
 
