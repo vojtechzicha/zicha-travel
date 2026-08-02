@@ -98,7 +98,7 @@ and it reuses invitations as the underlying mechanism:
     "platí za tebe X" / "platíš za Y" instead of "pozval/a tě X" /
     "pozvání pro Y".
 - **Retroactive apply**: a button on the participant edit form
-  ("Použít zpětně na existující výdaje") calls
+  ("Apply retroactively to existing expenses") calls
   `POST /api/participants/:id/apply-paid-by` (auth: admin or user assigned
   to the chata), which reconciles that participant's auto rows across all
   expenses of the chata against the SAVED `paidBy`:
@@ -108,7 +108,11 @@ and it reuses invitations as the underlying mechanism:
     invitation row yet (a manual row always wins),
   - idempotent; never modifies manual rows.
   Setting, changing, and clearing `paidBy` are all handled by the same
-  reconcile.
+  reconcile. The button is enabled only when there is something to do:
+  a saved `paidBy` with no pending form edit — or, after clearing it,
+  stale auto rows still present on existing expenses (removal mode; the
+  component probes `/api/expenses?where[invitations.guest]...&[invitations.auto]=true`).
+  Admin UI text is English, frontend text is Czech (project convention).
 - A guest can still have only one invitation row per expense; the math in
   `calculateStats` is exactly the manual-invitation math (the `auto` flag
   only flows through to `costBreakdown` for display).

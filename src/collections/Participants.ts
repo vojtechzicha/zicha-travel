@@ -99,10 +99,10 @@ export const Participants: CollectionConfig = {
       relationTo: 'participants',
       admin: {
         description:
-          'Platí za něj/ni – this participant\'s expense shares are permanently ' +
-          'covered by another participant (e.g. a child paid by a parent). New ' +
-          'expenses automatically get a standing invitation; use the button below ' +
-          'to apply the SAVED value to existing expenses.',
+          'This participant\'s expense shares are permanently covered by another ' +
+          'participant (e.g. a child paid by a parent). New expenses automatically ' +
+          'get a standing invitation; use the button below to apply the SAVED ' +
+          'value to existing expenses.',
         components: {
           afterInput: ['@/collections/Participants/components/ApplyPaidByButton#ApplyPaidByButton'],
         },
