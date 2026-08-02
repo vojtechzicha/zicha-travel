@@ -7,6 +7,7 @@ import {
   transformParticipant,
   transformJointAccount,
   normalizePayerRef,
+  populateExpenseParticipants,
 } from '../../../utils/calculateStats'
 
 /**
@@ -99,20 +100,8 @@ export const afterReadHook: CollectionAfterReadHook<Chata> = async ({ doc, req, 
     const expenses = expensesResult.docs.map((expense: any) => {
       const transformed = transformExpense(expense)
       transformed.payer = normalizePayerRef(transformed.payer, participantMap, jointAccountMap)
-      // Replace participant IDs in weights
-      if (transformed.weights) {
-        transformed.weights = transformed.weights.map((w: any) => ({
-          ...w,
-          participant:
-            typeof w.participant === 'object' && w.participant !== null
-              ? w.participant
-              : {
-                  id: w.participant,
-                  name: participantMap.get(String(w.participant)) || String(w.participant),
-                },
-        }))
-      }
-      return transformed
+      // Replace participant IDs in weights and invitations
+      return populateExpenseParticipants(transformed, participantMap)
     })
 
     const prepayments = prepaymentsResult.docs.map((prepayment: any) => {

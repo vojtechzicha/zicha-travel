@@ -253,9 +253,21 @@ export function PersonView({
                     <span>
                       {item.title}
                       {' '}<small className="text-gray-400">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                      {item.invitedGuest && (
+                        <small className="text-pink-600">
+                          {' '}· {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}
+                        </small>
+                      )}
+                      {item.invitedBy && (
+                        <small className="text-green-600">
+                          {' '}· {item.auto ? `platí za tebe ${item.invitedBy}` : `pozval/a tě ${item.invitedBy}`}
+                        </small>
+                      )}
                     </span>
-                    <span className={isCredit ? 'text-green-600' : ''}>
-                      {isCredit ? '+' : '-'} {formatCurrency(Math.abs(item.cost))}
+                    <span className={isCredit || item.invitedBy ? 'text-green-600' : ''}>
+                      {item.invitedBy
+                        ? formatCurrency(0)
+                        : `${isCredit ? '+' : '-'} ${formatCurrency(Math.abs(item.cost))}`}
                     </span>
                   </div>
                 )
@@ -291,9 +303,21 @@ export function PersonView({
                     <span>
                       {item.title}
                       {' '}<small className="text-amber-400">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                      {item.invitedGuest && (
+                        <small className="text-pink-600">
+                          {' '}· {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}
+                        </small>
+                      )}
+                      {item.invitedBy && (
+                        <small className="text-green-600">
+                          {' '}· {item.auto ? `platí za tebe ${item.invitedBy}` : `pozval/a tě ${item.invitedBy}`}
+                        </small>
+                      )}
                     </span>
-                    <span className={isCredit ? 'text-green-600' : ''}>
-                      {isCredit ? '+' : '-'} {formatCurrency(Math.abs(item.cost))}
+                    <span className={isCredit || item.invitedBy ? 'text-green-600' : ''}>
+                      {item.invitedBy
+                        ? formatCurrency(0)
+                        : `${isCredit ? '+' : '-'} ${formatCurrency(Math.abs(item.cost))}`}
                     </span>
                   </div>
                 )

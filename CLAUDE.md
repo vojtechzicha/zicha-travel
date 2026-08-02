@@ -18,11 +18,23 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - People involved in a trip
    - Belongs to a specific Chata
    - Contains banking information for settlements
+   - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
+     expense shares are covered by another participant (e.g. a child).
+     Materialized as `auto: true` invitation rows on expenses: a create hook
+     adds them to new expenses; the "apply retroactively" button
+     (`POST /participants/:id/apply-paid-by`) reconciles existing ones.
+     Sync logic in `src/utils/paidByInvitations.ts`. See `docs/PRD-pozvani.md`
 
 3. **Expenses** (`src/collections/Expenses.ts`)
    - Individual expenses paid by participants
    - Supports equal split (ALL) or weighted split
    - References: Chata, Participant (payer), Participants (weights)
+   - `invitations` array ("pozvání"): `{ host, guest, auto }` rows — the
+     host covers the guest's share of this expense. A host can invite
+     multiple guests; each guest at most once per expense; `host ≠ guest`
+     (validated). Participants only. `auto: true` marks standing rows
+     managed from `Participant.paidBy` (hidden on the expense card; only
+     manual one-off invites show a badge). See `docs/PRD-pozvani.md`
 
 4. **Prepayments** (`src/collections/Prepayments.ts`)
    - Money transfers between participants and banker
@@ -59,7 +71,15 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
   is skipped as pot-internal. Covered by `tests/int/calculateStats.int.spec.ts`
   (zero-sum invariant asserted in every fixture)
 - `normalizePayerRef`/`transformJointAccount` normalize Payload's polymorphic
-  payer/from values for the hook and API routes
+  payer/from values for the hook and API routes;
+  `populateExpenseParticipants` maps bare participant IDs inside weights and
+  invitations to `{ id, name }` (depth-0 reads)
+- Invitations ("pozvání"): after the normal split, each guest's ORIGINAL
+  share moves to their direct host (single hop — chains don't roll up,
+  cycles are harmless). Payment credit is untouched; unknown hosts leave
+  the share with the guest so the zero-sum invariant holds. Guest
+  breakdown entries get `invitedBy`, host entries `invitedGuest`. See
+  `docs/PRD-pozvani.md` for the full design and edge cases
 
 **PersonView** (`src/app/(frontend)/components/PersonView.tsx`)
 - Main participant detail/finance view component

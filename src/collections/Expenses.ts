@@ -1,8 +1,29 @@
 import type { CollectionConfig } from 'payload'
 import type { Expense } from '../payload-types'
+import { buildAutoInvitations, findPaidByPairs } from '../utils/paidByInvitations'
 
 export const Expenses: CollectionConfig = {
   slug: 'expenses',
+  hooks: {
+    beforeChange: [
+      // Standing "paid by" invitations: on create, participants whose
+      // shares are permanently covered (Participant.paidBy, e.g. kids) get
+      // an auto invitation row. Deleting the row on a single expense is a
+      // per-expense opt-out; the retroactive sync lives on the participant
+      async ({ data, operation, req }) => {
+        if (operation !== 'create') return data
+        const chataId =
+          typeof data.chata === 'object' && data.chata !== null ? data.chata.id : data.chata
+        if (!chataId) return data
+        const pairs = await findPaidByPairs(req.payload, chataId)
+        const added = buildAutoInvitations(data, pairs)
+        if (added.length > 0) {
+          data.invitations = [...(data.invitations || []), ...added]
+        }
+        return data
+      },
+    ],
+  },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'amount', 'payer', 'chata'],
@@ -152,6 +173,91 @@ export const Expenses: CollectionConfig = {
         if (data?.splitType === 'weighted') {
           if (!value || value.length === 0) {
             return 'At least one participant weight is required for weighted splits'
+          }
+        }
+        return true
+      },
+    },
+    {
+      name: 'invitations',
+      type: 'array',
+      admin: {
+        description:
+          'Pozvání – the host pays the guest\'s share of this expense. ' +
+          'A host can invite multiple guests; each guest can be invited only once per expense.',
+      },
+      fields: [
+        {
+          name: 'host',
+          type: 'relationship',
+          relationTo: 'participants',
+          required: true,
+          admin: {
+            description: 'Who covers the share (the inviter)',
+          },
+          filterOptions: ({ data }) => {
+            const doc = data as Partial<Expense> | undefined
+            if (doc?.chata) {
+              return {
+                chata: {
+                  equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata,
+                },
+              }
+            }
+            return true
+          },
+        },
+        {
+          name: 'guest',
+          type: 'relationship',
+          relationTo: 'participants',
+          required: true,
+          admin: {
+            description: 'Whose share is covered (the invited one)',
+          },
+          filterOptions: ({ data }) => {
+            const doc = data as Partial<Expense> | undefined
+            if (doc?.chata) {
+              return {
+                chata: {
+                  equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata,
+                },
+              }
+            }
+            return true
+          },
+        },
+        {
+          name: 'auto',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: {
+            description:
+              'Stálé placení ("platí za něj/ni", e.g. a parent paying for a child) – ' +
+              'managed automatically from Participant.paidBy and hidden on the expense ' +
+              'card. Leave unchecked for one-off invitations, which are shown.',
+          },
+        },
+      ],
+      validate: (value) => {
+        const rows = (value || []) as Array<{ host?: unknown; guest?: unknown }>
+        const refId = (ref: unknown): string | null => {
+          if (ref === null || ref === undefined) return null
+          if (typeof ref === 'object') return String((ref as { id: unknown }).id)
+          return String(ref)
+        }
+        const seenGuests = new Set<string>()
+        for (const row of rows) {
+          const host = refId(row.host)
+          const guest = refId(row.guest)
+          if (host && guest && host === guest) {
+            return 'A participant cannot invite themselves'
+          }
+          if (guest) {
+            if (seenGuests.has(guest)) {
+              return 'Each guest can be invited only once per expense'
+            }
+            seenGuests.add(guest)
           }
         }
         return true

@@ -19,6 +19,12 @@ export interface Expense {
     participant: string | { id: string; name: string }
     weight: number
   }>
+  invitations?: Array<{
+    host: string | { id: string; name: string }
+    guest: string | { id: string; name: string }
+    /** Standing "paid by" arrangement (Participant.paidBy) rather than a one-off invite */
+    auto?: boolean | null
+  }>
   isPlanned?: boolean
 }
 
@@ -56,6 +62,12 @@ export interface ParticipantStats {
     cost: number
     weight: number
     isPlanned?: boolean
+    /** Set on the guest's zero-cost entry: name of the host covering the share */
+    invitedBy?: string
+    /** Set on the host's extra entry: name of the guest whose share this is */
+    invitedGuest?: string
+    /** With invitedBy/invitedGuest: standing "paid by" arrangement, not a one-off invite */
+    auto?: boolean
   }>
   balance: number
 }
@@ -175,11 +187,54 @@ export function calculateStats(
     // Calculate total units
     const totalUnits = Object.values(weights).reduce((sum, w) => sum + w, 0)
 
+    // Invitations ("pozvání"): the host covers the guest's share of this
+    // expense. Each guest's ORIGINAL share moves to their direct host —
+    // single hop, so a host who is themselves invited still pays for their
+    // own guests, and chains/cycles stay deterministic. A host can cover
+    // any number of guests. An unknown host cannot absorb the share, so it
+    // stays with the guest and balances keep summing to zero.
+    const hostByGuest = new Map<string, { hostName: string; auto: boolean }>()
+    ;(expense.invitations || []).forEach((inv) => {
+      const guestName = getParticipantName(inv.guest)
+      const hostName = getParticipantName(inv.host)
+      if (!guestName || !hostName || guestName === hostName) return
+      if (!stats[hostName]) return
+      if (!hostByGuest.has(guestName)) {
+        hostByGuest.set(guestName, { hostName, auto: Boolean(inv.auto) })
+      }
+    })
+
     // Distribute cost - track actual and planned separately
     if (totalUnits > 0) {
       Object.entries(weights).forEach(([name, weight]) => {
-        if (stats[name]) {
-          const cost = (amount / totalUnits) * weight
+        if (!stats[name]) return
+        const cost = (amount / totalUnits) * weight
+        const invitation = hostByGuest.get(name)
+        if (invitation) {
+          const { hostName, auto } = invitation
+          // Guest: the host pays this share instead
+          if (isPlanned) {
+            stats[hostName].plannedCost += cost
+          } else {
+            stats[hostName].cost += cost
+          }
+          stats[name].costBreakdown.push({
+            title: expense.title,
+            cost: 0,
+            weight: weight,
+            isPlanned: isPlanned,
+            invitedBy: hostName,
+            auto: auto,
+          })
+          stats[hostName].costBreakdown.push({
+            title: expense.title,
+            cost: cost,
+            weight: weight,
+            isPlanned: isPlanned,
+            invitedGuest: name,
+            auto: auto,
+          })
+        } else {
           if (isPlanned) {
             stats[name].plannedCost += cost
           } else {
@@ -286,8 +341,35 @@ export function transformExpense(expense: any): Expense {
     payer: expense.payer,
     splitType: expense.splitType,
     weights: expense.weights,
+    invitations: expense.invitations,
     isPlanned: expense.isPlanned || false,
   }
+}
+
+/**
+ * Map bare participant IDs inside an expense's weights and invitations to
+ * { id, name } objects using the participant name map. Works with depth 0
+ * (bare IDs) and depth 1+ (populated docs pass through unchanged).
+ */
+export function populateExpenseParticipants(
+  expense: Expense,
+  participantNamesById: Map<string, string>
+): Expense {
+  const mapRef = (ref: string | { id: string; name: string }) =>
+    typeof ref === 'object' && ref !== null
+      ? ref
+      : { id: String(ref), name: participantNamesById.get(String(ref)) || String(ref) }
+  if (expense.weights) {
+    expense.weights = expense.weights.map((w) => ({ ...w, participant: mapRef(w.participant) }))
+  }
+  if (expense.invitations) {
+    expense.invitations = expense.invitations.map((inv) => ({
+      ...inv,
+      host: mapRef(inv.host),
+      guest: mapRef(inv.guest),
+    }))
+  }
+  return expense
 }
 
 /**

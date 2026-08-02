@@ -220,6 +220,249 @@ describe('joint account as prepayment sender', () => {
   })
 })
 
+describe('invitations ("pozvání") — the host covers the guest share', () => {
+  const alice = { id: '1', name: 'Alice' }
+  const bob = { id: '2', name: 'Bob' }
+  const cedric = { id: '3', name: 'Cedric' }
+  const dana = { id: '4', name: 'Dana' }
+
+  it('moves the guest equal-split share to the host', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 300,
+        payer: alice,
+        invitations: [{ host: alice, guest: cedric }],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Bob')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(200)
+    expect(stats.participants['Bob'].cost).toBeCloseTo(100)
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expect(stats.participants['Alice'].balance).toBeCloseTo(100)
+    expect(stats.participants['Bob'].balance).toBeCloseTo(-100)
+    expect(stats.participants['Cedric'].balance).toBe(0)
+    expectZeroSum(stats)
+
+    // Breakdown annotations: guest sees a zero entry, host an extra entry
+    const guestEntry = stats.participants['Cedric'].costBreakdown[0]
+    expect(guestEntry).toMatchObject({ cost: 0, invitedBy: 'Alice' })
+    const hostEntries = stats.participants['Alice'].costBreakdown
+    expect(hostEntries).toHaveLength(2)
+    expect(hostEntries.find((e) => e.invitedGuest === 'Cedric')?.cost).toBeCloseTo(100)
+  })
+
+  it('lets one host cover multiple guests', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Lunch',
+        amount: 400,
+        payer: dana,
+        invitations: [
+          { host: 'Alice', guest: 'Bob' },
+          { host: 'Alice', guest: 'Cedric' },
+        ],
+      }),
+    ]
+    const stats = calculateStats(participants, expenses, [], 'Dana')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(300)
+    expect(stats.participants['Bob'].cost).toBe(0)
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expect(stats.participants['Dana'].cost).toBeCloseTo(100)
+    expect(stats.participants['Alice'].costBreakdown).toHaveLength(3)
+    expectZeroSum(stats)
+  })
+
+  it('moves the guest WEIGHTED share (not one head) to the host', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 800,
+        payer: alice,
+        splitType: 'weighted',
+        weights: [
+          { participant: alice, weight: 1 },
+          { participant: bob, weight: 2 },
+          { participant: cedric, weight: 1 },
+        ],
+        invitations: [{ host: cedric, guest: bob }],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Alice')
+
+    expect(stats.participants['Cedric'].cost).toBeCloseTo(200 + 400)
+    expect(stats.participants['Bob'].cost).toBe(0)
+    expect(stats.participants['Alice'].cost).toBeCloseTo(200)
+    expectZeroSum(stats)
+  })
+
+  it('is a no-op when the guest has no share in a weighted split', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Fuel',
+        amount: 300,
+        payer: alice,
+        splitType: 'weighted',
+        weights: [
+          { participant: alice, weight: 1 },
+          { participant: bob, weight: 1 },
+        ],
+        invitations: [{ host: alice, guest: dana }],
+      }),
+    ]
+    const stats = calculateStats(participants, expenses, [], 'Bob')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(150)
+    expect(stats.participants['Dana'].cost).toBe(0)
+    expect(stats.participants['Dana'].costBreakdown).toHaveLength(0)
+    expect(stats.participants['Alice'].costBreakdown).toHaveLength(1)
+    expectZeroSum(stats)
+  })
+
+  it('resolves chains single-hop: an invited host still pays for their own guest', () => {
+    // Alice invites Bob, Bob invites Cedric: original shares move one hop
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 300,
+        payer: alice,
+        invitations: [
+          { host: alice, guest: bob },
+          { host: bob, guest: cedric },
+        ],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Alice')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(200) // own + Bob's
+    expect(stats.participants['Bob'].cost).toBeCloseTo(100) // Cedric's only
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expectZeroSum(stats)
+  })
+
+  it('ignores self-invites and unknown hosts (share stays with the guest)', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 300,
+        payer: alice,
+        invitations: [
+          { host: alice, guest: alice },
+          { host: 'Nobody', guest: bob },
+        ],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Alice')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(100)
+    expect(stats.participants['Bob'].cost).toBeCloseTo(100)
+    expect(stats.participants['Cedric'].cost).toBeCloseTo(100)
+    expectZeroSum(stats)
+  })
+
+  it('takes the first row when a guest appears twice', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 300,
+        payer: alice,
+        invitations: [
+          { host: alice, guest: cedric },
+          { host: bob, guest: cedric },
+        ],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Alice')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(200)
+    expect(stats.participants['Bob'].cost).toBeCloseTo(100)
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expectZeroSum(stats)
+  })
+
+  it('keeps the payment credit with the guest when the guest is the payer', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 300,
+        payer: cedric,
+        invitations: [{ host: alice, guest: cedric }],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Alice')
+
+    expect(stats.participants['Cedric'].paidExternal).toBe(300)
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expect(stats.participants['Cedric'].balance).toBeCloseTo(300)
+    expect(stats.participants['Alice'].balance).toBeCloseTo(-200)
+    expect(stats.participants['Bob'].balance).toBeCloseTo(-100)
+    expectZeroSum(stats)
+  })
+
+  it('moves planned shares within plannedCost', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Planned trip',
+        amount: 300,
+        payer: alice,
+        isPlanned: true,
+        invitations: [{ host: alice, guest: cedric }],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Bob')
+
+    expect(stats.participants['Alice'].plannedCost).toBeCloseTo(200)
+    expect(stats.participants['Alice'].cost).toBe(0)
+    expect(stats.participants['Cedric'].plannedCost).toBe(0)
+    expect(
+      stats.participants['Cedric'].costBreakdown[0]
+    ).toMatchObject({ cost: 0, isPlanned: true, invitedBy: 'Alice' })
+    expectZeroSum(stats)
+  })
+
+  it('moves the negative share of a refund expense to the host', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Refund',
+        amount: -300,
+        payer: alice,
+        invitations: [{ host: alice, guest: cedric }],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Bob')
+
+    expect(stats.participants['Alice'].cost).toBeCloseTo(-200)
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expectZeroSum(stats)
+  })
+
+  it('composes with a joint-account payer (payment credit untouched)', () => {
+    const expenses: Expense[] = [
+      expense({
+        title: 'Dinner',
+        amount: 900,
+        payer: jaPayer,
+        invitations: [{ host: alice, guest: cedric }],
+      }),
+    ]
+    const stats = calculateStats(participants.slice(0, 3), expenses, [], 'Cedric', [jaAliceBob])
+
+    // JA payment still credited equally to members
+    expect(stats.participants['Alice'].paidExternal).toBeCloseTo(450)
+    expect(stats.participants['Bob'].paidExternal).toBeCloseTo(450)
+    // Cost side: Alice absorbs Cedric's 300
+    expect(stats.participants['Alice'].cost).toBeCloseTo(600)
+    expect(stats.participants['Bob'].cost).toBeCloseTo(300)
+    expect(stats.participants['Cedric'].cost).toBe(0)
+    expect(stats.participants['Alice'].balance).toBeCloseTo(-150)
+    expect(stats.participants['Bob'].balance).toBeCloseTo(150)
+    expect(stats.participants['Cedric'].balance).toBe(0)
+    expectZeroSum(stats)
+  })
+})
+
 describe('normalizePayerRef / transformJointAccount', () => {
   const participantMap = new Map([
     ['1', 'Alice'],
