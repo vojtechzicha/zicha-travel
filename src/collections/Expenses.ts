@@ -167,6 +167,9 @@ export const Expenses: CollectionConfig = {
             description:
               'Weight multiplier for this participant (e.g., 1, 0.5, 2). If all weights ' +
               'add up to the total amount (±1 Kč), they are displayed as Kč amounts.',
+            components: {
+              afterInput: ['@/collections/Expenses/components/WeightShareHint#WeightShareHint'],
+            },
           },
         },
       ],
