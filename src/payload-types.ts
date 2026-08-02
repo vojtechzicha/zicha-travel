@@ -478,6 +478,10 @@ export interface Participant {
    */
   hasPet?: boolean | null;
   /**
+   * Platí za něj/ni – this participant's expense shares are permanently covered by another participant (e.g. a child paid by a parent). New expenses automatically get a standing invitation; use the button below to apply the SAVED value to existing expenses.
+   */
+  paidBy?: (number | null) | Participant;
+  /**
    * Account number in Czech format (e.g., "123456/0100") - only needed for creditors
    */
   accountNumber?: string | null;
@@ -617,6 +621,10 @@ export interface Expense {
          * Whose share is covered (the invited one)
          */
         guest: number | Participant;
+        /**
+         * Stálé placení ("platí za něj/ni", e.g. a parent paying for a child) – managed automatically from Participant.paidBy and hidden on the expense card. Leave unchecked for one-off invitations, which are shown.
+         */
+        auto?: boolean | null;
         id?: string | null;
       }[]
     | null;
@@ -973,6 +981,7 @@ export interface ParticipantsSelect<T extends boolean = true> {
   name?: T;
   chata?: T;
   hasPet?: T;
+  paidBy?: T;
   accountNumber?: T;
   iban?: T;
   updatedAt?: T;
@@ -1000,6 +1009,7 @@ export interface ExpensesSelect<T extends boolean = true> {
     | {
         host?: T;
         guest?: T;
+        auto?: T;
         id?: T;
       };
   createdAt?: T;

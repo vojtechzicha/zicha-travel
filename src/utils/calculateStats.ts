@@ -22,6 +22,8 @@ export interface Expense {
   invitations?: Array<{
     host: string | { id: string; name: string }
     guest: string | { id: string; name: string }
+    /** Standing "paid by" arrangement (Participant.paidBy) rather than a one-off invite */
+    auto?: boolean | null
   }>
   isPlanned?: boolean
 }
@@ -64,6 +66,8 @@ export interface ParticipantStats {
     invitedBy?: string
     /** Set on the host's extra entry: name of the guest whose share this is */
     invitedGuest?: string
+    /** With invitedBy/invitedGuest: standing "paid by" arrangement, not a one-off invite */
+    auto?: boolean
   }>
   balance: number
 }
@@ -189,14 +193,14 @@ export function calculateStats(
     // own guests, and chains/cycles stay deterministic. A host can cover
     // any number of guests. An unknown host cannot absorb the share, so it
     // stays with the guest and balances keep summing to zero.
-    const hostByGuest = new Map<string, string>()
+    const hostByGuest = new Map<string, { hostName: string; auto: boolean }>()
     ;(expense.invitations || []).forEach((inv) => {
       const guestName = getParticipantName(inv.guest)
       const hostName = getParticipantName(inv.host)
       if (!guestName || !hostName || guestName === hostName) return
       if (!stats[hostName]) return
       if (!hostByGuest.has(guestName)) {
-        hostByGuest.set(guestName, hostName)
+        hostByGuest.set(guestName, { hostName, auto: Boolean(inv.auto) })
       }
     })
 
@@ -205,8 +209,9 @@ export function calculateStats(
       Object.entries(weights).forEach(([name, weight]) => {
         if (!stats[name]) return
         const cost = (amount / totalUnits) * weight
-        const hostName = hostByGuest.get(name)
-        if (hostName) {
+        const invitation = hostByGuest.get(name)
+        if (invitation) {
+          const { hostName, auto } = invitation
           // Guest: the host pays this share instead
           if (isPlanned) {
             stats[hostName].plannedCost += cost
@@ -219,6 +224,7 @@ export function calculateStats(
             weight: weight,
             isPlanned: isPlanned,
             invitedBy: hostName,
+            auto: auto,
           })
           stats[hostName].costBreakdown.push({
             title: expense.title,
@@ -226,6 +232,7 @@ export function calculateStats(
             weight: weight,
             isPlanned: isPlanned,
             invitedGuest: name,
+            auto: auto,
           })
         } else {
           if (isPlanned) {
@@ -357,6 +364,7 @@ export function populateExpenseParticipants(
   }
   if (expense.invitations) {
     expense.invitations = expense.invitations.map((inv) => ({
+      ...inv,
       host: mapRef(inv.host),
       guest: mapRef(inv.guest),
     }))

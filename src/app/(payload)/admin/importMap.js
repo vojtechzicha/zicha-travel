@@ -1,5 +1,6 @@
 import { CzechBankAccountField as CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249 } from '@/components/CzechBankAccountField'
 import { ColorPickerField as ColorPickerField_37fac220471b04d5e6dda304975d2c1e } from '@/components/ColorPickerField'
+import { ApplyPaidByButton as ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487 } from '@/collections/Participants/components/ApplyPaidByButton'
 import { PrefillWeightsButton as PrefillWeightsButton_9dd3ee44d151a88d7d109663a4769b69 } from '@/collections/Expenses/components/PrefillWeightsButton'
 import { default as default_03ec9ad23b0bb66bfcac66241d9063eb } from '../../../components/admin/Icon'
 import { default as default_078be3ac59220a397a1074e5597d364f } from '../../../components/admin/Logo'
@@ -12,6 +13,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 export const importMap = {
   "@/components/CzechBankAccountField#CzechBankAccountField": CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249,
   "@/components/ColorPickerField#ColorPickerField": ColorPickerField_37fac220471b04d5e6dda304975d2c1e,
+  "@/collections/Participants/components/ApplyPaidByButton#ApplyPaidByButton": ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487,
   "@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton": PrefillWeightsButton_9dd3ee44d151a88d7d109663a4769b69,
   "./components/admin/Icon#default": default_03ec9ad23b0bb66bfcac66241d9063eb,
   "./components/admin/Logo#default": default_078be3ac59220a397a1074e5597d364f,

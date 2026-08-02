@@ -47,9 +47,12 @@ export function ExpenseCard({
     return participantId !== selectedParticipantId
   })
 
-  // Invitations ("pozvání") - the host covers the guest's share
+  // Invitations ("pozvání") - the host covers the guest's share. Standing
+  // "paid by" arrangements (auto, e.g. a parent paying for a child) are a
+  // permanent fact, not news — only one-off invitations get a badge
   const invitations = (expense.invitations ?? []).filter(
     (inv) =>
+      !inv.auto &&
       typeof inv.host === 'object' &&
       inv.host !== null &&
       typeof inv.guest === 'object' &&

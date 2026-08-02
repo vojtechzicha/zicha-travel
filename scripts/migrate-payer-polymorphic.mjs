@@ -284,6 +284,7 @@ CREATE TABLE IF NOT EXISTS expenses_invitations (
   id character varying PRIMARY KEY,
   host_id integer NOT NULL,
   guest_id integer NOT NULL,
+  auto boolean DEFAULT false,
   CONSTRAINT expenses_invitations_parent_id_fk
     FOREIGN KEY (_parent_id) REFERENCES expenses(id) ON DELETE CASCADE,
   CONSTRAINT expenses_invitations_host_id_participants_id_fk
@@ -295,6 +296,19 @@ CREATE INDEX IF NOT EXISTS expenses_invitations_order_idx ON expenses_invitation
 CREATE INDEX IF NOT EXISTS expenses_invitations_parent_id_idx ON expenses_invitations USING btree (_parent_id);
 CREATE INDEX IF NOT EXISTS expenses_invitations_host_idx ON expenses_invitations USING btree (host_id);
 CREATE INDEX IF NOT EXISTS expenses_invitations_guest_idx ON expenses_invitations USING btree (guest_id);
+
+-- "Platí za něj/ni" (paid by): a participant permanently covered by another
+-- (e.g. a child) — drives auto invitation rows. Additive only. The ALTER on
+-- expenses_invitations covers databases that got the table before the
+-- auto column existed.
+ALTER TABLE expenses_invitations ADD COLUMN IF NOT EXISTS auto boolean DEFAULT false;
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS paid_by_id integer;
+DO $$ BEGIN
+  ALTER TABLE participants
+    ADD CONSTRAINT participants_paid_by_id_participants_id_fk
+    FOREIGN KEY (paid_by_id) REFERENCES participants(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS participants_paid_by_idx ON participants USING btree (paid_by_id);
 `
 
 async function auto() {

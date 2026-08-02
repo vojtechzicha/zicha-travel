@@ -18,15 +18,23 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - People involved in a trip
    - Belongs to a specific Chata
    - Contains banking information for settlements
+   - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
+     expense shares are covered by another participant (e.g. a child).
+     Materialized as `auto: true` invitation rows on expenses: a create hook
+     adds them to new expenses; the "apply retroactively" button
+     (`POST /participants/:id/apply-paid-by`) reconciles existing ones.
+     Sync logic in `src/utils/paidByInvitations.ts`. See `docs/PRD-pozvani.md`
 
 3. **Expenses** (`src/collections/Expenses.ts`)
    - Individual expenses paid by participants
    - Supports equal split (ALL) or weighted split
    - References: Chata, Participant (payer), Participants (weights)
-   - `invitations` array ("pozvání"): `{ host, guest }` rows — the host
-     covers the guest's share of this expense. A host can invite multiple
-     guests; each guest at most once per expense; `host ≠ guest`
-     (validated). Participants only. See `docs/PRD-pozvani.md`
+   - `invitations` array ("pozvání"): `{ host, guest, auto }` rows — the
+     host covers the guest's share of this expense. A host can invite
+     multiple guests; each guest at most once per expense; `host ≠ guest`
+     (validated). Participants only. `auto: true` marks standing rows
+     managed from `Participant.paidBy` (hidden on the expense card; only
+     manual one-off invites show a badge). See `docs/PRD-pozvani.md`
 
 4. **Prepayments** (`src/collections/Prepayments.ts`)
    - Money transfers between participants and banker

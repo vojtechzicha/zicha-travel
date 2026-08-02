@@ -75,6 +75,44 @@ Each affected entry carries a marker so the UI can explain the numbers:
   `{ cost: <guest share>, invitedGuest: '<guest name>' }` — shown as
   "pozvání pro Y".
 
+## Standing invitations — "Platí za něj/ni" (paid by)
+
+Some participants (typically kids) take a share of expenses but never pay
+themselves. `Participants.paidBy` (relationship to another participant of
+the same chata, self-reference rejected) marks this standing arrangement,
+and it reuses invitations as the underlying mechanism:
+
+- **New expenses**: a `beforeChange` hook (create only) appends
+  `{ host: paidBy, guest: participant, auto: true }` for every covered
+  participant who takes a share (equal split → everyone; weighted → only
+  with weight > 0). Rows are materialized, not implicit, so any single
+  expense can opt out by deleting/editing its row in admin.
+- **`auto` flag on invitation rows** carries two meanings:
+  - *provenance* — auto rows are managed by the sync code
+    (`src/utils/paidByInvitations.ts`); manual one-off rows are never
+    touched by it;
+  - *display* — the expense card badge is shown only for manual rows (a
+    date-dinner invite is nice to show; a standing kid arrangement on
+    every card is noise). The checkbox can be toggled by hand to override
+    visibility either way. Breakdown wording also adapts:
+    "platí za tebe X" / "platíš za Y" instead of "pozval/a tě X" /
+    "pozvání pro Y".
+- **Retroactive apply**: a button on the participant edit form
+  ("Použít zpětně na existující výdaje") calls
+  `POST /api/participants/:id/apply-paid-by` (auth: admin or user assigned
+  to the chata), which reconciles that participant's auto rows across all
+  expenses of the chata against the SAVED `paidBy`:
+  - removes stale auto rows (paidBy cleared, or host changed — the row is
+    then re-added with the new host),
+  - adds missing rows where the participant takes a share and has no
+    invitation row yet (a manual row always wins),
+  - idempotent; never modifies manual rows.
+  Setting, changing, and clearing `paidBy` are all handled by the same
+  reconcile.
+- A guest can still have only one invitation row per expense; the math in
+  `calculateStats` is exactly the manual-invitation math (the `auto` flag
+  only flows through to `costBreakdown` for display).
+
 ## UI
 
 - **Admin**: `invitations` array on the expense form, dropdowns filtered
