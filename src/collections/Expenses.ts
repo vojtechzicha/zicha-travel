@@ -290,6 +290,16 @@ export const Expenses: CollectionConfig = {
       },
     },
     {
+      name: 'attachments',
+      type: 'upload',
+      relationTo: 'expense-attachments',
+      hasMany: true,
+      admin: {
+        description:
+          'Účtenky a další přílohy (fotky, PDF) - on mobile the file picker offers taking a photo directly',
+      },
+    },
+    {
       name: 'isPlanned',
       type: 'checkbox',
       defaultValue: false,

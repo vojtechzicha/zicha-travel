@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
 import { Expenses } from './collections/Expenses'
+import { ExpenseAttachments } from './collections/ExpenseAttachments'
 import { Prepayments } from './collections/Prepayments'
 import { JointAccounts } from './collections/JointAccounts'
 import { Backgrounds } from './collections/Backgrounds'
@@ -41,7 +42,7 @@ export default buildConfig({
       beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
   },
-  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, JointAccounts, Backgrounds, Icons],
+  collections: [Users, Media, Chatas, Participants, Expenses, ExpenseAttachments, Prepayments, JointAccounts, Backgrounds, Icons],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -71,7 +72,16 @@ export default buildConfig({
       disableLocalStorage: Boolean(process.env.S3_ENDPOINT),
       collections: {
         media: true,
+        'expense-attachments': {
+          prefix: 'expense-attachments',
+        },
       },
+      // Upload straight from the browser to the bucket via presigned URLs.
+      // Vercel serverless caps request bodies at ~4.5 MB, which phone camera
+      // photos routinely exceed; direct uploads bypass that limit. No effect
+      // when the plugin is disabled (Fly / local dev - uploads go through the
+      // server to disk as before).
+      clientUploads: true,
       bucket: process.env.S3_BUCKET || '',
       config: {
         endpoint: process.env.S3_ENDPOINT,
