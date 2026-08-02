@@ -32,8 +32,12 @@ export function ExpenseCard({
   // Muted styling for "other" expenses when showing all
   const isOther = showAll && !isMine
 
-  // Process weights for display
+  // Process weights for display. When the weights add up to the expense
+  // amount (within the usual 1 Kč tolerance), they are Kč amounts, not
+  // abstract multipliers — show them as currency
   const weights = expense.weights ?? []
+  const weightsSum = weights.reduce((sum, w) => sum + (w.weight ?? 0), 0)
+  const weightsAreAmounts = weights.length > 0 && Math.abs(weightsSum - expense.amount) <= 1
   const myWeight = weights.find((w) => {
     const participantId =
       typeof w.participant === 'object' && w.participant !== null
@@ -89,7 +93,7 @@ export function ExpenseCard({
         key={participantName}
         className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md"
       >
-        {participantName}: {w.weight}x
+        {participantName}: {weightsAreAmounts ? formatCurrency(w.weight) : `${w.weight}x`}
       </span>
     )
   }

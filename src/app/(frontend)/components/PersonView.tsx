@@ -252,7 +252,7 @@ export function PersonView({
                   <div key={idx} className="flex justify-between text-xs text-gray-600">
                     <span>
                       {item.title}
-                      {' '}<small className="text-gray-500">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                      {' '}<small className="text-gray-500">({item.weightIsAmount ? `podíl ${formatCurrency(item.weight)}` : `${item.weight} ${item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'}`})</small>
                       {item.invitedGuest && (
                         <small className="text-pink-600">
                           {' '}· {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}
@@ -302,7 +302,7 @@ export function PersonView({
                   <div key={idx} className="flex justify-between text-xs text-amber-800">
                     <span>
                       {item.title}
-                      {' '}<small className="text-amber-700/80">({item.weight} {item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'})</small>
+                      {' '}<small className="text-amber-700/80">({item.weightIsAmount ? `podíl ${formatCurrency(item.weight)}` : `${item.weight} ${item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'}`})</small>
                       {item.invitedGuest && (
                         <small className="text-pink-700">
                           {' '}· {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}

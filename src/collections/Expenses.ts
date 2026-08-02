@@ -132,6 +132,7 @@ export const Expenses: CollectionConfig = {
         condition: (data, siblingData) => siblingData?.splitType === 'weighted',
         components: {
           beforeInput: ['@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton'],
+          afterInput: ['@/collections/Expenses/components/WeightsSumIndicator#WeightsSumIndicator'],
         },
       },
       fields: [
@@ -163,7 +164,12 @@ export const Expenses: CollectionConfig = {
           required: true,
           min: 0,
           admin: {
-            description: 'Weight multiplier for this participant (e.g., 1, 0.5, 2)',
+            description:
+              'Weight multiplier for this participant (e.g., 1, 0.5, 2). If all weights ' +
+              'add up to the total amount (±1 Kč), they are displayed as Kč amounts.',
+            components: {
+              afterInput: ['@/collections/Expenses/components/WeightShareHint#WeightShareHint'],
+            },
           },
         },
       ],
