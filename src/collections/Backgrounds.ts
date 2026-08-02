@@ -5,6 +5,7 @@ export const Backgrounds: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'isDefault', 'type'],
+    group: 'Appearance',
   },
   access: {
     read: () => true,

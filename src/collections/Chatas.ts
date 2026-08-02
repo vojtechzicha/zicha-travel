@@ -6,6 +6,7 @@ export const Chatas: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'location', 'slug'],
+    group: 'Chata',
   },
   hooks: {
     afterRead: [afterReadHook],
