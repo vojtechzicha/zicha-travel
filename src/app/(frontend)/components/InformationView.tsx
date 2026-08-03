@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import {
   Calendar,
+  CalendarPlus,
   MapPin,
   Info,
   ArrowRight,
+  Bus,
   Car,
   Train,
   ExternalLink,
@@ -14,6 +16,7 @@ import {
   ChevronUp,
 } from 'lucide-react'
 import type { Chata, Media } from '@/payload-types'
+import { googleCalendarEventUrl } from '@/lib/gcal'
 
 interface InformationViewProps {
   chata: Chata
@@ -27,6 +30,37 @@ function formatDate(dateString: string): string {
 function getDayOfWeek(dateString: string): string {
   const date = new Date(dateString)
   return date.toLocaleDateString('cs-CZ', { weekday: 'long' })
+}
+
+type TransportOption = NonNullable<Chata['publicTransportOptions']>[number]
+type TransportConnection = NonNullable<TransportOption['connections']>[number]
+
+/**
+ * One itinerary line per leg, e.g. `vlak Os 5405: Praha hl.n. (08:45) -> Tanvald (12:30)`.
+ * The vehicle identity is bolded — Google Calendar renders a subset of HTML
+ * in the description.
+ */
+function connectionLine(conn: TransportConnection): string {
+  const vehicle = conn.type === 'autobus' ? 'bus' : 'vlak'
+  return `<b>${vehicle} ${conn.number}</b>: ${conn.from} (${conn.departure}) -> ${conn.to} (${conn.arrival})`
+}
+
+/** Google Calendar "add event" URL for one public transport option, on the arrival day. */
+function transportEventUrl(option: TransportOption, chataName: string, tripDate: string): string {
+  const connections = option.connections || []
+  const legs = connections.map(connectionLine).join('<br><br>')
+  const total = option.totalDuration ? `<br><br><b>Celkem ${option.totalDuration}.</b>` : ''
+  const notes = option.notes ? `<br><br>${option.notes}` : ''
+  return googleCalendarEventUrl({
+    title: `Cesta na chatu – ${option.title} (${chataName})`,
+    // Same day the page shows: Payload stores the day-only picker as an ISO
+    // datetime, so derive YYYY-MM-DD in the viewer's timezone like formatDate does.
+    date: new Date(tripDate).toLocaleDateString('en-CA'),
+    start: connections[0].departure,
+    end: connections[connections.length - 1].arrival,
+    details: legs + total + notes,
+    location: connections[0].from,
+  })
 }
 
 function getDuration(from: string, to: string): string {
@@ -249,7 +283,7 @@ export function InformationView({ chata }: InformationViewProps) {
                         {connections.map((conn, connIdx) => (
                           <div key={connIdx} className="connection-item">
                             <div className="connection-type">
-                              {conn.type === 'vlak' ? <Train size={16} /> : <Car size={16} />}
+                              {conn.type === 'autobus' ? <Bus size={16} /> : <Train size={16} />}
                               <span className="connection-number">{conn.number}</span>
                             </div>
                             <div className="connection-route">
@@ -266,6 +300,16 @@ export function InformationView({ chata }: InformationViewProps) {
                           </div>
                         ))}
                         {option.notes && <div className="transport-notes">{option.notes}</div>}
+                        {firstDeparture && lastArrival && chata.tripDateFrom && (
+                          <a
+                            href={transportEventUrl(option, chataName, chata.tripDateFrom)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 self-start px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold transition-all hover:bg-primary-dark hover:-translate-y-0.5 shadow-md"
+                          >
+                            <CalendarPlus size={16} /> Přidat do kalendáře
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>
