@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import { canManageChata, refId } from '@/lib/access'
+import type { FinanceViewer } from '@/lib/financeAccess'
 import {
   calculateStats,
   transformExpense,
@@ -133,6 +135,22 @@ export async function GET(
     // Calculate statistics
     const stats = calculateStats(participants, expenses, prepayments, bankerName, jointAccounts)
 
+    // Who is looking? Drives the Finance view gating (see lib/financeAccess):
+    // admins of this chata see everyone, linked users only themselves,
+    // anonymous visitors only participants without an account
+    const { user } = await payload.auth({ headers: request.headers })
+    const linkedParticipant = user
+      ? participantsResult.docs.find(
+          (p: any) => p.account != null && refId(p.account) === String(user.id),
+        )
+      : undefined
+    const viewer: FinanceViewer = {
+      authenticated: !!user,
+      email: user?.email ?? null,
+      canViewAll: canManageChata(user, chata.id),
+      linkedParticipantId: linkedParticipant?.id ?? null,
+    }
+
     // Return data with populated relationships for frontend
     // (payer/from arrive populated via depth: 1 as { relationTo, value })
     return NextResponse.json({
@@ -142,6 +160,7 @@ export async function GET(
       prepayments: prepaymentsResult.docs,
       jointAccounts: jointAccountsResult.docs,
       stats,
+      viewer,
     })
   } catch (error) {
     console.error('Error looking up chata by slug:', error)

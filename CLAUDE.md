@@ -35,6 +35,11 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      participants of that chata, copying the same fields; names already
      present in the chata are skipped (dedupe is case-insensitive,
      application-level — the compound unique constraint isn't in the DB)
+   - `account`: optional link to a frontend user (`users`); at most one
+     participant per chata per user (application-level check). The edit form
+     offers "Create account from email..."
+     (`POST /participants/:id/create-account`) — creates/links a `role: user`
+     account without sending any email
    - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
      expense shares are covered by another participant (e.g. a child).
      Materialized as `auto: true` invitation rows on expenses: a create hook
@@ -95,8 +100,16 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      includes the plugin's `prefix` column (S3-enabled shape)
 
 7. **Users** (`src/collections/Users.ts`)
-   - Admin users who can manage the system
-   - Role-based access control
+   - Roles: `superadmin` (everything), `admin` (only their `assignedChatas`),
+     `user` (frontend only — NO admin-panel access, gated by `access.admin`)
+   - Frontend users are linked from `Participant.account`; the Users form
+     shows the links via a `participants` join field
+   - Auth: always-registered `app-jwt` cookie strategy (JWT signed with
+     `PAYLOAD_SECRET`) shared by Microsoft OAuth AND magic-link logins;
+     local email+password strategy only exists where OAuth env vars are
+     unset (dev bootstrap). Magic-link state lives in hidden
+     `loginToken`/`loginTokenExpires` fields (sha256 hash, 15min TTL)
+   - See `docs/PRD-uzivatele.md` for the full auth/roles design
 
 ### Utilities
 
@@ -162,10 +175,38 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 ### Access Control
 
 - **Public read access**: All collections have public read for API consumption
-- **Write access**:
-  - Admins have full access
-  - Regular users can only manage Chatas they're assigned to
-  - Per-chata permissions via `assignedUsers` array
+- **Write access** (helpers in `src/lib/access.ts` — used by every collection
+  and custom endpoint):
+  - `superadmin`: full access; sole manager of Chatas create/delete, Users,
+    Backgrounds/Icons/Media
+  - `admin`: chata-scoped writes via `Users.assignedChatas` (the legacy
+    `chatas.assignedUsers` array was removed; the migration copied its rows
+    into `users_rels`)
+  - `user` (frontend accounts): no write access anywhere, no admin panel
+- **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
+  the slug API returns a `viewer`; admins of the chata get the full
+  participant selector (defaulting to their own linked participant), linked
+  users see ONLY their own participant, anonymous visitors only participants
+  WITHOUT an account. UI gating only — read APIs stay public
+
+### Auth flows (frontend)
+
+- `/login`: magic link (email → `POST /api/auth/magic-link/request` →
+  `GET .../verify`) and Microsoft OAuth (`/api/auth/login?returnTo=...`);
+  sign-out via `GET /api/auth/logout`. Accounts are created ONLY in admin
+  (participant → "Create account from email...",
+  `POST /participants/:id/create-account`) and nothing is emailed until the
+  person requests a login link themselves
+- Email: Resend adapter gated on `RESEND_API_KEY`; ALL sends go through
+  `src/lib/email.ts`, which on Vercel PREVIEW deployments redirects mail to
+  `EMAIL_PREVIEW_TO` (or only logs it) — real recipients are never contacted
+  from previews
+- Sessions: `payload-token` cookie, 30 days for `user` / 2 h for admin
+  roles; set `SESSION_COOKIE_DOMAIN=.zicha.travel` so one session works
+  across chata subdomains (also required for OAuth started on a subdomain)
+- Frontend footer (`Footer.tsx` in the frontend layout): site info, version
+  from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out and an
+  admin link
 
 ### Relationship Filtering
 
@@ -251,11 +292,13 @@ pnpm db:stop          # Stop PostgreSQL
 # Sync data from production
 pnpm migrate-from-prod  # Copy database from production Supabase
 
-# One-time migration for the polymorphic payer change (joint accounts).
-# Production runs it automatically: the Vercel build (`vercel-build` script)
-# runs `migrate:payer auto` (single transaction, idempotent) before
-# `next build`. Locally: backup BEFORE the schema push, restore AFTER — see
-# script header ( `status` to inspect, `--db=<uri>` to override).
+# One-time migrations (polymorphic payer + user-roles rename). Production
+# runs them automatically: the Vercel build (`vercel-build` script) runs
+# `migrate:payer auto` (idempotent) before `next build`. The user-roles part
+# renames enum values (admin→superadmin, user→admin, adds new 'user') and
+# runs OUTSIDE the main transaction (PostgreSQL enum rules). Locally: run
+# `pnpm migrate:payer auto` once BEFORE the first `pnpm dev` on this code,
+# so the dev schema push finds the enum already migrated.
 pnpm migrate:payer auto|backup|restore|status|cleanup
 
 # Other commands

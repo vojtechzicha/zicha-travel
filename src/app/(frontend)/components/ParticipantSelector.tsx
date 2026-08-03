@@ -10,12 +10,15 @@ interface ParticipantSelectorProps {
   participants: Participant[]
   onSelectParticipant: (participantId: number) => void
   bankerId?: number | null
+  /** some participants are hidden because they have an account — offer login */
+  showLoginHint?: boolean
 }
 
 export function ParticipantSelector({
   participants,
   onSelectParticipant,
   bankerId,
+  showLoginHint = false,
 }: ParticipantSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -88,9 +91,26 @@ export function ParticipantSelector({
       </div>
 
       {/* No results message */}
-      {filteredParticipants.length === 0 && (
+      {filteredParticipants.length === 0 && participants.length > 0 && (
         <p className="text-center text-gray-500 py-8">
           Žádný účastník neodpovídá hledání „{searchQuery}"
+        </p>
+      )}
+
+      {/* Everyone (or everyone missing) has an account — point to login */}
+      {participants.length === 0 && (
+        <p className="text-center text-gray-500 py-8">
+          Finance účastníků jsou přístupné po přihlášení.
+        </p>
+      )}
+
+      {showLoginHint && (
+        <p className="text-center text-gray-600 mt-6 text-sm">
+          Nevidíte se v seznamu?{' '}
+          <a href="/login" className="text-primary font-semibold hover:underline">
+            Přihlaste se ke svému účtu
+          </a>
+          .
         </p>
       )}
     </GlassCard>

@@ -82,7 +82,11 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    users: {
+      participants: 'participants';
+    };
+  };
   collectionsSelect: {
     chatas: ChatasSelect<false> | ChatasSelect<true>;
     participants: ParticipantsSelect<false> | ParticipantsSelect<true>;
@@ -179,15 +183,6 @@ export interface Chata {
    * Banker's IBAN for QR code generation
    */
   bankerIban: string;
-  /**
-   * Users who can manage this chata
-   */
-  assignedUsers?:
-    | {
-        user: number | User;
-        id?: string | null;
-      }[]
-    | null;
   /**
    * Background image (uses system default if not set)
    */
@@ -470,6 +465,10 @@ export interface Participant {
    * Full IBAN for QR code generation - only needed for creditors
    */
   iban?: string | null;
+  /**
+   * User account linked to this participant ("účet"). Use the button below to create a new account from an email — nothing is emailed until the person requests a login link themselves.
+   */
+  account?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -480,13 +479,23 @@ export interface Participant {
 export interface User {
   id: number;
   /**
-   * Admins can manage all chatas, users can only manage assigned chatas
+   * Superadmins manage everything; admins manage only their assigned chatas; users sign in on the frontend and see their own participant finances.
    */
-  role: 'admin' | 'user';
+  role: 'superadmin' | 'admin' | 'user';
   /**
-   * Chatas this user can manage (only applies to non-admin users)
+   * Chatas this admin can manage (only applies to the admin role)
    */
   assignedChatas?: (number | Chata)[] | null;
+  /**
+   * Participants this account is linked to (one per chata)
+   */
+  participants?: {
+    docs?: (number | Participant)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  loginToken?: string | null;
+  loginTokenExpires?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -867,12 +876,6 @@ export interface ChatasSelect<T extends boolean = true> {
   banker?: T;
   bankerAccountNumber?: T;
   bankerIban?: T;
-  assignedUsers?:
-    | T
-    | {
-        user?: T;
-        id?: T;
-      };
   background?: T;
   icon?: T;
   themeColor?: T;
@@ -993,6 +996,7 @@ export interface ParticipantsSelect<T extends boolean = true> {
   paidBy?: T;
   accountNumber?: T;
   iban?: T;
+  account?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1100,6 +1104,9 @@ export interface IconsSelect<T extends boolean = true> {
 export interface UsersSelect<T extends boolean = true> {
   role?: T;
   assignedChatas?: T;
+  participants?: T;
+  loginToken?: T;
+  loginTokenExpires?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

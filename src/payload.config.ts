@@ -1,4 +1,5 @@
 import { s3Storage } from '@payloadcms/storage-s3'
+import { resendAdapter } from '@payloadcms/email-resend'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
@@ -58,6 +59,19 @@ export default buildConfig({
     Media,
   ],
   editor: lexicalEditor(),
+  // Outgoing mail (magic-link logins). Gated on RESEND_API_KEY — without it
+  // (local dev) Payload's default handler logs emails to the console. All
+  // sends go through src/lib/email.ts, which redirects mail away from real
+  // recipients on Vercel preview deployments.
+  ...(process.env.RESEND_API_KEY
+    ? {
+        email: resendAdapter({
+          defaultFromAddress: process.env.EMAIL_FROM || 'login@zicha.travel',
+          defaultFromName: process.env.EMAIL_FROM_NAME || 'zicha.travel',
+          apiKey: process.env.RESEND_API_KEY,
+        }),
+      }
+    : {}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

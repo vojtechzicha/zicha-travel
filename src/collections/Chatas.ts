@@ -1,10 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { afterReadHook } from './Chatas/hooks/afterRead'
-
-const refId = (value: unknown): string =>
-  typeof value === 'object' && value !== null
-    ? String((value as { id: unknown }).id)
-    : String(value)
+import { canManageChata, ownChataAccess, refId, superadminOnly } from '../lib/access'
 
 export const Chatas: CollectionConfig = {
   slug: 'chatas',
@@ -24,8 +20,7 @@ export const Chatas: CollectionConfig = {
         if (!id) {
           return Response.json({ error: 'Missing chata id' }, { status: 400 })
         }
-        const assigned = ((req.user.assignedChatas as unknown[]) || []).map(refId)
-        if (req.user.role !== 'admin' && !assigned.includes(String(id))) {
+        if (!canManageChata(req.user, id)) {
           return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
         let participantIds: unknown
@@ -93,25 +88,11 @@ export const Chatas: CollectionConfig = {
   access: {
     // Public read access for API consumption
     read: () => true,
-    // Admin and per-chata permissions for write operations
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      return user.role === 'admin'
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      // Users can only update chatas they're assigned to
-      return {
-        'assignedUsers.user': {
-          equals: user.id,
-        },
-      }
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      return user.role === 'admin'
-    },
+    // Superadmins create/delete chatas; admins update the ones assigned
+    // to them (Users.assignedChatas)
+    create: superadminOnly,
+    update: ownChataAccess,
+    delete: superadminOnly,
   },
   fields: [
     // Basic Information
@@ -260,23 +241,6 @@ export const Chatas: CollectionConfig = {
               direction: 'toAccount',
             },
           },
-        },
-      ],
-    },
-
-    // Per-Chata User Permissions
-    {
-      name: 'assignedUsers',
-      type: 'array',
-      admin: {
-        description: 'Users who can manage this chata',
-      },
-      fields: [
-        {
-          name: 'user',
-          type: 'relationship',
-          relationTo: 'users',
-          required: true,
         },
       ],
     },

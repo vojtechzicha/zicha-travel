@@ -12,6 +12,7 @@ import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
+import type { FinanceViewer } from '@/lib/financeAccess'
 
 interface ChataData {
   chata: Chata
@@ -19,6 +20,7 @@ interface ChataData {
   expenses: Expense[]
   prepayments: Prepayment[]
   stats: ChataStats
+  viewer?: FinanceViewer
 }
 
 interface ChataViewProps {
@@ -241,6 +243,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 expenses={expenses}
                 prepayments={prepayments}
                 stats={stats}
+                viewer={data.viewer}
                 urlParticipantId={urlParticipantId}
                 onParticipantChange={handleParticipantChange}
               />

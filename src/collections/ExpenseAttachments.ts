@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { adminRoleOnly } from '../lib/access'
 
 // Receipts and other files attached to expenses ("účtenky"). Separate from
 // the `media` collection (icons/backgrounds) so field uploads stay quick:
@@ -20,9 +21,9 @@ export const ExpenseAttachments: CollectionConfig = {
     // Public read access for API consumption (consistent with all other
     // collections - attachment files are publicly readable by URL)
     read: () => true,
-    create: ({ req: { user } }) => !!user,
-    update: ({ req: { user } }) => !!user,
-    delete: ({ req: { user } }) => !!user,
+    create: adminRoleOnly,
+    update: adminRoleOnly,
+    delete: adminRoleOnly,
   },
   fields: [
     {

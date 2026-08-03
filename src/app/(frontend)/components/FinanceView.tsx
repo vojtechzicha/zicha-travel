@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ParticipantSelector } from './ParticipantSelector'
 import { SelectedParticipantHeader } from './SelectedParticipantHeader'
 import { ExpensesFeed } from './ExpensesFeed'
 import { PersonView } from './PersonView'
 import { FinanceViewSkeleton } from './Skeleton'
+import { anonymousViewer, selectableParticipants, type FinanceViewer } from '@/lib/financeAccess'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -15,6 +16,7 @@ interface FinanceViewProps {
   expenses: Expense[]
   prepayments: Prepayment[]
   stats: ChataStats
+  viewer?: FinanceViewer
   urlParticipantId?: number | null
   onParticipantChange?: (participantId: number | null) => void
 }
@@ -28,6 +30,7 @@ export function FinanceView({
   expenses,
   prepayments,
   stats,
+  viewer = anonymousViewer,
   urlParticipantId,
   onParticipantChange,
 }: FinanceViewProps) {
@@ -40,40 +43,55 @@ export function FinanceView({
       ? chata.banker.id
       : chata.banker
 
-  // Load from URL param (priority) or localStorage on mount
+  // Which participants this viewer may open: admins of the chata see all,
+  // a linked user only themselves, anonymous only participants without an
+  // account (see lib/financeAccess)
+  const allowedParticipants = useMemo(
+    () => selectableParticipants(viewer, participants),
+    [viewer, participants]
+  )
+
+  // Load from URL param (priority), localStorage, or the viewer's own
+  // linked participant on mount — always restricted to the allowed set
   useEffect(() => {
+    const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
+    const isAllowed = (id: number) => allowedParticipants.some((p) => p.id === id)
+
     // URL param takes priority over localStorage
-    if (urlParticipantId != null) {
-      const participantExists = participants.some((p) => p.id === urlParticipantId)
-      if (participantExists) {
-        setSelectedParticipantId(urlParticipantId)
-        // Also save to localStorage so it persists
-        const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
-        localStorage.setItem(storageKey, String(urlParticipantId))
+    if (urlParticipantId != null && isAllowed(urlParticipantId)) {
+      setSelectedParticipantId(urlParticipantId)
+      // Also save to localStorage so it persists
+      localStorage.setItem(storageKey, String(urlParticipantId))
+      setIsHydrated(true)
+      return
+    }
+
+    const stored = localStorage.getItem(storageKey)
+    if (stored) {
+      const storedId = parseInt(stored, 10)
+      if (isAllowed(storedId)) {
+        setSelectedParticipantId(storedId)
+        // Sync URL with localStorage selection
+        onParticipantChange?.(storedId)
         setIsHydrated(true)
         return
       }
     }
 
-    const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
-    const stored = localStorage.getItem(storageKey)
-
-    if (stored) {
-      const storedId = parseInt(stored, 10)
-      // Verify the stored participant still exists
-      const participantExists = participants.some((p) => p.id === storedId)
-      if (participantExists) {
-        setSelectedParticipantId(storedId)
-        // Sync URL with localStorage selection
-        onParticipantChange?.(storedId)
-      }
+    // Signed-in with a linked participant: preselect yourself (this is the
+    // ONLY option for plain users; admins can still switch afterwards)
+    if (viewer.linkedParticipantId != null && isAllowed(viewer.linkedParticipantId)) {
+      setSelectedParticipantId(viewer.linkedParticipantId)
+      localStorage.setItem(storageKey, String(viewer.linkedParticipantId))
+      onParticipantChange?.(viewer.linkedParticipantId)
     }
 
     setIsHydrated(true)
-  }, [chata.id, participants, urlParticipantId, onParticipantChange])
+  }, [chata.id, allowedParticipants, urlParticipantId, onParticipantChange, viewer.linkedParticipantId])
 
   // Save to localStorage and notify parent when selection changes
   const handleSelectParticipant = (participantId: number) => {
+    if (!allowedParticipants.some((p) => p.id === participantId)) return
     setSelectedParticipantId(participantId)
     const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
     localStorage.setItem(storageKey, String(participantId))
@@ -90,16 +108,17 @@ export function FinanceView({
     return (
       <div className="w-full">
         <ParticipantSelector
-          participants={participants}
+          participants={allowedParticipants}
           onSelectParticipant={handleSelectParticipant}
           bankerId={bankerId}
+          showLoginHint={!viewer.authenticated && allowedParticipants.length < participants.length}
         />
       </div>
     )
   }
 
   // State 2: Participant selected - show compact header + content
-  const selectedParticipant = participants.find((p) => p.id === selectedParticipantId)
+  const selectedParticipant = allowedParticipants.find((p) => p.id === selectedParticipantId)
   const selectedStats = selectedParticipant
     ? stats.participants[selectedParticipant.name]
     : null
@@ -117,9 +136,10 @@ export function FinanceView({
       {/* Compact participant header - full width */}
       <SelectedParticipantHeader
         selectedParticipant={selectedParticipant}
-        participants={participants}
+        participants={allowedParticipants}
         onChangeParticipant={handleSelectParticipant}
         bankerId={bankerId}
+        canChange={allowedParticipants.length > 1}
       />
 
       {/* Main content area */}

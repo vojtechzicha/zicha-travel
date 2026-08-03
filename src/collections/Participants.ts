@@ -1,6 +1,11 @@
+import crypto from 'crypto'
+import { APIError } from 'payload'
 import type { CollectionConfig, Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
+import { adminRoleOnly, canManageChata, chataScopedAccess } from '../lib/access'
+
+const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
 
 export const Participants: CollectionConfig = {
   slug: 'participants',
@@ -25,12 +30,106 @@ export const Participants: CollectionConfig = {
           depth: 0,
         })
         const chataId = refId(participant.chata)
-        const assigned = ((req.user.assignedChatas as unknown[]) || []).map((c) => refId(c as any))
-        if (req.user.role !== 'admin' && !assigned.includes(chataId)) {
+        if (!canManageChata(req.user, chataId)) {
           return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
         const result = await syncPaidByInvitations(req.payload, participant)
         return Response.json(result)
+      },
+    },
+    {
+      // Create a frontend user account for this participant (or link an
+      // existing one found by email). No invitation/notification is sent —
+      // the person only gets an email when they later request a login link.
+      path: '/:id/create-account',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing participant id' }, { status: 400 })
+        }
+        const participant = await req.payload.findByID({
+          collection: 'participants',
+          id,
+          depth: 0,
+        })
+        const chataId = refId(participant.chata)
+        if (!canManageChata(req.user, chataId)) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        let email: unknown
+        try {
+          const body = await req.json?.()
+          email = body?.email
+        } catch {
+          email = undefined
+        }
+        if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+          return Response.json({ error: 'A valid email is required' }, { status: 400 })
+        }
+        const normalizedEmail = email.trim().toLowerCase()
+
+        const existing = await req.payload.find({
+          collection: 'users',
+          where: { email: { equals: normalizedEmail } },
+          limit: 1,
+          depth: 0,
+        })
+
+        let userId: number
+        let created = false
+        if (existing.docs.length > 0) {
+          userId = existing.docs[0].id
+        } else {
+          const newUser = await req.payload.create({
+            collection: 'users',
+            data: {
+              email: normalizedEmail,
+              role: 'user' as const,
+              // The local (password) strategy only exists where OAuth is not
+              // configured — give it an unguessable throwaway password there
+              ...(isOAuthEnabled
+                ? {}
+                : { password: crypto.randomBytes(24).toString('hex') }),
+            },
+          })
+          userId = newUser.id
+          created = true
+        }
+
+        // One account per participant per chata — refuse linking a user who
+        // already has a different participant in this chata
+        const conflict = await req.payload.find({
+          collection: 'participants',
+          where: {
+            and: [
+              { chata: { equals: Number(chataId) } },
+              { account: { equals: userId } },
+              { id: { not_equals: participant.id } },
+            ],
+          },
+          limit: 1,
+          depth: 0,
+        })
+        if (conflict.docs.length > 0) {
+          return Response.json(
+            {
+              error: `User ${normalizedEmail} is already linked to participant "${conflict.docs[0].name}" in this chata`,
+            },
+            { status: 409 },
+          )
+        }
+
+        await req.payload.update({
+          collection: 'participants',
+          id: participant.id,
+          data: { account: userId },
+        })
+
+        return Response.json({ userId, email: normalizedEmail, created, linked: true })
       },
     },
   ],
@@ -42,31 +141,10 @@ export const Participants: CollectionConfig = {
   access: {
     // Public read access for API consumption
     read: () => true,
-    // Users can create/update participants for chatas they manage
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      return true // Will be filtered by chata access
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      // Users can only update participants in chatas they're assigned to
-      return {
-        chata: {
-          // This will be checked against user's assigned chatas
-          in: user.assignedChatas || [],
-        },
-      }
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      return {
-        chata: {
-          in: user.assignedChatas || [],
-        },
-      }
-    },
+    // Admin roles only; admins are limited to their assigned chatas
+    create: adminRoleOnly,
+    update: chataScopedAccess,
+    delete: chataScopedAccess,
   },
   fields: [
     {
@@ -207,7 +285,58 @@ export const Participants: CollectionConfig = {
         },
       ],
     },
+    {
+      // Frontend user account of this person. Signed-in users see only
+      // their own finances; admins/superadmins keep the full participant
+      // selector (defaulting to their linked participant). Participants
+      // WITH an account are hidden from anonymous visitors' Finance view.
+      name: 'account',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        description:
+          'User account linked to this participant ("účet"). Use the button below to ' +
+          'create a new account from an email — nothing is emailed until the person ' +
+          'requests a login link themselves.',
+        components: {
+          afterInput: [
+            '@/collections/Participants/components/CreateAccountButton#CreateAccountButton',
+          ],
+        },
+      },
+    },
   ],
+  hooks: {
+    beforeValidate: [
+      // One account per chata: the same user must not be linked to two
+      // participants of one chata (application-level, like the name
+      // uniqueness — no compound unique index support in Payload 3.x)
+      async ({ data, req, originalDoc }) => {
+        const accountRef = data?.account ?? originalDoc?.account
+        const chataRef = data?.chata ?? originalDoc?.chata
+        if (!accountRef || !chataRef) return data
+        const conflict = await req.payload.find({
+          collection: 'participants',
+          where: {
+            and: [
+              { chata: { equals: refId(chataRef) } },
+              { account: { equals: refId(accountRef) } },
+              ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : []),
+            ],
+          },
+          limit: 1,
+          depth: 0,
+        })
+        if (conflict.docs.length > 0) {
+          throw new APIError(
+            `This user account is already linked to participant "${conflict.docs[0].name}" in the same chata`,
+            400,
+          )
+        }
+        return data
+      },
+    ],
+  },
   // Note: Unique constraint on chata+name handled by application logic
   // Payload 3.x doesn't support compound unique indexes via config
 }
