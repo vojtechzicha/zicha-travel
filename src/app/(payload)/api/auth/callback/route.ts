@@ -70,6 +70,20 @@ export async function GET(request: NextRequest) {
 
     const user = users.docs[0]
 
+    // Activate the account (lastLoginAt) — this also locks the linked
+    // participants away from anonymous visitors
+    try {
+      await payload.update({
+        collection: 'users',
+        id: user.id,
+        data: { lastLoginAt: new Date().toISOString() },
+        overrideAccess: true,
+        depth: 0,
+      })
+    } catch (err) {
+      console.error('Failed to stamp lastLoginAt:', err)
+    }
+
     // Frontend accounts always land on the frontend; admin roles go back to
     // where they started (frontend when returnTo is set, /admin otherwise)
     const destination =

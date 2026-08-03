@@ -372,8 +372,11 @@ ALTER TABLE chatas_public_transport_options
 -- migration (renames + new 'user' value) cannot run in this transaction —
 -- see migrateUserRoles(), which auto() runs first.
 -- users: magic-link login token (sha256 hash of the emailed token + expiry)
+-- and the "active account" marker (set on every login; participants linked
+-- to an active account are hidden from anonymous visitors)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS login_token character varying;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS login_token_expires timestamp(3) with time zone;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamp(3) with time zone;
 -- participants: linked frontend user account
 ALTER TABLE participants ADD COLUMN IF NOT EXISTS account_id integer;
 DO $$ BEGIN

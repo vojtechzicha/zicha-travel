@@ -54,6 +54,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const user = users.docs[0]
+
+  // Superadmins must ALWAYS sign in with Microsoft — a magic link would let
+  // anyone with brief mailbox access take over the whole system. Reply with
+  // the same generic ok (no account probing) but email an explanation
+  // instead of a login link.
+  if (user.role === 'superadmin') {
+    try {
+      await sendAppEmail(payload, {
+        to: user.email,
+        subject: 'Přihlášení k zicha.travel',
+        text: 'Tento účet je superadmin — přihlašovací odkazy jsou pro něj vypnuté. Přihlaste se prosím přes Microsoft na /login nebo /admin.',
+        html: `
+          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+            <h2 style="color: #d97706;">zicha.travel</h2>
+            <p>
+              Tento účet je <strong>superadmin</strong> — přihlašovací odkazy jsou pro něj z
+              bezpečnostních důvodů vypnuté.
+            </p>
+            <p>Přihlaste se prosím tlačítkem „Přihlásit se přes Microsoft".</p>
+          </div>
+        `,
+      })
+    } catch (err) {
+      payload.logger.error({ err }, 'Failed to send superadmin magic-link notice')
+    }
+    return NextResponse.json({ ok: true })
+  }
+
   const token = crypto.randomBytes(32).toString('hex')
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 

@@ -6,7 +6,12 @@ import { SelectedParticipantHeader } from './SelectedParticipantHeader'
 import { ExpensesFeed } from './ExpensesFeed'
 import { PersonView } from './PersonView'
 import { FinanceViewSkeleton } from './Skeleton'
-import { anonymousViewer, selectableParticipants, type FinanceViewer } from '@/lib/financeAccess'
+import {
+  anonymousViewer,
+  selectableParticipants,
+  type FinanceViewer,
+  type LockedParticipant,
+} from '@/lib/financeAccess'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -17,6 +22,7 @@ interface FinanceViewProps {
   prepayments: Prepayment[]
   stats: ChataStats
   viewer?: FinanceViewer
+  locked?: LockedParticipant[]
   urlParticipantId?: number | null
   onParticipantChange?: (participantId: number | null) => void
 }
@@ -31,6 +37,7 @@ export function FinanceView({
   prepayments,
   stats,
   viewer = anonymousViewer,
+  locked = [],
   urlParticipantId,
   onParticipantChange,
 }: FinanceViewProps) {
@@ -44,12 +51,23 @@ export function FinanceView({
       : chata.banker
 
   // Which participants this viewer may open: admins of the chata see all,
-  // a linked user only themselves, anonymous only participants without an
-  // account (see lib/financeAccess)
+  // a linked user only their own, anonymous everyone except locked
+  // participants — active accounts (see lib/financeAccess)
   const allowedParticipants = useMemo(
-    () => selectableParticipants(viewer, participants),
-    [viewer, participants]
+    () => selectableParticipants(viewer, participants, locked),
+    [viewer, participants, locked]
   )
+
+  // Locked participants shown greyed-out at the bottom of the selector —
+  // only relevant for the anonymous-style selector (admins see everyone;
+  // linked users never reach the selector)
+  const lockedForSelector = useMemo(() => {
+    if (viewer.canViewAll || viewer.linkedParticipantIds.length > 0) return []
+    return locked.flatMap((l) => {
+      const participant = participants.find((p) => p.id === l.id)
+      return participant ? [{ participant, maskedEmail: l.maskedEmail }] : []
+    })
+  }, [viewer, participants, locked])
 
   // Load from URL param (priority), localStorage, or the viewer's own
   // linked participant on mount — always restricted to the allowed set
@@ -78,16 +96,17 @@ export function FinanceView({
       }
     }
 
-    // Signed-in with a linked participant: preselect yourself (this is the
-    // ONLY option for plain users; admins can still switch afterwards)
-    if (viewer.linkedParticipantId != null && isAllowed(viewer.linkedParticipantId)) {
-      setSelectedParticipantId(viewer.linkedParticipantId)
-      localStorage.setItem(storageKey, String(viewer.linkedParticipantId))
-      onParticipantChange?.(viewer.linkedParticipantId)
+    // Signed-in with linked participant(s): preselect the first own one
+    // (plain users can then switch only among their own; admins among all)
+    const ownDefault = viewer.linkedParticipantIds.find((id) => isAllowed(id))
+    if (ownDefault != null) {
+      setSelectedParticipantId(ownDefault)
+      localStorage.setItem(storageKey, String(ownDefault))
+      onParticipantChange?.(ownDefault)
     }
 
     setIsHydrated(true)
-  }, [chata.id, allowedParticipants, urlParticipantId, onParticipantChange, viewer.linkedParticipantId])
+  }, [chata.id, allowedParticipants, urlParticipantId, onParticipantChange, viewer.linkedParticipantIds])
 
   // Save to localStorage and notify parent when selection changes
   const handleSelectParticipant = (participantId: number) => {
@@ -111,7 +130,7 @@ export function FinanceView({
           participants={allowedParticipants}
           onSelectParticipant={handleSelectParticipant}
           bankerId={bankerId}
-          showLoginHint={!viewer.authenticated && allowedParticipants.length < participants.length}
+          lockedParticipants={lockedForSelector}
         />
       </div>
     )

@@ -13,6 +13,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     'K tomuto e-mailu neexistuje účet. Požádejte správce chaty o vytvoření účtu.',
   missing_params: 'Neplatná odpověď přihlašovací služby. Zkuste to prosím znovu.',
   invalid_state: 'Přihlašování vypršelo. Zkuste to prosím znovu.',
+  superadmin_microsoft:
+    'Superadmin se přihlašuje výhradně přes Microsoft — přihlašovací odkazy jsou vypnuté.',
   no_email: 'Od Microsoftu se nepodařilo získat e-mail. Zkuste to prosím znovu.',
   callback_failed: 'Přihlášení se nezdařilo. Zkuste to prosím znovu.',
 }

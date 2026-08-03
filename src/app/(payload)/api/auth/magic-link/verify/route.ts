@@ -43,11 +43,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const user = users.docs[0]
 
-  // One-time use: clear the token before issuing the session
+  // Defense in depth: superadmins never sign in via magic link (see the
+  // request route), so refuse any token that somehow exists for one
+  if (user.role === 'superadmin') {
+    loginUrl.searchParams.set('error', 'superadmin_microsoft')
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // One-time use: clear the token before issuing the session; the login
+  // also activates the account (lastLoginAt), which locks the linked
+  // participants away from anonymous visitors
   await payload.update({
     collection: 'users',
     id: user.id,
-    data: { loginToken: null, loginTokenExpires: null },
+    data: {
+      loginToken: null,
+      loginTokenExpires: null,
+      lastLoginAt: new Date().toISOString(),
+    },
     overrideAccess: true,
   })
 

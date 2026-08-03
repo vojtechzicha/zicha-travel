@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, Crown } from 'lucide-react'
+import { Search, Crown, Lock } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import type { Participant } from '@/payload-types'
@@ -10,15 +10,15 @@ interface ParticipantSelectorProps {
   participants: Participant[]
   onSelectParticipant: (participantId: number) => void
   bankerId?: number | null
-  /** some participants are hidden because they have an account — offer login */
-  showLoginHint?: boolean
+  /** participants locked behind login (active account) — shown greyed out */
+  lockedParticipants?: Array<{ participant: Participant; maskedEmail: string }>
 }
 
 export function ParticipantSelector({
   participants,
   onSelectParticipant,
   bankerId,
-  showLoginHint = false,
+  lockedParticipants = [],
 }: ParticipantSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -34,6 +34,16 @@ export function ParticipantSelector({
     const query = searchQuery.toLowerCase()
     return sortedParticipants.filter((p) => p.name.toLowerCase().includes(query))
   }, [sortedParticipants, searchQuery])
+
+  // Locked participants follow the same sort + search
+  const filteredLocked = useMemo(() => {
+    const sorted = [...lockedParticipants].sort((a, b) =>
+      a.participant.name.localeCompare(b.participant.name, 'cs')
+    )
+    if (!searchQuery.trim()) return sorted
+    const query = searchQuery.toLowerCase()
+    return sorted.filter(({ participant }) => participant.name.toLowerCase().includes(query))
+  }, [lockedParticipants, searchQuery])
 
   return (
     <GlassCard padding="large" className="w-full">
@@ -97,21 +107,54 @@ export function ParticipantSelector({
         </p>
       )}
 
-      {/* Everyone (or everyone missing) has an account — point to login */}
-      {participants.length === 0 && (
+      {/* Everyone selectable has an account — point to login */}
+      {participants.length === 0 && lockedParticipants.length > 0 && (
         <p className="text-center text-gray-500 py-8">
-          Finance účastníků jsou přístupné po přihlášení.
+          Finance všech účastníků jsou přístupné po přihlášení.
         </p>
       )}
 
-      {showLoginHint && (
-        <p className="text-center text-gray-600 mt-6 text-sm">
-          Nevidíte se v seznamu?{' '}
-          <a href="/login" className="text-primary font-semibold hover:underline">
-            Přihlaste se ke svému účtu
-          </a>
-          .
-        </p>
+      {/* Participants locked behind login (their account is active) */}
+      {filteredLocked.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-3 mb-4 text-gray-400 text-sm">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="flex items-center gap-1.5">
+              <Lock size={13} /> Přístupné po přihlášení
+            </span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {filteredLocked.map(({ participant, maskedEmail }) => (
+              <a
+                key={participant.id}
+                href="/login"
+                title={`Pro zobrazení se přihlaste e-mailem ${maskedEmail}`}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold
+                           text-left w-full bg-white/40 text-gray-400 shadow-sm
+                           opacity-70 hover:opacity-100 transition-opacity"
+              >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-300 text-white text-sm font-bold flex-shrink-0">
+                  {getInitials(participant.name)}
+                </div>
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">{participant.name}</span>
+                  <span className="block text-[11px] font-normal text-gray-400 truncate">
+                    {maskedEmail}
+                  </span>
+                </span>
+                <Lock size={14} className="flex-shrink-0" />
+              </a>
+            ))}
+          </div>
+          <p className="text-center text-gray-500 text-sm mt-4">
+            Pro přepnutí na zamčeného účastníka se{' '}
+            <a href="/login" className="text-primary font-semibold hover:underline">
+              přihlaste
+            </a>{' '}
+            e-mailem uvedeným u jména.
+          </p>
+        </div>
       )}
     </GlassCard>
   )

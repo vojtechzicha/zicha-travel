@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { canManageChata, refId } from '@/lib/access'
-import type { FinanceViewer } from '@/lib/financeAccess'
+import { maskEmail, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
 import {
   calculateStats,
   transformExpense,
@@ -136,20 +136,48 @@ export async function GET(
     const stats = calculateStats(participants, expenses, prepayments, bankerName, jointAccounts)
 
     // Who is looking? Drives the Finance view gating (see lib/financeAccess):
-    // admins of this chata see everyone, linked users only themselves,
-    // anonymous visitors only participants without an account
+    // admins of this chata see everyone, linked users only their own
+    // participants, anonymous visitors everyone except LOCKED participants
+    // (linked account that has logged in at least once)
     const { user } = await payload.auth({ headers: request.headers })
-    const linkedParticipant = user
-      ? participantsResult.docs.find(
-          (p: any) => p.account != null && refId(p.account) === String(user.id),
-        )
-      : undefined
     const viewer: FinanceViewer = {
       authenticated: !!user,
       email: user?.email ?? null,
       canViewAll: canManageChata(user, chata.id),
-      linkedParticipantId: linkedParticipant?.id ?? null,
+      linkedParticipantIds: user
+        ? participantsResult.docs
+            .filter((p: any) => p.account != null && refId(p.account) === String(user.id))
+            .map((p: any) => p.id)
+        : [],
     }
+
+    // Locked participants: account owner has an ACTIVE account (lastLoginAt
+    // set). Shipped with a masked email so the anonymous selector can show
+    // "sign in as d***.n***@g***.com" instead of silently hiding people.
+    const accountIds = [
+      ...new Set(
+        participantsResult.docs
+          .filter((p: any) => p.account != null)
+          .map((p: any) => refId(p.account)),
+      ),
+    ]
+    const accountUsers = new Map<string, { email: string; lastLoginAt?: string | null }>()
+    if (accountIds.length > 0) {
+      const usersResult = await payload.find({
+        collection: 'users',
+        where: { id: { in: accountIds } },
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+      usersResult.docs.forEach((u: any) => accountUsers.set(String(u.id), u))
+    }
+    const locked: LockedParticipant[] = participantsResult.docs.flatMap((p: any) => {
+      if (p.account == null) return []
+      const account = accountUsers.get(refId(p.account))
+      if (!account?.lastLoginAt) return []
+      return [{ id: p.id, maskedEmail: maskEmail(account.email) }]
+    })
 
     // Return data with populated relationships for frontend
     // (payer/from arrive populated via depth: 1 as { relationTo, value })
@@ -161,6 +189,7 @@ export async function GET(
       jointAccounts: jointAccountsResult.docs,
       stats,
       viewer,
+      locked,
     })
   } catch (error) {
     console.error('Error looking up chata by slug:', error)

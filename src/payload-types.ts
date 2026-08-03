@@ -494,6 +494,10 @@ export interface User {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * Set on every successful login. Participants linked to this account are hidden from anonymous visitors only after the first login.
+   */
+  lastLoginAt?: string | null;
   loginToken?: string | null;
   loginTokenExpires?: string | null;
   updatedAt: string;
@@ -1105,6 +1109,7 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   assignedChatas?: T;
   participants?: T;
+  lastLoginAt?: T;
   loginToken?: T;
   loginTokenExpires?: T;
   updatedAt?: T;

@@ -1,5 +1,4 @@
 import crypto from 'crypto'
-import { APIError } from 'payload'
 import type { CollectionConfig, Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
@@ -98,29 +97,6 @@ export const Participants: CollectionConfig = {
           })
           userId = newUser.id
           created = true
-        }
-
-        // One account per participant per chata — refuse linking a user who
-        // already has a different participant in this chata
-        const conflict = await req.payload.find({
-          collection: 'participants',
-          where: {
-            and: [
-              { chata: { equals: Number(chataId) } },
-              { account: { equals: userId } },
-              { id: { not_equals: participant.id } },
-            ],
-          },
-          limit: 1,
-          depth: 0,
-        })
-        if (conflict.docs.length > 0) {
-          return Response.json(
-            {
-              error: `User ${normalizedEmail} is already linked to participant "${conflict.docs[0].name}" in this chata`,
-            },
-            { status: 409 },
-          )
         }
 
         await req.payload.update({
@@ -286,10 +262,12 @@ export const Participants: CollectionConfig = {
       ],
     },
     {
-      // Frontend user account of this person. Signed-in users see only
-      // their own finances; admins/superadmins keep the full participant
-      // selector (defaulting to their linked participant). Participants
-      // WITH an account are hidden from anonymous visitors' Finance view.
+      // Frontend user account of this person — a participant belongs to at
+      // most ONE user, but one user may own several participants (even in
+      // the same chata, e.g. a parent and their children). Signed-in users
+      // see only their own participants; admins/superadmins keep the full
+      // selector. A participant is hidden from anonymous visitors only once
+      // the account is ACTIVE (has logged in at least once).
       name: 'account',
       type: 'relationship',
       relationTo: 'users',
@@ -306,37 +284,6 @@ export const Participants: CollectionConfig = {
       },
     },
   ],
-  hooks: {
-    beforeValidate: [
-      // One account per chata: the same user must not be linked to two
-      // participants of one chata (application-level, like the name
-      // uniqueness — no compound unique index support in Payload 3.x)
-      async ({ data, req, originalDoc }) => {
-        const accountRef = data?.account ?? originalDoc?.account
-        const chataRef = data?.chata ?? originalDoc?.chata
-        if (!accountRef || !chataRef) return data
-        const conflict = await req.payload.find({
-          collection: 'participants',
-          where: {
-            and: [
-              { chata: { equals: refId(chataRef) } },
-              { account: { equals: refId(accountRef) } },
-              ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : []),
-            ],
-          },
-          limit: 1,
-          depth: 0,
-        })
-        if (conflict.docs.length > 0) {
-          throw new APIError(
-            `This user account is already linked to participant "${conflict.docs[0].name}" in the same chata`,
-            400,
-          )
-        }
-        return data
-      },
-    ],
-  },
   // Note: Unique constraint on chata+name handled by application logic
   // Payload 3.x doesn't support compound unique indexes via config
 }

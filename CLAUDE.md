@@ -35,11 +35,11 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      participants of that chata, copying the same fields; names already
      present in the chata are skipped (dedupe is case-insensitive,
      application-level — the compound unique constraint isn't in the DB)
-   - `account`: optional link to a frontend user (`users`); at most one
-     participant per chata per user (application-level check). The edit form
-     offers "Create account from email..."
-     (`POST /participants/:id/create-account`) — creates/links a `role: user`
-     account without sending any email
+   - `account`: optional link to a frontend user (`users`). A participant
+     belongs to at most ONE user; one user may own many participants, even
+     in the same chata (parent + children). The edit form offers "Create
+     account from email..." (`POST /participants/:id/create-account`) —
+     creates/links a `role: user` account without sending any email
    - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
      expense shares are covered by another participant (e.g. a child).
      Materialized as `auto: true` invitation rows on expenses: a create hook
@@ -184,10 +184,13 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
     into `users_rels`)
   - `user` (frontend accounts): no write access anywhere, no admin panel
 - **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
-  the slug API returns a `viewer`; admins of the chata get the full
-  participant selector (defaulting to their own linked participant), linked
-  users see ONLY their own participant, anonymous visitors only participants
-  WITHOUT an account. UI gating only — read APIs stay public
+  the slug API returns a `viewer` + `locked` list; admins of the chata get
+  the full participant selector (defaulting to their own linked
+  participant), linked users see ONLY their own participant(s), anonymous
+  visitors everyone EXCEPT locked participants — accounts that logged in at
+  least once (`users.lastLoginAt`). Locked ones stay visible greyed-out with
+  a masked-email login hint, so nobody wonders where a name went. UI gating
+  only — read APIs stay public
 
 ### Auth flows (frontend)
 
@@ -196,7 +199,11 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   sign-out via `GET /api/auth/logout`. Accounts are created ONLY in admin
   (participant → "Create account from email...",
   `POST /participants/:id/create-account`) and nothing is emailed until the
-  person requests a login link themselves
+  person requests a login link themselves. SUPERADMINS never magic-link —
+  they get an explanatory email instead and the verify route refuses them;
+  email+password stays available only while Microsoft OAuth is not
+  configured (first-time-setup fallback). Every login stamps
+  `users.lastLoginAt` ("active account")
 - Email: Resend adapter gated on `RESEND_API_KEY`; ALL sends go through
   `src/lib/email.ts`, which on Vercel PREVIEW deployments redirects mail to
   `EMAIL_PREVIEW_TO` (or only logs it) — real recipients are never contacted

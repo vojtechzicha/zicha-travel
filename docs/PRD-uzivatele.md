@@ -56,10 +56,10 @@ with this code, so the dev schema push finds the enum already migrated.
 
 ## Linking users to participants
 
-- `participants.account` — relationship to `users`. A person repeats across
-  chatas as separate participants, so one user may be linked from several
-  participants, but **at most one participant per chata** (beforeValidate
-  hook; application-level like the chata+name uniqueness).
+- `participants.account` — relationship to `users`. Cardinality: a
+  participant belongs to **at most one user** (single relationship — enforced
+  by the schema), while one user may own **any number of participants, even
+  in the same chata** (e.g. a parent plus their children).
 - Admin flows on the participant edit form:
   - pick an existing user in the `account` field, or
   - "Create account from email..." (`CreateAccountButton`) →
@@ -84,8 +84,13 @@ cookie work across chata subdomains.
    stores a sha256 token hash + 15min expiry on the user and emails the link
    (`/api/auth/magic-link/verify?token=...`) — built on the requesting host,
    so subdomain visitors stay on their subdomain.
-2. The verify route consumes the token (one-time), sets the session cookie
-   and redirects to `returnTo`.
+2. The verify route consumes the token (one-time), stamps `lastLoginAt`,
+   sets the session cookie and redirects to `returnTo`.
+3. **Superadmins never sign in via magic link** — the request route replies
+   with the generic ok but emails an explanation instead of a link, and the
+   verify route refuses superadmin tokens (`superadmin_microsoft` error).
+   Superadmins use Microsoft; the local email+password strategy exists only
+   where Microsoft OAuth is not configured (first-time setup fallback).
 
 ### Microsoft OAuth
 
@@ -113,22 +118,38 @@ must already exist (`unauthorized` otherwise).
 ## Frontend behaviour
 
 `GET /api/chatas/slug/:slug` authenticates the request and returns a
-`viewer`: `{ authenticated, email, canViewAll, linkedParticipantId }`.
+`viewer` (`{ authenticated, email, canViewAll, linkedParticipantIds }`) plus
+`locked` — participants whose account is **active** (`users.lastLoginAt`
+set; stamped on every login by all three flows), each with a masked email
+(`maskEmail`: `daniel.novak@gmail.com` → `d***.n***@g***.com`).
 `src/lib/financeAccess.ts` (unit-tested in
 `tests/int/financeAccess.int.spec.ts`) turns that into the participant set
 the Finance view offers:
 
 - **superadmin / admin of the chata** → all participants, selector defaults
   to their own linked participant (they can switch freely)
-- **linked user** → only their own participant, auto-selected, no switching
+- **linked user** → only their own participant(s), first one auto-selected;
+  switching only among their own when they have several
 - **anonymous** (and signed-in users without a participant in that chata) →
-  only participants **without** an account; a hint links to `/login` when
-  some participants are hidden
+  everyone except **locked** participants. An account that never logged in
+  hides nothing — people don't mysteriously vanish before their owner is
+  active. Locked participants still appear at the bottom of the selector,
+  greyed out with a lock icon and the masked email
+  ("Pro zobrazení se přihlaste e-mailem d***.n***@g***.com"), linking to
+  `/login`
 
 The chata selector (multi-chata home) shows a `role: user` visitor only the
 chatas where they have a participant. URL/localStorage participant selections
 are validated against the allowed set. This is UI gating — the read API stays
 public like the rest of the project.
+
+## Overview page (planned — design pending approval)
+
+A subtle link opens `/…/overview`: the summary table ("first table" of
+PersonView — paid for others, prepayments, fair-share breakdown per expense,
+resulting balance) for **all** participants on one page, so a disputed
+number can be recalculated in one place. Implemented after the design
+artifact is approved.
 
 ## Footer
 

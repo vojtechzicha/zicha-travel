@@ -54,6 +54,27 @@ export const Users: CollectionConfig = {
       },
     ],
   },
+  hooks: {
+    // Payload's own login op (local email+password strategy — the fallback
+    // where Microsoft OAuth is not configured). The OAuth callback and
+    // magic-link verify routes stamp lastLoginAt themselves.
+    afterLogin: [
+      async ({ req, user }) => {
+        try {
+          await req.payload.update({
+            collection: 'users',
+            id: user.id,
+            data: { lastLoginAt: new Date().toISOString() },
+            overrideAccess: true,
+            depth: 0,
+          })
+        } catch {
+          // stamping must never break the login itself
+        }
+        return user
+      },
+    ],
+  },
   access: {
     // Only admin roles may enter the admin panel — frontend accounts
     // (role "user") sign in on the site itself.
@@ -119,6 +140,21 @@ export const Users: CollectionConfig = {
       on: 'account',
       admin: {
         description: 'Participants this account is linked to (one per chata)',
+      },
+    },
+    {
+      // "Active account" marker: set on every successful login. A
+      // participant linked to an account is hidden from anonymous visitors
+      // only once the account is active (lastLoginAt set) — before the first
+      // login everything behaves as if the account did not exist.
+      name: 'lastLoginAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description:
+          'Set on every successful login. Participants linked to this account are ' +
+          'hidden from anonymous visitors only after the first login.',
+        date: { displayFormat: 'yyyy-MM-dd HH:mm' },
       },
     },
     // Magic-link login state — a sha256 hash of the emailed token, never
