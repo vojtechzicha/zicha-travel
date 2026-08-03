@@ -1,4 +1,5 @@
 import { s3Storage } from '@payloadcms/storage-s3'
+import { resendAdapter } from '@payloadcms/email-resend'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
@@ -11,6 +12,7 @@ import { Media } from './collections/Media'
 import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
 import { Expenses } from './collections/Expenses'
+import { ExpenseAttachments } from './collections/ExpenseAttachments'
 import { Prepayments } from './collections/Prepayments'
 import { JointAccounts } from './collections/JointAccounts'
 import { Backgrounds } from './collections/Backgrounds'
@@ -41,8 +43,35 @@ export default buildConfig({
       beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
   },
-  collections: [Users, Media, Chatas, Participants, Expenses, Prepayments, JointAccounts, Backgrounds, Icons],
+  // Order matters for the admin UI: nav/dashboard groups appear in the order
+  // of their first collection here (Chata → Expense Tracking → Appearance →
+  // System). Purely cosmetic — no schema or API impact.
+  collections: [
+    Chatas,
+    Participants,
+    Expenses,
+    Prepayments,
+    JointAccounts,
+    ExpenseAttachments,
+    Backgrounds,
+    Icons,
+    Users,
+    Media,
+  ],
   editor: lexicalEditor(),
+  // Outgoing mail (magic-link logins). Gated on RESEND_API_KEY — without it
+  // (local dev) Payload's default handler logs emails to the console. All
+  // sends go through src/lib/email.ts, which redirects mail away from real
+  // recipients on Vercel preview deployments.
+  ...(process.env.RESEND_API_KEY
+    ? {
+        email: resendAdapter({
+          defaultFromAddress: process.env.EMAIL_FROM || 'login@zicha.travel',
+          defaultFromName: process.env.EMAIL_FROM_NAME || 'zicha.travel',
+          apiKey: process.env.RESEND_API_KEY,
+        }),
+      }
+    : {}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
@@ -71,7 +100,16 @@ export default buildConfig({
       disableLocalStorage: Boolean(process.env.S3_ENDPOINT),
       collections: {
         media: true,
+        'expense-attachments': {
+          prefix: 'expense-attachments',
+        },
       },
+      // Upload straight from the browser to the bucket via presigned URLs.
+      // Vercel serverless caps request bodies at ~4.5 MB, which phone camera
+      // photos routinely exceed; direct uploads bypass that limit. No effect
+      // when the plugin is disabled (local dev - uploads go through the
+      // server to disk as before).
+      clientUploads: true,
       bucket: process.env.S3_BUCKET || '',
       config: {
         endpoint: process.env.S3_ENDPOINT,

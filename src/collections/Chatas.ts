@@ -1,11 +1,86 @@
 import type { CollectionConfig } from 'payload'
 import { afterReadHook } from './Chatas/hooks/afterRead'
+import { canManageChata, ownChataAccess, refId, superadminOnly } from '../lib/access'
 
 export const Chatas: CollectionConfig = {
   slug: 'chatas',
+  endpoints: [
+    {
+      // Bulk prefill: clone selected participants from previous chatas into
+      // this one — copies name, declension forms and banking info; skips
+      // names already present in this chata (see PrefillParticipantsButton
+      // on the edit form)
+      path: '/:id/prefill-participants',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing chata id' }, { status: 400 })
+        }
+        if (!canManageChata(req.user, id)) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        let participantIds: unknown
+        try {
+          const body = await req.json?.()
+          participantIds = body?.participantIds
+        } catch {
+          participantIds = undefined
+        }
+        if (!Array.isArray(participantIds) || participantIds.length === 0) {
+          return Response.json(
+            { error: 'participantIds must be a non-empty array' },
+            { status: 400 }
+          )
+        }
+        const sources = await req.payload.find({
+          collection: 'participants',
+          where: { id: { in: participantIds } },
+          limit: 1000,
+          depth: 0,
+        })
+        const existing = await req.payload.find({
+          collection: 'participants',
+          where: { chata: { equals: id } },
+          limit: 1000,
+          depth: 0,
+        })
+        // The chata+name unique constraint is application-level only —
+        // dedupe against existing participants AND within the selection
+        const taken = new Set(existing.docs.map((p) => p.name.trim().toLowerCase()))
+        let created = 0
+        const skipped: string[] = []
+        for (const source of sources.docs) {
+          const key = source.name.trim().toLowerCase()
+          if (taken.has(key)) {
+            skipped.push(source.name)
+            continue
+          }
+          taken.add(key)
+          await req.payload.create({
+            collection: 'participants',
+            data: {
+              name: source.name,
+              akuzativ: source.akuzativ ?? undefined,
+              vokativ: source.vokativ ?? undefined,
+              accountNumber: source.accountNumber ?? undefined,
+              iban: source.iban ?? undefined,
+              chata: Number(id),
+            },
+          })
+          created++
+        }
+        return Response.json({ created, skipped })
+      },
+    },
+  ],
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'location', 'slug'],
+    group: 'Chata',
   },
   hooks: {
     afterRead: [afterReadHook],
@@ -13,25 +88,11 @@ export const Chatas: CollectionConfig = {
   access: {
     // Public read access for API consumption
     read: () => true,
-    // Admin and per-chata permissions for write operations
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      return user.role === 'admin'
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      // Users can only update chatas they're assigned to
-      return {
-        'assignedUsers.user': {
-          equals: user.id,
-        },
-      }
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      return user.role === 'admin'
-    },
+    // Superadmins create/delete chatas; admins update the ones assigned
+    // to them (Users.assignedChatas)
+    create: superadminOnly,
+    update: ownChataAccess,
+    delete: superadminOnly,
   },
   fields: [
     // Basic Information
@@ -100,6 +161,20 @@ export const Chatas: CollectionConfig = {
       ],
     },
 
+    // Participants prefill (bulk clone from previous chatas)
+    {
+      name: 'prefillParticipants',
+      type: 'ui',
+      admin: {
+        components: {
+          Field:
+            '@/collections/Chatas/components/PrefillParticipantsButton#PrefillParticipantsButton',
+        },
+        // Creating related participants needs a saved chata id
+        condition: (data) => Boolean(data?.id),
+      },
+    },
+
     // Banking Configuration
     {
       type: 'collapsible',
@@ -111,10 +186,20 @@ export const Chatas: CollectionConfig = {
           relationTo: 'participants',
           required: false,
           admin: {
-            description: 'Person managing the money for this trip',
+            description:
+              'Person managing the money for this trip. On a new chata the list is ' +
+              'empty — save the chata, add participants (e.g. via "Prefill ' +
+              'participants" above), then pick the banker. Selecting one prefills ' +
+              'the account fields below from their banking info.',
+            components: {
+              afterInput: [
+                '@/collections/Chatas/components/BankerBankingPrefill#BankerBankingPrefill',
+              ],
+            },
           },
           filterOptions: ({ data }) => {
-            // Only show participants from this chata
+            // Only show participants from this chata; an unsaved chata has
+            // no participants yet — show none instead of every chata's
             if (data?.id) {
               return {
                 chata: {
@@ -122,7 +207,7 @@ export const Chatas: CollectionConfig = {
                 },
               }
             }
-            return true
+            return false
           },
         },
         {
@@ -156,23 +241,6 @@ export const Chatas: CollectionConfig = {
               direction: 'toAccount',
             },
           },
-        },
-      ],
-    },
-
-    // Per-Chata User Permissions
-    {
-      name: 'assignedUsers',
-      type: 'array',
-      admin: {
-        description: 'Users who can manage this chata',
-      },
-      fields: [
-        {
-          name: 'user',
-          type: 'relationship',
-          relationTo: 'users',
-          required: true,
         },
       ],
     },
@@ -405,6 +473,19 @@ export const Chatas: CollectionConfig = {
               },
             },
             {
+              name: 'direction',
+              type: 'select',
+              defaultValue: 'tam',
+              options: [
+                { label: 'Tam (to the chata)', value: 'tam' },
+                { label: 'Zpět (back home)', value: 'zpet' },
+              ],
+              admin: {
+                description:
+                  'Day used by the "add to calendar" link: tam → arrival day, zpět → departure day',
+              },
+            },
+            {
               name: 'totalDuration',
               type: 'text',
               admin: {
@@ -574,7 +655,7 @@ export const Chatas: CollectionConfig = {
                             },
                           }
                         }
-                        return true
+                        return false
                       },
                     },
                     {
@@ -649,7 +730,7 @@ export const Chatas: CollectionConfig = {
                     },
                   }
                 }
-                return true
+                return false
               },
             },
             {
@@ -667,7 +748,7 @@ export const Chatas: CollectionConfig = {
                     },
                   }
                 }
-                return true
+                return false
               },
             },
             {
@@ -690,7 +771,7 @@ export const Chatas: CollectionConfig = {
                         },
                       }
                     }
-                    return true
+                    return false
                   },
                 },
               ],

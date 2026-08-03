@@ -58,9 +58,13 @@ export interface ParticipantStats {
   cost: number
   plannedCost: number
   costBreakdown: Array<{
+    /** Source expense — lets the overview matrix group entries per expense */
+    expenseId?: string | number
     title: string
     cost: number
     weight: number
+    /** The expense's weights sum to its amount (±1 Kč), so `weight` is a Kč amount */
+    weightIsAmount?: boolean
     isPlanned?: boolean
     /** Set on the guest's zero-cost entry: name of the host covering the share */
     invitedBy?: string
@@ -187,6 +191,11 @@ export function calculateStats(
     // Calculate total units
     const totalUnits = Object.values(weights).reduce((sum, w) => sum + w, 0)
 
+    // Weights summing to the amount (1 Kč tolerance) are Kč amounts, not
+    // abstract multipliers — the UI then shows them as currency
+    const weightIsAmount =
+      expense.splitType === 'weighted' && totalUnits > 0 && Math.abs(totalUnits - amount) <= 1
+
     // Invitations ("pozvání"): the host covers the guest's share of this
     // expense. Each guest's ORIGINAL share moves to their direct host —
     // single hop, so a host who is themselves invited still pays for their
@@ -219,17 +228,21 @@ export function calculateStats(
             stats[hostName].cost += cost
           }
           stats[name].costBreakdown.push({
+            expenseId: expense.id,
             title: expense.title,
             cost: 0,
             weight: weight,
+            weightIsAmount: weightIsAmount,
             isPlanned: isPlanned,
             invitedBy: hostName,
             auto: auto,
           })
           stats[hostName].costBreakdown.push({
+            expenseId: expense.id,
             title: expense.title,
             cost: cost,
             weight: weight,
+            weightIsAmount: weightIsAmount,
             isPlanned: isPlanned,
             invitedGuest: name,
             auto: auto,
@@ -241,9 +254,11 @@ export function calculateStats(
             stats[name].cost += cost
           }
           stats[name].costBreakdown.push({
+            expenseId: expense.id,
             title: expense.title,
             cost: cost,
             weight: weight,
+            weightIsAmount: weightIsAmount,
             isPlanned: isPlanned,
           })
         }

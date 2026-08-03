@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { Receipt, ArrowLeft, Clock, HeartHandshake } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Receipt, ArrowLeft, Clock, HeartHandshake, FileText, X } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { getPayerDisplay } from '@/lib/payerRef'
-import type { Expense } from '@/payload-types'
+import { akuzativName } from '@/lib/czechNames'
+import type { Expense, ExpenseAttachment } from '@/payload-types'
 
 const MAX_VISIBLE_OTHERS = 5
 
@@ -22,6 +24,7 @@ export function ExpenseCard({
   selectedParticipantId,
 }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [lightboxAttachment, setLightboxAttachment] = useState<ExpenseAttachment | null>(null)
   const isRefund = expense.amount < 0
   const isPlanned = expense.isPlanned || false
   const payer = getPayerDisplay(expense.payer)
@@ -30,8 +33,12 @@ export function ExpenseCard({
   // Muted styling for "other" expenses when showing all
   const isOther = showAll && !isMine
 
-  // Process weights for display
+  // Process weights for display. When the weights add up to the expense
+  // amount (within the usual 1 Kč tolerance), they are Kč amounts, not
+  // abstract multipliers — show them as currency
   const weights = expense.weights ?? []
+  const weightsSum = weights.reduce((sum, w) => sum + (w.weight ?? 0), 0)
+  const weightsAreAmounts = weights.length > 0 && Math.abs(weightsSum - expense.amount) <= 1
   const myWeight = weights.find((w) => {
     const participantId =
       typeof w.participant === 'object' && w.participant !== null
@@ -59,6 +66,20 @@ export function ExpenseCard({
       inv.guest !== null
   )
 
+  // Attachments ("účtenky") arrive populated via depth: 1 in the chata API
+  const attachments = (expense.attachments ?? []).filter(
+    (a): a is ExpenseAttachment => typeof a === 'object' && a !== null && !!a.url
+  )
+
+  useEffect(() => {
+    if (!lightboxAttachment) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxAttachment(null)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [lightboxAttachment])
+
   const totalOthers = otherWeights.length
   const visibleOthers = expanded ? otherWeights : otherWeights.slice(0, MAX_VISIBLE_OTHERS)
   const hiddenCount = totalOthers - MAX_VISIBLE_OTHERS
@@ -73,7 +94,7 @@ export function ExpenseCard({
         key={participantName}
         className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md"
       >
-        {participantName}: {w.weight}x
+        {participantName}: {weightsAreAmounts ? formatCurrency(w.weight) : `${w.weight}x`}
       </span>
     )
   }
@@ -176,8 +197,9 @@ export function ExpenseCard({
           <div className="flex flex-wrap gap-1 mt-1">
             {invitations.map((inv, i) => {
               const hostName = typeof inv.host === 'object' && inv.host !== null ? inv.host.name : ''
+              // Guest is the object of "zve" — accusative ("Vojta zve Katku")
               const guestName =
-                typeof inv.guest === 'object' && inv.guest !== null ? inv.guest.name : ''
+                typeof inv.guest === 'object' && inv.guest !== null ? akuzativName(inv.guest) : ''
               return (
                 <span
                   key={inv.id ?? i}
@@ -189,6 +211,67 @@ export function ExpenseCard({
             })}
           </div>
         )}
+
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {attachments.map((att, i) =>
+              att.mimeType?.startsWith('image/') ? (
+                <button
+                  key={att.id ?? i}
+                  onClick={() => setLightboxAttachment(att)}
+                  className="block w-10 h-10 rounded-md overflow-hidden border border-gray-200 hover:border-primary transition-colors"
+                  title={att.alt || att.filename || 'účtenka'}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={att.url!}
+                    alt={att.alt || att.filename || 'účtenka'}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ) : (
+                <a
+                  key={att.id ?? i}
+                  href={att.url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                  title={att.alt || att.filename || 'příloha'}
+                >
+                  <FileText size={12} /> PDF
+                </a>
+              )
+            )}
+          </div>
+        )}
+
+        {/* Portal to body - ancestors with backdrop-filter (glass cards)
+            would otherwise become the containing block for position:fixed
+            and clip the overlay to the card */}
+        {lightboxAttachment &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+              onClick={() => setLightboxAttachment(null)}
+            >
+              <button
+                onClick={() => setLightboxAttachment(null)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
+                aria-label="Zavřít"
+              >
+                <X size={28} />
+              </button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={lightboxAttachment.url!}
+                alt={lightboxAttachment.alt || lightboxAttachment.filename || 'účtenka'}
+                className="max-w-full max-h-full rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>,
+            document.body
+          )}
       </div>
     </div>
   )

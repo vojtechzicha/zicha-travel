@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import type { JointAccount } from '../payload-types'
+import { adminRoleOnly, chataScopedAccess } from '../lib/access'
 
 export const JointAccounts: CollectionConfig = {
   slug: 'joint-accounts',
@@ -10,34 +11,17 @@ export const JointAccounts: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'chata', 'members'],
+    group: 'Expense Tracking',
     description:
       'Shared bank accounts ("společný účet") of 2+ participants. Can be selected as the payer of an expense or sender of a prepayment; the amount is attributed equally to the members.',
   },
   access: {
     // Public read access for API consumption
     read: () => true,
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      return true
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      return {
-        chata: {
-          in: user.assignedChatas || [],
-        },
-      }
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      return {
-        chata: {
-          in: user.assignedChatas || [],
-        },
-      }
-    },
+    // Admin roles only; admins are limited to their assigned chatas
+    create: adminRoleOnly,
+    update: chataScopedAccess,
+    delete: chataScopedAccess,
   },
   fields: [
     {

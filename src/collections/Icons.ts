@@ -1,17 +1,19 @@
 import type { CollectionConfig } from 'payload'
+import { isSuperadmin } from '../lib/access'
 
 export const Icons: CollectionConfig = {
   slug: 'icons',
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'isDefault'],
+    group: 'Appearance',
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => !!user && user.role === 'admin',
-    update: ({ req: { user } }) => !!user && user.role === 'admin',
+    create: ({ req: { user } }) => isSuperadmin(user),
+    update: ({ req: { user } }) => isSuperadmin(user),
     delete: ({ req: { user }, data }) => {
-      if (!user || user.role !== 'admin') return false
+      if (!isSuperadmin(user)) return false
       return !data?.isDefault // Prevent deletion of default
     },
   },

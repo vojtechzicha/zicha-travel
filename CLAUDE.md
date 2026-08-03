@@ -18,6 +18,28 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - People involved in a trip
    - Belongs to a specific Chata
    - Contains banking information for settlements
+   - Czech declension ("skloňování"): optional `akuzativ` ("Katku") and
+     `vokativ` ("Katko") name forms. Frontend uses the accusative where
+     grammar needs it (invitation texts: "Vojta zve Katku", "platíš za
+     Katku") via `src/lib/czechNames.ts`, always falling back to `name`;
+     `vokativ` is stored for future greetings, not rendered yet
+   - "Copy from" prefill (`components/CopyFromParticipantButton.tsx`, UI
+     field shown only on create): pick any participant across chatas
+     (labelled "Name (Chata)") and prefill name, declension forms and
+     banking info — for people who repeat across trips. Trip-specific
+     fields (chata, paidBy, hasPet) are never copied
+   - Bulk variant on the Chata edit form ("Prefill participants",
+     `src/collections/Chatas/components/PrefillParticipantsButton.tsx`):
+     multiselect participants from previous chatas →
+     `POST /chatas/:id/prefill-participants` creates them as new
+     participants of that chata, copying the same fields; names already
+     present in the chata are skipped (dedupe is case-insensitive,
+     application-level — the compound unique constraint isn't in the DB)
+   - `account`: optional link to a frontend user (`users`). A participant
+     belongs to at most ONE user; one user may own many participants, even
+     in the same chata (parent + children). The edit form offers "Create
+     account from email..." (`POST /participants/:id/create-account`) —
+     creates/links a `role: user` account without sending any email
    - `paidBy` ("platí za něj/ni"): standing arrangement — this participant's
      expense shares are covered by another participant (e.g. a child).
      Materialized as `auto: true` invitation rows on expenses: a create hook
@@ -29,6 +51,10 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Individual expenses paid by participants
    - Supports equal split (ALL) or weighted split
    - References: Chata, Participant (payer), Participants (weights)
+   - `attachments` ("účtenky"): hasMany upload → `ExpenseAttachments`.
+     Shown on the expense card as small thumbnails (images open a lightbox,
+     portaled to `body` — glass-card `backdrop-filter` would clip
+     `position: fixed`) and PDF chips
    - `invitations` array ("pozvání"): `{ host, guest, auto }` rows — the
      host covers the guest's share of this expense. A host can invite
      multiple guests; each guest at most once per expense; `host ≠ guest`
@@ -53,9 +79,37 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      per chata
    - See `docs/PRD-spolecny-ucet.md` for the full design and the approved math
 
-6. **Users** (`src/collections/Users.ts`)
-   - Admin users who can manage the system
-   - Role-based access control
+6. **ExpenseAttachments** (`src/collections/ExpenseAttachments.ts`)
+   - Admin group: System (infrastructure, not day-to-day expense tracking)
+   - Upload collection for receipts ("účtenky") attached to expenses —
+     images + PDF only, no required alt text, public read (files are
+     publicly readable by URL, like all data here)
+   - Separate from `media` (icons/backgrounds) so field uploads stay quick;
+     `mimeTypes: ['image/*', ...]` keeps the mobile file picker offering
+     "Take Photo" — that's the camera path, no custom admin component
+   - No generated `imageSizes`: with S3 `clientUploads` the file bypasses
+     the server, so sharp resizing would only run on some deployments; the
+     frontend renders originals scaled down with `loading="lazy"` instead
+   - S3 plugin: registered with prefix `expense-attachments`;
+     `clientUploads: true` (plugin-wide) uploads straight from the browser
+     to the bucket — Vercel serverless caps request bodies at ~4.5 MB,
+     which phone photos exceed. No effect where the plugin is disabled
+     (Fly / local dev)
+   - Schema DDL appended to `scripts/migrate-payer-polymorphic.mjs`
+     (`NEW_SCHEMA_DDL`) so both platforms create the table on deploy;
+     includes the plugin's `prefix` column (S3-enabled shape)
+
+7. **Users** (`src/collections/Users.ts`)
+   - Roles: `superadmin` (everything), `admin` (only their `assignedChatas`),
+     `user` (frontend only — NO admin-panel access, gated by `access.admin`)
+   - Frontend users are linked from `Participant.account`; the Users form
+     shows the links via a `participants` join field
+   - Auth: always-registered `app-jwt` cookie strategy (JWT signed with
+     `PAYLOAD_SECRET`) shared by Microsoft OAuth AND magic-link logins;
+     local email+password strategy only exists where OAuth env vars are
+     unset (dev bootstrap). Magic-link state lives in hidden
+     `loginToken`/`loginTokenExpires` fields (sha256 hash, 15min TTL)
+   - See `docs/PRD-uzivatele.md` for the full auth/roles design
 
 ### Utilities
 
@@ -121,10 +175,52 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 ### Access Control
 
 - **Public read access**: All collections have public read for API consumption
-- **Write access**:
-  - Admins have full access
-  - Regular users can only manage Chatas they're assigned to
-  - Per-chata permissions via `assignedUsers` array
+- **Write access** (helpers in `src/lib/access.ts` — used by every collection
+  and custom endpoint):
+  - `superadmin`: full access; sole manager of Chatas create/delete, Users,
+    Backgrounds/Icons/Media
+  - `admin`: chata-scoped writes via `Users.assignedChatas` (the legacy
+    `chatas.assignedUsers` array was removed; the migration copied its rows
+    into `users_rels`)
+  - `user` (frontend accounts): no write access anywhere, no admin panel
+- **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
+  the slug API returns a `viewer` + `locked` list; admins of the chata get
+  the full participant selector (defaulting to their own linked
+  participant), linked users see ONLY their own participant(s), anonymous
+  visitors everyone EXCEPT locked participants — accounts that logged in at
+  least once (`users.lastLoginAt`). Locked ones stay visible greyed-out with
+  a masked-email login hint, so nobody wonders where a name went. UI gating
+  only — read APIs stay public
+
+### Auth flows (frontend)
+
+- `/login`: magic link (email → `POST /api/auth/magic-link/request` →
+  `GET .../verify`) and Microsoft OAuth (`/api/auth/login?returnTo=...`);
+  sign-out via `GET /api/auth/logout`. Accounts are created ONLY in admin
+  (participant → "Create account from email...",
+  `POST /participants/:id/create-account`) and nothing is emailed until the
+  person requests a login link themselves. SUPERADMINS never magic-link —
+  they get an explanatory email instead and the verify route refuses them;
+  email+password stays available only while Microsoft OAuth is not
+  configured (first-time-setup fallback). Every login stamps
+  `users.lastLoginAt` ("active account")
+- Email: Resend adapter gated on `RESEND_API_KEY`; ALL sends go through
+  `src/lib/email.ts`, which on Vercel PREVIEW deployments redirects mail to
+  `EMAIL_PREVIEW_TO` (or only logs it) — real recipients are never contacted
+  from previews
+- Sessions: `payload-token` cookie, 30 days for `user` / 2 h for admin
+  roles; set `SESSION_COOKIE_DOMAIN=.zicha.travel` so one session works
+  across chata subdomains (also required for OAuth started on a subdomain)
+- Frontend footer (`Footer.tsx` in the frontend layout): site info, version
+  from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out and an
+  admin link
+- Overview ("Přehled", `?view=finance-overview`): all participants' summary
+  tables on one page for dispute-checking — matrix table (desktop default,
+  Σ-kontrola column per row) or cards (mobile default), manual switch
+  persisted; open to anonymous visitors by design. Subtle entry link under
+  the Finance view; data shaping in `src/lib/financeOverview.ts`
+  (unit-tested); `costBreakdown` entries carry `expenseId` for it. See
+  `docs/PRD-uzivatele.md`
 
 ### Relationship Filtering
 
@@ -181,20 +277,14 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ## Deployment
 
-**Interim dual-platform state** (see `docs/VERCEL_MIGRATION.md`): DNS for
-`zicha.travel` still points at the **Fly.io** app (`split-expanses`,
-deployed by `.github/workflows/deploy.yml` on push to `main`, config in
-`fly.toml`). A parallel **Vercel** deployment (`zicha-travel.vercel.app`,
-via Vercel's GitHub integration) is stood up and becomes production once
-the DNS cutover happens — media must be migrated to Supabase Storage
-first (Fly serves media from its volume; the Vercel side currently 500s
-on media). After cutover: delete the Fly workflow + `fly.toml` +
-`Dockerfile` + `.dockerignore` and tear down the Fly app.
+Production runs on **Vercel** (GitHub integration, deploys `main`;
+previews per PR). The Fly.io era is over — the migration history lives in
+`docs/VERCEL_MIGRATION.md`.
 
-Both platforms deploy from `main` and both run the idempotent
-`migrate:payer auto` against the shared production database (advisory
-lock prevents races).
-
+- Domains: `zicha.travel` plus a **wildcard** `*.zicha.travel` on the
+  Vercel project, so a new chata subdomain needs **no** DNS or Vercel
+  work — add it to the chata's `domains[]` and the Host-header middleware
+  routes it.
 - Database: Supabase PostgreSQL via the **pooled** connection
   (`...pooler.supabase.com:6543`) — required for serverless.
 - Media: **Supabase Storage** (S3-compatible) through `@payloadcms/storage-s3`,
@@ -202,6 +292,8 @@ lock prevents races).
 - DB migrations run automatically during the Vercel build: the
   `vercel-build` script executes `migrate:payer auto` (idempotent) before
   `next build`, against that deployment's own `DATABASE_URI` (prod or preview).
+- One-off backfill scripts: `pnpm migrate:media` (filled the Storage bucket
+  from the then-live site over public HTTP; idempotent, kept for reference).
 
 ## Development Commands
 
@@ -214,11 +306,13 @@ pnpm db:stop          # Stop PostgreSQL
 # Sync data from production
 pnpm migrate-from-prod  # Copy database from production Supabase
 
-# One-time migration for the polymorphic payer change (joint accounts).
-# Production runs it automatically: the Vercel build (`vercel-build` script)
-# runs `migrate:payer auto` (single transaction, idempotent) before
-# `next build`. Locally: backup BEFORE the schema push, restore AFTER — see
-# script header ( `status` to inspect, `--db=<uri>` to override).
+# One-time migrations (polymorphic payer + user-roles rename). Production
+# runs them automatically: the Vercel build (`vercel-build` script) runs
+# `migrate:payer auto` (idempotent) before `next build`. The user-roles part
+# renames enum values (admin→superadmin, user→admin, adds new 'user') and
+# runs OUTSIDE the main transaction (PostgreSQL enum rules). Locally: run
+# `pnpm migrate:payer auto` once BEFORE the first `pnpm dev` on this code,
+# so the dev schema push finds the enum already migrated.
 pnpm migrate:payer auto|backup|restore|status|cleanup
 
 # Other commands
@@ -234,7 +328,22 @@ pnpm generate:types   # Generate TypeScript types from collections
 
 2. **Unique Constraints**: Payload 3.x doesn't support compound unique indexes in config. The unique constraint on `chata+participant name` is documented but not enforced at the database level.
 
-3. **Banker Field**: Currently the banker is a relationship to Participants. This creates a chicken-and-egg problem when creating a new Chata (no participants exist yet). Consider making it optional or handling differently.
+3. **Banker Field**: The banker is an optional relationship to Participants,
+   so a new Chata is created without one. All participant dropdowns on the
+   Chata form (banker, bedroom occupants, car driver/passengers) filter to
+   the chata's own participants and show NONE while the chata is unsaved
+   (`filterOptions` returns `false` without `data.id`) — never other chatas'
+   participants. Flow: save the chata → add participants (e.g. "Prefill
+   participants") → pick the banker. Selecting a banker prefills
+   `bankerAccountNumber`/`bankerIban` from that participant's banking info
+   (`BankerBankingPrefill`, afterInput on the field; only fires on an actual
+   change, values stay editable, missing half derived account ↔ IBAN).
+
+4. **Partial banking info**: `resolveBankAccount` in
+   `src/utils/czechBankAccount.ts` derives the missing half of an
+   account-number/IBAN pair. The frontend (PersonView banker box,
+   SettlementActions creditor cards) uses it so a participant who filled
+   only an IBAN still gets a QR code and both manual-entry rows.
 
 ## Future Enhancements
 

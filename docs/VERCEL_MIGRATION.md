@@ -1,14 +1,17 @@
 # Vercel Migration Plan
 
-> **Status (2026-08-01): Phase 1 done, cutover pending.** Verified:
-> `zicha.travel` DNS still points at Fly (`66.241.124.39`); the Vercel
-> deployment runs in parallel at `zicha-travel.vercel.app` against the same
-> (already migrated) database. **Blocker for Phase 3:** media was never
-> migrated off the Fly volume — all `/api/media/file/*` requests 500 on the
-> Vercel side (Phase 1, step 4 outstanding). The Fly deploy pipeline stays
-> in the repo until the cutover; DB schema migrations run automatically on
-> both platforms (`vercel-build` script on Vercel, `release_command` on
-> Fly — same idempotent `pnpm migrate:payer auto`).
+> **Status (2026-08-03, final): MIGRATION COMPLETE.** All phases done.
+> Verified after cutover: `zicha.travel`, the three live chata subdomains
+> AND arbitrary (wildcard) subdomains all serve HTTP 200 from Vercel with
+> valid TLS; media and expense-attachment files serve from the Supabase
+> Storage bucket through the custom domain. The Fly pipeline
+> (`deploy.yml`, `fly-certs.yml`, `fly-logs.yml`, `fly.toml`,
+> `Dockerfile`, `.dockerignore`) is deleted from the repo and
+> `pnpm migrate-from-prod` now syncs files over public HTTP instead of
+> `fly ssh`. Remaining manual cleanup outside the repo: destroy the Fly
+> app (`fly apps destroy split-expanses` — this also releases its
+> dedicated IPs and destroys the `media_data` volume with it). This
+> document is kept as a historical record.
 
 Transition zicha-travel from **Fly.io** to **Vercel** with automatic per-PR
 preview deployments, while preserving the multi-tenant custom-domain routing.
@@ -84,10 +87,14 @@ Same as production **except**:
 2. Set the **Production** env vars above.
 3. In Supabase, create the `media` (public) bucket and generate S3 access keys.
 4. Migrate existing files off the Fly volume into the `media` bucket:
-   - `fly ssh console -a split-expanses` → copy `/app/media/*` out (or
-     `fly sftp get`), then upload to the Supabase bucket (e.g. `rclone`/`aws s3
-     cp --endpoint-url`). Preserve the original filenames so existing DB
-     references resolve.
+   with the `S3_*` vars in `.env.local`, run `pnpm migrate:media status`
+   to see what's missing, then `pnpm migrate:media run` (idempotent;
+   `--verify=https://zicha-travel.vercel.app` re-checks each file on the
+   Vercel side after upload). The script needs no Fly access — it
+   downloads every `media` and `expense-attachments` file from the live
+   site over public HTTP and uploads it to the bucket under the key the
+   S3 plugin expects. Re-run it right before the DNS cutover to pick up
+   files uploaded in the meantime.
 5. Deploy and smoke-test on the `*.vercel.app` URL against prod DB: admin login,
    image rendering, expense math, a test upload.
 
@@ -98,29 +105,50 @@ Same as production **except**:
 7. Set the **Preview** env vars. Open a throwaway PR and confirm the preview
    deploy points at the preview DB + preview bucket (not prod).
 
-## Phase 3 — Domain cutover (do this carefully)
+## Phase 3 — Domain cutover (wildcard + Vercel nameservers)
 
-8. In the Vercel project, **add every existing chata domain + `zicha.travel`**.
-   Vercel issues certs while DNS still points at Fly — no downtime yet.
-   (List current domains from the `chatas.domains` table.)
-9. Lower DNS TTLs ~24h in advance.
-10. Re-point each domain to Vercel **one at a time**, verifying each chata loads
-    before the next:
-    - Apex (`zicha.travel`): A record → Vercel anycast IP, or Vercel nameservers.
-    - Subdomains: CNAME → `cname.vercel-dns.com`.
-11. Add `https://<domain>/api/auth/callback` redirect URIs in Azure for any
-    domain that needs OAuth.
-12. Keep Fly hot for 24–48h as instant rollback.
+Wildcard domains on Vercel require the zone to use Vercel's nameservers
+(the wildcard cert needs a DNS-01 challenge). That is fine here: the
+`zicha.travel` zone contains nothing but records pointing at Fly (verified
+2026-08-03 — no mail/TXT/other records), so switching nameservers loses
+nothing. With `*.zicha.travel` on the project, every future chata
+subdomain works with **zero** DNS/Vercel config — the Host-header
+middleware already routes it — which also makes the once-considered
+"register domains via Vercel API" hook unnecessary.
 
-> Optional: automate future domain registration with a Payload `afterChange`
-> hook on `Chatas` that calls the Vercel Domains API when a domain is added.
+8. Re-run `pnpm migrate:media run` (idempotent) to pick up files uploaded
+   since the last run.
+9. In the Vercel project → Settings → Domains, add `zicha.travel` and
+   `*.zicha.travel`. Vercel shows the nameserver instructions
+   (`ns1.vercel-dns.com` / `ns2.vercel-dns.com`) — same flow as
+   `zicha.study`.
+10. Glance at the current DNS panel (NS1) to confirm the zone really has
+    no extra records; recreate any stragglers in Vercel DNS first.
+11. At the registrar, switch `zicha.travel`'s nameservers to Vercel's.
+    No TTL-lowering dance is needed: during NS propagation (up to ~48 h)
+    stale resolvers keep hitting Fly and fresh ones hit Vercel — both
+    serve the same app against the same DB, so there is no downtime
+    window. Vercel issues the wildcard cert automatically once it sees
+    the nameservers.
+12. Verify: `https://zicha.travel` (+ admin login) and each live chata
+    subdomain (`lazne`, `vysocina`, `exman`) load with valid TLS. Azure
+    needs no change — OAuth uses the single fixed `AZURE_REDIRECT_URI`
+    (`https://zicha.travel/api/auth/callback`), already registered.
+13. After propagation, run `pnpm migrate:media status` once more: an
+    upload made through a stale-DNS (Fly) request during the window would
+    land on the Fly volume, not the bucket.
+14. Keep Fly hot for 24–48 h as instant rollback (rollback = switch the
+    nameservers back at the registrar).
 
-## Phase 4 — Decommission
+## Phase 4 — Decommission (DONE in repo; app teardown manual)
 
-13. Delete `.github/workflows/deploy.yml` (Vercel's GitHub integration handles
-    deploys now).
-14. Once stable, tear down the Fly app (`split-expanses`) and its `media_data`
-    volume.
+13. Delete the Fly pipeline: `.github/workflows/deploy.yml` (+ the
+    `fly-certs.yml`/`fly-logs.yml` helper workflows), `fly.toml`,
+    `Dockerfile`, `.dockerignore`. Point `pnpm migrate-from-prod`'s file
+    sync at public HTTP instead of `fly ssh`.
+14. Once stable, tear down the Fly app and its volume:
+    `fly apps destroy split-expanses` (destroys the `media_data` volume
+    and releases the app's IPs too).
 
 ## Rollback
 

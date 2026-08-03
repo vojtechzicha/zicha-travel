@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import type { Expense } from '../payload-types'
 import { buildAutoInvitations, findPaidByPairs } from '../utils/paidByInvitations'
+import { adminRoleOnly, chataScopedAccess } from '../lib/access'
 
 export const Expenses: CollectionConfig = {
   slug: 'expenses',
@@ -27,33 +28,15 @@ export const Expenses: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'amount', 'payer', 'chata'],
+    group: 'Expense Tracking',
   },
   access: {
     // Public read access for API consumption
     read: () => true,
-    // Users can create/update expenses for chatas they manage
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      return true
-    },
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      return {
-        chata: {
-          in: user.assignedChatas || [],
-        },
-      }
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false
-      if (user.role === 'admin') return true
-      return {
-        chata: {
-          in: user.assignedChatas || [],
-        },
-      }
-    },
+    // Admin roles only; admins are limited to their assigned chatas
+    create: adminRoleOnly,
+    update: chataScopedAccess,
+    delete: chataScopedAccess,
   },
   fields: [
     {
@@ -133,6 +116,7 @@ export const Expenses: CollectionConfig = {
         condition: (data, siblingData) => Boolean(data?.chata) && siblingData?.splitType === 'weighted',
         components: {
           beforeInput: ['@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton'],
+          afterInput: ['@/collections/Expenses/components/WeightsSumIndicator#WeightsSumIndicator'],
         },
       },
       fields: [
@@ -164,7 +148,12 @@ export const Expenses: CollectionConfig = {
           required: true,
           min: 0,
           admin: {
-            description: 'Weight multiplier for this participant (e.g., 1, 0.5, 2)',
+            description:
+              'Weight multiplier for this participant (e.g., 1, 0.5, 2). If all weights ' +
+              'add up to the total amount (±1 Kč), they are displayed as Kč amounts.',
+            components: {
+              afterInput: ['@/collections/Expenses/components/WeightShareHint#WeightShareHint'],
+            },
           },
         },
       ],
@@ -289,6 +278,16 @@ export const Expenses: CollectionConfig = {
       type: 'textarea',
       admin: {
         description: 'Optional notes about this expense',
+      },
+    },
+    {
+      name: 'attachments',
+      type: 'upload',
+      relationTo: 'expense-attachments',
+      hasMany: true,
+      admin: {
+        description:
+          'Účtenky a další přílohy (fotky, PDF) - on mobile the file picker offers taking a photo directly',
       },
     },
     {

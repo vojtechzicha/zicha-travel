@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from './Header'
 import { FinanceView } from './FinanceView'
+import { FinanceOverview } from './FinanceOverview'
 import { InformationView } from './InformationView'
 import { OrganizationView } from './OrganizationView'
 import { ParticipantsView } from './ParticipantsView'
@@ -12,6 +13,7 @@ import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
+import type { FinanceViewer, LockedParticipant } from '@/lib/financeAccess'
 
 interface ChataData {
   chata: Chata
@@ -19,6 +21,8 @@ interface ChataData {
   expenses: Expense[]
   prepayments: Prepayment[]
   stats: ChataStats
+  viewer?: FinanceViewer
+  locked?: LockedParticipant[]
 }
 
 interface ChataViewProps {
@@ -59,8 +63,9 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const searchParams = useSearchParams()
 
   // If participant param is present but no view, default to finance
-  const initialView = searchParams.get('view') as 'finance' | 'information' | 'organization' | 'participants' | null
-  const [currentView, setCurrentView] = useState<'finance' | 'information' | 'organization' | 'participants' | null>(
+  type ViewName = 'finance' | 'information' | 'organization' | 'participants' | 'finance-overview'
+  const initialView = searchParams.get('view') as ViewName | null
+  const [currentView, setCurrentView] = useState<ViewName | null>(
     initialView || (searchParams.get('participant') ? 'finance' : null)
   )
   const [data, setData] = useState<ChataData | null>(null)
@@ -125,7 +130,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     fetchData()
   }, [slug, currentView])
 
-  const handleViewChange = (view: 'finance' | 'information' | 'organization' | 'participants') => {
+  const handleViewChange = (view: ViewName) => {
     startTransition(() => {
       setCurrentView(view)
     })
@@ -152,7 +157,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   // Show skeleton during initial loading - keeps the layout stable
   if (loading && !data) {
     // Use current view for navigation, or fall back to URL param / default for initial load
-    const skeletonView = currentView || (searchParams.get('view') as 'finance' | 'information' | 'organization' | 'participants') || 'information'
+    const rawSkeletonView = currentView || (searchParams.get('view') as ViewName) || 'information'
+    const skeletonView = rawSkeletonView === 'finance-overview' ? 'finance' : rawSkeletonView
     const skeletonColors = getThemeColors(initialThemeColor)
 
     return (
@@ -211,6 +217,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true
   const hasParticipants = participants.length > 2
   const activeView = currentView || (hasInformation ? 'information' : hasOrganization ? 'organization' : 'finance')
+  // The overview is a sub-view of Finance — the Finance tab stays highlighted
+  const headerView = activeView === 'finance-overview' ? 'finance' : activeView
 
   return (
     <ThemeProvider chata={chata}>
@@ -222,7 +230,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             chataName={chata.name}
             location={chata.location}
             bankerName={typeof chata.banker === 'object' && chata.banker ? chata.banker.name : undefined}
-            currentView={activeView}
+            currentView={headerView}
             onViewChange={handleViewChange}
             showInformationTab={hasInformation}
             showOrganizationTab={hasOrganization}
@@ -241,8 +249,19 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 expenses={expenses}
                 prepayments={prepayments}
                 stats={stats}
+                viewer={data.viewer}
+                locked={data.locked}
                 urlParticipantId={urlParticipantId}
                 onParticipantChange={handleParticipantChange}
+                onOpenOverview={() => handleViewChange('finance-overview')}
+              />
+            ) : activeView === 'finance-overview' ? (
+              <FinanceOverview
+                chata={chata}
+                participants={participants}
+                expenses={expenses}
+                stats={stats}
+                onBack={() => handleViewChange('finance')}
               />
             ) : activeView === 'organization' ? (
               <OrganizationView chata={chata} />
