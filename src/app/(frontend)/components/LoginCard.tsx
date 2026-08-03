@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Mail, Send } from 'lucide-react'
 import { GlassCard } from './GlassCard'
@@ -22,7 +22,24 @@ const ERROR_MESSAGES: Record<string, string> = {
 export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
-  const returnTo = searchParams.get('returnTo') || '/'
+
+  // Where to land after login: explicit ?returnTo wins; otherwise the page
+  // the visitor came from (same-origin referrer — e.g. the footer link),
+  // falling back to the homepage. Threaded through the magic-link email and
+  // the OAuth flow alike.
+  const [returnTo, setReturnTo] = useState(searchParams.get('returnTo') || '/')
+  useEffect(() => {
+    if (searchParams.get('returnTo')) return
+    try {
+      if (!document.referrer) return
+      const ref = new URL(document.referrer)
+      if (ref.origin === window.location.origin && ref.pathname !== '/login') {
+        setReturnTo(ref.pathname + ref.search)
+      }
+    } catch {
+      // keep the default
+    }
+  }, [searchParams])
 
   const [email, setEmail] = useState('')
   const [sending, setSending] = useState(false)

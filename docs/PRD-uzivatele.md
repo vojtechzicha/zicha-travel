@@ -159,9 +159,12 @@ the Finance view offers:
   everyone except **locked** participants. An account that never logged in
   hides nothing — people don't mysteriously vanish before their owner is
   active. Locked participants still appear at the bottom of the selector,
-  greyed out with a lock icon and the masked email
-  ("Pro zobrazení se přihlaste e-mailem d***.n***@g***.com"), linking to
-  `/login`
+  greyed out with a lock icon and the masked email; tapping a tile reveals a
+  full-size hint bar ("Finance účastníka X uvidíte po přihlášení e-mailem
+  d***.n***@g***.com" + login button), since the in-tile email is tiny.
+  Login links carry `?returnTo=<current page>` — and `/login` also falls
+  back to the same-origin referrer — so both flows (magic-link email
+  included) return the visitor to the page where they started
 
 The chata selector (multi-chata home) shows a `role: user` visitor only the
 chatas where they have a participant. URL/localStorage participant selections
