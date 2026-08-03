@@ -45,14 +45,18 @@ function connectionLine(conn: TransportConnection): string {
   return `<b>${vehicle} ${conn.number}</b>: ${conn.from} (${conn.departure}) -> ${conn.to} (${conn.arrival})`
 }
 
-/** Google Calendar "add event" URL for one public transport option, on the arrival day. */
+/**
+ * Google Calendar "add event" URL for one public transport option — on the
+ * arrival day for "tam" options, the departure day for "zpět" ones.
+ */
 function transportEventUrl(option: TransportOption, chataName: string, tripDate: string): string {
   const connections = option.connections || []
   const legs = connections.map(connectionLine).join('<br><br>')
   const total = option.totalDuration ? `<br><br><b>Celkem ${option.totalDuration}.</b>` : ''
   const notes = option.notes ? `<br><br>${option.notes}` : ''
+  const journey = option.direction === 'zpet' ? 'Cesta z chaty' : 'Cesta na chatu'
   return googleCalendarEventUrl({
-    title: `Cesta na chatu – ${option.title} (${chataName})`,
+    title: `${journey} – ${option.title} (${chataName})`,
     // Same day the page shows: Payload stores the day-only picker as an ISO
     // datetime, so derive YYYY-MM-DD in the viewer's timezone like formatDate does.
     date: new Date(tripDate).toLocaleDateString('en-CA'),
@@ -247,6 +251,8 @@ export function InformationView({ chata }: InformationViewProps) {
                 const connections = option.connections || []
                 const firstDeparture = connections[0]?.departure
                 const lastArrival = connections[connections.length - 1]?.arrival
+                const eventDate =
+                  option.direction === 'zpet' ? chata.tripDateTo : chata.tripDateFrom
 
                 return (
                   <div key={idx} className="bg-white p-6 rounded-2xl shadow-md mb-5 last:mb-0">
@@ -300,9 +306,9 @@ export function InformationView({ chata }: InformationViewProps) {
                           </div>
                         ))}
                         {option.notes && <div className="transport-notes">{option.notes}</div>}
-                        {firstDeparture && lastArrival && chata.tripDateFrom && (
+                        {firstDeparture && lastArrival && eventDate && (
                           <a
-                            href={transportEventUrl(option, chataName, chata.tripDateFrom)}
+                            href={transportEventUrl(option, chataName, eventDate)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 self-start px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold transition-all hover:bg-primary-dark hover:-translate-y-0.5 shadow-md"

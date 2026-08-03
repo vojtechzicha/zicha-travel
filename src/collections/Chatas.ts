@@ -509,6 +509,19 @@ export const Chatas: CollectionConfig = {
               },
             },
             {
+              name: 'direction',
+              type: 'select',
+              defaultValue: 'tam',
+              options: [
+                { label: 'Tam (to the chata)', value: 'tam' },
+                { label: 'Zpět (back home)', value: 'zpet' },
+              ],
+              admin: {
+                description:
+                  'Day used by the "add to calendar" link: tam → arrival day, zpět → departure day',
+              },
+            },
+            {
               name: 'totalDuration',
               type: 'text',
               admin: {
