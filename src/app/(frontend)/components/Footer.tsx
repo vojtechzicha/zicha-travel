@@ -35,23 +35,25 @@ export async function Footer() {
         </div>
 
         <div className="flex items-center gap-4">
+          {user && (
+            <span className="text-white/70" title={user.email}>
+              {user.email}
+            </span>
+          )}
+          {/* Anonymous visitors get the link too (it lands on the admin
+              login); only plain frontend accounts have no business there */}
+          {(!user || isAdminRole(user)) && (
+            <a href="/admin" className="hover:text-white transition-colors underline underline-offset-2">
+              Administrace
+            </a>
+          )}
           {user ? (
-            <>
-              <span className="text-white/70" title={user.email}>
-                {user.email}
-              </span>
-              {isAdminRole(user) && (
-                <a href="/admin" className="hover:text-white transition-colors underline underline-offset-2">
-                  Administrace
-                </a>
-              )}
-              <a
-                href="/api/auth/logout"
-                className="hover:text-white transition-colors underline underline-offset-2"
-              >
-                Odhlásit se
-              </a>
-            </>
+            <a
+              href="/api/auth/logout"
+              className="hover:text-white transition-colors underline underline-offset-2"
+            >
+              Odhlásit se
+            </a>
           ) : (
             <a
               href="/login"
