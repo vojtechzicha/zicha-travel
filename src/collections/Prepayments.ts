@@ -53,6 +53,7 @@ export const Prepayments: CollectionConfig = {
       required: true,
       admin: {
         description: 'Who sent the payment (or who received it if negative) — a participant or a joint account',
+        condition: (data) => Boolean(data?.chata),
       },
       filterOptions: ({ siblingData }) => {
         // Only show participants/joint accounts from the selected chata
@@ -64,7 +65,7 @@ export const Prepayments: CollectionConfig = {
             },
           }
         }
-        return true
+        return false
       },
     },
     {

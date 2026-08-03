@@ -66,6 +66,7 @@ export const JointAccounts: CollectionConfig = {
       minRows: 2,
       admin: {
         description: 'Participants sharing this account (at least 2)',
+        condition: (data) => Boolean(data?.chata),
       },
       filterOptions: ({ data }) => {
         const doc = data as Partial<JointAccount> | undefined
@@ -76,7 +77,7 @@ export const JointAccounts: CollectionConfig = {
             },
           }
         }
-        return true
+        return false
       },
       validate: async (value, { data, req }) => {
         const memberIds = (value as (number | string)[] | null | undefined) || []
