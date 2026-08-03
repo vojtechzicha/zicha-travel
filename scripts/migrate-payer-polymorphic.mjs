@@ -358,6 +358,15 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_expense_attachments_id_
 -- back to the plain name when empty. Additive only — no data migration.
 ALTER TABLE participants ADD COLUMN IF NOT EXISTS akuzativ character varying;
 ALTER TABLE participants ADD COLUMN IF NOT EXISTS vokativ character varying;
+
+-- Public transport option direction: tam (to the chata → calendar event on the
+-- arrival day) or zpet (back home → departure day). Additive only; the DEFAULT
+-- backfills existing rows as "tam".
+DO $$ BEGIN
+  CREATE TYPE enum_chatas_public_transport_options_direction AS ENUM('tam', 'zpet');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TABLE chatas_public_transport_options
+  ADD COLUMN IF NOT EXISTS direction enum_chatas_public_transport_options_direction DEFAULT 'tam';
 `
 
 async function auto() {

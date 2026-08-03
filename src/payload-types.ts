@@ -168,7 +168,7 @@ export interface Chata {
       }[]
     | null;
   /**
-   * Person managing the money for this trip
+   * Person managing the money for this trip. On a new chata the list is empty — save the chata, add participants (e.g. via "Prefill participants" above), then pick the banker. Selecting one prefills the account fields below from their banking info.
    */
   banker?: (number | null) | Participant;
   /**
@@ -280,6 +280,10 @@ export interface Chata {
          * e.g., "Z Prahy"
          */
         title: string;
+        /**
+         * Day used by the "add to calendar" link: tam → arrival day, zpět → departure day
+         */
+        direction?: ('tam' | 'zpet') | null;
         /**
          * Total journey time
          */
@@ -911,6 +915,7 @@ export interface ChatasSelect<T extends boolean = true> {
     | T
     | {
         title?: T;
+        direction?: T;
         totalDuration?: T;
         notes?: T;
         connections?:
