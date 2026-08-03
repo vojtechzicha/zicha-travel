@@ -1,14 +1,19 @@
 # Vercel Migration Plan
 
-> **Status (2026-08-01): Phase 1 done, cutover pending.** Verified:
-> `zicha.travel` DNS still points at Fly (`66.241.124.39`); the Vercel
-> deployment runs in parallel at `zicha-travel.vercel.app` against the same
-> (already migrated) database. **Blocker for Phase 3:** media was never
-> migrated off the Fly volume — all `/api/media/file/*` requests 500 on the
-> Vercel side (Phase 1, step 4 outstanding). The Fly deploy pipeline stays
-> in the repo until the cutover; DB schema migrations run automatically on
-> both platforms (`vercel-build` script on Vercel, `release_command` on
-> Fly — same idempotent `pnpm migrate:payer auto`).
+> **Status (2026-08-03): Phase 1 done except file migration, cutover
+> pending.** Verified: DNS for the 4 live domains (`zicha.travel`,
+> `lazne.`/`vysocina.`/`exman.zicha.travel`) still points at Fly; the other
+> chata domains (`jeseniky2025.zicha.travel`, `chata.zicha.name`,
+> `beskydy2025.zicha.travel`) no longer resolve at all and can be skipped.
+> The Vercel deployment runs in parallel at `zicha-travel.vercel.app`
+> against the same (already migrated) database. **Blocker for Phase 3:**
+> uploads were never migrated off the Fly volume — all `media` (22 files)
+> AND `expense-attachments` (3 files, added since the last status) requests
+> 500 on the Vercel side (Phase 1, step 4 outstanding). Fix: run
+> `pnpm migrate:media run` (see step 4 — no Fly access needed). The Fly
+> deploy pipeline stays in the repo until the cutover; DB schema migrations
+> run automatically on both platforms (`vercel-build` script on Vercel,
+> `release_command` on Fly — same idempotent `pnpm migrate:payer auto`).
 
 Transition zicha-travel from **Fly.io** to **Vercel** with automatic per-PR
 preview deployments, while preserving the multi-tenant custom-domain routing.
@@ -84,10 +89,14 @@ Same as production **except**:
 2. Set the **Production** env vars above.
 3. In Supabase, create the `media` (public) bucket and generate S3 access keys.
 4. Migrate existing files off the Fly volume into the `media` bucket:
-   - `fly ssh console -a split-expanses` → copy `/app/media/*` out (or
-     `fly sftp get`), then upload to the Supabase bucket (e.g. `rclone`/`aws s3
-     cp --endpoint-url`). Preserve the original filenames so existing DB
-     references resolve.
+   with the `S3_*` vars in `.env.local`, run `pnpm migrate:media status`
+   to see what's missing, then `pnpm migrate:media run` (idempotent;
+   `--verify=https://zicha-travel.vercel.app` re-checks each file on the
+   Vercel side after upload). The script needs no Fly access — it
+   downloads every `media` and `expense-attachments` file from the live
+   site over public HTTP and uploads it to the bucket under the key the
+   S3 plugin expects. Re-run it right before the DNS cutover to pick up
+   files uploaded in the meantime.
 5. Deploy and smoke-test on the `*.vercel.app` URL against prod DB: admin login,
    image rendering, expense math, a test upload.
 

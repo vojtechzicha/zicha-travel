@@ -69,6 +69,9 @@ importers:
         specifier: ^4.1.17
         version: 4.1.17
     devDependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.750.0
+        version: 3.1070.0
       '@playwright/test':
         specifier: 1.56.1
         version: 1.56.1
