@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { sendAppEmail } from '@/lib/email'
+import { isProductionDeployment, sendAppEmail } from '@/lib/email'
 import { safeReturnTo } from '@/lib/auth/session'
 
 const TOKEN_TTL_MINUTES = 15
@@ -55,11 +55,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const user = users.docs[0]
 
-  // Superadmins must ALWAYS sign in with Microsoft — a magic link would let
-  // anyone with brief mailbox access take over the whole system. Reply with
-  // the same generic ok (no account probing) but email an explanation
-  // instead of a login link.
-  if (user.role === 'superadmin') {
+  // In PRODUCTION superadmins must sign in with Microsoft — a magic link
+  // would let anyone with brief mailbox access take over the whole system.
+  // Reply with the same generic ok (no account probing) but email an
+  // explanation instead of a login link. Previews and local dev allow the
+  // magic link: Microsoft cannot work there (ephemeral URLs can't be
+  // registered as Azure redirect URIs) and preview mail only ever reaches
+  // EMAIL_PREVIEW_TO / the console — never a stranger's mailbox.
+  if (user.role === 'superadmin' && isProductionDeployment()) {
     try {
       await sendAppEmail(payload, {
         to: user.email,

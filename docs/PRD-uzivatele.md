@@ -86,11 +86,18 @@ cookie work across chata subdomains.
    so subdomain visitors stay on their subdomain.
 2. The verify route consumes the token (one-time), stamps `lastLoginAt`,
    sets the session cookie and redirects to `returnTo`.
-3. **Superadmins never sign in via magic link** — the request route replies
-   with the generic ok but emails an explanation instead of a link, and the
-   verify route refuses superadmin tokens (`superadmin_microsoft` error).
-   Superadmins use Microsoft; the local email+password strategy exists only
-   where Microsoft OAuth is not configured (first-time setup fallback).
+3. **Superadmins never sign in via magic link in PRODUCTION** — the request
+   route replies with the generic ok but emails an explanation instead of a
+   link, and the verify route refuses superadmin tokens
+   (`superadmin_microsoft` error). Superadmins use Microsoft; the local
+   email+password strategy exists only where Microsoft OAuth is not
+   configured (first-time setup fallback). Preview deployments and local
+   dev DO allow the superadmin magic link: Microsoft cannot work on
+   ephemeral per-deployment URLs (unregisterable redirect URIs) and
+   preview/dev mail only reaches EMAIL_PREVIEW_TO / the console. For a
+   stable preview with full Microsoft login, pin `preview.zicha.travel`
+   to a branch (Vercel Domains) and register
+   `https://preview.zicha.travel/api/auth/callback` in the Azure app.
 
 ### Microsoft OAuth
 
