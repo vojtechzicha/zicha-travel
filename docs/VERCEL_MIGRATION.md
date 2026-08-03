@@ -1,19 +1,21 @@
 # Vercel Migration Plan
 
-> **Status (2026-08-03): Phase 1 done except file migration, cutover
-> pending.** Verified: DNS for the 4 live domains (`zicha.travel`,
-> `lazne.`/`vysocina.`/`exman.zicha.travel`) still points at Fly; the other
-> chata domains (`jeseniky2025.zicha.travel`, `chata.zicha.name`,
-> `beskydy2025.zicha.travel`) no longer resolve at all and can be skipped.
-> The Vercel deployment runs in parallel at `zicha-travel.vercel.app`
-> against the same (already migrated) database. **Blocker for Phase 3:**
-> uploads were never migrated off the Fly volume — all `media` (22 files)
-> AND `expense-attachments` (3 files, added since the last status) requests
-> 500 on the Vercel side (Phase 1, step 4 outstanding). Fix: run
-> `pnpm migrate:media run` (see step 4 — no Fly access needed). The Fly
-> deploy pipeline stays in the repo until the cutover; DB schema migrations
-> run automatically on both platforms (`vercel-build` script on Vercel,
-> `release_command` on Fly — same idempotent `pnpm migrate:payer auto`).
+> **Status (2026-08-03, later): Phases 1–2 done, cutover (Phase 3) is
+> next.** File migration is complete — `pnpm migrate:media run` was
+> executed and media + expense-attachment files verified serving (HTTP
+> 200) from `zicha-travel.vercel.app`, so both platforms are now fully
+> functional against the same production DB. Phase 3 was re-planned to a
+> **wildcard + Vercel nameservers** cutover (see below) — the same setup
+> already used for `zicha.study`. Verified zone contents (NS currently
+> `dns*.p05.nsone.net`): only the apex A/AAAA and three subdomain A
+> records (`lazne`/`vysocina`/`exman`), all pointing at Fly — no MX/TXT/
+> `www`, so nothing needs recreating in Vercel DNS. Dead domains
+> (`jeseniky2025.zicha.travel`, `chata.zicha.name`,
+> `beskydy2025.zicha.travel`) no longer resolve and are skipped. The Fly
+> deploy pipeline stays in the repo until after the cutover; DB schema
+> migrations run automatically on both platforms (`vercel-build` script
+> on Vercel, `release_command` on Fly — same idempotent
+> `pnpm migrate:payer auto`).
 
 Transition zicha-travel from **Fly.io** to **Vercel** with automatic per-PR
 preview deployments, while preserving the multi-tenant custom-domain routing.
@@ -107,22 +109,40 @@ Same as production **except**:
 7. Set the **Preview** env vars. Open a throwaway PR and confirm the preview
    deploy points at the preview DB + preview bucket (not prod).
 
-## Phase 3 — Domain cutover (do this carefully)
+## Phase 3 — Domain cutover (wildcard + Vercel nameservers)
 
-8. In the Vercel project, **add every existing chata domain + `zicha.travel`**.
-   Vercel issues certs while DNS still points at Fly — no downtime yet.
-   (List current domains from the `chatas.domains` table.)
-9. Lower DNS TTLs ~24h in advance.
-10. Re-point each domain to Vercel **one at a time**, verifying each chata loads
-    before the next:
-    - Apex (`zicha.travel`): A record → Vercel anycast IP, or Vercel nameservers.
-    - Subdomains: CNAME → `cname.vercel-dns.com`.
-11. Add `https://<domain>/api/auth/callback` redirect URIs in Azure for any
-    domain that needs OAuth.
-12. Keep Fly hot for 24–48h as instant rollback.
+Wildcard domains on Vercel require the zone to use Vercel's nameservers
+(the wildcard cert needs a DNS-01 challenge). That is fine here: the
+`zicha.travel` zone contains nothing but records pointing at Fly (verified
+2026-08-03 — no mail/TXT/other records), so switching nameservers loses
+nothing. With `*.zicha.travel` on the project, every future chata
+subdomain works with **zero** DNS/Vercel config — the Host-header
+middleware already routes it — which also makes the once-considered
+"register domains via Vercel API" hook unnecessary.
 
-> Optional: automate future domain registration with a Payload `afterChange`
-> hook on `Chatas` that calls the Vercel Domains API when a domain is added.
+8. Re-run `pnpm migrate:media run` (idempotent) to pick up files uploaded
+   since the last run.
+9. In the Vercel project → Settings → Domains, add `zicha.travel` and
+   `*.zicha.travel`. Vercel shows the nameserver instructions
+   (`ns1.vercel-dns.com` / `ns2.vercel-dns.com`) — same flow as
+   `zicha.study`.
+10. Glance at the current DNS panel (NS1) to confirm the zone really has
+    no extra records; recreate any stragglers in Vercel DNS first.
+11. At the registrar, switch `zicha.travel`'s nameservers to Vercel's.
+    No TTL-lowering dance is needed: during NS propagation (up to ~48 h)
+    stale resolvers keep hitting Fly and fresh ones hit Vercel — both
+    serve the same app against the same DB, so there is no downtime
+    window. Vercel issues the wildcard cert automatically once it sees
+    the nameservers.
+12. Verify: `https://zicha.travel` (+ admin login) and each live chata
+    subdomain (`lazne`, `vysocina`, `exman`) load with valid TLS. Azure
+    needs no change — OAuth uses the single fixed `AZURE_REDIRECT_URI`
+    (`https://zicha.travel/api/auth/callback`), already registered.
+13. After propagation, run `pnpm migrate:media status` once more: an
+    upload made through a stale-DNS (Fly) request during the window would
+    land on the Fly volume, not the bucket.
+14. Keep Fly hot for 24–48 h as instant rollback (rollback = switch the
+    nameservers back at the registrar).
 
 ## Phase 4 — Decommission
 
