@@ -229,7 +229,8 @@ deployed by `.github/workflows/deploy.yml` on push to `main`, config in
 via Vercel's GitHub integration) is stood up and becomes production once
 the DNS cutover happens — media must be migrated to Supabase Storage
 first (Fly serves media from its volume; the Vercel side currently 500s
-on media). After cutover: delete the Fly workflow + `fly.toml` +
+on media) — `pnpm migrate:media run` does that over public HTTP, no Fly
+access needed. After cutover: delete the Fly workflow + `fly.toml` +
 `Dockerfile` + `.dockerignore` and tear down the Fly app.
 
 Both platforms deploy from `main` and both run the idempotent
