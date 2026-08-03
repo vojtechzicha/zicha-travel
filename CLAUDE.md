@@ -222,20 +222,14 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ## Deployment
 
-**Interim dual-platform state** (see `docs/VERCEL_MIGRATION.md`): DNS for
-`zicha.travel` still points at the **Fly.io** app (`split-expanses`,
-deployed by `.github/workflows/deploy.yml` on push to `main`, config in
-`fly.toml`). A parallel **Vercel** deployment (`zicha-travel.vercel.app`,
-via Vercel's GitHub integration) is stood up and becomes production once
-the DNS cutover happens — media must be migrated to Supabase Storage
-first (Fly serves media from its volume; the Vercel side currently 500s
-on media). After cutover: delete the Fly workflow + `fly.toml` +
-`Dockerfile` + `.dockerignore` and tear down the Fly app.
+Production runs on **Vercel** (GitHub integration, deploys `main`;
+previews per PR). The Fly.io era is over — the migration history lives in
+`docs/VERCEL_MIGRATION.md`.
 
-Both platforms deploy from `main` and both run the idempotent
-`migrate:payer auto` against the shared production database (advisory
-lock prevents races).
-
+- Domains: `zicha.travel` plus a **wildcard** `*.zicha.travel` on the
+  Vercel project, so a new chata subdomain needs **no** DNS or Vercel
+  work — add it to the chata's `domains[]` and the Host-header middleware
+  routes it.
 - Database: Supabase PostgreSQL via the **pooled** connection
   (`...pooler.supabase.com:6543`) — required for serverless.
 - Media: **Supabase Storage** (S3-compatible) through `@payloadcms/storage-s3`,
@@ -243,6 +237,8 @@ lock prevents races).
 - DB migrations run automatically during the Vercel build: the
   `vercel-build` script executes `migrate:payer auto` (idempotent) before
   `next build`, against that deployment's own `DATABASE_URI` (prod or preview).
+- One-off backfill scripts: `pnpm migrate:media` (filled the Storage bucket
+  from the then-live site over public HTTP; idempotent, kept for reference).
 
 ## Development Commands
 
