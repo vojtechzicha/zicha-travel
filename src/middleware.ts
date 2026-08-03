@@ -46,7 +46,7 @@ async function getDomainInfo(hostname: string, origin: string): Promise<DomainIn
  * query its OWN database (not a hardcoded NEXT_PUBLIC_SITE_URL):
  * - Vercel: the middleware runs at the edge, separate from the functions —
  *   call back through the deployment's public origin.
- * - Self-hosted Node (Fly / local): the same process serves the API, but
+ * - Self-hosted Node (local dev): the same process serves the API, but
  *   request.nextUrl.origin is the bind address (e.g. https://0.0.0.0:3000),
  *   which is unreachable — loop back over plain HTTP instead.
  */

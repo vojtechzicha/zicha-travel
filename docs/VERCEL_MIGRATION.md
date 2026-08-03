@@ -1,21 +1,17 @@
 # Vercel Migration Plan
 
-> **Status (2026-08-03, later): Phases 1–2 done, cutover (Phase 3) is
-> next.** File migration is complete — `pnpm migrate:media run` was
-> executed and media + expense-attachment files verified serving (HTTP
-> 200) from `zicha-travel.vercel.app`, so both platforms are now fully
-> functional against the same production DB. Phase 3 was re-planned to a
-> **wildcard + Vercel nameservers** cutover (see below) — the same setup
-> already used for `zicha.study`. Verified zone contents (NS currently
-> `dns*.p05.nsone.net`): only the apex A/AAAA and three subdomain A
-> records (`lazne`/`vysocina`/`exman`), all pointing at Fly — no MX/TXT/
-> `www`, so nothing needs recreating in Vercel DNS. Dead domains
-> (`jeseniky2025.zicha.travel`, `chata.zicha.name`,
-> `beskydy2025.zicha.travel`) no longer resolve and are skipped. The Fly
-> deploy pipeline stays in the repo until after the cutover; DB schema
-> migrations run automatically on both platforms (`vercel-build` script
-> on Vercel, `release_command` on Fly — same idempotent
-> `pnpm migrate:payer auto`).
+> **Status (2026-08-03, final): MIGRATION COMPLETE.** All phases done.
+> Verified after cutover: `zicha.travel`, the three live chata subdomains
+> AND arbitrary (wildcard) subdomains all serve HTTP 200 from Vercel with
+> valid TLS; media and expense-attachment files serve from the Supabase
+> Storage bucket through the custom domain. The Fly pipeline
+> (`deploy.yml`, `fly-certs.yml`, `fly-logs.yml`, `fly.toml`,
+> `Dockerfile`, `.dockerignore`) is deleted from the repo and
+> `pnpm migrate-from-prod` now syncs files over public HTTP instead of
+> `fly ssh`. Remaining manual cleanup outside the repo: destroy the Fly
+> app (`fly apps destroy split-expanses` — this also releases its
+> dedicated IPs and destroys the `media_data` volume with it). This
+> document is kept as a historical record.
 
 Transition zicha-travel from **Fly.io** to **Vercel** with automatic per-PR
 preview deployments, while preserving the multi-tenant custom-domain routing.
@@ -144,12 +140,15 @@ middleware already routes it — which also makes the once-considered
 14. Keep Fly hot for 24–48 h as instant rollback (rollback = switch the
     nameservers back at the registrar).
 
-## Phase 4 — Decommission
+## Phase 4 — Decommission (DONE in repo; app teardown manual)
 
-13. Delete `.github/workflows/deploy.yml` (Vercel's GitHub integration handles
-    deploys now).
-14. Once stable, tear down the Fly app (`split-expanses`) and its `media_data`
-    volume.
+13. Delete the Fly pipeline: `.github/workflows/deploy.yml` (+ the
+    `fly-certs.yml`/`fly-logs.yml` helper workflows), `fly.toml`,
+    `Dockerfile`, `.dockerignore`. Point `pnpm migrate-from-prod`'s file
+    sync at public HTTP instead of `fly ssh`.
+14. Once stable, tear down the Fly app and its volume:
+    `fly apps destroy split-expanses` (destroys the `media_data` volume
+    and releases the app's IPs too).
 
 ## Rollback
 

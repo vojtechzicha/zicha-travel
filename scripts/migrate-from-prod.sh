@@ -56,39 +56,35 @@ docker run --rm --network host postgres:17-alpine \
 
 echo "Database migration complete!"
 
-# 3. Sync media files from Fly.io
-echo ""
-echo "Syncing media files from Fly.io..."
+# 3. Sync uploaded files from production over public HTTP (files are
+# publicly readable by URL, like all data here). Downloads into the local
+# disk-storage folders (media/, expense-attachments/) that Payload uses
+# when S3_ENDPOINT is unset.
+SITE_URL="${PROD_SITE_URL:-https://zicha.travel}"
 
-# Clear local media folder
-rm -rf media/*
+for COLLECTION in media expense-attachments; do
+    echo ""
+    echo "Syncing $COLLECTION files from $SITE_URL..."
+    rm -rf "$COLLECTION"
+    mkdir -p "$COLLECTION"
 
-# Get list of files from Fly.io and download each one
-echo "Fetching file list from Fly.io..."
-RAW_OUTPUT=$(fly ssh console -C "ls /app/media" 2>&1)
-if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to connect to Fly.io. Output:"
-    echo "$RAW_OUTPUT"
-    echo "Make sure 'fly' CLI is authenticated and fly.toml has the correct app name."
-    exit 1
-fi
-
-# Filter out "Connecting to ..." status line from fly ssh output
-FILES=$(echo "$RAW_OUTPUT" | grep -v "^Connecting to ")
-
-if [ -z "$FILES" ]; then
-    echo "No media files found on Fly.io."
-else
-    for FILE in $FILES; do
-        # Skip system directories
-        if [ "$FILE" = "lost+found" ]; then
-            continue
-        fi
+    node --input-type=module -e '
+      const [base, slug] = process.argv.slice(1)
+      for (let page = 1, totalPages = 1; page <= totalPages; page++) {
+        const data = await fetch(`${base}/api/${slug}?limit=100&page=${page}&depth=0`).then((r) => {
+          if (!r.ok) throw new Error(`${base}/api/${slug} -> HTTP ${r.status}`)
+          return r.json()
+        })
+        totalPages = data.totalPages
+        for (const doc of data.docs) console.log(doc.filename)
+      }
+    ' "$SITE_URL" "$COLLECTION" | while IFS= read -r FILE; do
         echo "  Downloading: $FILE"
-        fly ssh sftp get "/app/media/$FILE" "media/$FILE" 2>/dev/null || echo "    Failed to download $FILE"
+        curl -fsS --globoff "$SITE_URL/api/$COLLECTION/file/$FILE" -o "$COLLECTION/$FILE" \
+            || echo "    Failed to download $FILE"
     done
-fi
+done
 
 echo ""
-echo "Media sync complete!"
+echo "File sync complete!"
 echo "Migration from production finished successfully!"

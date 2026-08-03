@@ -93,7 +93,7 @@ export default buildConfig({
       // Upload straight from the browser to the bucket via presigned URLs.
       // Vercel serverless caps request bodies at ~4.5 MB, which phone camera
       // photos routinely exceed; direct uploads bypass that limit. No effect
-      // when the plugin is disabled (Fly / local dev - uploads go through the
+      // when the plugin is disabled (local dev - uploads go through the
       // server to disk as before).
       clientUploads: true,
       bucket: process.env.S3_BUCKET || '',
