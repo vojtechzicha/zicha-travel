@@ -25,6 +25,8 @@ interface FinanceViewProps {
   locked?: LockedParticipant[]
   urlParticipantId?: number | null
   onParticipantChange?: (participantId: number | null) => void
+  /** opens the all-participants overview (?view=finance-overview) */
+  onOpenOverview?: () => void
 }
 
 // localStorage key prefix for selected participant
@@ -40,6 +42,7 @@ export function FinanceView({
   locked = [],
   urlParticipantId,
   onParticipantChange,
+  onOpenOverview,
 }: FinanceViewProps) {
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
@@ -122,16 +125,30 @@ export function FinanceView({
     return <FinanceViewSkeleton />
   }
 
+  // Subtle escape hatch: the all-participants overview for checking numbers
+  const overviewLink = onOpenOverview ? (
+    <p className="text-center text-sm text-white/60">
+      Nesedí vám čísla, nebo chcete vidět všechno najednou?{' '}
+      <button
+        onClick={onOpenOverview}
+        className="text-white/90 font-semibold underline underline-offset-2 hover:text-white transition-colors"
+      >
+        Podrobný přehled všech účastníků →
+      </button>
+    </p>
+  ) : null
+
   // State 1: No participant selected - show full-width selector
   if (!selectedParticipantId) {
     return (
-      <div className="w-full">
+      <div className="w-full flex flex-col gap-6">
         <ParticipantSelector
           participants={allowedParticipants}
           onSelectParticipant={handleSelectParticipant}
           bankerId={bankerId}
           lockedParticipants={lockedForSelector}
         />
+        {overviewLink}
       </div>
     )
   }
@@ -184,6 +201,8 @@ export function FinanceView({
           />
         </section>
       </div>
+
+      {overviewLink}
     </div>
   )
 }

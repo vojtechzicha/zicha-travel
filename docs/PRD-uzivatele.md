@@ -143,13 +143,33 @@ chatas where they have a participant. URL/localStorage participant selections
 are validated against the allowed set. This is UI gating — the read API stays
 public like the rest of the project.
 
-## Overview page (planned — design pending approval)
+## Overview ("Přehled", `?view=finance-overview`)
 
-A subtle link opens `/…/overview`: the summary table ("first table" of
-PersonView — paid for others, prepayments, fair-share breakdown per expense,
-resulting balance) for **all** participants on one page, so a disputed
-number can be recalculated in one place. Implemented after the design
-artifact is approved.
+A subtle link under the Finance view ("Podrobný přehled všech účastníků →")
+opens a sub-view showing every participant's "first table" at once, so a
+disputed number can be recalculated in one place. Approved design, two
+renderings with a persisted manual switch (`localStorage
+chata-overview-mode`):
+
+- **Table** (desktop default): one matrix — columns = participants (banker
+  first with a blue tint, then Czech-alphabetical), final **Σ kontrola**
+  column sums each row. Rows: Zaplaceno za ostatní, signed
+  zálohy/doplatky/vratky (banker side negative → row sums to 0), one row per
+  actual expense (payer in the label; empty cell = not in the split, green
+  0 Kč = invited guest, host cell carries "+ za …"), Útrata celkem, the
+  color-coded Výsledek row (Σ = 0 ✓) and verdict pills. Sticky first
+  column, horizontal scroll inside the glass card.
+- **Cards** (mobile default): per-participant cards with the same rows and
+  the fair-share breakdown expanded.
+
+Open to everyone including anonymous visitors (it is the dispute-resolution
+page; participant locking applies only to the Finance selector). Planned
+expenses are excluded from the per-expense listing but appear as two
+aggregate rows whenever they exist, so the visible rows always add up to
+the result. Data shaping lives in `src/lib/financeOverview.ts`
+(`costBreakdown` entries carry `expenseId` for exact per-expense mapping),
+unit-tested in `tests/int/financeOverview.int.spec.ts` against the real
+`calculateStats`.
 
 ## Footer
 

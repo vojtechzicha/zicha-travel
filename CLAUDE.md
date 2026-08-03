@@ -214,6 +214,13 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 - Frontend footer (`Footer.tsx` in the frontend layout): site info, version
   from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out and an
   admin link
+- Overview ("Přehled", `?view=finance-overview`): all participants' summary
+  tables on one page for dispute-checking — matrix table (desktop default,
+  Σ-kontrola column per row) or cards (mobile default), manual switch
+  persisted; open to anonymous visitors by design. Subtle entry link under
+  the Finance view; data shaping in `src/lib/financeOverview.ts`
+  (unit-tested); `costBreakdown` entries carry `expenseId` for it. See
+  `docs/PRD-uzivatele.md`
 
 ### Relationship Filtering
 
