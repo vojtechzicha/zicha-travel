@@ -44,6 +44,15 @@ function SignedAmount({ value }: { value: number }) {
   return <strong className="text-gray-900">− {formatCurrency(Math.abs(value))}</strong>
 }
 
+/**
+ * A fair-share amount: normally "− 500 Kč"; a negative share (credit — e.g.
+ * a refund expense) flips to green "+ 500 Kč", like PersonView's breakdown.
+ */
+function ShareAmount({ cost }: { cost: number }) {
+  if (cost < 0) return <span className="text-green-600">+ {formatCurrency(Math.abs(cost))}</span>
+  return <>− {formatCurrency(cost)}</>
+}
+
 export function FinanceOverview({ chata, participants, expenses, stats, onBack }: FinanceOverviewProps) {
   // Table is the default on desktop, cards on mobile; a manual switch is
   // remembered per browser
@@ -310,7 +319,7 @@ function OverviewTable({
                     )
                   return (
                     <td key={n} className={`${numCell} ${bankerCol(n)}`}>
-                      − {formatCurrency(cell.cost)}
+                      <ShareAmount cost={cell.cost} />
                       {(cell.weightIsAmount || cell.weight !== 1) && (
                         <span className="block text-[10.5px] text-gray-400 font-normal">
                           {podilLabel(cell.weight, cell.weightIsAmount)}
@@ -333,7 +342,7 @@ function OverviewTable({
               <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-300`}>Útrata celkem</td>
               {names.map((n) => (
                 <td key={n} className={`${numCell} ${bankerCol(n)} font-bold border-t-2 border-gray-300`}>
-                  − {formatCurrency(p(n).cost)}
+                  <ShareAmount cost={p(n).cost} />
                 </td>
               ))}
               <td className={`${totCell} border-t-2 border-gray-300`}>{formatCurrency(totalActual)}</td>
@@ -528,7 +537,9 @@ function ParticipantCard({
         )}
         <div className="flex justify-between gap-3 bg-white/50 -mx-1.5 px-1.5 py-1.5 rounded-lg text-gray-600">
           <span>👤 Útrata (Fair Share):</span>
-          <strong className="text-gray-900 tabular-nums">− {formatCurrency(stats.cost)}</strong>
+          <strong className="text-gray-900 tabular-nums">
+            <ShareAmount cost={stats.cost} />
+          </strong>
         </div>
         {breakdown.length > 0 && (
           <div className="bg-white/40 -mx-1.5 px-2 py-1.5 rounded-lg space-y-1">
@@ -544,7 +555,7 @@ function ParticipantCard({
                   )}
                 </span>
                 <span className={`tabular-nums flex-none ${item.invitedBy ? 'text-green-600' : ''}`}>
-                  {item.invitedBy ? formatCurrency(0) : `− ${formatCurrency(item.cost)}`}
+                  {item.invitedBy ? formatCurrency(0) : <ShareAmount cost={item.cost} />}
                 </span>
               </div>
             ))}
