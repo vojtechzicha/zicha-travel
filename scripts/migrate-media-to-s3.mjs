@@ -141,7 +141,17 @@ for (const [slug, prefix] of COLLECTIONS) {
     }
 
     const fileUrl = `${source}/api/${slug}/file/${encodeURIComponent(doc.filename)}`
-    const body = Buffer.from(await (await fetchOk(fileUrl)).arrayBuffer())
+    // A document row can outlive its file — a handful of older uploads 404 at
+    // the source. Nothing to migrate for those, so record them and keep going
+    // instead of aborting the whole run on the first one.
+    let body
+    try {
+      body = Buffer.from(await (await fetchOk(fileUrl)).arrayBuffer())
+    } catch (err) {
+      console.log(`${label}: NOT AVAILABLE at source (${err.message}) — skipped`)
+      problems.push(`source-missing:${key}`)
+      continue
+    }
     if (body.length !== doc.filesize) {
       console.log(`${label}: download size mismatch (got ${body.length} B) — NOT uploaded`)
       problems.push(key)
