@@ -58,6 +58,8 @@ export interface ParticipantStats {
   cost: number
   plannedCost: number
   costBreakdown: Array<{
+    /** Source expense — lets the overview matrix group entries per expense */
+    expenseId?: string | number
     title: string
     cost: number
     weight: number
@@ -226,6 +228,7 @@ export function calculateStats(
             stats[hostName].cost += cost
           }
           stats[name].costBreakdown.push({
+            expenseId: expense.id,
             title: expense.title,
             cost: 0,
             weight: weight,
@@ -235,6 +238,7 @@ export function calculateStats(
             auto: auto,
           })
           stats[hostName].costBreakdown.push({
+            expenseId: expense.id,
             title: expense.title,
             cost: cost,
             weight: weight,
@@ -250,6 +254,7 @@ export function calculateStats(
             stats[name].cost += cost
           }
           stats[name].costBreakdown.push({
+            expenseId: expense.id,
             title: expense.title,
             cost: cost,
             weight: weight,

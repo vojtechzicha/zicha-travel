@@ -10,6 +10,8 @@ interface SelectedParticipantHeaderProps {
   participants: Participant[]
   onChangeParticipant: (participantId: number) => void
   bankerId?: number | null
+  /** false when the viewer may only see their own participant */
+  canChange?: boolean
 }
 
 export function SelectedParticipantHeader({
@@ -17,6 +19,7 @@ export function SelectedParticipantHeader({
   participants,
   onChangeParticipant,
   bankerId,
+  canChange = true,
 }: SelectedParticipantHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,22 +87,24 @@ export function SelectedParticipantHeader({
           </div>
         </div>
 
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1 px-3 py-2 rounded-lg
-                     text-gray-600 hover:text-gray-900 hover:bg-white/80
-                     transition-all font-medium"
-        >
-          Změnit
-          <ChevronDown
-            size={18}
-            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          />
-        </button>
+        {canChange && (
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-1 px-3 py-2 rounded-lg
+                       text-gray-600 hover:text-gray-900 hover:bg-white/80
+                       transition-all font-medium"
+          >
+            Změnit
+            <ChevronDown
+              size={18}
+              className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+        )}
       </div>
 
       {/* Dropdown */}
-      {isOpen && (
+      {canChange && isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 z-50
                         bg-white rounded-xl shadow-2xl border border-gray-100
                         overflow-hidden">

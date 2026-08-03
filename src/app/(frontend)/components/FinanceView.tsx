@@ -1,11 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ParticipantSelector } from './ParticipantSelector'
 import { SelectedParticipantHeader } from './SelectedParticipantHeader'
 import { ExpensesFeed } from './ExpensesFeed'
 import { PersonView } from './PersonView'
 import { FinanceViewSkeleton } from './Skeleton'
+import {
+  anonymousViewer,
+  selectableParticipants,
+  type FinanceViewer,
+  type LockedParticipant,
+} from '@/lib/financeAccess'
 import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -15,8 +21,12 @@ interface FinanceViewProps {
   expenses: Expense[]
   prepayments: Prepayment[]
   stats: ChataStats
+  viewer?: FinanceViewer
+  locked?: LockedParticipant[]
   urlParticipantId?: number | null
   onParticipantChange?: (participantId: number | null) => void
+  /** opens the all-participants overview (?view=finance-overview) */
+  onOpenOverview?: () => void
 }
 
 // localStorage key prefix for selected participant
@@ -28,8 +38,11 @@ export function FinanceView({
   expenses,
   prepayments,
   stats,
+  viewer = anonymousViewer,
+  locked = [],
   urlParticipantId,
   onParticipantChange,
+  onOpenOverview,
 }: FinanceViewProps) {
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
@@ -40,40 +53,67 @@ export function FinanceView({
       ? chata.banker.id
       : chata.banker
 
-  // Load from URL param (priority) or localStorage on mount
+  // Which participants this viewer may open: admins of the chata see all,
+  // a linked user only their own, anonymous everyone except locked
+  // participants — active accounts (see lib/financeAccess)
+  const allowedParticipants = useMemo(
+    () => selectableParticipants(viewer, participants, locked),
+    [viewer, participants, locked]
+  )
+
+  // Locked participants shown greyed-out at the bottom of the selector —
+  // only relevant for the anonymous-style selector (admins see everyone;
+  // linked users never reach the selector)
+  const lockedForSelector = useMemo(() => {
+    if (viewer.canViewAll || viewer.linkedParticipantIds.length > 0) return []
+    return locked.flatMap((l) => {
+      const participant = participants.find((p) => p.id === l.id)
+      return participant ? [{ participant, maskedEmail: l.maskedEmail }] : []
+    })
+  }, [viewer, participants, locked])
+
+  // Load from URL param (priority), localStorage, or the viewer's own
+  // linked participant on mount — always restricted to the allowed set
   useEffect(() => {
+    const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
+    const isAllowed = (id: number) => allowedParticipants.some((p) => p.id === id)
+
     // URL param takes priority over localStorage
-    if (urlParticipantId != null) {
-      const participantExists = participants.some((p) => p.id === urlParticipantId)
-      if (participantExists) {
-        setSelectedParticipantId(urlParticipantId)
-        // Also save to localStorage so it persists
-        const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
-        localStorage.setItem(storageKey, String(urlParticipantId))
+    if (urlParticipantId != null && isAllowed(urlParticipantId)) {
+      setSelectedParticipantId(urlParticipantId)
+      // Also save to localStorage so it persists
+      localStorage.setItem(storageKey, String(urlParticipantId))
+      setIsHydrated(true)
+      return
+    }
+
+    const stored = localStorage.getItem(storageKey)
+    if (stored) {
+      const storedId = parseInt(stored, 10)
+      if (isAllowed(storedId)) {
+        setSelectedParticipantId(storedId)
+        // Sync URL with localStorage selection
+        onParticipantChange?.(storedId)
         setIsHydrated(true)
         return
       }
     }
 
-    const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
-    const stored = localStorage.getItem(storageKey)
-
-    if (stored) {
-      const storedId = parseInt(stored, 10)
-      // Verify the stored participant still exists
-      const participantExists = participants.some((p) => p.id === storedId)
-      if (participantExists) {
-        setSelectedParticipantId(storedId)
-        // Sync URL with localStorage selection
-        onParticipantChange?.(storedId)
-      }
+    // Signed-in with linked participant(s): preselect the first own one
+    // (plain users can then switch only among their own; admins among all)
+    const ownDefault = viewer.linkedParticipantIds.find((id) => isAllowed(id))
+    if (ownDefault != null) {
+      setSelectedParticipantId(ownDefault)
+      localStorage.setItem(storageKey, String(ownDefault))
+      onParticipantChange?.(ownDefault)
     }
 
     setIsHydrated(true)
-  }, [chata.id, participants, urlParticipantId, onParticipantChange])
+  }, [chata.id, allowedParticipants, urlParticipantId, onParticipantChange, viewer.linkedParticipantIds])
 
   // Save to localStorage and notify parent when selection changes
   const handleSelectParticipant = (participantId: number) => {
+    if (!allowedParticipants.some((p) => p.id === participantId)) return
     setSelectedParticipantId(participantId)
     const storageKey = `${STORAGE_KEY_PREFIX}${chata.id}`
     localStorage.setItem(storageKey, String(participantId))
@@ -85,21 +125,36 @@ export function FinanceView({
     return <FinanceViewSkeleton />
   }
 
+  // Subtle escape hatch: the all-participants overview for checking numbers
+  const overviewLink = onOpenOverview ? (
+    <p className="text-center text-sm text-white/60">
+      Nesedí vám čísla, nebo chcete vidět všechno najednou?{' '}
+      <button
+        onClick={onOpenOverview}
+        className="text-white/90 font-semibold underline underline-offset-2 hover:text-white transition-colors"
+      >
+        Podrobný přehled všech účastníků →
+      </button>
+    </p>
+  ) : null
+
   // State 1: No participant selected - show full-width selector
   if (!selectedParticipantId) {
     return (
-      <div className="w-full">
+      <div className="w-full flex flex-col gap-6">
         <ParticipantSelector
-          participants={participants}
+          participants={allowedParticipants}
           onSelectParticipant={handleSelectParticipant}
           bankerId={bankerId}
+          lockedParticipants={lockedForSelector}
         />
+        {overviewLink}
       </div>
     )
   }
 
   // State 2: Participant selected - show compact header + content
-  const selectedParticipant = participants.find((p) => p.id === selectedParticipantId)
+  const selectedParticipant = allowedParticipants.find((p) => p.id === selectedParticipantId)
   const selectedStats = selectedParticipant
     ? stats.participants[selectedParticipant.name]
     : null
@@ -117,9 +172,10 @@ export function FinanceView({
       {/* Compact participant header - full width */}
       <SelectedParticipantHeader
         selectedParticipant={selectedParticipant}
-        participants={participants}
+        participants={allowedParticipants}
         onChangeParticipant={handleSelectParticipant}
         bankerId={bankerId}
+        canChange={allowedParticipants.length > 1}
       />
 
       {/* Main content area */}
@@ -145,6 +201,8 @@ export function FinanceView({
           />
         </section>
       </div>
+
+      {overviewLink}
     </div>
   )
 }

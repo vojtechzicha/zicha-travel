@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { superadminOnly } from '../lib/access'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -8,6 +9,10 @@ export const Media: CollectionConfig = {
   },
   access: {
     read: () => true,
+    // Backs the superadmin-managed Backgrounds/Icons collections
+    create: superadminOnly,
+    update: superadminOnly,
+    delete: superadminOnly,
   },
   fields: [
     {

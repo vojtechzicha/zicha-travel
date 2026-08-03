@@ -54,5 +54,22 @@ export default async function HomePage() {
     depth: 2,
   })
 
-  return <ChataSelector chatas={chatasResult.docs} />
+  // Signed-in frontend users only get to pick chatas they take part in
+  // (admins and anonymous visitors keep the full list)
+  let chatas = chatasResult.docs
+  const { user } = await payload.auth({ headers: headersList })
+  if (user && user.role === 'user') {
+    const linked = await payload.find({
+      collection: 'participants',
+      where: { account: { equals: user.id } },
+      limit: 1000,
+      depth: 0,
+    })
+    const chataIds = new Set(
+      linked.docs.map((p) => (typeof p.chata === 'object' && p.chata !== null ? p.chata.id : p.chata))
+    )
+    chatas = chatas.filter((c) => chataIds.has(c.id))
+  }
+
+  return <ChataSelector chatas={chatas} />
 }

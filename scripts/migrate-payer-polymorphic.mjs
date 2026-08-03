@@ -367,9 +367,99 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 ALTER TABLE chatas_public_transport_options
   ADD COLUMN IF NOT EXISTS direction enum_chatas_public_transport_options_direction DEFAULT 'tam';
+
+-- User accounts redesign ("uživatelé a role"), additive part. The enum value
+-- migration (renames + new 'user' value) cannot run in this transaction —
+-- see migrateUserRoles(), which auto() runs first.
+-- users: magic-link login token (sha256 hash of the emailed token + expiry)
+-- and the "active account" marker (set on every login; participants linked
+-- to an active account are hidden from anonymous visitors)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS login_token character varying;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS login_token_expires timestamp(3) with time zone;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamp(3) with time zone;
+-- participants: linked frontend user account
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS account_id integer;
+DO $$ BEGIN
+  ALTER TABLE participants
+    ADD CONSTRAINT participants_account_id_users_id_fk
+    FOREIGN KEY (account_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS participants_account_idx ON participants USING btree (account_id);
 `
 
+async function enumLabels(typeName) {
+  const res = await client.query(
+    `SELECT e.enumlabel FROM pg_enum e
+     JOIN pg_type t ON t.oid = e.enumtypid
+     WHERE t.typname = $1
+     ORDER BY e.enumsortorder`,
+    [typeName]
+  )
+  return res.rows.map((r) => r.enumlabel)
+}
+
+// User accounts redesign ("uživatelé a role"): the users.role enum changes
+// meaning. Legacy values: 'admin' = manages ALL chatas, 'user' = manages
+// assigned chatas. New values: 'superadmin' = all chatas, 'admin' = assigned
+// chatas, 'user' = frontend-only account linked to a participant.
+//
+// RENAME VALUE keeps every existing row's meaning intact and is idempotent
+// via the label check ('superadmin' present = already migrated). It runs
+// OUTSIDE the main transaction because the subsequent ADD VALUE + SET
+// DEFAULT need the renames committed first (PostgreSQL refuses to use an
+// enum value added in the same transaction).
+async function migrateUserRoles() {
+  if (!(await tableExists('users'))) return
+
+  await client.query('BEGIN')
+  // Serialize concurrent deploys racing on the rename
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext('migrate-user-roles'))`)
+  const labels = await enumLabels('enum_users_role')
+  if (labels.length > 0 && !labels.includes('superadmin')) {
+    await client.query(`ALTER TYPE enum_users_role RENAME VALUE 'admin' TO 'superadmin'`)
+    await client.query(`ALTER TYPE enum_users_role RENAME VALUE 'user' TO 'admin'`)
+    console.log('users.role: renamed admin → superadmin, user → admin (meanings preserved)')
+  }
+  await client.query('COMMIT')
+
+  if (labels.length > 0) {
+    // New frontend-only role; autocommit so it is usable right after
+    await client.query(`ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'user'`)
+    // The rename dragged the old column default along ('user' → 'admin');
+    // point it back at the (new) 'user' value
+    await client.query(`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user'`)
+  }
+
+  // Legacy per-chata assignments lived on the chata (chatas.assignedUsers);
+  // all access checks now use users.assignedChatas (users_rels) — copy the
+  // rows over and drop the legacy table
+  if (
+    (await tableExists('chatas_assigned_users')) &&
+    (await tableExists('users_rels')) &&
+    (await columnExists('users_rels', 'chatas_id'))
+  ) {
+    await client.query('BEGIN')
+    const res = await client.query(`
+      INSERT INTO users_rels ("order", parent_id, path, chatas_id)
+        SELECT 1, cau.user_id, 'assignedChatas', cau._parent_id
+        FROM chatas_assigned_users cau
+        WHERE NOT EXISTS (
+          SELECT 1 FROM users_rels r
+          WHERE r.parent_id = cau.user_id
+            AND r.path = 'assignedChatas'
+            AND r.chatas_id = cau._parent_id
+        )`)
+    await client.query('DROP TABLE chatas_assigned_users')
+    await client.query('COMMIT')
+    console.log(
+      `assignedChatas: copied ${res.rowCount} legacy chata assignments, dropped chatas_assigned_users`
+    )
+  }
+}
+
 async function auto() {
+  await migrateUserRoles()
+
   await client.query('BEGIN')
   // Serialize concurrent release commands (e.g. two deploys racing)
   await client.query(`SELECT pg_advisory_xact_lock(hashtext('migrate-payer-polymorphic'))`)
