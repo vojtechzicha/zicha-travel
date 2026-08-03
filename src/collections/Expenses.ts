@@ -74,6 +74,7 @@ export const Expenses: CollectionConfig = {
       required: true,
       admin: {
         description: 'Who paid for this expense (a participant or a joint account)',
+        condition: (data) => Boolean(data?.chata),
       },
       filterOptions: ({ siblingData }) => {
         // Only show participants/joint accounts from the selected chata
@@ -85,7 +86,7 @@ export const Expenses: CollectionConfig = {
             },
           }
         }
-        return true
+        return false
       },
     },
     {
@@ -112,7 +113,7 @@ export const Expenses: CollectionConfig = {
       type: 'array',
       admin: {
         description: 'Weighted distribution - only used when Split Type is "Weighted"',
-        condition: (data, siblingData) => siblingData?.splitType === 'weighted',
+        condition: (data, siblingData) => Boolean(data?.chata) && siblingData?.splitType === 'weighted',
         components: {
           beforeInput: ['@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton'],
           afterInput: ['@/collections/Expenses/components/WeightsSumIndicator#WeightsSumIndicator'],
@@ -138,7 +139,7 @@ export const Expenses: CollectionConfig = {
                 },
               }
             }
-            return true
+            return false
           },
         },
         {
@@ -174,6 +175,7 @@ export const Expenses: CollectionConfig = {
         description:
           'The host pays the guest\'s share of this expense. A host can invite ' +
           'multiple guests; each guest can be invited only once per expense.',
+        condition: (data) => Boolean(data?.chata),
       },
       fields: [
         {
@@ -193,7 +195,7 @@ export const Expenses: CollectionConfig = {
                 },
               }
             }
-            return true
+            return false
           },
         },
         {
@@ -213,7 +215,7 @@ export const Expenses: CollectionConfig = {
                 },
               }
             }
-            return true
+            return false
           },
         },
         {

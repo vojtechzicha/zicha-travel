@@ -195,22 +195,23 @@ export const Participants: CollectionConfig = {
           'participant (e.g. a child paid by a parent). New expenses automatically ' +
           'get a standing invitation; use the button below to apply the SAVED ' +
           'value to existing expenses.',
+        condition: (data) => Boolean(data?.chata),
         components: {
           afterInput: ['@/collections/Participants/components/ApplyPaidByButton#ApplyPaidByButton'],
         },
       },
       filterOptions: ({ data, id }) => {
         const doc = data as Partial<Participant> | undefined
-        const conditions: Where[] = []
-        if (doc?.chata) {
-          conditions.push({
+        if (!doc?.chata) return false
+        const conditions: Where[] = [
+          {
             chata: { equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata },
-          })
-        }
+          },
+        ]
         if (id) {
           conditions.push({ id: { not_equals: id } })
         }
-        return conditions.length > 0 ? { and: conditions } : true
+        return { and: conditions }
       },
       validate: (value: unknown, { id }: { id?: unknown }) => {
         const ref = value as null | undefined | number | string | { id: number | string }
