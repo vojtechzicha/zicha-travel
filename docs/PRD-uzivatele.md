@@ -86,18 +86,11 @@ cookie work across chata subdomains.
    so subdomain visitors stay on their subdomain.
 2. The verify route consumes the token (one-time), stamps `lastLoginAt`,
    sets the session cookie and redirects to `returnTo`.
-3. **Superadmins never sign in via magic link in PRODUCTION** — the request
-   route replies with the generic ok but emails an explanation instead of a
-   link, and the verify route refuses superadmin tokens
-   (`superadmin_microsoft` error). Superadmins use Microsoft; the local
-   email+password strategy exists only where Microsoft OAuth is not
-   configured (first-time setup fallback). Preview deployments and local
-   dev DO allow the superadmin magic link: Microsoft cannot work on
-   ephemeral per-deployment URLs (unregisterable redirect URIs) and
-   preview/dev mail only reaches EMAIL_PREVIEW_TO / the console. For a
-   stable preview with full Microsoft login, pin `preview.zicha.travel`
-   to a branch (Vercel Domains) and register
-   `https://preview.zicha.travel/api/auth/callback` in the Azure app.
+3. **Superadmins never sign in via magic link** — the request route replies
+   with the generic ok but emails an explanation instead of a link, and the
+   verify route refuses superadmin tokens (`superadmin_microsoft` error).
+   Superadmins use Microsoft; the local email+password strategy exists only
+   where Microsoft OAuth is not configured (first-time setup fallback).
 
 ### Microsoft OAuth
 
@@ -110,6 +103,31 @@ must already exist (`unauthorized` otherwise).
 ### Sign out
 
 `GET /api/auth/logout?returnTo=/` clears the cookie (footer link).
+
+## Preview environment (stable domain)
+
+Superadmins sign in ONLY with Microsoft — everywhere, previews included.
+Azure requires exact registered redirect URIs (no wildcards), so ephemeral
+`*.vercel.app` deployment URLs can never do OAuth. The solution is a stable
+preview domain pinned to a branch:
+
+1. **Vercel** → Project → Settings → Domains → add `preview.zicha.travel`
+   (DNS is automatic — the zone runs on Vercel nameservers; the explicit
+   subdomain beats the `*.zicha.travel` wildcard) → edit the domain and set
+   its **Git Branch** to the branch being previewed.
+2. **Microsoft Entra** → App registrations → the zicha.travel app →
+   Authentication → Web → add redirect URI
+   `https://preview.zicha.travel/api/auth/callback` (keep the production
+   one). Same client id/secret.
+3. **Vercel env vars scoped to Preview**: `AZURE_CLIENT_ID` /
+   `AZURE_CLIENT_SECRET` (same values), `AZURE_REDIRECT_URI` = the preview
+   callback above, `NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true`,
+   `EMAIL_PREVIEW_TO` + `RESEND_API_KEY`; leave `SESSION_COOKIE_DOMAIN`
+   UNSET in Preview (host-only cookie; never share `.zicha.travel` cookies
+   between preview and production).
+
+OAuth on previews works only via `preview.zicha.travel`; magic link (for
+non-superadmins) works on any URL.
 
 ## Email
 

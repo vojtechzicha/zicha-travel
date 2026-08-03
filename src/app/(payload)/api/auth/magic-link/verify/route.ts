@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { safeReturnTo, setSessionCookie, signSessionToken } from '@/lib/auth/session'
-import { isProductionDeployment } from '@/lib/email'
 
 /**
  * GET /api/auth/magic-link/verify?token=...&returnTo=/...
@@ -44,9 +43,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const user = users.docs[0]
 
-  // Defense in depth: in production superadmins never sign in via magic
-  // link (see the request route), so refuse any token that somehow exists
-  if (user.role === 'superadmin' && isProductionDeployment()) {
+  // Defense in depth: superadmins never sign in via magic link (see the
+  // request route), so refuse any token that somehow exists for one
+  if (user.role === 'superadmin') {
     loginUrl.searchParams.set('error', 'superadmin_microsoft')
     return NextResponse.redirect(loginUrl)
   }

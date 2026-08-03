@@ -17,11 +17,6 @@ function isPreviewDeployment(): boolean {
   return Boolean(process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production')
 }
 
-/** True only on the real production deployment (not previews, not local dev). */
-export function isProductionDeployment(): boolean {
-  return process.env.VERCEL_ENV === 'production'
-}
-
 export async function sendAppEmail(
   payload: Payload,
   { to, subject, html, text }: { to: string; subject: string; html: string; text?: string },
