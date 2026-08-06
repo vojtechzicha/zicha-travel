@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus } from 'lucide-react'
 import { ParticipantSelector } from './ParticipantSelector'
 import { SelectedParticipantHeader } from './SelectedParticipantHeader'
@@ -160,20 +161,27 @@ export function FinanceView({
 
   // Authoring: FAB (desktop pill with label, mobile round above the thumb)
   // + the composer modal/wizard. Signed-in accounts with a participant only.
+  // Portaled to <body>: the view lives in a `relative z-10` container and the
+  // site footer (also z-10, later in the DOM) would otherwise paint its glass
+  // OVER the fixed button — the portal escapes that stacking context so the
+  // FAB stays on top and clickable everywhere.
   const authoringUi = canAuthor ? (
     <>
-      <button
-        type="button"
-        onClick={() => setComposer({ expense: null })}
-        aria-label="Přidat výdaj"
-        className="expense-fab fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
-                   justify-center gap-2 rounded-full bg-primary hover:bg-primary-dark
-                   text-white font-semibold text-[15px] w-14 h-14 lg:w-auto lg:h-auto
-                   lg:px-6 lg:py-3.5 shadow-xl shadow-primary/50 transition-colors"
-      >
-        <Plus size={22} strokeWidth={2.5} />
-        <span className="hidden lg:inline">Přidat výdaj</span>
-      </button>
+      {createPortal(
+        <button
+          type="button"
+          onClick={() => setComposer({ expense: null })}
+          aria-label="Přidat výdaj"
+          className="expense-fab fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
+                     justify-center gap-2 rounded-full bg-primary hover:bg-primary-dark
+                     text-white font-semibold text-[15px] w-14 h-14 lg:w-auto lg:h-auto
+                     lg:px-6 lg:py-3.5 shadow-xl shadow-primary/50 transition-colors"
+        >
+          <Plus size={22} strokeWidth={2.5} />
+          <span className="hidden lg:inline">Přidat výdaj</span>
+        </button>,
+        document.body
+      )}
       {composer && (
         <ExpenseComposer
           chata={chata}
