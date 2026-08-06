@@ -73,23 +73,19 @@ interface ManualInvite {
 const asId = (ref: number | { id: number } | null | undefined): number | null =>
   typeof ref === 'object' && ref !== null ? ref.id : (ref ?? null)
 
+// Whole koruny only — the rest of the frontend has no haléř support
+// (formatCurrency renders 0 fraction digits), so the composer neither
+// accepts nor produces fractional amounts.
+const sanitizeAmountInput = (text: string): string => text.replace(/[^\d]/g, '')
+
 const parseAmount = (text: string): number | null => {
-  const cleaned = text.replace(/\s/g, '').replace(',', '.')
-  if (!cleaned) return null
-  const value = Number(cleaned)
-  return Number.isFinite(value) && value >= 0 ? value : null
+  const cleaned = text.replace(/\s/g, '')
+  if (!cleaned || !/^\d+$/.test(cleaned)) return null
+  return Number(cleaned)
 }
 
-const round2 = (value: number): number => Math.round(value * 100) / 100
-
-/** "463 Kč" / "462,50 Kč" — per-share hints need decimals */
-const formatKc = (value: number): string =>
-  new Intl.NumberFormat('cs-CZ', {
-    style: 'currency',
-    currency: 'CZK',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value)
+/** "=" for a whole per-person amount, "≈" when it had to be rounded */
+const perPersonOp = (value: number): string => (Number.isInteger(value) ? '=' : '≈')
 
 const toDateInput = (value: string | Date): string => {
   const d = typeof value === 'string' ? new Date(value) : value
@@ -186,7 +182,7 @@ export function ExpenseComposer({
       rows[p.id] = {
         included,
         shares: areAmounts || !included ? 1 : weight,
-        amountText: areAmounts && included ? String(round2(weight!)) : '',
+        amountText: areAmounts && included ? String(Math.round(weight!)) : '',
       }
       if (included) lastIncluded = p.id
     }
@@ -199,7 +195,7 @@ export function ExpenseComposer({
   const [mobileStep, setMobileStep] = useState<MobileStep>(isEdit ? 'details' : 'entry')
   const [title, setTitle] = useState(expense?.title ?? '')
   const [amountText, setAmountText] = useState(
-    expense ? String(round2(Math.abs(expense.amount))) : '',
+    expense ? String(Math.round(Math.abs(expense.amount))) : '',
   )
   const [isRefund, setIsRefund] = useState((expense?.amount ?? 0) < 0)
   const [dateStr, setDateStr] = useState(toDateInput(expense?.createdAt ?? new Date()))
@@ -262,6 +258,7 @@ export function ExpenseComposer({
   )
 
   // Exact amounts: typed rows are fixed, untouched rows split the remainder
+  // in whole koruny — the first rows get the extra 1 Kč (617/617/616 style)
   const amountsPlan = useMemo(() => {
     const total = amount ?? 0
     const included = orderedParticipants.filter((p) => rows[p.id]?.included)
@@ -279,21 +276,18 @@ export function ExpenseComposer({
       typedValues.set(p.id, v)
       typedSum += v
     }
-    const remainder = round2(total - typedSum)
+    const remainder = total - typedSum
     const autoValues = new Map<number, number>()
     if (auto.length > 0) {
-      const base = round2(remainder / auto.length)
+      const base = Math.floor(remainder / auto.length)
+      const extras = remainder - base * auto.length
       auto.forEach((p, i) => {
-        autoValues.set(
-          p.id,
-          i === auto.length - 1 ? round2(remainder - base * (auto.length - 1)) : base,
-        )
+        autoValues.set(p.id, base + (i < extras ? 1 : 0))
       })
     }
     const negativeAuto = [...autoValues.values()].some((v) => v < 0)
     const leftover = auto.length > 0 ? 0 : remainder
-    const valid =
-      !typedInvalid && included.length > 0 && !negativeAuto && Math.abs(leftover) < 0.005
+    const valid = !typedInvalid && included.length > 0 && !negativeAuto && leftover === 0
     return { typedValues, autoValues, leftover, remainder, valid, autoCount: auto.length }
   }, [amount, orderedParticipants, rows])
 
@@ -461,9 +455,7 @@ export function ExpenseComposer({
       } else if (splitMode === 'amounts') {
         weights = includedParticipants.map((p) => ({
           participant: p.id,
-          weight: round2(
-            amountsPlan.typedValues.get(p.id) ?? amountsPlan.autoValues.get(p.id) ?? 0,
-          ),
+          weight: amountsPlan.typedValues.get(p.id) ?? amountsPlan.autoValues.get(p.id) ?? 0,
         }))
       }
 
@@ -712,11 +704,11 @@ export function ExpenseComposer({
                 <div className="relative">
                   <input
                     type="text"
-                    inputMode="decimal"
+                    inputMode="numeric"
                     value={isAuto ? (autoValue !== undefined ? String(autoValue) : '') : row.amountText}
                     placeholder="0"
                     aria-label={`Částka pro ${p.name}`}
-                    onChange={(e) => setRow(p.id, { amountText: e.target.value })}
+                    onChange={(e) => setRow(p.id, { amountText: sanitizeAmountInput(e.target.value) })}
                     onFocus={(e) => {
                       // touching the auto field makes it a typed one
                       if (isAuto && autoValue !== undefined) {
@@ -779,9 +771,9 @@ export function ExpenseComposer({
           <div className="text-[15px] font-semibold text-gray-900 mb-1">{headline}</div>
           {total !== null && count > 0 && (
             <div className="text-sm text-gray-500">
-              {formatKc(total)} ÷ {count} ={' '}
-              <strong className="text-gray-900">{formatKc(round2(total / count))}</strong> na
-              osobu
+              {formatCurrency(total)} ÷ {count} {perPersonOp(total / count)}{' '}
+              <strong className="text-gray-900">{formatCurrency(Math.round(total / count))}</strong>{' '}
+              na osobu
             </div>
           )}
         </div>
@@ -801,7 +793,7 @@ export function ExpenseComposer({
       return (
         <div className="flex items-center justify-between mt-2.5 px-1">
           <span className="text-[13px] text-gray-500">
-            Rozdělit: <strong className="text-gray-700">{formatKc(amount!)}</strong>
+            Rozdělit: <strong className="text-gray-700">{formatCurrency(amount!)}</strong>
           </span>
           <span
             className={`flex items-center gap-1.5 text-[13px] font-semibold ${
@@ -809,7 +801,7 @@ export function ExpenseComposer({
             }`}
           >
             {ok && <Check size={14} strokeWidth={2.5} />}
-            Zbývá rozdělit: {formatKc(round2(amountsPlan.leftover) || 0)}
+            Zbývá rozdělit: {formatCurrency(amountsPlan.leftover)}
           </span>
         </div>
       )
@@ -823,8 +815,8 @@ export function ExpenseComposer({
           : `${totalShares} ${totalShares >= 2 && totalShares <= 4 ? 'podíly' : 'podílů'}`
       return (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3 text-[13px] text-amber-800 mt-2.5">
-          <strong>{formatKc(isRefund ? -amount! : amount!)}</strong> · {sharesLabel} ={' '}
-          <strong>{formatKc(round2(perShare))}</strong> na podíl.
+          <strong>{formatCurrency(isRefund ? -amount! : amount!)}</strong> · {sharesLabel}{' '}
+          {perPersonOp(perShare)} <strong>{formatCurrency(Math.round(perShare))}</strong> na podíl.
         </div>
       )
     }
@@ -1154,9 +1146,9 @@ export function ExpenseComposer({
                   <input
                     id="expense-amount"
                     type="text"
-                    inputMode="decimal"
+                    inputMode="numeric"
                     value={amountText}
-                    onChange={(e) => setAmountText(e.target.value)}
+                    onChange={(e) => setAmountText(sanitizeAmountInput(e.target.value))}
                     placeholder="0"
                     className="w-40 text-3xl font-bold text-gray-900 text-right focus:outline-none bg-transparent"
                   />
@@ -1291,7 +1283,7 @@ export function ExpenseComposer({
                             {p.name.split(' ')[0]}:{' '}
                             {splitMode === 'shares'
                               ? `${rows[p.id]?.shares ?? 1}×`
-                              : formatKc(
+                              : formatCurrency(
                                   amountsPlan.typedValues.get(p.id) ??
                                     amountsPlan.autoValues.get(p.id) ??
                                     0,
@@ -1407,9 +1399,9 @@ export function ExpenseComposer({
                 <input
                   id="expense-amount"
                   type="text"
-                  inputMode="decimal"
+                  inputMode="numeric"
                   value={amountText}
-                  onChange={(e) => setAmountText(e.target.value)}
+                  onChange={(e) => setAmountText(sanitizeAmountInput(e.target.value))}
                   placeholder="0"
                   className="w-full border border-gray-200 rounded-xl pl-3.5 pr-10 py-3 text-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 />
