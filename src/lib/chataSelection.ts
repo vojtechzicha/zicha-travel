@@ -19,6 +19,21 @@ function dayNumber(value: string | Date): number {
   return Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000)
 }
 
+/** Day number of the CURRENT moment in the Czech calendar. Between Czech
+ * midnight and UTC midnight the UTC date is still "yesterday", which would
+ * keep a trip starting today under "upcoming" — all labels here follow the
+ * Czech calendar, so `today` must too. */
+function czechDayNumber(value: Date): number {
+  const iso = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Prague',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value)
+  const [year, month, day] = iso.split('-').map(Number)
+  return Math.floor(Date.UTC(year, month - 1, day) / 86400000)
+}
+
 export interface ChataBuckets<T> {
   /** tripDateFrom <= today <= tripDateTo */
   live: T[]
@@ -29,37 +44,38 @@ export interface ChataBuckets<T> {
 }
 
 export function bucketChatas<T extends DatedChata>(chatas: T[], today: Date): ChataBuckets<T> {
-  const todayDay = dayNumber(today)
+  const todayDay = czechDayNumber(today)
   const live: T[] = []
   const upcoming: T[] = []
   const pastDated: T[] = []
   const undated: T[] = []
 
+  // Either date may be missing independently — a one-sided record uses the
+  // known date as both start and end (a from-only or to-only "one-day" trip)
+  const startOf = (c: T) => dayNumber((c.tripDateFrom ?? c.tripDateTo)!)
+  const endOf = (c: T) => dayNumber((c.tripDateTo ?? c.tripDateFrom)!)
+
   for (const chata of chatas) {
-    const from = chata.tripDateFrom ? dayNumber(chata.tripDateFrom) : null
-    const to = chata.tripDateTo ? dayNumber(chata.tripDateTo) : null
-    if (from !== null && from <= todayDay && (to ?? from) >= todayDay) {
-      live.push(chata)
-    } else if (from !== null && from > todayDay) {
-      upcoming.push(chata)
-    } else if (from !== null || to !== null) {
-      pastDated.push(chata)
-    } else {
+    if (!chata.tripDateFrom && !chata.tripDateTo) {
       undated.push(chata)
+    } else if (startOf(chata) <= todayDay && endOf(chata) >= todayDay) {
+      live.push(chata)
+    } else if (startOf(chata) > todayDay) {
+      upcoming.push(chata)
+    } else {
+      pastDated.push(chata)
     }
   }
 
-  upcoming.sort((a, b) => dayNumber(a.tripDateFrom!) - dayNumber(b.tripDateFrom!))
-  pastDated.sort(
-    (a, b) =>
-      dayNumber((b.tripDateTo ?? b.tripDateFrom)!) - dayNumber((a.tripDateTo ?? a.tripDateFrom)!)
-  )
+  upcoming.sort((a, b) => startOf(a) - startOf(b))
+  pastDated.sort((a, b) => endOf(b) - endOf(a))
   return { live, upcoming, past: [...pastDated, ...undated] }
 }
 
-/** Whole days from today until the given date (0 = today, negative = past). */
+/** Whole days from today (Czech calendar) until the given date
+ * (0 = today, negative = past). */
 export function daysUntil(date: string | Date, today: Date): number {
-  return dayNumber(date) - dayNumber(today)
+  return dayNumber(date) - czechDayNumber(today)
 }
 
 /** "Za 43 dní" — Czech plural forms; "Dnes"/"Zítra" for the closest ones. */

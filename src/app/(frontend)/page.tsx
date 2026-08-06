@@ -149,6 +149,9 @@ export default async function HomePage() {
     ]
     const from = chata.tripDateFrom ?? null
     const to = chata.tripDateTo ?? null
+    // either date may be missing independently — fall back to the other
+    const rangeStart = from ?? to
+    const rangeEnd = from ? to : null
     const archiveDate = to ?? from
 
     return {
@@ -160,10 +163,11 @@ export default async function HomePage() {
       iconUrl: resolveIconUrl(chata),
       coverUrl: resolveCoverUrl(chata),
       status,
-      countdown: status === 'upcoming' && from ? countdownLabel(daysUntil(from, today)) : null,
+      countdown:
+        status === 'upcoming' && rangeStart ? countdownLabel(daysUntil(rangeStart, today)) : null,
       untilLabel: status === 'live' && to ? untilLabel(to) : null,
-      dateRangeLong: from ? formatDateRangeLong(from, to) : null,
-      dateRangeShort: from ? formatDateRangeShort(from, to) : null,
+      dateRangeLong: rangeStart ? formatDateRangeLong(rangeStart, rangeEnd) : null,
+      dateRangeShort: rangeStart ? formatDateRangeShort(rangeStart, rangeEnd) : null,
       monthYear: archiveDate ? formatMonthYear(archiveDate) : null,
       year: chataYear(chata),
       participantNames,

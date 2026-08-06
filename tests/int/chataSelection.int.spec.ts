@@ -41,6 +41,28 @@ describe('bucketChatas', () => {
     const oneDay = { tripDateFrom: d('2026-08-06'), tripDateTo: null }
     expect(bucketChatas([oneDay], TODAY).live).toHaveLength(1)
   })
+
+  it('classifies to-only trips by their end date, not as past', () => {
+    const endsToday = { name: 'endsToday', tripDateFrom: null, tripDateTo: d('2026-08-06') }
+    const endsLater = { name: 'endsLater', tripDateFrom: null, tripDateTo: d('2026-09-01') }
+    const endedEarlier = { name: 'endedEarlier', tripDateFrom: null, tripDateTo: d('2026-08-01') }
+    const buckets = bucketChatas([endsToday, endsLater, endedEarlier], TODAY)
+    expect(buckets.live.map((c) => c.name)).toEqual(['endsToday'])
+    expect(buckets.upcoming.map((c) => c.name)).toEqual(['endsLater'])
+    expect(buckets.past.map((c) => c.name)).toEqual(['endedEarlier'])
+  })
+
+  it('uses the Czech calendar date for "today", not UTC', () => {
+    // 23:30 UTC on Aug 5 = 01:30 on Aug 6 in Prague (CEST) — a trip starting
+    // Aug 6 is already live, a trip that ended Aug 5 is already past
+    const afterCzechMidnight = new Date('2026-08-05T23:30:00.000Z')
+    const startsAug6 = { name: 'startsAug6', tripDateFrom: d('2026-08-06'), tripDateTo: d('2026-08-08') }
+    const endedAug5 = { name: 'endedAug5', tripDateFrom: d('2026-08-03'), tripDateTo: d('2026-08-05') }
+    const buckets = bucketChatas([startsAug6, endedAug5], afterCzechMidnight)
+    expect(buckets.live.map((c) => c.name)).toEqual(['startsAug6'])
+    expect(buckets.past.map((c) => c.name)).toEqual(['endedAug5'])
+    expect(daysUntil(d('2026-08-06'), afterCzechMidnight)).toBe(0)
+  })
 })
 
 describe('countdown and labels', () => {
