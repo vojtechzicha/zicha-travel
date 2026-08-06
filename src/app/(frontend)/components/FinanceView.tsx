@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
+import { Plus } from 'lucide-react'
 import { ParticipantSelector } from './ParticipantSelector'
 import { SelectedParticipantHeader } from './SelectedParticipantHeader'
 import { ExpensesFeed } from './ExpensesFeed'
+import { ExpenseComposer } from './ExpenseComposer'
 import { PersonView } from './PersonView'
 import { FinanceViewSkeleton } from './Skeleton'
 import {
@@ -12,7 +15,7 @@ import {
   type FinanceViewer,
   type LockedParticipant,
 } from '@/lib/financeAccess'
-import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
+import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
 interface FinanceViewProps {
@@ -20,6 +23,7 @@ interface FinanceViewProps {
   participants: Participant[]
   expenses: Expense[]
   prepayments: Prepayment[]
+  jointAccounts?: JointAccount[]
   stats: ChataStats
   viewer?: FinanceViewer
   locked?: LockedParticipant[]
@@ -27,6 +31,8 @@ interface FinanceViewProps {
   onParticipantChange?: (participantId: number | null) => void
   /** opens the all-participants overview (?view=finance-overview) */
   onOpenOverview?: () => void
+  /** silent data reload after authoring an expense (create/edit/delete) */
+  onDataChanged?: () => Promise<void> | void
 }
 
 // localStorage key prefix for selected participant
@@ -37,15 +43,30 @@ export function FinanceView({
   participants,
   expenses,
   prepayments,
+  jointAccounts = [],
   stats,
   viewer = anonymousViewer,
   locked = [],
   urlParticipantId,
   onParticipantChange,
   onOpenOverview,
+  onDataChanged,
 }: FinanceViewProps) {
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
+  // Frontend expense authoring: null = closed, { expense: null } = new,
+  // { expense } = edit. Only for signed-in accounts with a participant here.
+  const [composer, setComposer] = useState<{ expense: Expense | null } | null>(null)
+  const canAuthor = viewer.authenticated && viewer.linkedParticipantIds.length > 0
+
+  const handleDeleteExpense = async (expense: Expense) => {
+    const res = await fetch(`/api/expenses/${expense.id}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    })
+    if (!res.ok) throw new Error('Delete failed')
+    await onDataChanged?.()
+  }
 
   // Handle banker ID
   const bankerId =
@@ -138,6 +159,46 @@ export function FinanceView({
     </p>
   ) : null
 
+  // Authoring: FAB (desktop pill with label, mobile round above the thumb)
+  // + the composer modal/wizard. Signed-in accounts with a participant only.
+  // Portaled to <body>: the view lives in a `relative z-10` container and the
+  // site footer (also z-10, later in the DOM) would otherwise paint its glass
+  // OVER the fixed button — the portal escapes that stacking context so the
+  // FAB stays on top and clickable everywhere.
+  const authoringUi = canAuthor ? (
+    <>
+      {createPortal(
+        <button
+          type="button"
+          onClick={() => setComposer({ expense: null })}
+          aria-label="Přidat výdaj"
+          className="expense-fab fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
+                     justify-center gap-2 rounded-full bg-primary hover:bg-primary-dark
+                     text-white font-semibold text-[15px] w-14 h-14 lg:w-auto lg:h-auto
+                     lg:px-6 lg:py-3.5 shadow-xl shadow-primary/50 transition-colors"
+        >
+          <Plus size={22} strokeWidth={2.5} />
+          <span className="hidden lg:inline">Přidat výdaj</span>
+        </button>,
+        document.body
+      )}
+      {composer && (
+        <ExpenseComposer
+          chata={chata}
+          participants={participants}
+          jointAccounts={jointAccounts}
+          viewer={viewer}
+          expense={composer.expense}
+          onClose={() => setComposer(null)}
+          onSaved={async () => {
+            await onDataChanged?.()
+            setComposer(null)
+          }}
+        />
+      )}
+    </>
+  ) : null
+
   // State 1: No participant selected - show full-width selector
   if (!selectedParticipantId) {
     return (
@@ -149,6 +210,7 @@ export function FinanceView({
           lockedParticipants={lockedForSelector}
         />
         {overviewLink}
+        {authoringUi}
       </div>
     )
   }
@@ -182,7 +244,14 @@ export function FinanceView({
       <div className="lg:grid lg:grid-cols-[320px_1fr] lg:gap-8 flex flex-col gap-8">
         {/* Sidebar - now only expenses */}
         <aside className="order-2 lg:order-1">
-          <ExpensesFeed expenses={expenses} selectedParticipantId={selectedParticipantId} />
+          <ExpensesFeed
+            expenses={expenses}
+            selectedParticipantId={selectedParticipantId}
+            viewerUserId={canAuthor ? viewer.userId : null}
+            onEditExpense={(expense) => setComposer({ expense })}
+            onDeleteExpense={handleDeleteExpense}
+            showLoginHint={!viewer.authenticated}
+          />
         </aside>
 
         {/* Main content */}
@@ -203,6 +272,7 @@ export function FinanceView({
       </div>
 
       {overviewLink}
+      {authoringUi}
     </div>
   )
 }

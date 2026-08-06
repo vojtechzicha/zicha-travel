@@ -11,7 +11,7 @@ import { ParticipantsView } from './ParticipantsView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
-import type { Chata, Participant, Expense, Prepayment } from '@/payload-types'
+import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 import type { FinanceViewer, LockedParticipant } from '@/lib/financeAccess'
 
@@ -20,6 +20,7 @@ interface ChataData {
   participants: Participant[]
   expenses: Expense[]
   prepayments: Prepayment[]
+  jointAccounts?: JointAccount[]
   stats: ChataStats
   viewer?: FinanceViewer
   locked?: LockedParticipant[]
@@ -91,21 +92,40 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   // Only show loading indicator after 200ms delay to avoid flash
   const showLoadingIndicator = useDelayedLoading(loading, 200)
 
-  useEffect(() => {
-    async function fetchData() {
+  // Silent reload keeps the current UI (no skeleton) — used after a
+  // participant authors/edits/deletes an expense from the frontend
+  const loadData = useCallback(
+    async (opts?: { silent?: boolean }): Promise<ChataData | null> => {
       try {
-        setLoading(true)
-        setError(null)
-
+        if (!opts?.silent) {
+          setLoading(true)
+          setError(null)
+        }
         const response = await fetch(`/api/chatas/slug/${slug}`)
-
         if (!response.ok) {
           throw new Error('Chata not found')
         }
-
-        const result = await response.json()
+        const result = (await response.json()) as ChataData
         setData(result)
+        return result
+      } catch (err) {
+        if (!opts?.silent) {
+          setError(err instanceof Error ? err.message : 'Failed to load chata')
+        }
+        return null
+      } finally {
+        if (!opts?.silent) {
+          setLoading(false)
+        }
+      }
+    },
+    [slug]
+  )
 
+  useEffect(() => {
+    async function fetchData() {
+      const result = await loadData()
+      if (result) {
         // Set default view based on what's enabled (priority: information > organization > finance)
         if (currentView === null) {
           const hasInfo = result.chata.informationEnabled === true
@@ -120,15 +140,11 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             setCurrentView('finance')
           }
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load chata')
-      } finally {
-        setLoading(false)
       }
     }
 
     fetchData()
-  }, [slug, currentView])
+  }, [slug, currentView, loadData])
 
   const handleViewChange = (view: ViewName) => {
     startTransition(() => {
@@ -248,12 +264,16 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 participants={participants}
                 expenses={expenses}
                 prepayments={prepayments}
+                jointAccounts={data.jointAccounts}
                 stats={stats}
                 viewer={data.viewer}
                 locked={data.locked}
                 urlParticipantId={urlParticipantId}
                 onParticipantChange={handleParticipantChange}
                 onOpenOverview={() => handleViewChange('finance-overview')}
+                onDataChanged={async () => {
+                  await loadData({ silent: true })
+                }}
               />
             ) : activeView === 'finance-overview' ? (
               <FinanceOverview

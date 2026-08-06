@@ -36,6 +36,19 @@ export function formatDateWithDay(date: string | Date): string {
 }
 
 /**
+ * Compact date + time, e.g. "5. 8. 14:32" — used in the expense card's
+ * "Přidali jste vy" footer
+ */
+export function formatShortDateTime(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const day = new Intl.DateTimeFormat('cs-CZ', {
+    day: 'numeric',
+    month: 'numeric',
+  }).format(d)
+  return `${day} ${formatTime(d)}`
+}
+
+/**
  * Format time in Czech locale (HH:MM)
  */
 export function formatTime(date: string | Date): string {

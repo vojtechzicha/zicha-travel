@@ -18,6 +18,9 @@ export interface FinanceViewer {
   /** a session cookie resolved to a user */
   authenticated: boolean
   email: string | null
+  /** the signed-in user's id — matched against Expense.authoredBy to show
+   *  the "Přidali jste vy" footer with edit/delete on own expenses */
+  userId: number | null
   /** superadmin, or admin with this chata assigned */
   canViewAll: boolean
   /** this user's participants in THIS chata (a user may own several) */
@@ -34,6 +37,7 @@ export interface LockedParticipant {
 export const anonymousViewer: FinanceViewer = {
   authenticated: false,
   email: null,
+  userId: null,
   canViewAll: false,
   linkedParticipantIds: [],
 }
