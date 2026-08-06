@@ -479,6 +479,14 @@ export interface Participant {
 export interface User {
   id: number;
   /**
+   * Full display name shown on the frontend (e.g. "Kateřina Rechová")
+   */
+  name?: string | null;
+  /**
+   * First name in the vocative case, e.g. "Katko" — used for the personal greeting ("Ahoj, Katko."). Falls back to the participant/account name.
+   */
+  vokativ?: string | null;
+  /**
    * Superadmins manage everything; admins manage only their assigned chatas; users sign in on the frontend and see their own participant finances.
    */
   role: 'superadmin' | 'admin' | 'user';
@@ -1111,6 +1119,8 @@ export interface IconsSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  vokativ?: T;
   role?: T;
   assignedChatas?: T;
   participants?: T;

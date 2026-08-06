@@ -279,6 +279,8 @@ export const Participants: CollectionConfig = {
           'requests a login link themselves.',
         components: {
           afterInput: [
+            // Empty name/vokativ prefill from the selected account's display name
+            '@/collections/Participants/components/AccountNamePrefill#AccountNamePrefill',
             '@/collections/Participants/components/CreateAccountButton#CreateAccountButton',
           ],
         },

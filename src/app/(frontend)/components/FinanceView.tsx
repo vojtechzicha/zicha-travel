@@ -59,6 +59,18 @@ export function FinanceView({
   const [composer, setComposer] = useState<{ expense: Expense | null } | null>(null)
   const canAuthor = viewer.authenticated && viewer.linkedParticipantIds.length > 0
 
+  // Deep link from the homepage hero ("Přidat výdaj" on the live chata):
+  // ?addExpense=1 opens the composer once, then drops the param
+  useEffect(() => {
+    if (!canAuthor) return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('addExpense')) {
+      url.searchParams.delete('addExpense')
+      window.history.replaceState({}, '', url)
+      setComposer({ expense: null })
+    }
+  }, [canAuthor])
+
   const handleDeleteExpense = async (expense: Expense) => {
     const res = await fetch(`/api/expenses/${expense.id}`, {
       method: 'DELETE',
