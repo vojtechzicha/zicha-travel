@@ -10,7 +10,7 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     group: 'System',
-    defaultColumns: ['email', 'role'],
+    defaultColumns: ['email', 'name', 'role'],
   },
   auth: {
     // With Microsoft OAuth configured the local email+password strategy is
@@ -92,6 +92,27 @@ export const Users: CollectionConfig = {
   },
   fields: [
     // Email added by default
+    {
+      // Display name of the account ("Kateřina Rechová") — shown in the
+      // frontend header pill and used for avatar initials. Participants
+      // linked to this account fall back to it where their own name forms
+      // are missing.
+      name: 'name',
+      type: 'text',
+      admin: {
+        description: 'Full display name shown on the frontend (e.g. "Kateřina Rechová")',
+      },
+    },
+    {
+      name: 'vokativ',
+      type: 'text',
+      label: 'Vokativ (5. pád)',
+      admin: {
+        description:
+          'First name in the vocative case, e.g. "Katko" — used for the personal ' +
+          'greeting ("Ahoj, Katko."). Falls back to the participant/account name.',
+      },
+    },
     {
       name: 'role',
       type: 'select',

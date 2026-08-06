@@ -396,6 +396,13 @@ DO $$ BEGIN
     FOREIGN KEY (authored_by_id) REFERENCES users(id) ON DELETE SET NULL;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS expenses_authored_by_idx ON expenses USING btree (authored_by_id);
+
+-- Account display names ("jména účtů"): full name shown in the frontend
+-- header pill + vocative for the personal greeting ("Ahoj, Katko.").
+-- Participants without their own name forms fall back to the linked
+-- account's. Additive only — no data migration.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS name character varying;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS vokativ character varying;
 `
 
 async function enumLabels(typeName) {
