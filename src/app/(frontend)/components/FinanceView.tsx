@@ -166,7 +166,7 @@ export function FinanceView({
         type="button"
         onClick={() => setComposer({ expense: null })}
         aria-label="Přidat výdaj"
-        className="fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
+        className="expense-fab fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
                    justify-center gap-2 rounded-full bg-primary hover:bg-primary-dark
                    text-white font-semibold text-[15px] w-14 h-14 lg:w-auto lg:h-auto
                    lg:px-6 lg:py-3.5 shadow-xl shadow-primary/50 transition-colors"
@@ -242,6 +242,7 @@ export function FinanceView({
             viewerUserId={canAuthor ? viewer.userId : null}
             onEditExpense={(expense) => setComposer({ expense })}
             onDeleteExpense={handleDeleteExpense}
+            showLoginHint={!viewer.authenticated}
           />
         </aside>
 

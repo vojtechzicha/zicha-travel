@@ -585,11 +585,6 @@ export function ExpenseComposer({
             )
           })}
         </div>
-        {payableJointAccounts.length > 0 && (
-          <p className="text-xs text-gray-400 mt-1.5">
-            Zobrazují se jen společné účty, jejichž jste členem.
-          </p>
-        )}
       </div>
     )
   }
@@ -748,6 +743,57 @@ export function ExpenseComposer({
     </div>
   )
 
+  // Equal split, the default (design 1c "výchozí stav"): a friendly summary
+  // card — overlapping avatars, headcount and the per-person amount — with a
+  // nudge towards the shares mode when only some people took part
+  const renderEqualSummary = (switchLabel: string) => {
+    const count = orderedParticipants.length
+    const shown = orderedParticipants.slice(0, 6)
+    const extra = count - shown.length
+    // Czech plural: 1 účastník, 2–4 všichni … účastníci, 5+ všech … účastníků
+    const headline =
+      count === 1
+        ? 'Jediný účastník'
+        : count <= 4
+          ? `Všichni ${count} účastníci`
+          : `Všech ${count} účastníků`
+    const total = amount !== null ? (isRefund ? -amount : amount) : null
+    return (
+      <div>
+        <div className="border border-gray-200 rounded-2xl px-5 py-5 text-center">
+          <div className="flex justify-center mb-3.5">
+            {shown.map((p, i) => (
+              <span
+                key={p.id}
+                className={`w-11 h-11 rounded-full text-white text-sm font-bold flex items-center justify-center border-[3px] border-white shadow-sm ${getAvatarColor(p.name)} ${i > 0 ? '-ml-2.5' : ''}`}
+              >
+                {getInitials(p.name)}
+              </span>
+            ))}
+            {extra > 0 && (
+              <span className="w-11 h-11 rounded-full bg-gray-200 text-gray-600 text-sm font-bold flex items-center justify-center border-[3px] border-white shadow-sm -ml-2.5">
+                +{extra}
+              </span>
+            )}
+          </div>
+          <div className="text-[15px] font-semibold text-gray-900 mb-1">{headline}</div>
+          {total !== null && count > 0 && (
+            <div className="text-sm text-gray-500">
+              {formatKc(total)} ÷ {count} ={' '}
+              <strong className="text-gray-900">{formatKc(round2(total / count))}</strong> na
+              osobu
+            </div>
+          )}
+        </div>
+        {count > 1 && (
+          <p className="text-[13px] text-gray-400 text-center mt-3.5">
+            Platí to jen část lidí, nebo nerovným dílem? Přepněte na „{switchLabel}“.
+          </p>
+        )}
+      </div>
+    )
+  }
+
   const renderSplitHint = () => {
     if (!amountValid) return null
     if (splitMode === 'amounts') {
@@ -865,7 +911,6 @@ export function ExpenseComposer({
           ))}
         </select>
       </div>
-      <p className="text-xs text-gray-400 mt-1.5">Pozvat může kdokoli z výdaje — nejen vy.</p>
     </div>
   )
 
@@ -1174,10 +1219,7 @@ export function ExpenseComposer({
                 </button>
               </div>
               {splitMode === 'equal' ? (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  Výdaj se rozdělí rovným dílem mezi všechny účastníky (
-                  {orderedParticipants.length}).
-                </p>
+                renderEqualSummary('Vybrat podíly')
               ) : (
                 <>
                   {renderSplitRows(splitMode === 'amounts' ? 'amounts' : 'shares')}
@@ -1482,10 +1524,7 @@ export function ExpenseComposer({
               })}
             </div>
             {splitMode === 'equal' ? (
-              <p className="text-sm text-gray-500">
-                Výdaj se rozdělí rovným dílem mezi všechny účastníky (
-                {orderedParticipants.length}).
-              </p>
+              renderEqualSummary('Podíly')
             ) : (
               <>
                 {renderSplitRows(splitMode === 'amounts' ? 'amounts' : 'shares')}
@@ -1500,12 +1539,7 @@ export function ExpenseComposer({
         </div>
 
         {/* footer */}
-        <div className="flex items-center justify-between gap-4 px-7 py-4 border-t border-gray-100 bg-gray-50/60 flex-shrink-0">
-          <span className="text-[13px] text-gray-400 hidden sm:block">
-            {isEdit
-              ? 'Změny se propíšou do vyúčtování všem.'
-              : 'Výdaj můžete kdykoli upravit nebo smazat.'}
-          </span>
+        <div className="flex items-center justify-end gap-4 px-7 py-4 border-t border-gray-100 bg-gray-50/60 flex-shrink-0">
           <div className="flex gap-2.5 flex-shrink-0">
             <button
               type="button"

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Lock } from 'lucide-react'
 import { ExpenseCard } from './ExpenseCard'
 import { GlassCard } from './GlassCard'
 import { isPayerOrMember } from '@/lib/payerRef'
@@ -13,6 +14,8 @@ interface ExpensesFeedProps {
   viewerUserId?: number | null
   onEditExpense?: (expense: Expense) => void
   onDeleteExpense?: (expense: Expense) => Promise<void>
+  /** anonymous visitors: subtle bar that signing in unlocks authoring (1e) */
+  showLoginHint?: boolean
 }
 
 function isParticipantInExpense(expense: Expense, participantId: number): boolean {
@@ -42,6 +45,7 @@ export function ExpensesFeed({
   viewerUserId,
   onEditExpense,
   onDeleteExpense,
+  showLoginHint = false,
 }: ExpensesFeedProps) {
   const [showAll, setShowAll] = useState(false)
 
@@ -115,6 +119,22 @@ export function ExpensesFeed({
           </p>
         )}
       </div>
+      {/* Anonymous visitors (design 1e): the journal is read-only — a quiet
+          bar instead of the FAB says signing in unlocks authoring */}
+      {showLoginHint && (
+        <div className="flex items-center gap-2.5 mt-4 px-3.5 py-2.5 border border-dashed border-gray-200 rounded-xl bg-gray-50">
+          <Lock size={15} className="text-gray-400 flex-shrink-0" />
+          <span className="text-[13px] text-gray-500">
+            Vlastní výdaje můžete přidávat po přihlášení.{' '}
+            <a
+              href="/login"
+              className="text-primary-dark font-semibold underline underline-offset-2 hover:text-primary"
+            >
+              Přihlásit se
+            </a>
+          </span>
+        </div>
+      )}
     </GlassCard>
   )
 }
