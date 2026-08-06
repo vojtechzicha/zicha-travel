@@ -36,6 +36,10 @@ export function InlineSvgIcon({ url, size = 32, className, color, fallback }: In
           svg.setAttribute('width', String(size))
           svg.setAttribute('height', String(size))
 
+          // Uploaded files may carry a baked-in class (e.g. text-primary-light)
+          // that would override the color set by the wrapper
+          svg.removeAttribute('class')
+
           // Ensure fill uses currentColor for proper CSS inheritance
           if (!svg.getAttribute('fill') || svg.getAttribute('fill') === 'currentColor') {
             svg.setAttribute('fill', 'currentColor')
