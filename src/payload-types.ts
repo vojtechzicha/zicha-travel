@@ -608,15 +608,15 @@ export interface Expense {
   /**
    * Who paid for this expense (a participant or a joint account)
    */
-  payer:
-    | {
+  payer?:
+    | ({
         relationTo: 'participants';
         value: number | Participant;
-      }
-    | {
+      } | null)
+    | ({
         relationTo: 'joint-accounts';
         value: number | JointAccount;
-      };
+      } | null);
   /**
    * How to split this expense among participants
    */
@@ -667,6 +667,10 @@ export interface Expense {
    */
   attachments?: (number | ExpenseAttachment)[] | null;
   /**
+   * Account that created this expense (set automatically). Frontend users may edit/delete only their own expenses.
+   */
+  authoredBy?: (number | null) | User;
+  /**
    * Planned expense (not yet paid) - uncheck when actually paid
    */
   isPlanned?: boolean | null;
@@ -691,7 +695,7 @@ export interface JointAccount {
   /**
    * Participants sharing this account (at least 2)
    */
-  members: (number | Participant)[];
+  members?: (number | Participant)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -732,15 +736,15 @@ export interface Prepayment {
   /**
    * Who sent the payment (or who received it if negative) — a participant or a joint account
    */
-  from:
-    | {
+  from?:
+    | ({
         relationTo: 'participants';
         value: number | Participant;
-      }
-    | {
+      } | null)
+    | ({
         relationTo: 'joint-accounts';
         value: number | JointAccount;
-      };
+      } | null);
   /**
    * Amount (positive = to banker, negative = from banker/refund)
    */
@@ -1032,6 +1036,7 @@ export interface ExpensesSelect<T extends boolean = true> {
   createdAt?: T;
   note?: T;
   attachments?: T;
+  authoredBy?: T;
   isPlanned?: T;
   updatedAt?: T;
 }

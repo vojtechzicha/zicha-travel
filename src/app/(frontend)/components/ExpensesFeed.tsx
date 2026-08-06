@@ -9,6 +9,10 @@ import type { Expense } from '@/payload-types'
 interface ExpensesFeedProps {
   expenses: Expense[]
   selectedParticipantId: number | null
+  /** signed-in account id — expenses it authored get the manage footer */
+  viewerUserId?: number | null
+  onEditExpense?: (expense: Expense) => void
+  onDeleteExpense?: (expense: Expense) => Promise<void>
 }
 
 function isParticipantInExpense(expense: Expense, participantId: number): boolean {
@@ -32,7 +36,13 @@ function isParticipantInExpense(expense: Expense, participantId: number): boolea
   return false
 }
 
-export function ExpensesFeed({ expenses, selectedParticipantId }: ExpensesFeedProps) {
+export function ExpensesFeed({
+  expenses,
+  selectedParticipantId,
+  viewerUserId,
+  onEditExpense,
+  onDeleteExpense,
+}: ExpensesFeedProps) {
   const [showAll, setShowAll] = useState(false)
 
   // Sort expenses by ID (oldest first)
@@ -79,6 +89,13 @@ export function ExpensesFeed({ expenses, selectedParticipantId }: ExpensesFeedPr
             const isMine =
               selectedParticipantId !== null &&
               isParticipantInExpense(expense, selectedParticipantId)
+            // authoredBy stays a bare user id (maxDepth 0 on the field)
+            const authoredByViewer =
+              viewerUserId != null &&
+              expense.authoredBy != null &&
+              (typeof expense.authoredBy === 'object'
+                ? expense.authoredBy.id
+                : expense.authoredBy) === viewerUserId
             return (
               <ExpenseCard
                 key={expense.id}
@@ -86,6 +103,9 @@ export function ExpensesFeed({ expenses, selectedParticipantId }: ExpensesFeedPr
                 isMine={isMine}
                 showAll={showAll}
                 selectedParticipantId={selectedParticipantId}
+                canManage={authoredByViewer}
+                onEdit={onEditExpense}
+                onDelete={onDeleteExpense}
               />
             )
           })

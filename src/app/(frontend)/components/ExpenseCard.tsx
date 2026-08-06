@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Receipt, ArrowLeft, Clock, HeartHandshake, FileText, X } from 'lucide-react'
-import { formatCurrency } from '@/lib/formatCurrency'
+import {
+  Receipt,
+  ArrowLeft,
+  Clock,
+  HeartHandshake,
+  FileText,
+  X,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
+import { formatCurrency, formatShortDateTime } from '@/lib/formatCurrency'
 import { getPayerDisplay } from '@/lib/payerRef'
 import { akuzativName } from '@/lib/czechNames'
 import type { Expense, ExpenseAttachment } from '@/payload-types'
@@ -15,6 +24,11 @@ interface ExpenseCardProps {
   isMine?: boolean
   showAll?: boolean
   selectedParticipantId?: number | null
+  /** the viewer authored this expense — show the manage footer (1b) */
+  canManage?: boolean
+  onEdit?: (expense: Expense) => void
+  /** resolves after the expense is deleted (data reload included) */
+  onDelete?: (expense: Expense) => Promise<void>
 }
 
 export function ExpenseCard({
@@ -22,9 +36,15 @@ export function ExpenseCard({
   isMine = true,
   showAll = false,
   selectedParticipantId,
+  canManage = false,
+  onEdit,
+  onDelete,
 }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [lightboxAttachment, setLightboxAttachment] = useState<ExpenseAttachment | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const isRefund = expense.amount < 0
   const isPlanned = expense.isPlanned || false
   const payer = getPayerDisplay(expense.payer)
@@ -243,6 +263,100 @@ export function ExpenseCard({
                 </a>
               )
             )}
+          </div>
+        )}
+
+        {/* Manage footer (1b): only on expenses the viewer authored */}
+        {canManage && !confirmingDelete && (
+          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100">
+            <span className="text-xs text-gray-400 min-w-0 truncate">
+              Přidali jste vy
+              {/* timestamp only where the icon buttons leave room (design 1b) */}
+              <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt)}</span>
+            </span>
+            {/* Desktop: compact icon buttons */}
+            <div className="hidden lg:flex gap-0.5 flex-shrink-0">
+              <button
+                type="button"
+                title="Upravit"
+                aria-label="Upravit výdaj"
+                onClick={() => onEdit?.(expense)}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                type="button"
+                title="Smazat"
+                aria-label="Smazat výdaj"
+                onClick={() => {
+                  setDeleteError(null)
+                  setConfirmingDelete(true)
+                }}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-red-100 hover:text-red-600 transition-colors"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+            {/* Mobile: labeled pill buttons above the thumb */}
+            <div className="flex lg:hidden gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => onEdit?.(expense)}
+                className="flex items-center gap-1.5 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
+              >
+                <Pencil size={13} /> Upravit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteError(null)
+                  setConfirmingDelete(true)
+                }}
+                className="flex items-center gap-1.5 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 active:bg-red-100 transition-colors"
+              >
+                <Trash2 size={13} /> Smazat
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Inline delete confirmation (1b) — no browser dialogs */}
+        {canManage && confirmingDelete && (
+          <div className="flex items-center justify-between flex-wrap gap-2 mt-2.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-2">
+            <span className="text-[13px] text-red-800 font-medium">
+              {deleteError ?? 'Opravdu smazat?'}
+            </span>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true)
+                  setDeleteError(null)
+                  try {
+                    await onDelete?.(expense)
+                  } catch {
+                    setDeleteError('Smazání se nepovedlo. Zkuste to znovu.')
+                    setDeleting(false)
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              >
+                {deleting ? 'Mažu…' : 'Smazat'}
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  setConfirmingDelete(false)
+                  setDeleteError(null)
+                }}
+                className="text-gray-700 hover:bg-red-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                Zpět
+              </button>
+            </div>
           </div>
         )}
 

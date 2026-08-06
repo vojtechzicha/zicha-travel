@@ -61,6 +61,29 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      (validated). Participants only. `auto: true` marks standing rows
      managed from `Participant.paidBy` (hidden on the expense card; only
      manual one-off invites show a badge). See `docs/PRD-pozvani.md`
+   - **Frontend authoring** ("výdaje od účastníků"): signed-in frontend
+     accounts (role `user`) may create expenses and edit/delete their OWN
+     ones. `authoredBy` (relationship to `users`, `maxDepth: 0` so the
+     public read API never populates the user/email) is stamped by a
+     beforeChange hook on every authenticated create; the same hook
+     enforces for role `user`: chata must contain one of their linked
+     participants, the payer must be an own participant or a joint account
+     they belong to (unchanged payer is exempt on update), and the chata
+     can never be moved. Pure rules live in `src/lib/expenseAuthoring.ts`
+     (unit-tested in `tests/int/expenseAuthoring.int.spec.ts`). UI:
+     `ExpenseComposer.tsx` — mobile 3-step wizard (bottom-sheet entry
+     "Vyfotit účtenku"/"Zadat ručně" → co a kolik → kdo se dělí →
+     shrnutí s pozváními) and desktop modal, opened from a fixed FAB
+     ("Přidat výdaj") in the Finance view; own expense cards get a
+     "Přidali jste vy" footer with Upravit/Smazat (inline confirm).
+     Split modes: rovným dílem / podíly / přesné částky (weights summing
+     to the total; untouched rows auto-absorb the remainder,
+     "dopočítáno"). Receipt photos are downscaled client-side
+     (`src/lib/imageDownscale.ts`) before the REST upload — Vercel caps
+     request bodies at ~4.5 MB. Saving goes through the Payload REST API
+     (`POST/PATCH/DELETE /api/expenses`, `POST /api/expense-attachments` —
+     attachment create is open to any signed-in account); the slug API's
+     `viewer` gained `userId` for the ownership check
 
 4. **Prepayments** (`src/collections/Prepayments.ts`)
    - Money transfers between participants and banker
@@ -182,7 +205,11 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   - `admin`: chata-scoped writes via `Users.assignedChatas` (the legacy
     `chatas.assignedUsers` array was removed; the migration copied its rows
     into `users_rels`)
-  - `user` (frontend accounts): no write access anywhere, no admin panel
+  - `user` (frontend accounts): no admin panel; the ONE write exception is
+    expense authoring — create expenses in chatas where they own a linked
+    participant, update/delete only expenses they authored
+    (`Expenses.authoredBy`), and upload expense attachments. Enforced in
+    the Expenses beforeChange hook via `src/lib/expenseAuthoring.ts`
 - **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
   the slug API returns a `viewer` + `locked` list; admins of the chata get
   the full participant selector (defaulting to their own linked

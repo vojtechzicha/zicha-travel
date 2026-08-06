@@ -143,6 +143,7 @@ export async function GET(
     const viewer: FinanceViewer = {
       authenticated: !!user,
       email: user?.email ?? null,
+      userId: user?.id ?? null,
       canViewAll: canManageChata(user, chata.id),
       linkedParticipantIds: user
         ? participantsResult.docs

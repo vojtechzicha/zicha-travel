@@ -21,7 +21,11 @@ export const ExpenseAttachments: CollectionConfig = {
     // Public read access for API consumption (consistent with all other
     // collections - attachment files are publicly readable by URL)
     read: () => true,
-    create: adminRoleOnly,
+    // Any signed-in account may upload a receipt — frontend users attach
+    // them while authoring expenses (see lib/expenseAuthoring). Managing
+    // existing attachment documents stays admin-only; the frontend only
+    // ever links/unlinks them from an expense.
+    create: ({ req: { user } }) => !!user,
     update: adminRoleOnly,
     delete: adminRoleOnly,
   },

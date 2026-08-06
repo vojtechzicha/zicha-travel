@@ -385,6 +385,17 @@ DO $$ BEGIN
     FOREIGN KEY (account_id) REFERENCES users(id) ON DELETE SET NULL;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS participants_account_idx ON participants USING btree (account_id);
+
+-- Frontend expense authoring: the signed-in account that created the
+-- expense (Expenses.authoredBy). Frontend users may edit/delete only their
+-- own expenses; existing rows stay NULL (admin-panel era). Additive only.
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS authored_by_id integer;
+DO $$ BEGIN
+  ALTER TABLE expenses
+    ADD CONSTRAINT expenses_authored_by_id_users_id_fk
+    FOREIGN KEY (authored_by_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS expenses_authored_by_idx ON expenses USING btree (authored_by_id);
 `
 
 async function enumLabels(typeName) {
