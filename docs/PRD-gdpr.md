@@ -279,18 +279,13 @@ compliance is demonstrated by describing the measures in place.
    anonymization step and no stated handling rules. Receipt files are
    synced too. This needs either an anonymizing step or an explicit,
    recorded justification and handling rule.
-5. **`media-backup/` is not in `.gitignore`** and currently holds a JSON
-   dump of chata data in the working tree. Production personal data is one
-   `git add -A` away from the repository history. Untracked-but-ignored is
-   the minimum; the general rule is that data dumps never live in the repo
-   directory.
-6. **No backup policy** is recorded: whether Supabase PITR is on, how long
+5. **No backup policy** is recorded: whether Supabase PITR is on, how long
    backups live, whether they are encrypted, and how erasure requests
    interact with backups (they must be addressed in the notice, since
    backups cannot usually be edited).
-7. **No admin audit log.** There is no record of who viewed, changed or
+6. **No admin audit log.** There is no record of who viewed, changed or
    exported personal data in the admin panel.
-8. `PAYLOAD_SECRET` signs both session and decide-link tokens; a rotation
+7. `PAYLOAD_SECRET` signs both session and decide-link tokens; a rotation
    story should be recorded, given that rotation invalidates live sessions.
 
 ## 11. Cookies and ePrivacy
@@ -360,12 +355,10 @@ Ordered by risk reduction per unit of work:
 2. **§4 no-index** and **§8 Paylibo removal** — both small, both stop an
    ongoing disclosure.
 3. **§5 privacy notice** and the recipient list, which §8 makes writable.
-4. **§10.5 `media-backup/`** — one line, removes a live risk of committing
-   production data.
-5. **§9 stop logging email addresses**, **§10.1 rate limiting**.
-6. **§6 rights machinery** and **§7 retention** — the largest builds, and
+4. **§9 stop logging email addresses**, **§10.1 rate limiting**.
+5. **§6 rights machinery** and **§7 retention** — the largest builds, and
    the ones that need the §13 decisions first.
-7. **§5.3/5.6, §11.1, §12.4** — the written records that make the rest
+6. **§5.3/5.6, §11.1, §12.4** — the written records that make the rest
    demonstrable.
 
 ## 15. Relationship to other work
