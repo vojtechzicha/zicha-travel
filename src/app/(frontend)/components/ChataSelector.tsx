@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -201,13 +202,36 @@ function SectionLabel({
   )
 }
 
-/** Cover photo area with theme-colored fallback (no photo → gradient + icon). */
-function CoverBackdrop({ chata, dimmed = false }: { chata: HomeChataItem; dimmed?: boolean }) {
+/**
+ * Cover photo area with theme-colored fallback (no photo → gradient + icon).
+ *
+ * The photo goes through next/image rather than a CSS `background-image`: the
+ * originals are ~2000px, 400–700 kB JPEGs served by the Payload media route,
+ * and a background image is invisible to the preload scanner. `fill` + `sizes`
+ * gets each card an appropriately sized AVIF/WebP, and `priority` lets the hero
+ * (the LCP element) start downloading from the HTML rather than after layout.
+ */
+function CoverBackdrop({
+  chata,
+  dimmed = false,
+  sizes,
+  priority = false,
+}: {
+  chata: HomeChataItem
+  dimmed?: boolean
+  sizes: string
+  priority?: boolean
+}) {
   if (chata.coverUrl) {
     return (
-      <div
-        className={`absolute inset-0 bg-cover bg-center ${dimmed ? 'grayscale-[0.35] brightness-90' : ''}`}
-        style={{ backgroundImage: `url('${chata.coverUrl}')` }}
+      <Image
+        src={chata.coverUrl}
+        alt=""
+        aria-hidden
+        fill
+        sizes={sizes}
+        priority={priority}
+        className={`object-cover ${dimmed ? 'grayscale-[0.35] brightness-90' : ''}`}
       />
     )
   }
@@ -237,7 +261,11 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
           isLive ? 'ring-2 ring-green-400/35' : ''
         }`}
       >
-        <CoverBackdrop chata={chata} />
+        <CoverBackdrop
+          chata={chata}
+          priority
+          sizes="(max-width: 1140px) 100vw, 1100px"
+        />
         <div
           className="absolute inset-0 bg-[image:linear-gradient(to_top,rgba(8,14,24,0.9)_0%,rgba(8,14,24,0.35)_45%,color-mix(in_srgb,var(--theme)_15%,transparent)_100%)]"
           style={{ '--theme': chata.themeColor } as React.CSSProperties}
@@ -340,7 +368,7 @@ function UpcomingCard({ chata }: { chata: HomeChataItem }) {
   return (
     <Link href={`/${chata.slug}`} className="block group">
       <div className="relative h-[170px] rounded-2xl overflow-hidden flex items-end shadow-[0_15px_35px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:-translate-y-1">
-        <CoverBackdrop chata={chata} />
+        <CoverBackdrop chata={chata} sizes="(max-width: 640px) 100vw, 540px" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
         {chata.countdown && (
           <div className="absolute top-3 right-3 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-3 py-1 text-white text-xs font-bold">
@@ -371,7 +399,7 @@ function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeView
     <Link href={`/${chata.slug}`} className="block group">
       <div className="bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.3)] transition-transform duration-200 group-hover:-translate-y-1 flex items-center gap-3 p-2.5 sm:p-0 sm:block">
         <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 sm:w-full sm:h-24 sm:rounded-none">
-          <CoverBackdrop chata={chata} dimmed />
+          <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 56px, 280px" />
         </div>
         <div className="flex-1 min-w-0 sm:p-4">
           <div className="flex items-center gap-2">

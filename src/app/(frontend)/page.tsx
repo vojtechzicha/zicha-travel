@@ -19,7 +19,7 @@ import {
   viewerBalance,
   viewerCost,
 } from '@/lib/chataSelection'
-import type { ChataStats } from '@/utils/calculateStats'
+import { computeChataStats } from '@/utils/chataStatsBatch'
 import type { Background, Chata, Icon, Media, Participant } from '@/payload-types'
 import './styles.css'
 
@@ -46,8 +46,6 @@ export async function generateMetadata(): Promise<Metadata> {
     description: 'Společně na chatu - plánování, informace, finance',
   }
 }
-
-type ChataWithStats = Chata & { _stats?: ChataStats }
 
 function resolveCoverUrl(chata: Chata): string | null {
   if (chata.background && typeof chata.background === 'object') {
@@ -87,16 +85,20 @@ export default async function HomePage() {
   const payload = await getPayload({ config: payloadConfig })
 
   // Depth 2 to include icon → svg and background → image (media) with URLs.
-  // The Chatas afterRead hook also computes _stats for every doc here — the
-  // per-chata settlement chips come from it for free.
-  const chatasResult = await payload.find({
-    collection: 'chatas',
-    limit: 100,
-    depth: 2,
-  })
+  // `triggerAfterRead: false` disables the per-document stats hook: it would
+  // fire four sequential queries for EVERY chata in the list. The settlement
+  // chips get their stats from one batched pass further down instead.
+  const [chatasResult, { user }] = await Promise.all([
+    payload.find({
+      collection: 'chatas',
+      limit: 100,
+      depth: 2,
+      context: { triggerAfterRead: false },
+    }),
+    payload.auth({ headers: headersList }),
+  ])
 
-  let chatas = chatasResult.docs as ChataWithStats[]
-  const { user } = await payload.auth({ headers: headersList })
+  let chatas = chatasResult.docs as Chata[]
 
   // All participants linked to this account (across chatas) — drives the
   // greeting, the "own chata" checks and the balance chips
@@ -129,6 +131,12 @@ export default async function HomePage() {
     chatas = chatas.filter((c) => visible.has(c.id))
   }
 
+  // One batched stats pass for the chatas that survived the visibility filter
+  const statsByChata = await computeChataStats(
+    payload,
+    chatas.map((c) => ({ id: c.id, banker: c.banker }))
+  )
+
   const today = new Date()
   const buckets = bucketChatas(chatas, today)
   const ordered = [...buckets.live, ...buckets.upcoming, ...buckets.past]
@@ -140,7 +148,7 @@ export default async function HomePage() {
         ? 'upcoming'
         : 'past'
     const ownNames = ownNamesByChata.get(chata.id) ?? []
-    const stats = chata._stats
+    const stats = statsByChata.get(chata.id)
     const allNames = stats ? Object.keys(stats.participants) : []
     // viewer's own participants first — they lead the avatar stack
     const participantNames = [
