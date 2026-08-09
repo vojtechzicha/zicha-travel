@@ -20,7 +20,8 @@ import {
   viewerCost,
 } from '@/lib/chataSelection'
 import { computeChataStats } from '@/utils/chataStatsBatch'
-import type { Background, Chata, Icon, Media, Participant } from '@/payload-types'
+import { resolveChataIdentities } from '@/lib/chataIdentity'
+import type { Chata, Participant } from '@/payload-types'
 import './styles.css'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -47,27 +48,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-function resolveCoverUrl(chata: Chata): string | null {
-  if (chata.background && typeof chata.background === 'object') {
-    const bg = chata.background as Background
-    if (bg.type === 'url' && bg.url) return bg.url
-    if (bg.image && typeof bg.image === 'object') {
-      return (bg.image as Media).url || null
-    }
-  }
-  return null
-}
-
-function resolveIconUrl(chata: Chata): string | null {
-  if (chata.icon && typeof chata.icon === 'object') {
-    const icon = chata.icon as Icon
-    if (icon.svg && typeof icon.svg === 'object') {
-      return (icon.svg as Media).url || null
-    }
-  }
-  return null
-}
-
 export default async function HomePage() {
   const headersList = await headers()
 
@@ -84,15 +64,17 @@ export default async function HomePage() {
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
-  // Depth 2 to include icon → svg and background → image (media) with URLs.
-  // `triggerAfterRead: false` disables the per-document stats hook: it would
-  // fire four sequential queries for EVERY chata in the list. The settlement
-  // chips get their stats from one batched pass further down instead.
+  // depth 0: the page needs two URLs off the appearance relationships
+  // (icon → svg, background → image) and nothing else, so they are resolved
+  // separately by resolveChataIdentities instead of making Payload walk every
+  // relationship two levels deep. `triggerAfterRead: false` disables the
+  // per-document stats hook, which would fire four queries for EVERY chata in
+  // the list; the settlement chips come from one batched pass instead.
   const [chatasResult, { user }] = await Promise.all([
     payload.find({
       collection: 'chatas',
       limit: 100,
-      depth: 2,
+      depth: 0,
       context: { triggerAfterRead: false },
     }),
     payload.auth({ headers: headersList }),
@@ -100,18 +82,22 @@ export default async function HomePage() {
 
   let chatas = chatasResult.docs as Chata[]
 
-  // All participants linked to this account (across chatas) — drives the
-  // greeting, the "own chata" checks and the balance chips
-  let linkedParticipants: Participant[] = []
-  if (user) {
-    const linked = await payload.find({
-      collection: 'participants',
-      where: { account: { equals: user.id } },
-      limit: 1000,
-      depth: 0,
-    })
-    linkedParticipants = linked.docs
-  }
+  // Appearance URLs, plus all participants linked to this account (across
+  // chatas — they drive the greeting, the "own chata" checks and the balance
+  // chips). The two are independent, so they share one round-trip.
+  const [identities, linkedParticipants] = await Promise.all([
+    resolveChataIdentities(payload, chatas),
+    user
+      ? payload
+          .find({
+            collection: 'participants',
+            where: { account: { equals: user.id } },
+            limit: 1000,
+            depth: 0,
+          })
+          .then((r) => r.docs)
+      : Promise.resolve([] as Participant[]),
+  ])
   const chataIdOf = (p: Participant) =>
     typeof p.chata === 'object' && p.chata !== null ? p.chata.id : p.chata
   const ownNamesByChata = new Map<number, string[]>()
@@ -168,8 +154,8 @@ export default async function HomePage() {
       slug: chata.slug,
       location: chata.location,
       themeColor: chata.themeColor || '#d97706',
-      iconUrl: resolveIconUrl(chata),
-      coverUrl: resolveCoverUrl(chata),
+      iconUrl: identities.get(chata.id)?.iconUrl ?? null,
+      coverUrl: identities.get(chata.id)?.coverUrl ?? null,
       status,
       countdown:
         status === 'upcoming' && rangeStart ? countdownLabel(daysUntil(rangeStart, today)) : null,
