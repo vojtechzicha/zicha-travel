@@ -37,14 +37,40 @@
 
   body {
     @apply font-sans text-gray-800;
-    /* Default background - can be overridden by ThemeProvider */
-    background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2670&auto=format&fit=crop');
+    /* Default background - can be overridden by ThemeProvider.
+       Self-hosted (was a 2670px Unsplash URL costing 640 kB on every page)
+       and sized per breakpoint: 1280 covers phones up to 3× DPR, 2560 covers
+       retina desktops. The plain url() is the fallback for browsers without
+       image-set(); AVIF is picked wherever it is supported. */
+    background-image: url('/bg/mountains-1920.webp');
+    background-image: image-set(
+      url('/bg/mountains-1280.avif') type('image/avif'),
+      url('/bg/mountains-1920.webp') type('image/webp')
+    );
     background-repeat: no-repeat;
     background-position: center center;
     background-attachment: fixed;
     background-size: cover;
     background-color: #111827;
     overflow-x: hidden;
+  }
+
+  @media (min-width: 900px) {
+    body {
+      background-image: image-set(
+        url('/bg/mountains-1920.avif') type('image/avif'),
+        url('/bg/mountains-1920.webp') type('image/webp')
+      );
+    }
+  }
+
+  @media (min-width: 1600px) {
+    body {
+      background-image: image-set(
+        url('/bg/mountains-2560.avif') type('image/avif'),
+        url('/bg/mountains-1920.webp') type('image/webp')
+      );
+    }
   }
 
   img {

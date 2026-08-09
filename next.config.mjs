@@ -15,6 +15,13 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Static site background — public/ files default to max-age=0, which
+        // means a revalidation round-trip for a file that only changes when
+        // we redeploy a new one.
+        source: '/bg/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=2592000' }],
+      },
+      {
         // The raw Payload media route is a serverless function hop; without a
         // cache-control it is a CDN MISS on every single request.
         source: '/api/media/file/:path*',
