@@ -8,13 +8,14 @@ import { getPayload } from 'payload'
  * every render. Letting the CDN answer it turns that into an edge cache hit in
  * the same region the middleware runs in.
  *
- * The trade-off is that adding a domain to a chata takes effect within five
- * minutes rather than instantly — the same window the middleware's in-memory
- * cache already imposed. `stale-while-revalidate` keeps serving the old answer
- * while a background request refreshes it, so a miss never blocks a render.
- * The payload (id/name/slug/location) is already public data.
+ * The trade-off is that adding a domain to a chata takes effect within an hour
+ * rather than instantly — an accepted budget, matched by the middleware's own
+ * in-memory TTL. `stale-while-revalidate` keeps serving the old answer while a
+ * background request refreshes it, so a miss never blocks a render; the hour
+ * mostly buys fewer revalidations rather than lower latency. The payload
+ * (id/name/slug/location) is already public data.
  */
-const CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=86400'
+const CACHE_CONTROL = 'public, s-maxage=3600, stale-while-revalidate=86400'
 
 /**
  * GET /api/domains/:hostname
