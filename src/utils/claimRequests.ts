@@ -214,23 +214,39 @@ export async function runClaimDecisionSideEffects(
       })
     }
 
-    // A claim-registered account starts as a bare email — fill its MISSING
-    // display-name forms from the participant it just became
+    // Name forms flow BOTH ways on linking, each filling only what's
+    // missing: a claim-registered account starts as a bare email (take the
+    // participant's name/vokativ), while a Microsoft account knows the
+    // person's name/vokativ the participant may lack. Accounts carry no
+    // akuzativ — that form lives on participants only.
     if (requester) {
-      const nameFill = {
+      const accountFill = {
         ...(!requester.name && participant.name ? { name: participant.name } : {}),
         ...(!requester.vokativ && participant.vokativ ? { vokativ: participant.vokativ } : {}),
       }
-      if (Object.keys(nameFill).length > 0) {
+      if (Object.keys(accountFill).length > 0) {
         await payload
           .update({
             collection: 'users',
             id: requester.id,
-            data: nameFill,
+            data: accountFill,
             overrideAccess: true,
             depth: 0,
           })
           .catch((err) => payload.logger.error({ err }, 'Failed to prefill account name forms'))
+      }
+      if (!participant.vokativ && requester.vokativ) {
+        await payload
+          .update({
+            collection: 'participants',
+            id: participant.id,
+            data: { vokativ: requester.vokativ },
+            overrideAccess: true,
+            depth: 0,
+          })
+          .catch((err) =>
+            payload.logger.error({ err }, 'Failed to prefill participant name forms'),
+          )
       }
     }
 
