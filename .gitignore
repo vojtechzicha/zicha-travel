@@ -57,4 +57,8 @@ node_modules/
 
 # External repos
 /zicha-travel-legacy/
-/claude-data/
+/claude-data
+
+# demo data manifest for the help screenshots
+scripts/.help-demo.json
+

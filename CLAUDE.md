@@ -264,8 +264,27 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   roles; set `SESSION_COOKIE_DOMAIN=.zicha.travel` so one session works
   across chata subdomains (also required for OAuth started on a subdomain)
 - Frontend footer (`Footer.tsx` in the frontend layout): site info, version
-  from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out and an
-  admin link
+  from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out, a help
+  link and an admin link
+- Help (`src/app/(frontend)/napoveda/`): static server components, linked
+  from the footer. `/napoveda` is the hub (per-audience overview, math,
+  glossary); the detail guides are `orientace`, `finance`, `vydaje`,
+  `ucet`, `prehled` and `sprava`, each walking through the real UI with
+  screenshots. Shared pieces in `ui.tsx` (shell, sections, `Steps`,
+  `Screenshot`, page cards) and `shots.ts` (screenshot registry with
+  intrinsic sizes). Single-chata (subdomain) mode would redirect a
+  one-segment path to `/`, so `/napoveda` is in the middleware's
+  `SITE_PATHS` allowlist next to `/login` (sub-pages have two segments and
+  are unaffected). Keep it in sync when the finance/claim/authoring rules
+  change
+- Help screenshots (`public/napoveda/*.webp`, ~1.7 MB): shot against a
+  made-up demo chata, never real data. `pnpm help:seed` creates
+  "Ukázková chata" + demo accounts in the LOCAL database and writes
+  `scripts/.help-demo.json` (gitignored); `pnpm help:shots` drives
+  Playwright (system Chrome) over a running dev server, capturing at 2×
+  and converting to WebP with `cwebp`. `SITE=` overrides the dev-server
+  port. Admin-panel shots open demo documents directly so no list view
+  can leak real chatas
 - Overview ("Přehled", `?view=finance-overview`): all participants' summary
   tables on one page for dispute-checking — matrix table (desktop default,
   Σ-kontrola column per row) or cards (mobile default), manual switch

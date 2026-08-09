@@ -40,6 +40,12 @@ export async function Footer() {
               {user.email}
             </span>
           )}
+          <a
+            href="/napoveda"
+            className="hover:text-white transition-colors underline underline-offset-2"
+          >
+            Nápověda
+          </a>
           {/* Anonymous visitors get the link too (it lands on the admin
               login); only plain frontend accounts have no business there */}
           {(!user || isAdminRole(user)) && (
