@@ -3,6 +3,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { canManageChata, refId } from '@/lib/access'
 import { maskEmail, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
+import type { ViewerClaim } from '@/lib/claimRequests'
 import {
   calculateStats,
   transformExpense,
@@ -180,6 +181,34 @@ export async function GET(
       return [{ id: p.id, maskedEmail: maskEmail(account.email) }]
     })
 
+    // Claim state for the "Jsi to ty?" flow (docs/PRD-claim.md): which
+    // participants have a PENDING claim (ids only — no accounts or emails
+    // leak), plus the signed-in viewer's own requests in this chata
+    const claimsResult = await payload.find({
+      collection: 'claim-requests',
+      where: { chata: { equals: chata.id } },
+      limit: 1000,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const pendingClaims = [
+      ...new Set(
+        claimsResult.docs
+          .filter((c: any) => c.status === 'pending' && c.participant != null)
+          .map((c: any) => Number(refId(c.participant)))
+      ),
+    ]
+    const viewerClaims: ViewerClaim[] = user
+      ? claimsResult.docs
+          .filter((c: any) => c.user != null && refId(c.user) === String(user.id))
+          .map((c: any) => ({
+            id: c.id,
+            participantId: Number(refId(c.participant)),
+            status: c.status,
+            createdAt: c.createdAt,
+          }))
+      : []
+
     // Return data with populated relationships for frontend
     // (payer/from arrive populated via depth: 1 as { relationTo, value })
     return NextResponse.json({
@@ -191,6 +220,8 @@ export async function GET(
       stats,
       viewer,
       locked,
+      pendingClaims,
+      viewerClaims,
     })
   } catch (error) {
     console.error('Error looking up chata by slug:', error)

@@ -12,6 +12,10 @@ interface ParticipantSelectorProps {
   bankerId?: number | null
   /** participants locked behind login (active account) — shown greyed out */
   lockedParticipants?: Array<{ participant: Participant; maskedEmail: string }>
+  /** quiet claim hints ("bez účtu") for anonymous-style selectors */
+  showClaimHints?: boolean
+  /** participant ids with a pending claim request */
+  pendingClaimIds?: number[]
 }
 
 export function ParticipantSelector({
@@ -19,6 +23,8 @@ export function ParticipantSelector({
   onSelectParticipant,
   bankerId,
   lockedParticipants = [],
+  showClaimHints = false,
+  pendingClaimIds = [],
 }: ParticipantSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
   // Locked tile the visitor tapped — reveals the full login hint below the
@@ -88,6 +94,15 @@ export function ParticipantSelector({
         {filteredParticipants.map((participant) => {
           const isBanker = participant.id === bankerId
           const avatarColor = getAvatarColor(participant.name)
+          // Quiet claim trail (the real entry is the banner after opening):
+          // "bez účtu" for unlinked participants, a note when someone
+          // already asked for this one
+          const hasPendingClaim = showClaimHints && pendingClaimIds.includes(participant.id)
+          const claimHint = hasPendingClaim
+            ? 'někdo už požádal — jsi to ty? ozvi se taky'
+            : showClaimHints && participant.account == null
+              ? 'bez účtu'
+              : null
 
           return (
             <button
@@ -103,7 +118,18 @@ export function ParticipantSelector({
               >
                 {getInitials(participant.name)}
               </div>
-              <span className="flex-1 truncate">{participant.name}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block truncate">{participant.name}</span>
+                {claimHint && (
+                  <span
+                    className={`block text-[11px] font-normal truncate ${
+                      hasPendingClaim ? 'text-amber-700' : 'text-gray-400'
+                    }`}
+                  >
+                    {claimHint}
+                  </span>
+                )}
+              </span>
               {isBanker && <Crown size={16} className="text-primary flex-shrink-0" />}
             </button>
           )

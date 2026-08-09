@@ -46,15 +46,37 @@ export function setSessionCookie(response: NextResponse, token: string, maxAge: 
   })
 }
 
-export function clearSessionCookie(response: NextResponse): void {
-  response.cookies.set('payload-token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    sameSite: 'lax',
-    maxAge: 0,
-    ...sessionCookieDomain(),
-  })
+/**
+ * Cookie Domain values whose `payload-token` could be visible on this
+ * host. The session cookie may exist host-only (no SESSION_COOKIE_DOMAIN)
+ * or domain-wide — and a PREVIEW deployment on preview.zicha.travel
+ * receives the production `.zicha.travel` cookie even though its own env
+ * has no SESSION_COOKIE_DOMAIN. Logout must clear every variant, so we
+ * also derive the apex domain from the request host. Hosts on public
+ * suffixes (*.vercel.app), localhost and IPs yield nothing extra — the
+ * browser ignores those clears, which is harmless.
+ */
+export function cookieDomainsToClear(requestHost?: string | null): string[] {
+  const domains = new Set<string>()
+  if (process.env.SESSION_COOKIE_DOMAIN) domains.add(process.env.SESSION_COOKIE_DOMAIN)
+  const hostname = (requestHost || '').split(':')[0].toLowerCase()
+  const labels = hostname.split('.')
+  const isIp = /^[0-9.]+$/.test(hostname)
+  if (labels.length >= 2 && !isIp && hostname !== 'localhost') {
+    domains.add(`.${labels.slice(-2).join('.')}`)
+  }
+  return [...domains]
+}
+
+export function clearSessionCookie(response: NextResponse, requestHost?: string | null): void {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+  const base = `payload-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax${secure}`
+  // NextResponse.cookies dedupes by name, so append raw Set-Cookie headers
+  // to clear the host-only cookie AND every domain variant in one response
+  response.headers.append('Set-Cookie', base)
+  for (const domain of cookieDomainsToClear(requestHost)) {
+    response.headers.append('Set-Cookie', `${base}; Domain=${domain}`)
+  }
 }
 
 /**

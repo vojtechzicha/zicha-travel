@@ -122,7 +122,25 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      (`NEW_SCHEMA_DDL`) so both platforms create the table on deploy;
      includes the plugin's `prefix` column (S3-enabled shape)
 
-7. **Users** (`src/collections/Users.ts`)
+7. **ClaimRequests** (`src/collections/ClaimRequests.ts`)
+   - "Žádosti o propojení" — a signed-in account claiming a participant as
+     themselves ("Jsi to ty?"); admin approval links `Participant.account`
+   - Claimable = participant not locked (no account, or a never-logged-in
+     one); a pending claim does NOT lock the participant — rival requests
+     coexist and approving one auto-rejects the rest (with emails)
+   - Auto-approval ("známá tvář"): only a linked participant in a DIFFERENT
+     chata + an unlinked target — same-chata links never auto-approve.
+     Chata admins auto-approve themselves. Pure rules in
+     `src/lib/claimRequests.ts` (unit-tested), side effects in
+     `src/utils/claimRequests.ts`, driven by collection hooks so the decide
+     endpoint, admin panel and auto-approval share one code path
+   - Decide links in admin emails are per-recipient JWTs (7 days) leading
+     to `/claims/decide` — the decision is a POST (mail scanners prefetch
+     GETs). Rejection requires a reason (emailed). Read access NOT public
+     (rows link user emails); daily cron `/api/claim-requests/remind`
+     (`CRON_SECRET`) nudges admins once after 3 days. See `docs/PRD-claim.md`
+
+8. **Users** (`src/collections/Users.ts`)
    - Roles: `superadmin` (everything), `admin` (only their `assignedChatas`),
      `user` (frontend only — NO admin-panel access, gated by `access.admin`)
    - Frontend users are linked from `Participant.account`; the Users form
@@ -223,10 +241,17 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 
 - `/login`: magic link (email → `POST /api/auth/magic-link/request` →
   `GET .../verify`) and Microsoft OAuth (`/api/auth/login?returnTo=...`);
-  sign-out via `GET /api/auth/logout`. Accounts are created ONLY in admin
+  sign-out via `GET /api/auth/logout`. Accounts are created in admin
   (participant → "Create account from email...",
-  `POST /participants/:id/create-account`) and nothing is emailed until the
-  person requests a login link themselves. SUPERADMINS never magic-link —
+  `POST /participants/:id/create-account`) or by the claim flow
+  (`POST /api/claim-requests/register` — "Jsem tu poprvé", the magic-link
+  click doubles as email verification); nothing is emailed until the
+  person requests a login link themselves. A claim intent survives login
+  via `?claim=<participantId>` in returnTo (`claimReturnTo`).
+- Bot protection: Cloudflare Turnstile on the two public POST forms —
+  invisible on `/login`, visible in the claim dialog. Gated on
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (both unset in
+  local dev = disabled). Verification in `src/lib/turnstile.ts`. SUPERADMINS never magic-link —
   they get an explanatory email instead and the verify route refuses them;
   email+password stays available only while Microsoft OAuth is not
   configured (first-time-setup fallback). Every login stamps

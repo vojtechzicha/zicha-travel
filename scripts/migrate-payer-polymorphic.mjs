@@ -403,6 +403,50 @@ CREATE INDEX IF NOT EXISTS expenses_authored_by_idx ON expenses USING btree (aut
 -- account's. Additive only — no data migration.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS name character varying;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS vokativ character varying;
+
+-- "Claim účastníka" (docs/PRD-claim.md): requests to link a participant to
+-- a frontend account, decided by chata admins. Additive only (new table).
+-- DDL mirrors the schema Payload's dev push generates locally.
+DO $$ BEGIN
+  CREATE TYPE enum_claim_requests_status AS ENUM('pending', 'approved', 'rejected', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE TABLE IF NOT EXISTS claim_requests (
+  id serial PRIMARY KEY,
+  participant_id integer NOT NULL,
+  chata_id integer,
+  user_id integer NOT NULL,
+  status enum_claim_requests_status DEFAULT 'pending' NOT NULL,
+  reason character varying,
+  decided_by_id integer,
+  decided_at timestamp(3) with time zone,
+  auto_approved boolean DEFAULT false,
+  reminder_sent_at timestamp(3) with time zone,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT claim_requests_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL,
+  CONSTRAINT claim_requests_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL,
+  CONSTRAINT claim_requests_user_id_users_id_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT claim_requests_decided_by_id_users_id_fk
+    FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS claim_requests_participant_idx ON claim_requests USING btree (participant_id);
+CREATE INDEX IF NOT EXISTS claim_requests_chata_idx ON claim_requests USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS claim_requests_user_idx ON claim_requests USING btree (user_id);
+CREATE INDEX IF NOT EXISTS claim_requests_decided_by_idx ON claim_requests USING btree (decided_by_id);
+CREATE INDEX IF NOT EXISTS claim_requests_updated_at_idx ON claim_requests USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS claim_requests_created_at_idx ON claim_requests USING btree (created_at);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS claim_requests_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_claim_requests_fk
+    FOREIGN KEY (claim_requests_id) REFERENCES claim_requests(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_claim_requests_id_idx
+  ON payload_locked_documents_rels USING btree (claim_requests_id);
 `
 
 async function enumLabels(typeName) {

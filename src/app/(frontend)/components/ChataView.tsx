@@ -14,6 +14,7 @@ import { getThemeColors } from '@/utils/themeColors'
 import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 import type { FinanceViewer, LockedParticipant } from '@/lib/financeAccess'
+import type { ViewerClaim } from '@/lib/claimRequests'
 
 interface ChataData {
   chata: Chata
@@ -24,6 +25,8 @@ interface ChataData {
   stats: ChataStats
   viewer?: FinanceViewer
   locked?: LockedParticipant[]
+  pendingClaims?: number[]
+  viewerClaims?: ViewerClaim[]
 }
 
 interface ChataViewProps {
@@ -268,6 +271,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 stats={stats}
                 viewer={data.viewer}
                 locked={data.locked}
+                pendingClaims={data.pendingClaims}
+                viewerClaims={data.viewerClaims}
                 urlParticipantId={urlParticipantId}
                 onParticipantChange={handleParticipantChange}
                 onOpenOverview={() => handleViewChange('finance-overview')}

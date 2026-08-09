@@ -14,6 +14,7 @@ import { Participants } from './collections/Participants'
 import { Expenses } from './collections/Expenses'
 import { ExpenseAttachments } from './collections/ExpenseAttachments'
 import { Prepayments } from './collections/Prepayments'
+import { ClaimRequests } from './collections/ClaimRequests'
 import { JointAccounts } from './collections/JointAccounts'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
@@ -52,6 +53,7 @@ export default buildConfig({
     Expenses,
     Prepayments,
     JointAccounts,
+    ClaimRequests,
     ExpenseAttachments,
     Backgrounds,
     Icons,
@@ -80,6 +82,10 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
+    // Never let a vitest run mutate schema: the test env lacks the S3 vars,
+    // so a push would try to drop plugin-added columns (and hang on the
+    // interactive confirmation). Tests only read the existing local schema.
+    push: process.env.NODE_ENV !== 'test',
   }),
   sharp,
   plugins: [

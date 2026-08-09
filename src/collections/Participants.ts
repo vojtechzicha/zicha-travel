@@ -81,13 +81,33 @@ export const Participants: CollectionConfig = {
         let userId: number
         let created = false
         if (existing.docs.length > 0) {
-          userId = existing.docs[0].id
+          const user = existing.docs[0]
+          userId = user.id
+          // Fill only MISSING name forms from the participant — an account
+          // may span several chatas and its own names win
+          const nameFill = {
+            ...(!user.name && participant.name ? { name: participant.name } : {}),
+            ...(!user.vokativ && participant.vokativ ? { vokativ: participant.vokativ } : {}),
+          }
+          if (Object.keys(nameFill).length > 0) {
+            await req.payload.update({
+              collection: 'users',
+              id: user.id,
+              data: nameFill,
+              overrideAccess: true,
+              depth: 0,
+            })
+          }
         } else {
           const newUser = await req.payload.create({
             collection: 'users',
             data: {
               email: normalizedEmail,
               role: 'user' as const,
+              // Prefill the account's display name forms from the participant
+              // (the frontend greeting/header fall back to these)
+              ...(participant.name ? { name: participant.name } : {}),
+              ...(participant.vokativ ? { vokativ: participant.vokativ } : {}),
               // The local (password) strategy only exists where OAuth is not
               // configured — give it an unguessable throwaway password there
               ...(isOAuthEnabled

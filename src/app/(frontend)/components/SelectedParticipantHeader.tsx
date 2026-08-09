@@ -12,6 +12,12 @@ interface SelectedParticipantHeaderProps {
   bankerId?: number | null
   /** false when the viewer may only see their own participant */
   canChange?: boolean
+  /**
+   * Fallback for "Změnit" when the dropdown has nothing else to offer
+   * (e.g. one selectable participant + locked ones): clear the selection
+   * and return to the full selector, which also shows the locked tiles.
+   */
+  onClearSelection?: () => void
 }
 
 export function SelectedParticipantHeader({
@@ -20,6 +26,7 @@ export function SelectedParticipantHeader({
   onChangeParticipant,
   bankerId,
   canChange = true,
+  onClearSelection,
 }: SelectedParticipantHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -89,7 +96,9 @@ export function SelectedParticipantHeader({
 
         {canChange && (
           <button
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() =>
+              participants.length > 1 ? setIsOpen(!isOpen) : onClearSelection?.()
+            }
             className="flex items-center gap-1 px-3 py-2 rounded-lg
                        text-gray-600 hover:text-gray-900 hover:bg-white/80
                        transition-all font-medium"
