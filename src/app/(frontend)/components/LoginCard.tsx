@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Mail, Send } from 'lucide-react'
 import { GlassCard } from './GlassCard'
+import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
 
 const ERROR_MESSAGES: Record<string, string> = {
+  captcha:
+    'Nepodařilo se ověřit, že nejste robot. Obnovte prosím stránku a zkuste to znovu.',
   invalid_link: 'Přihlašovací odkaz je neplatný. Nechte si poslat nový.',
   expired_link: 'Přihlašovací odkaz vypršel nebo už byl použit. Nechte si poslat nový.',
   oauth: 'Přihlášení přes Microsoft se nezdařilo. Zkuste to prosím znovu.',
@@ -47,27 +50,37 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
   const [error, setError] = useState<string | null>(
     errorParam ? ERROR_MESSAGES[errorParam] || errorParam : null
   )
+  // Invisible bot check (Turnstile "interaction-only") — tokens are
+  // single-use, so every submit bumps the reset signal for a fresh one
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaReset, setCaptchaReset] = useState(0)
+  const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) return
+    if (!email.trim() || captchaPending) return
     setSending(true)
     setError(null)
     try {
       const response = await fetch('/api/auth/magic-link/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), returnTo }),
+        body: JSON.stringify({ email: email.trim(), returnTo, turnstileToken: captchaToken }),
       })
       if (!response.ok) {
         const data = await response.json().catch(() => null)
-        setError(data?.error || 'Odeslání se nezdařilo. Zkuste to prosím znovu.')
+        setError(
+          (data?.error && ERROR_MESSAGES[data.error]) ||
+            data?.error ||
+            'Odeslání se nezdařilo. Zkuste to prosím znovu.'
+        )
         return
       }
       setSent(true)
     } catch {
       setError('Odeslání se nezdařilo. Zkuste to prosím znovu.')
     } finally {
+      setCaptchaReset((n) => n + 1)
       setSending(false)
     }
   }
@@ -119,13 +132,18 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
                        focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
                        text-gray-900 placeholder-gray-400"
           />
+          <TurnstileWidget
+            onToken={setCaptchaToken}
+            appearance="interaction-only"
+            resetSignal={captchaReset}
+          />
           <button
             type="submit"
-            disabled={sending || !email.trim()}
+            disabled={sending || !email.trim() || captchaPending}
             className="w-full bg-primary hover:bg-primary-dark text-white font-semibold
                        px-6 py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {sending ? 'Odesílám...' : 'Poslat přihlašovací odkaz'}
+            {sending ? 'Odesílám...' : captchaPending ? 'Ověřuji prohlížeč...' : 'Poslat přihlašovací odkaz'}
           </button>
         </form>
       )}

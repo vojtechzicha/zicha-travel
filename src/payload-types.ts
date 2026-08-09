@@ -72,6 +72,7 @@ export interface Config {
     expenses: Expense;
     prepayments: Prepayment;
     'joint-accounts': JointAccount;
+    'claim-requests': ClaimRequest;
     'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
@@ -93,6 +94,7 @@ export interface Config {
     expenses: ExpensesSelect<false> | ExpensesSelect<true>;
     prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
     'joint-accounts': JointAccountsSelect<false> | JointAccountsSelect<true>;
+    'claim-requests': ClaimRequestsSelect<false> | ClaimRequestsSelect<true>;
     'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
@@ -719,6 +721,7 @@ export interface ExpenseAttachment {
    * Optional description of the attachment
    */
   alt?: string | null;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -769,6 +772,50 @@ export interface Prepayment {
   updatedAt: string;
 }
 /**
+ * Requests to link a participant to a frontend account ("žádosti o propojení"). Approve by setting status to approved — that links the participant, rejects rival claims and emails the requester. Rejections require a reason (it is emailed).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "claim-requests".
+ */
+export interface ClaimRequest {
+  id: number;
+  /**
+   * The participant being claimed
+   */
+  participant: number | Participant;
+  /**
+   * Derived from the participant — drives admin-scoped access
+   */
+  chata?: (number | null) | Chata;
+  /**
+   * The account that claims to be this participant
+   */
+  user: number | User;
+  /**
+   * Approving links the participant to the account and auto-rejects rival claims; rejecting requires a reason (emailed to the requester).
+   */
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  /**
+   * Rejection reason — emailed to the requester
+   */
+  reason?: string | null;
+  /**
+   * Admin who decided (empty for auto-approvals)
+   */
+  decidedBy?: (number | null) | User;
+  decidedAt?: string | null;
+  /**
+   * Approved without an admin ("známá tvář" — linked participant in another chata)
+   */
+  autoApproved?: boolean | null;
+  /**
+   * When the 3-day reminder went out to admins
+   */
+  reminderSentAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -811,6 +858,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'joint-accounts';
         value: number | JointAccount;
+      } | null)
+    | ({
+        relationTo: 'claim-requests';
+        value: number | ClaimRequest;
       } | null)
     | ({
         relationTo: 'expense-attachments';
@@ -1074,10 +1125,28 @@ export interface JointAccountsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "claim-requests_select".
+ */
+export interface ClaimRequestsSelect<T extends boolean = true> {
+  participant?: T;
+  chata?: T;
+  user?: T;
+  status?: T;
+  reason?: T;
+  decidedBy?: T;
+  decidedAt?: T;
+  autoApproved?: T;
+  reminderSentAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "expense-attachments_select".
  */
 export interface ExpenseAttachmentsSelect<T extends boolean = true> {
   alt?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

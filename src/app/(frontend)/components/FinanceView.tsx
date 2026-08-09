@@ -10,11 +10,20 @@ import { ExpenseComposer } from './ExpenseComposer'
 import { PersonView } from './PersonView'
 import { FinanceViewSkeleton } from './Skeleton'
 import {
+  ClaimBanner,
+  ClaimDialog,
+  ClaimMoreModal,
+  ClaimResultModal,
+  submitClaim,
+  type ClaimSubmitOutcome,
+} from './ClaimFlow'
+import {
   anonymousViewer,
   selectableParticipants,
   type FinanceViewer,
   type LockedParticipant,
 } from '@/lib/financeAccess'
+import type { ViewerClaim } from '@/lib/claimRequests'
 import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -27,6 +36,10 @@ interface FinanceViewProps {
   stats: ChataStats
   viewer?: FinanceViewer
   locked?: LockedParticipant[]
+  /** participant ids with a pending claim request (docs/PRD-claim.md) */
+  pendingClaims?: number[]
+  /** the signed-in viewer's own claim requests in this chata */
+  viewerClaims?: ViewerClaim[]
   urlParticipantId?: number | null
   onParticipantChange?: (participantId: number | null) => void
   /** opens the all-participants overview (?view=finance-overview) */
@@ -47,6 +60,8 @@ export function FinanceView({
   stats,
   viewer = anonymousViewer,
   locked = [],
+  pendingClaims = [],
+  viewerClaims = [],
   urlParticipantId,
   onParticipantChange,
   onOpenOverview,
@@ -70,6 +85,69 @@ export function FinanceView({
       setComposer({ expense: null })
     }
   }, [canAuthor])
+
+  // ─── Participant claiming ("Jsi to ty?" — docs/PRD-claim.md) ─────────────
+  const [claimDialogFor, setClaimDialogFor] = useState<Participant | null>(null)
+  const [claimResult, setClaimResult] = useState<{
+    outcome: ClaimSubmitOutcome
+    participant: Participant | null
+  } | null>(null)
+  const [claimMoreOpen, setClaimMoreOpen] = useState(false)
+  const [claimBusyId, setClaimBusyId] = useState<number | null>(null)
+
+  const lockedIds = useMemo(() => new Set(locked.map((l) => l.id)), [locked])
+  // Claimable = visible to anonymous visitors (not locked behind an active
+  // account) and not already the viewer's own
+  const isClaimable = (p: Participant) =>
+    !lockedIds.has(p.id) && !viewer.linkedParticipantIds.includes(p.id)
+
+  const doSubmitClaim = async (participant: Participant) => {
+    setClaimBusyId(participant.id)
+    try {
+      const outcome = await submitClaim(participant.id)
+      if (outcome.kind === 'approved' || outcome.kind === 'pending') {
+        await onDataChanged?.()
+      }
+      setClaimMoreOpen(false)
+      setClaimResult({ outcome, participant })
+    } finally {
+      setClaimBusyId(null)
+    }
+  }
+
+  const withdrawClaim = async (claimId: number) => {
+    setClaimBusyId(claimId)
+    try {
+      const res = await fetch(`/api/claim-requests/${claimId}/cancel`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+      if (res.ok) await onDataChanged?.()
+    } finally {
+      setClaimBusyId(null)
+    }
+  }
+
+  // Claim continuation: ?claim=<participantId> arrives back from a login
+  // flow (the intent rode in returnTo). Signed in → submit right away;
+  // still anonymous (e.g. a shared link) → open the claim dialog instead.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const claimParam = url.searchParams.get('claim')
+    if (!claimParam) return
+    url.searchParams.delete('claim')
+    window.history.replaceState({}, '', url)
+    const participant = participants.find((p) => p.id === parseInt(claimParam, 10))
+    if (!participant || lockedIds.has(participant.id)) return
+    if (viewer.authenticated) {
+      if (!viewer.linkedParticipantIds.includes(participant.id)) {
+        void doSubmitClaim(participant)
+      }
+    } else {
+      setClaimDialogFor(participant)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleDeleteExpense = async (expense: Expense) => {
     const res = await fetch(`/api/expenses/${expense.id}`, {
@@ -158,6 +236,53 @@ export function FinanceView({
     return <FinanceViewSkeleton />
   }
 
+  // Linked users never see foreign participants in the selector, so give
+  // them a quiet entry to claim a child/partner ("propojit dalšího")
+  const claimableOthers = participants.filter(isClaimable)
+  const claimMoreLink =
+    viewer.authenticated &&
+    !viewer.canViewAll &&
+    viewer.linkedParticipantIds.length > 0 &&
+    claimableOthers.length > 0 ? (
+      <p className="text-center text-sm text-white/60">
+        Platíte za dítě nebo partnera?{' '}
+        <button
+          onClick={() => setClaimMoreOpen(true)}
+          className="text-white/90 font-semibold underline underline-offset-2 hover:text-white transition-colors"
+        >
+          Propojte si dalšího účastníka →
+        </button>
+      </p>
+    ) : null
+
+  // Claim dialogs/modals — portaled, shared by both view states
+  const claimUi = (
+    <>
+      {claimDialogFor && (
+        <ClaimDialog
+          participant={claimDialogFor}
+          chataName={chata.name}
+          onClose={() => setClaimDialogFor(null)}
+        />
+      )}
+      {claimResult && (
+        <ClaimResultModal
+          outcome={claimResult.outcome}
+          participant={claimResult.participant}
+          onClose={() => setClaimResult(null)}
+        />
+      )}
+      {claimMoreOpen && (
+        <ClaimMoreModal
+          participants={claimableOthers}
+          busyParticipantId={claimBusyId}
+          onPick={(p) => void doSubmitClaim(p)}
+          onClose={() => setClaimMoreOpen(false)}
+        />
+      )}
+    </>
+  )
+
   // Subtle escape hatch: the all-participants overview for checking numbers
   const overviewLink = onOpenOverview ? (
     <p className="text-center text-sm text-white/60">
@@ -220,9 +345,13 @@ export function FinanceView({
           onSelectParticipant={handleSelectParticipant}
           bankerId={bankerId}
           lockedParticipants={lockedForSelector}
+          showClaimHints={!viewer.canViewAll && viewer.linkedParticipantIds.length === 0}
+          pendingClaimIds={pendingClaims}
         />
+        {claimMoreLink}
         {overviewLink}
         {authoringUi}
+        {claimUi}
       </div>
     )
   }
@@ -241,6 +370,32 @@ export function FinanceView({
 
   const isBanker = selectedParticipant.id === bankerId
 
+  // "Jsi to ty?" banner under the header: offer the claim to anonymous
+  // visitors and signed-in users without this participant; flip to the
+  // waiting state while their own request is pending. Admins never see it.
+  const ownPendingClaim = viewerClaims.find(
+    (c) => c.participantId === selectedParticipant.id && c.status === 'pending'
+  )
+  const claimBanner = viewer.canViewAll ? null : ownPendingClaim ? (
+    <ClaimBanner
+      participant={selectedParticipant}
+      ownPendingCreatedAt={ownPendingClaim.createdAt}
+      busy={claimBusyId !== null}
+      onWithdraw={() => void withdrawClaim(ownPendingClaim.id)}
+    />
+  ) : isClaimable(selectedParticipant) ? (
+    <ClaimBanner
+      participant={selectedParticipant}
+      pendingByOther={pendingClaims.includes(selectedParticipant.id)}
+      busy={claimBusyId !== null}
+      onClaim={() =>
+        viewer.authenticated
+          ? void doSubmitClaim(selectedParticipant)
+          : setClaimDialogFor(selectedParticipant)
+      }
+    />
+  ) : null
+
   return (
     <div className="w-full flex flex-col gap-6">
       {/* Compact participant header - full width */}
@@ -251,6 +406,8 @@ export function FinanceView({
         bankerId={bankerId}
         canChange={allowedParticipants.length > 1}
       />
+
+      {claimBanner}
 
       {/* Main content area */}
       <div className="lg:grid lg:grid-cols-[320px_1fr] lg:gap-8 flex flex-col gap-8">
@@ -283,8 +440,10 @@ export function FinanceView({
         </section>
       </div>
 
+      {claimMoreLink}
       {overviewLink}
       {authoringUi}
+      {claimUi}
     </div>
   )
 }
