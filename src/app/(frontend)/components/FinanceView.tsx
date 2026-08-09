@@ -398,13 +398,21 @@ export function FinanceView({
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Compact participant header - full width */}
+      {/* Compact participant header - full width. "Změnit" also shows when
+          only LOCKED participants remain — it then falls back to clearing
+          the selection so the visitor can reach the selector with the
+          greyed-out locked tiles (login + claim hints) */}
       <SelectedParticipantHeader
         selectedParticipant={selectedParticipant}
         participants={allowedParticipants}
         onChangeParticipant={handleSelectParticipant}
         bankerId={bankerId}
-        canChange={allowedParticipants.length > 1}
+        canChange={allowedParticipants.length > 1 || lockedForSelector.length > 0}
+        onClearSelection={() => {
+          setSelectedParticipantId(null)
+          localStorage.removeItem(`${STORAGE_KEY_PREFIX}${chata.id}`)
+          onParticipantChange?.(null)
+        }}
       />
 
       {claimBanner}
