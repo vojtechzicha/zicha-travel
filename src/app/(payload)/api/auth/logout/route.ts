@@ -10,6 +10,6 @@ import { clearSessionCookie, safeReturnTo } from '@/lib/auth/session'
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const returnTo = safeReturnTo(request.nextUrl.searchParams.get('returnTo'))
   const response = NextResponse.redirect(new URL(returnTo, request.nextUrl.origin))
-  clearSessionCookie(response)
+  clearSessionCookie(response, request.headers.get('host'))
   return response
 }
