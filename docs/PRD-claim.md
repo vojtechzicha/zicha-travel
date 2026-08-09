@@ -87,10 +87,12 @@ admin only when:
 
 A linked participant in the **same** chata is deliberately NOT enough — it
 would let anyone approved once grab other participants of their own chata
-unchecked. Same-chata family claims (children, partner) go through the
-`ClaimMoreModal` ("Propojte si dalšího účastníka") and wait for the admin.
-Auto-approvals are still recorded as approved claim-requests for the
-audit trail.
+unchecked. In fact, an account that already owns a participant in the
+chata cannot claim another there at all (`account-has-participant`): one
+participant per account and chata is the self-service limit, and admins
+link children/partners in the panel (the data model itself still allows
+many participants per account — `paidBy` relies on it). Auto-approvals
+are still recorded as approved claim-requests for the audit trail.
 
 ## Decision side effects (single source of truth)
 

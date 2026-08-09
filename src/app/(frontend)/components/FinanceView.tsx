@@ -12,7 +12,6 @@ import { FinanceViewSkeleton } from './Skeleton'
 import {
   ClaimBanner,
   ClaimDialog,
-  ClaimMoreModal,
   ClaimResultModal,
   submitClaim,
   type ClaimSubmitOutcome,
@@ -92,7 +91,6 @@ export function FinanceView({
     outcome: ClaimSubmitOutcome
     participant: Participant | null
   } | null>(null)
-  const [claimMoreOpen, setClaimMoreOpen] = useState(false)
   const [claimBusyId, setClaimBusyId] = useState<number | null>(null)
 
   const lockedIds = useMemo(() => new Set(locked.map((l) => l.id)), [locked])
@@ -108,7 +106,6 @@ export function FinanceView({
       if (outcome.kind === 'approved' || outcome.kind === 'pending') {
         await onDataChanged?.()
       }
-      setClaimMoreOpen(false)
       setClaimResult({ outcome, participant })
     } finally {
       setClaimBusyId(null)
@@ -236,26 +233,10 @@ export function FinanceView({
     return <FinanceViewSkeleton />
   }
 
-  // Linked users never see foreign participants in the selector, so give
-  // them a quiet entry to claim a child/partner ("propojit dalšího")
-  const claimableOthers = participants.filter(isClaimable)
-  const claimMoreLink =
-    viewer.authenticated &&
-    !viewer.canViewAll &&
-    viewer.linkedParticipantIds.length > 0 &&
-    claimableOthers.length > 0 ? (
-      <p className="text-center text-sm text-white/60">
-        Platíte za dítě nebo partnera?{' '}
-        <button
-          onClick={() => setClaimMoreOpen(true)}
-          className="text-white/90 font-semibold underline underline-offset-2 hover:text-white transition-colors"
-        >
-          Propojte si dalšího účastníka →
-        </button>
-      </p>
-    ) : null
-
-  // Claim dialogs/modals — portaled, shared by both view states
+  // Claim dialogs/modals — portaled, shared by both view states. A user
+  // who already owns a participant in this chata gets no claim UI: one
+  // participant per account and chata is the supported self-service path
+  // (admins link children/partners in the panel).
   const claimUi = (
     <>
       {claimDialogFor && (
@@ -270,14 +251,6 @@ export function FinanceView({
           outcome={claimResult.outcome}
           participant={claimResult.participant}
           onClose={() => setClaimResult(null)}
-        />
-      )}
-      {claimMoreOpen && (
-        <ClaimMoreModal
-          participants={claimableOthers}
-          busyParticipantId={claimBusyId}
-          onPick={(p) => void doSubmitClaim(p)}
-          onClose={() => setClaimMoreOpen(false)}
         />
       )}
     </>
@@ -348,7 +321,6 @@ export function FinanceView({
           showClaimHints={!viewer.canViewAll && viewer.linkedParticipantIds.length === 0}
           pendingClaimIds={pendingClaims}
         />
-        {claimMoreLink}
         {overviewLink}
         {authoringUi}
         {claimUi}
@@ -448,7 +420,6 @@ export function FinanceView({
         </section>
       </div>
 
-      {claimMoreLink}
       {overviewLink}
       {authoringUi}
       {claimUi}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Clock, Link2, Mail, UserRound, X } from 'lucide-react'
+import { Check, Clock, Mail, UserRound, X } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { akuzativName } from '@/lib/czechNames'
 import { claimReturnTo } from '@/lib/claimRequests'
@@ -17,9 +17,9 @@ import type { Participant } from '@/payload-types'
 //   claim intent rides in the login returnTo URL (?claim=<id>)
 // - ClaimResultModal: outcome of a signed-in submit (auto-approved /
 //   pending / error)
-// - ClaimMoreModal: a linked user claiming another participant (child,
-//   partner) — they never see foreign participants in the selector, so
-//   this is their only entry
+// One participant per account and chata: accounts already owning a
+// participant here get no claim UI (admins link children/partners in the
+// admin panel instead).
 
 export type ClaimSubmitOutcome =
   | { kind: 'approved' }
@@ -46,6 +46,13 @@ export async function submitClaim(participantId: number): Promise<ClaimSubmitOut
       return {
         kind: 'error',
         message: 'Účastník už je propojený s jiným aktivním účtem — ozvěte se správci chaty.',
+      }
+    }
+    if (data?.error === 'account-has-participant') {
+      return {
+        kind: 'error',
+        message:
+          'Váš účet už má v této chatě propojeného účastníka. Další (dítě, partnera) propojí správce chaty.',
       }
     }
     return { kind: 'error', message: 'Odeslání žádosti se nezdařilo. Zkuste to prosím znovu.' }
@@ -454,70 +461,6 @@ export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultM
         >
           {outcome.kind === 'approved' ? 'Otevřít moje finance' : 'Rozumím'}
         </button>
-      </div>
-    </ModalShell>
-  )
-}
-
-// ─── Linked user claiming another participant (child, partner) ─────────────
-
-interface ClaimMoreModalProps {
-  participants: Participant[]
-  busyParticipantId: number | null
-  onPick: (participant: Participant) => void
-  onClose: () => void
-}
-
-export function ClaimMoreModal({
-  participants,
-  busyParticipantId,
-  onPick,
-  onClose,
-}: ClaimMoreModalProps) {
-  return (
-    <ModalShell label="Propojit dalšího účastníka" onClose={onClose}>
-      <CloseButton onClose={onClose} />
-      <div className="p-7">
-        <h2 className="font-serif text-xl font-bold text-gray-900 mb-1 pr-10">
-          Propojit dalšího účastníka
-        </h2>
-        <p className="text-[13px] text-gray-600 leading-relaxed mb-4">
-          Platíš za dítě nebo partnera? Vyber, kdo k tobě ještě patří — každé propojení potvrzuje
-          správce chaty zvlášť.
-        </p>
-        <div className="flex flex-col gap-2">
-          {participants.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onPick(p)}
-              disabled={busyParticipantId !== null}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-gray-200
-                         text-left hover:bg-gray-50 transition-colors disabled:opacity-60"
-            >
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${getAvatarColor(p.name)}`}
-              >
-                {getInitials(p.name)}
-              </div>
-              <span className="flex-1 font-semibold text-gray-900 truncate">{p.name}</span>
-              <span className="flex items-center gap-1.5 text-primary text-[13px] font-semibold flex-shrink-0">
-                {busyParticipantId === p.id ? (
-                  'Odesílám...'
-                ) : (
-                  <>
-                    <Link2 size={14} /> Propojit
-                  </>
-                )}
-              </span>
-            </button>
-          ))}
-          {participants.length === 0 && (
-            <p className="text-center text-gray-500 text-sm py-4">
-              Nikdo další k propojení tu není.
-            </p>
-          )}
-        </div>
       </div>
     </ModalShell>
   )

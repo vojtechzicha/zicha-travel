@@ -187,6 +187,20 @@ export const ClaimRequests: CollectionConfig = {
           }
         }
 
+        // One participant per account and chata: an account that already
+        // owns a participant HERE cannot claim another (children/partners
+        // are linked by admins in the panel)
+        const ownParticipants = await req.payload.find({
+          collection: 'participants',
+          where: { account: { equals: userId } },
+          limit: 1000,
+          depth: 0,
+          overrideAccess: true,
+        })
+        if (ownParticipants.docs.some((p) => refId(p.chata) === String(chataId))) {
+          return Response.json({ error: 'account-has-participant' }, { status: 409 })
+        }
+
         // Idempotent: one pending claim per (participant, user)
         const existing = await req.payload.find({
           collection: 'claim-requests',
@@ -204,14 +218,6 @@ export const ClaimRequests: CollectionConfig = {
         if (existing.docs.length > 0) {
           return Response.json({ status: 'pending', requestId: existing.docs[0].id })
         }
-
-        const ownParticipants = await req.payload.find({
-          collection: 'participants',
-          where: { account: { equals: userId } },
-          limit: 1000,
-          depth: 0,
-          overrideAccess: true,
-        })
         const auto = autoApproveReason({
           requesterManagesChata: canManageChata(req.user, chataId),
           targetHasAccount: participant.account != null,
