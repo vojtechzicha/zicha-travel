@@ -214,6 +214,26 @@ export async function runClaimDecisionSideEffects(
       })
     }
 
+    // A claim-registered account starts as a bare email — fill its MISSING
+    // display-name forms from the participant it just became
+    if (requester) {
+      const nameFill = {
+        ...(!requester.name && participant.name ? { name: participant.name } : {}),
+        ...(!requester.vokativ && participant.vokativ ? { vokativ: participant.vokativ } : {}),
+      }
+      if (Object.keys(nameFill).length > 0) {
+        await payload
+          .update({
+            collection: 'users',
+            id: requester.id,
+            data: nameFill,
+            overrideAccess: true,
+            depth: 0,
+          })
+          .catch((err) => payload.logger.error({ err }, 'Failed to prefill account name forms'))
+      }
+    }
+
     // First come, first served: approving one claim rejects the others
     // (each update re-enters the hook and emails that requester)
     const rivals = await payload.find({
