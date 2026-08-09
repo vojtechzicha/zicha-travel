@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap');
+/* Fonts are self-hosted via next/font in (frontend)/layout.tsx — it sets
+   --font-inter / --font-merriweather on <html>. Do NOT reintroduce a Google
+   Fonts @import here: it becomes the first line of the compiled CSS bundle and
+   render-blocks on a third-party origin. */
 @import "tailwindcss";
 
 @theme {
@@ -6,8 +9,8 @@
   --color-primary-dark: #b45309;
   --color-primary-light: #fbbf24;
 
-  --font-serif: 'Merriweather', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-serif: var(--font-merriweather), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
 
   --radius-glass: 1rem;
   --radius-glass-lg: 1.5rem;
@@ -34,14 +37,40 @@
 
   body {
     @apply font-sans text-gray-800;
-    /* Default background - can be overridden by ThemeProvider */
-    background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2670&auto=format&fit=crop');
+    /* Default background - can be overridden by ThemeProvider.
+       Self-hosted (was a 2670px Unsplash URL costing 640 kB on every page)
+       and sized per breakpoint: 1280 covers phones up to 3× DPR, 2560 covers
+       retina desktops. The plain url() is the fallback for browsers without
+       image-set(); AVIF is picked wherever it is supported. */
+    background-image: url('/bg/mountains-1920.webp');
+    background-image: image-set(
+      url('/bg/mountains-1280.avif') type('image/avif'),
+      url('/bg/mountains-1920.webp') type('image/webp')
+    );
     background-repeat: no-repeat;
     background-position: center center;
     background-attachment: fixed;
     background-size: cover;
     background-color: #111827;
     overflow-x: hidden;
+  }
+
+  @media (min-width: 900px) {
+    body {
+      background-image: image-set(
+        url('/bg/mountains-1920.avif') type('image/avif'),
+        url('/bg/mountains-1920.webp') type('image/webp')
+      );
+    }
+  }
+
+  @media (min-width: 1600px) {
+    body {
+      background-image: image-set(
+        url('/bg/mountains-2560.avif') type('image/avif'),
+        url('/bg/mountains-1920.webp') type('image/webp')
+      );
+    }
   }
 
   img {

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// In-memory cache for domain lookups (5 minute TTL)
+// In-memory cache for domain lookups. One hour: a warm instance then skips the
+// /api/domains round-trip entirely for its whole lifetime, which is the only
+// way to get the lookup off the critical path completely (the CDN copy behind
+// it is cheap but still a network hop). Matches the route's own s-maxage, so
+// a new chata domain routes within an hour either way.
 const domainCache = new Map<string, { data: DomainInfo; expires: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 interface DomainInfo {
   found: boolean

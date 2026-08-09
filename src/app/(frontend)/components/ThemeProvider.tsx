@@ -10,8 +10,9 @@ interface ThemeContextValue {
   iconUrl: string | null
 }
 
-const DEFAULT_BACKGROUND_URL =
-  'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2670&auto=format&fit=crop'
+// Self-hosted copy of the old Unsplash default (see styles.css) — the remote
+// 2670px original was 640 kB on every chata page that has no own background.
+const DEFAULT_BACKGROUND_URL = '/bg/mountains-1920.avif'
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
