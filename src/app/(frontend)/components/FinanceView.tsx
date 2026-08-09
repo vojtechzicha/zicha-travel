@@ -370,24 +370,33 @@ export function FinanceView({
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Compact participant header - full width. "Změnit" also shows when
-          only LOCKED participants remain — it then falls back to clearing
-          the selection so the visitor can reach the selector with the
-          greyed-out locked tiles (login + claim hints) */}
-      <SelectedParticipantHeader
-        selectedParticipant={selectedParticipant}
-        participants={allowedParticipants}
-        onChangeParticipant={handleSelectParticipant}
-        bankerId={bankerId}
-        canChange={allowedParticipants.length > 1 || lockedForSelector.length > 0}
-        onClearSelection={() => {
-          setSelectedParticipantId(null)
-          localStorage.removeItem(`${STORAGE_KEY_PREFIX}${chata.id}`)
-          onParticipantChange?.(null)
-        }}
-      />
+      {/* Compact participant header + the "Jsi to ty?" banner. On wide
+          screens the two share one row, split on the same [320px_1fr] grid
+          as the content below so they line up with the expenses sidebar and
+          the finance panel; stacked full width otherwise.
+          "Změnit" also shows when only LOCKED participants remain — it then
+          falls back to clearing the selection so the visitor can reach the
+          selector with the greyed-out locked tiles (login + claim hints) */}
+      <div
+        className={
+          claimBanner ? 'flex flex-col gap-6 lg:grid lg:grid-cols-[320px_1fr] lg:gap-8' : undefined
+        }
+      >
+        <SelectedParticipantHeader
+          selectedParticipant={selectedParticipant}
+          participants={allowedParticipants}
+          onChangeParticipant={handleSelectParticipant}
+          bankerId={bankerId}
+          canChange={allowedParticipants.length > 1 || lockedForSelector.length > 0}
+          onClearSelection={() => {
+            setSelectedParticipantId(null)
+            localStorage.removeItem(`${STORAGE_KEY_PREFIX}${chata.id}`)
+            onParticipantChange?.(null)
+          }}
+        />
 
-      {claimBanner}
+        {claimBanner}
+      </div>
 
       {/* Main content area */}
       <div className="lg:grid lg:grid-cols-[320px_1fr] lg:gap-8 flex flex-col gap-8">
