@@ -74,6 +74,17 @@ const ICON_BODIES: Record<string, string> = {
   // Zimní Točník — snow.
   snowflake: snowflake(),
 
+  // Narozeninový víkend — the occasion, not the place: every other chata here
+  // is a landscape, so this is the one that never gets confused, and it stands
+  // out in the picker list. A cupcake rather than a layer cake — a dome over a
+  // tapered wrapper is two DIFFERENT shapes, where frosting-bar over cake-bar
+  // just read as two stacked bars.
+  cake:
+    '<path d="M12 0.6c1.5 1.5 2.2 2.6 2.2 3.5a2.2 2.2 0 0 1-4.4 0c0-.9.7-2 2.2-3.5z"/>' +
+    '<rect x="11.2" y="4.4" width="1.6" height="3.4" rx="0.6"/>' +
+    '<path d="M12 7.4c3.8 0 6.8 2.3 6.8 4.6 0 1-.7 1.7-1.7 1.7H6.9c-1 0-1.7-.7-1.7-1.7 0-2.3 3-4.6 6.8-4.6z"/>' +
+    '<path d="M5.4 15h13.2l-1.6 6.4c-.3 1.1-1.2 1.8-2.3 1.8H9.3c-1.1 0-2-.7-2.3-1.8z"/>',
+
   // Chalupka pod Medem, Beskydy — a fir. The tiers overlap into one solid
   // mass with notched sides, which is what keeps it readable when tiny.
   fir:
@@ -86,13 +97,39 @@ const ICON_BODIES: Record<string, string> = {
 const svgFor = (key: string): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">${ICON_BODIES[key]}</svg>`
 
-const CHATAS = [
+// `cover` is only set for chatas that still have no design identity — it
+// uploads the image, wraps it in a Background and applies the theme colour,
+// the same three things scripts/seed-design-identity.mts did for the rest.
+const CHATAS: {
+  slug: string
+  icon: string
+  iconName: string
+  alt: string
+  themeColor?: string
+  cover?: { file: string; filename: string; alt: string; backgroundName: string }
+}[] = [
   { slug: 'lazne-2026', icon: 'droplet', iconName: 'Kapka (lázně)', alt: 'Kapka vody' },
   { slug: 'polsko-2027', icon: 'sailboat', iconName: 'Plachetnice (moře)', alt: 'Plachetnice' },
   { slug: 'vysocina-2026', icon: 'sun', iconName: 'Slunce (léto)', alt: 'Slunce' },
   { slug: 'exman', icon: 'fish', iconName: 'Ryba (přehrada)', alt: 'Ryba' },
   { slug: 'jeseniky-2025', icon: 'snowflake', iconName: 'Vločka (zima)', alt: 'Sněhová vločka' },
   { slug: 'beskydy-2025', icon: 'fir', iconName: 'Smrk (hory)', alt: 'Jehličnatý strom' },
+  {
+    slug: 'narozeniny-2026',
+    icon: 'cake',
+    iconName: 'Dort (narozeniny)',
+    alt: 'Narozeninový dort',
+    // rose — the one hue no other chata uses; #d97706 and #b45309 are already
+    // close enough to each other that a third amber would be unreadable as a
+    // rail on the homepage
+    themeColor: '#be123c',
+    cover: {
+      file: 'scripts/assets/cover-narozeniny-2026.jpg',
+      filename: 'cover-narozeniny-2026.jpg',
+      alt: 'Hory s prvním sněhem nad podzimním lesem',
+      backgroundName: 'Hory — první sníh nad podzimním lesem',
+    },
+  },
 ]
 
 async function main() {
@@ -102,11 +139,12 @@ async function main() {
     const fs = await import('node:fs')
     const dir = process.env.EMIT_ONLY
     fs.mkdirSync(dir, { recursive: true })
-    const swatches = ['#0e7490', '#0369a1', '#4d7c0f', '#d97706', '#4f46e5', '#b45309']
+    const swatches = CHATAS.map((c) => c.themeColor ?? '')
+    const fallback = ['#0e7490', '#0369a1', '#4d7c0f', '#d97706', '#4f46e5', '#b45309', '#be123c']
     const rows = CHATAS.map((item, i) => {
       fs.writeFileSync(`${dir}/icon-${item.icon}.svg`, svgFor(item.icon))
       const chip = (px: number) =>
-        `<span class="chip" style="background:${swatches[i]};padding:${Math.round(px / 3)}px">` +
+        `<span class="chip" style="background:${swatches[i] || fallback[i]};padding:${Math.round(px / 3)}px">` +
         svgFor(item.icon).replace('<svg ', `<svg width="${px}" height="${px}" `) +
         '</span>'
       return `<tr><td>${item.iconName}</td><td>${chip(13)}</td><td>${chip(18)}</td><td>${chip(26)}</td><td>${chip(64)}</td></tr>`
@@ -194,11 +232,51 @@ async function main() {
       }
     }
 
+    const update: Record<string, unknown> = { icon: icon.id }
+
+    if (item.cover) {
+      const fs = await import('node:fs')
+      let cover = (
+        await payload.find({
+          collection: 'media',
+          where: { filename: { equals: item.cover.filename } },
+          limit: 1,
+          depth: 0,
+        })
+      ).docs[0]
+      if (!cover) {
+        const bytes = fs.readFileSync(item.cover.file)
+        cover = await payload.create({
+          collection: 'media',
+          data: { alt: item.cover.alt },
+          file: { data: bytes, name: item.cover.filename, mimetype: 'image/jpeg', size: bytes.length },
+        })
+        console.log(`uploaded cover #${cover.id} (${item.cover.filename}, ${(bytes.length / 1024) | 0} kB)`)
+      }
+      let background = (
+        await payload.find({
+          collection: 'backgrounds',
+          where: { name: { equals: item.cover.backgroundName } },
+          limit: 1,
+          depth: 0,
+        })
+      ).docs[0]
+      if (!background) {
+        background = await payload.create({
+          collection: 'backgrounds',
+          data: { name: item.cover.backgroundName, type: 'upload', image: cover.id },
+        })
+        console.log(`created background #${background.id} "${item.cover.backgroundName}"`)
+      }
+      update.background = background.id
+    }
+    if (item.themeColor) update.themeColor = item.themeColor
+
     const previous = typeof chata.icon === 'object' ? chata.icon?.id : chata.icon
     await payload.update({
       collection: 'chatas',
       id: chata.id,
-      data: { icon: icon.id },
+      data: update,
       depth: 0,
       context: { triggerAfterRead: false },
     })
