@@ -293,6 +293,30 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   (unit-tested); `costBreakdown` entries carry `expenseId` for it. See
   `docs/PRD-uzivatele.md`
 
+### Analytics & cookie consent (phase 1 of `docs/PRD-analytika.md`)
+
+- Consent infrastructure only — nothing is measured yet; PostHog, the
+  `/ingest` proxy and `src/lib/analytics.ts` are phases 2–4. Everything is
+  gated on `NEXT_PUBLIC_POSTHOG_KEY` (unset ⇒ no banner, no footer link,
+  local dev needs no setup); capture will additionally require
+  `VERCEL_ENV === 'production'`, so the key may safely live on previews to
+  test the banner
+- `src/lib/consent.ts` (pure, unit-tested in `tests/int/consent.int.spec.ts`):
+  `zt_consent` cookie — `granted.<ms>` / `denied.<ms>`, 12-month TTL, older
+  or malformed values mean "re-ask". Cookie Domain comes from
+  `SESSION_COOKIE_DOMAIN` (same reasoning as the session cookie) so one
+  decision covers all chata subdomains; NOT HttpOnly (client writes it)
+- `ConsentBanner.tsx` — non-modal (no overlay; content stays usable),
+  portaled to `body`, bottom sheet on mobile / bottom-left card on desktop,
+  equal-prominence Povolit / Jen nezbytné (legal requirement), reopened via
+  the `zt:open-consent` window event from `PrivacySettingsLink` (footer
+  "Nastavení soukromí" + button on `/soukromi`), current choice marked on
+  reopen; `motion-safe:` animation only. Mounted in the frontend layout ⇒
+  `/admin` (separate route group) never sees it
+- `/soukromi` — static privacy page (reuses `napoveda/ui` shell, which
+  gained an optional hub `icon` prop); in the middleware `SITE_PATHS`
+  allowlist next to `/napoveda`
+
 ### Relationship Filtering
 
 Collections use `filterOptions` to limit relationship dropdowns:

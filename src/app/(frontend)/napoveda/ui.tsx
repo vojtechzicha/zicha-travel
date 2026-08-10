@@ -44,9 +44,17 @@ interface HelpShellProps {
   children: ReactNode
   /** hub page has no parent link back into the help */
   isHub?: boolean
+  /** hub badge icon — /soukromi reuses the shell with its own */
+  icon?: ReactNode
 }
 
-export function HelpShell({ title, lead, children, isHub = false }: HelpShellProps) {
+export function HelpShell({
+  title,
+  lead,
+  children,
+  isHub = false,
+  icon = <HelpCircle size={44} className="text-primary-light" />,
+}: HelpShellProps) {
   return (
     <div className="min-h-screen relative">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
@@ -65,7 +73,7 @@ export function HelpShell({ title, lead, children, isHub = false }: HelpShellPro
         <header className="text-center text-white mb-8">
           {isHub && (
             <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20 shadow-lg">
-              <HelpCircle size={44} className="text-primary-light" />
+              {icon}
             </div>
           )}
           <h1 className="font-serif text-4xl md:text-5xl font-black tracking-tight mb-2 text-shadow-heading">

@@ -2,6 +2,8 @@ import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { isAdminRole } from '@/lib/access'
+import { analyticsEnabled } from '@/lib/consent'
+import { PrivacySettingsLink } from './PrivacySettingsLink'
 import packageJson from '../../../../package.json'
 
 // Version stamp: Vercel injects the deployed commit; local dev falls back to
@@ -46,6 +48,13 @@ export async function Footer() {
           >
             Nápověda
           </a>
+          {/* Reopens the consent banner — consent must be as easy to
+              withdraw as to give. Hidden while analytics is off. */}
+          {analyticsEnabled() && (
+            <PrivacySettingsLink className="hover:text-white transition-colors underline underline-offset-2">
+              Nastavení soukromí
+            </PrivacySettingsLink>
+          )}
           {/* Anonymous visitors get the link too (it lands on the admin
               login); only plain frontend accounts have no business there */}
           {(!user || isAdminRole(user)) && (
