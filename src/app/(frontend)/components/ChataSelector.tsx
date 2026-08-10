@@ -154,32 +154,43 @@ function AvatarStack({ names, max = 4 }: { names: string[]; max?: number }) {
 
 /**
  * "Vyrovnáno" / "Doplácíš X Kč" / "Dostaneš X Kč" pill (archive + picker).
- * `compact` is the variant that sits ON a cover photo, where a full-size
- * pastel pill shouts louder than the chata's own name.
+ *
+ * Two variants because the backdrop differs. On white (the picker) a pastel
+ * fill is the quiet option. On a cover photo it is the opposite — a filled
+ * pastel pill becomes the brightest thing in the tile and outshouts the chata's
+ * own name — so `compact` keeps the dark, and lets colour survive in the text.
  */
 function SettlementChip({ balance, compact = false }: { balance: number | null; compact?: boolean }) {
   if (balance === null) return null
   const settlement = settlementFromBalance(balance)
   const box = compact
-    ? 'text-[10px] rounded-full px-2 py-0.5 shrink-0 shadow-sm'
+    ? 'text-[10px] rounded-full px-2 py-0.5 shrink-0 bg-slate-950/60 backdrop-blur-[2px] ring-1 ring-white/15'
     : 'text-[11px] rounded-full px-2.5 py-1 shrink-0'
   if (settlement.status === 'settled') {
     return (
-      <span className={`flex items-center gap-1 bg-green-100 text-green-700 font-bold ${box}`}>
-        <Check size={compact ? 10 : 11} strokeWidth={3} />
+      <span
+        className={`flex items-center gap-1 font-bold ${box} ${
+          compact ? 'text-white/85' : 'bg-green-100 text-green-700'
+        }`}
+      >
+        <Check
+          size={compact ? 10 : 11}
+          strokeWidth={3}
+          className={compact ? 'text-green-400' : undefined}
+        />
         Vyrovnáno
       </span>
     )
   }
   if (settlement.status === 'debtor') {
     return (
-      <span className={`bg-red-100 text-red-700 font-bold ${box}`}>
+      <span className={`font-bold ${box} ${compact ? 'text-red-300' : 'bg-red-100 text-red-700'}`}>
         Doplácíš {formatCurrency(settlement.amount)}
       </span>
     )
   }
   return (
-    <span className={`bg-green-100 text-green-700 font-bold ${box}`}>
+    <span className={`font-bold ${box} ${compact ? 'text-green-300' : 'bg-green-100 text-green-700'}`}>
       Dostaneš {formatCurrency(settlement.amount)}
     </span>
   )
@@ -422,8 +433,10 @@ function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeView
         <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 100vw, 540px" />
         <div className="absolute inset-0 bg-slate-900/25 transition-opacity duration-300 group-hover:opacity-0" />
         {/* a defined bottom band rather than a full-height wash — the name has to
-            stay crisp on a bright photo without greying out the whole picture */}
-        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-slate-950 via-slate-950/75 to-transparent" />
+            stay crisp on a bright photo without greying out the whole picture.
+            The band alone loses to a sun sitting right behind the text, hence
+            the text-shadow below as well */}
+        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent" />
         {viewer.authenticated && chata.viewerBalance !== null && (
           <div className="absolute top-2 right-2">
             <SettlementChip balance={chata.viewerBalance} compact />
@@ -432,10 +445,10 @@ function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeView
         <div className="relative w-full px-3 pb-2.5 text-white flex items-end gap-2">
           <IconBadge chata={chata} size={13} className="!rounded-lg !p-1 !shadow-sm" />
           <div className="min-w-0">
-            <div className="font-serif text-[13.5px] sm:text-sm font-bold leading-tight truncate">
+            <div className="font-serif text-[13.5px] sm:text-sm font-bold leading-tight truncate [text-shadow:0_1px_6px_rgba(2,6,23,0.85)]">
               {chata.name}
             </div>
-            <div className="text-white/70 text-[11px] truncate">
+            <div className="text-white/70 text-[11px] truncate [text-shadow:0_1px_4px_rgba(2,6,23,0.8)]">
               {chata.location}
               {chata.monthYear ? ` • ${chata.monthYear}` : ''}
             </div>
