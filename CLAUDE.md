@@ -293,14 +293,35 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   (unit-tested); `costBreakdown` entries carry `expenseId` for it. See
   `docs/PRD-uzivatele.md`
 
-### Analytics & cookie consent (phase 1 of `docs/PRD-analytika.md`)
+### Analytics & cookie consent (`docs/PRD-analytika.md`, all phases)
 
-- Consent infrastructure only — nothing is measured yet; PostHog, the
-  `/ingest` proxy and `src/lib/analytics.ts` are phases 2–4. Everything is
-  gated on `NEXT_PUBLIC_POSTHOG_KEY` (unset ⇒ no banner, no footer link,
-  local dev needs no setup); capture will additionally require
-  `VERCEL_ENV === 'production'`, so the key may safely live on previews to
-  test the banner
+- Everything is gated on `NEXT_PUBLIC_POSTHOG_KEY` (unset ⇒ no banner, no
+  footer link, no provider, local dev needs no setup). Real capture ALSO
+  requires `NEXT_PUBLIC_VERCEL_ENV === 'production'` — previews and dev log
+  every would-be event to the console as `[analytika] …` instead, so the key
+  may safely live on previews to test the instrumentation
+- `src/lib/analytics.ts` is the ONLY analytics surface: typed event union
+  (typo = compile error), `track()`/`trackPageview()`/`reportException()`,
+  ambient context (`chata` slug + coarse `role`, set by ChataView), the
+  `surface` prop from the viewport, `sanitizeUrl` (strips `participant`,
+  `claim`, `token`, `returnTo`), `referrerHost`, and the `scrubProps` PII
+  denylist. Pure parts unit-tested in `tests/int/analytics.int.spec.ts`.
+  Components never import `posthog-js`
+- `AnalyticsProvider.tsx` initialises posthog-js (production only):
+  first-party `/ingest` proxy (rewrites in `next.config.mjs`; `ingest`
+  excluded from the middleware matcher; `skipTrailingSlashRedirect` needed
+  for its POSTs), `cookieless_mode: 'on_reject'` wired to the consent
+  cookie via the `zt:consent-changed` event, `autocapture: false`, manual
+  `$pageview` on router navigations + `handleViewChange` (history.pushState
+  is invisible to the router), `capture_exceptions` + web vitals.
+  `posthog.identify()` is never called
+- Funnels: expense wizard (`expense_compose_started/step/created/abandoned`),
+  login (`login_started/link_requested/completed` — completed rides the
+  one-shot `zt_login_evt` cookie set by both auth success redirects), claim
+  (`claim_started/submitted/resolved`). `save_failed` on every failed
+  frontend write ({operation, status}, never the response body). The slug
+  API `viewer` gained `role` for the analytics role property
+- `src/app/(frontend)/error.tsx` — error boundary, reports `$exception`
 - `src/lib/consent.ts` (pure, unit-tested in `tests/int/consent.int.spec.ts`):
   `zt_consent` cookie — `granted.<ms>` / `denied.<ms>`, 12-month TTL, older
   or malformed values mean "re-ask". Cookie Domain comes from

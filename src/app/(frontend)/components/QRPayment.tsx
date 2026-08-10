@@ -1,3 +1,8 @@
+'use client'
+
+import { useEffect } from 'react'
+import { track } from '@/lib/analytics'
+
 interface QRPaymentProps {
   amount: number
   accountNumber: string // Czech format: "123456/0100"
@@ -5,6 +10,10 @@ interface QRPaymentProps {
 }
 
 export function QRPayment({ amount, accountNumber, message }: QRPaymentProps) {
+  // rendered = someone actually reached the "pay this" moment
+  useEffect(() => {
+    track('qr_payment_shown', {})
+  }, [])
   // Parse Czech account number format "accountNumber/bankCode"
   const [accNum, bankCode] = accountNumber.split('/')
 

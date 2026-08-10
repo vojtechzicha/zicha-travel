@@ -11,6 +11,7 @@ import { ParticipantsView } from './ParticipantsView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { getThemeColors } from '@/utils/themeColors'
+import { setAnalyticsContext, track, trackPageview, type AnalyticsRole } from '@/lib/analytics'
 import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 import type { FinanceViewer, LockedParticipant } from '@/lib/financeAccess'
@@ -95,6 +96,19 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   // Only show loading indicator after 200ms delay to avoid flash
   const showLoadingIndicator = useDelayedLoading(loading, 200)
 
+  // Ambient analytics context: chata slug + coarse role — no identifiers
+  useEffect(() => {
+    if (!data) return
+    const viewerRole = data.viewer?.role
+    const role: AnalyticsRole =
+      viewerRole === 'superadmin' || viewerRole === 'admin'
+        ? viewerRole
+        : data.viewer?.authenticated
+          ? 'user'
+          : 'anonymous'
+    setAnalyticsContext({ chata: data.chata.slug ?? slug, role })
+  }, [data, slug])
+
   // Silent reload keeps the current UI (no skeleton) — used after a
   // participant authors/edits/deletes an expense from the frontend
   const loadData = useCallback(
@@ -161,6 +175,10 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
       url.searchParams.delete('participant')
     }
     window.history.pushState({}, '', url)
+    // pushState bypasses the Next router, so AnalyticsProvider's pathname
+    // effect never sees this navigation — count it manually
+    track('view_opened', { view })
+    trackPageview()
   }
 
   const handleSwitchChata = () => {

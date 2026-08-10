@@ -25,6 +25,10 @@ export interface FinanceViewer {
   canViewAll: boolean
   /** this user's participants in THIS chata (a user may own several) */
   linkedParticipantIds: number[]
+  /** the viewer's own account role — analytics `role` property only
+   *  (anonymous | user | admin | superadmin); no access decisions hang
+   *  on it */
+  role?: string | null
 }
 
 /** A participant hidden from anonymous visitors: account owner is active. */

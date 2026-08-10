@@ -14,6 +14,10 @@ import {
 /** Fired by PrivacySettingsLink (footer, /soukromi) to reopen the banner. */
 export const OPEN_CONSENT_EVENT = 'zt:open-consent'
 
+/** Fired after a decision is stored — AnalyticsProvider flips PostHog
+ *  between persistent and cookieless capture on it. */
+export const CONSENT_CHANGED_EVENT = 'zt:consent-changed'
+
 interface ConsentBannerProps {
   /** SESSION_COOKIE_DOMAIN, passed from the server layout — one decision
    *  covers the apex and every chata subdomain. Unset = host-only cookie. */
@@ -57,7 +61,7 @@ export function ConsentBanner({ cookieDomain }: ConsentBannerProps) {
       })
       setCurrent(decision)
       setOpen(false)
-      // Phase 2 hooks PostHog opt-in/opt-out here; phase 1 only records.
+      window.dispatchEvent(new Event(CONSENT_CHANGED_EVENT))
     },
     [cookieDomain],
   )

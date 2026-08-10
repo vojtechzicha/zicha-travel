@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter, Merriweather } from 'next/font/google'
 import { Footer } from './components/Footer'
 import { ConsentBanner } from './components/ConsentBanner'
+import { AnalyticsProvider } from './components/AnalyticsProvider'
 import { analyticsEnabled } from '@/lib/consent'
 import './styles.css'
 
@@ -49,9 +50,13 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <main className="flex-1">{children}</main>
         <Footer />
         {/* Frontend route group only — /admin (its own route group) never
-            sees the banner by construction. Off without the PostHog key. */}
+            sees the banner or the provider by construction. Both off
+            without the PostHog key. */}
         {analyticsEnabled() && (
-          <ConsentBanner cookieDomain={process.env.SESSION_COOKIE_DOMAIN} />
+          <>
+            <AnalyticsProvider />
+            <ConsentBanner cookieDomain={process.env.SESSION_COOKIE_DOMAIN} />
+          </>
         )}
       </body>
     </html>

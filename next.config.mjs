@@ -12,6 +12,24 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30,
     formats: ['image/avif', 'image/webp'],
   },
+  // PostHog first-party proxy (docs/PRD-analytika.md): analytics beacons go
+  // to /ingest on our own origin — not blocked by ad blockers, no
+  // third-party cookies, no extra DNS lookup on mobile.
+  async rewrites() {
+    return [
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://eu-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://eu.i.posthog.com/:path*',
+      },
+    ]
+  },
+  // PostHog API requests carry trailing slashes; without this Next would
+  // 308-redirect them and the beacons (POST) would be dropped.
+  skipTrailingSlashRedirect: true,
   async headers() {
     return [
       {

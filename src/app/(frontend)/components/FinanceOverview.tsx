@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Crown, LayoutGrid, Table2 } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
+import { track } from '@/lib/analytics'
 import { getPayerDisplay } from '@/lib/payerRef'
 import {
   buildExpenseRows,
@@ -59,11 +60,14 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
   const [mode, setMode] = useState<Mode | null>(null)
   useEffect(() => {
     const stored = localStorage.getItem(MODE_STORAGE_KEY)
-    if (stored === 'table' || stored === 'cards') {
-      setMode(stored)
-      return
-    }
-    setMode(window.matchMedia('(min-width: 1024px)').matches ? 'table' : 'cards')
+    const initial =
+      stored === 'table' || stored === 'cards'
+        ? stored
+        : window.matchMedia('(min-width: 1024px)').matches
+          ? 'table'
+          : 'cards'
+    setMode(initial)
+    track('overview_opened', { layout: initial })
   }, [])
   const switchMode = (next: Mode) => {
     setMode(next)

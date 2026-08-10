@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react'
 import { formatCurrency, getAvatarColor, getInitials } from '@/lib/formatCurrency'
+import { track } from '@/lib/analytics'
 import { akuzativName } from '@/lib/czechNames'
 import { ownJointAccounts } from '@/lib/expenseAuthoring'
 import { downscaleImage } from '@/lib/imageDownscale'
@@ -193,6 +194,39 @@ export function ExpenseComposer({
   }, [expense, participants])
 
   const [mobileStep, setMobileStep] = useState<MobileStep>(isEdit ? 'details' : 'entry')
+
+  // ── funnel instrumentation (docs/PRD-analytika.md) ───────────────────
+  // savedRef distinguishes "closed after saving" from "abandoned";
+  // stepRef remembers how far the wizard got (desktop = single form = 1)
+  const savedRef = useRef(false)
+  const stepRef = useRef(1)
+  useEffect(() => {
+    // desktop opens straight into the form; the mobile entry sheet fires
+    // expense_compose_started from its photo/manual buttons instead
+    if (!isEdit && isDesktop) track('expense_compose_started', { entry: 'manual' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    if (isEdit || isDesktop) return
+    const step = mobileStep === 'details' ? 1 : mobileStep === 'split' ? 2 : mobileStep === 'review' ? 3 : null
+    if (step !== null) {
+      stepRef.current = step
+      track('expense_compose_step', { step, split_mode: splitMode })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileStep])
+  useEffect(
+    () => () => {
+      // unmounted without a save = the wizard was abandoned (dev-only
+      // StrictMode double-mount makes this noisy locally; production and
+      // preview builds mount once)
+      if (!savedRef.current && !isEdit) {
+        track('expense_compose_abandoned', { step: stepRef.current })
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
   const [title, setTitle] = useState(expense?.title ?? '')
   const [amountText, setAmountText] = useState(
     expense ? String(Math.round(Math.abs(expense.amount))) : '',
@@ -437,7 +471,10 @@ export function ExpenseComposer({
           credentials: 'same-origin',
           body: fd,
         })
-        if (!res.ok) throw new Error('Nahrání účtenky se nepovedlo. Zkuste to znovu.')
+        if (!res.ok) {
+          track('save_failed', { operation: 'attachment_upload', status: res.status })
+          throw new Error('Nahrání účtenky se nepovedlo. Zkuste to znovu.')
+        }
         const json = await res.json()
         const id = json?.doc?.id
         if (typeof id !== 'number') throw new Error('Nahrání účtenky se nepovedlo.')
@@ -489,10 +526,16 @@ export function ExpenseComposer({
       })
       if (!res.ok) {
         const json = await res.json().catch(() => null)
+        track('save_failed', {
+          operation: isEdit ? 'expense_update' : 'expense_create',
+          status: res.status,
+        })
         throw new Error(
           json?.errors?.[0]?.message || 'Uložení výdaje se nepovedlo. Zkuste to znovu.',
         )
       }
+      savedRef.current = true
+      if (!isEdit) track('expense_created', { split_mode: splitMode })
       await onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Uložení výdaje se nepovedlo.')
@@ -1010,7 +1053,10 @@ export function ExpenseComposer({
           <div className="flex flex-col gap-3">
             <button
               type="button"
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={() => {
+                track('expense_compose_started', { entry: 'photo' })
+                cameraInputRef.current?.click()
+              }}
               className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 bg-gray-50 text-left active:bg-gray-100 transition-colors"
             >
               <span className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -1025,7 +1071,10 @@ export function ExpenseComposer({
             </button>
             <button
               type="button"
-              onClick={() => setMobileStep('details')}
+              onClick={() => {
+                track('expense_compose_started', { entry: 'manual' })
+                setMobileStep('details')
+              }}
               className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 bg-gray-50 text-left active:bg-gray-100 transition-colors"
             >
               <span className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">

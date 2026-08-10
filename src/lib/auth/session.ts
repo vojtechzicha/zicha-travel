@@ -47,6 +47,23 @@ export function setSessionCookie(response: NextResponse, token: string, maxAge: 
 }
 
 /**
+ * One-shot marker for the analytics login funnel: the redirect after a
+ * successful sign-in carries `zt_login_evt=<method>`; AnalyticsProvider
+ * reads it, fires `login_completed` and clears it. Deliberately NOT
+ * HttpOnly (the client must read it) and short-lived — it contains only
+ * the method name, never who signed in.
+ */
+export function setLoginEventCookie(response: NextResponse, method: 'magic-link' | 'microsoft'): void {
+  response.cookies.set('zt_login_evt', method, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    sameSite: 'lax',
+    maxAge: 120,
+  })
+}
+
+/**
  * Cookie Domain values whose `payload-token` could be visible on this
  * host. The session cookie may exist host-only (no SESSION_COOKIE_DOMAIN)
  * or domain-wide — and a PREVIEW deployment on preview.zicha.travel

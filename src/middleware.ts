@@ -108,7 +108,9 @@ export const config = {
      * - favicon.ico (favicon file)
      * - admin (Payload admin)
      * - media (uploaded files)
+     * - ingest (PostHog proxy — every analytics beacon would otherwise
+     *   trigger a domain lookup incl. a fetch back into the deployment)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|admin|media).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|admin|media|ingest).*)',
   ],
 }
