@@ -6,6 +6,7 @@ import { exchangeCodeForTokens, decodeIdToken } from '@/lib/auth/microsoft'
 import {
   safeReturnTo,
   sessionCookieDomain,
+  setLoginEventCookie,
   setSessionCookie,
   signSessionToken,
 } from '@/lib/auth/session'
@@ -96,6 +97,7 @@ export async function GET(request: NextRequest) {
     const { token, maxAge } = signSessionToken(user)
     const response = buildRedirect(destination)
     setSessionCookie(response, token, maxAge)
+    setLoginEventCookie(response, 'microsoft')
     clearOAuthCookies(response)
 
     return response

@@ -145,6 +145,7 @@ export async function GET(
       authenticated: !!user,
       email: user?.email ?? null,
       userId: user?.id ?? null,
+      role: user?.role ?? null,
       canViewAll: canManageChata(user, chata.id),
       linkedParticipantIds: user
         ? participantsResult.docs

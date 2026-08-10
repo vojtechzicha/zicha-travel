@@ -23,6 +23,7 @@ import {
   type LockedParticipant,
 } from '@/lib/financeAccess'
 import type { ViewerClaim } from '@/lib/claimRequests'
+import { track } from '@/lib/analytics'
 import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -151,7 +152,10 @@ export function FinanceView({
       method: 'DELETE',
       credentials: 'same-origin',
     })
-    if (!res.ok) throw new Error('Delete failed')
+    if (!res.ok) {
+      track('save_failed', { operation: 'expense_delete', status: res.status })
+      throw new Error('Delete failed')
+    }
     await onDataChanged?.()
   }
 

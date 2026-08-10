@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Mail, Send } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
+import { referrerHost, track } from '@/lib/analytics'
 
 const ERROR_MESSAGES: Record<string, string> = {
   captcha:
@@ -44,6 +45,11 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
     }
   }, [searchParams])
 
+  // funnel entry: someone landed on the login card at all
+  useEffect(() => {
+    track('login_link_clicked', { from: referrerHost(document.referrer) })
+  }, [])
+
   const [email, setEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
@@ -61,6 +67,7 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
     if (!email.trim() || captchaPending) return
     setSending(true)
     setError(null)
+    track('login_started', { method: 'magic-link' })
     try {
       const response = await fetch('/api/auth/magic-link/request', {
         method: 'POST',
@@ -77,6 +84,7 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
         return
       }
       setSent(true)
+      track('login_link_requested', {})
     } catch {
       setError('Odeslání se nezdařilo. Zkuste to prosím znovu.')
     } finally {
@@ -157,6 +165,7 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
           </div>
           <a
             href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
+            onClick={() => track('login_started', { method: 'microsoft' })}
             className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl
                        bg-white border border-gray-200 text-gray-800 font-semibold
                        hover:bg-gray-50 transition-colors"

@@ -2,7 +2,12 @@ import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { safeReturnTo, setSessionCookie, signSessionToken } from '@/lib/auth/session'
+import {
+  safeReturnTo,
+  setLoginEventCookie,
+  setSessionCookie,
+  signSessionToken,
+} from '@/lib/auth/session'
 
 /**
  * GET /api/auth/magic-link/verify?token=...&returnTo=/...
@@ -67,5 +72,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { token: sessionToken, maxAge } = signSessionToken(user)
   const response = NextResponse.redirect(new URL(returnTo, request.nextUrl.origin))
   setSessionCookie(response, sessionToken, maxAge)
+  setLoginEventCookie(response, 'magic-link')
   return response
 }

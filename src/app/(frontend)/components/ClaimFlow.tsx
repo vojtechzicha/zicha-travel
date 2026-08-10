@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, Clock, Mail, UserRound, X } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { akuzativName } from '@/lib/czechNames'
 import { claimReturnTo } from '@/lib/claimRequests'
+import { track } from '@/lib/analytics'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
 import type { Participant } from '@/payload-types'
 
@@ -29,6 +30,7 @@ export type ClaimSubmitOutcome =
 
 /** POST /api/claim-requests/submit for a signed-in viewer. */
 export async function submitClaim(participantId: number): Promise<ClaimSubmitOutcome> {
+  track('claim_started', {})
   try {
     const res = await fetch('/api/claim-requests/submit', {
       method: 'POST',
@@ -38,10 +40,16 @@ export async function submitClaim(participantId: number): Promise<ClaimSubmitOut
     })
     const data = await res.json().catch(() => null)
     if (res.ok) {
-      if (data?.status === 'approved') return { kind: 'approved' }
+      track('claim_submitted', {})
+      if (data?.status === 'approved') {
+        track('claim_resolved', { outcome: 'auto-approved' })
+        return { kind: 'approved' }
+      }
       if (data?.status === 'already-linked') return { kind: 'already-linked' }
+      track('claim_resolved', { outcome: 'pending' })
       return { kind: 'pending' }
     }
+    track('save_failed', { operation: 'claim_submit', status: res.status, code: data?.error })
     if (data?.error === 'participant-locked') {
       return {
         kind: 'error',
@@ -200,6 +208,11 @@ interface ClaimDialogProps {
  * finishes automatically after login thanks to ?claim= in the returnTo.
  */
 export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProps) {
+  // anonymous entry into the claim funnel (signed-in path fires in submitClaim)
+  useEffect(() => {
+    track('claim_started', {})
+  }, [])
+
   const [loginEmail, setLoginEmail] = useState('')
   const [registerEmail, setRegisterEmail] = useState('')
   const [busy, setBusy] = useState<'login' | 'register' | null>(null)
@@ -267,9 +280,16 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
+        track('save_failed', {
+          operation: 'claim_register',
+          status: res.status,
+          code: data?.error,
+        })
         setError(failureMessage(data?.error))
         return
       }
+      // the claim itself resolves later — after the magic-link click
+      track('claim_submitted', {})
       setSentTo(registerEmail.trim())
     } catch {
       setError('Odeslání se nezdařilo. Zkuste to prosím znovu.')

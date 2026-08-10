@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { formatCurrency, formatShortDateTime } from '@/lib/formatCurrency'
+import { track } from '@/lib/analytics'
 import { getPayerDisplay } from '@/lib/payerRef'
 import { akuzativName } from '@/lib/czechNames'
 import type { Expense, ExpenseAttachment } from '@/payload-types'
@@ -238,7 +239,10 @@ export function ExpenseCard({
               att.mimeType?.startsWith('image/') ? (
                 <button
                   key={att.id ?? i}
-                  onClick={() => setLightboxAttachment(att)}
+                  onClick={() => {
+                    track('expense_attachment_opened', { kind: 'image' })
+                    setLightboxAttachment(att)
+                  }}
                   className="block w-10 h-10 rounded-md overflow-hidden border border-gray-200 hover:border-primary transition-colors"
                   title={att.alt || att.filename || 'účtenka'}
                 >
@@ -256,6 +260,7 @@ export function ExpenseCard({
                   href={att.url!}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => track('expense_attachment_opened', { kind: 'pdf' })}
                   className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md flex items-center gap-1 hover:bg-gray-200 transition-colors"
                   title={att.alt || att.filename || 'příloha'}
                 >

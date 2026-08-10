@@ -18,6 +18,7 @@ import {
 import { GlassCard } from './GlassCard'
 import { SettlementActions } from './SettlementActions'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
+import { track } from '@/lib/analytics'
 import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
 import { akuzativByName } from '@/lib/czechNames'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
@@ -239,7 +240,10 @@ export function PersonView({
           {/* Row: Fair Share (expandable) - only actual costs */}
           <div
             className="flex justify-between items-center text-sm bg-white/50 -mx-2 px-2 py-2 rounded-lg cursor-pointer hover:bg-white/80 transition-colors"
-            onClick={() => setIsBreakdownOpen(!isBreakdownOpen)}
+            onClick={() => {
+              if (!isBreakdownOpen) track('breakdown_expanded', {})
+              setIsBreakdownOpen(!isBreakdownOpen)
+            }}
           >
             <div className="flex items-center gap-2 text-gray-600">
               <User size={14} /> Tvá útrata (Fair Share):

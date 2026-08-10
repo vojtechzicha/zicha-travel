@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowUp, ArrowDown, QrCode, Copy, Check } from 'lucide-react'
 import { QRPayment } from './QRPayment'
 import { formatCurrency } from '@/lib/formatCurrency'
+import { track } from '@/lib/analytics'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
 import type { Participant, Chata } from '@/payload-types'
 
@@ -76,6 +77,13 @@ export function SettlementActions({
   // Use 1 Kč threshold to match backend - avoids showing small rounding differences
   const isDebtor = balance < -1
   const isCreditor = balance > 1
+
+  // someone is looking at "who do I pay / who owes me"
+  useEffect(() => {
+    if (isDebtor || isCreditor) {
+      track('settlement_viewed', { side: isDebtor ? 'debtor' : 'creditor' })
+    }
+  }, [isDebtor, isCreditor])
 
   // Banker view - show debtors and creditors
   if (isBanker) {
