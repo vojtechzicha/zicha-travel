@@ -176,22 +176,44 @@ export function settlementFromBalance(balance: number): ViewerSettlement {
 }
 
 interface StatsLike {
-  participants: Record<string, { balance: number; cost?: number }>
+  participants: Record<
+    string,
+    { balance: number; cost?: number; plannedPaidExternal?: number }
+  >
 }
 
 /**
- * The viewer's combined balance in one chata: sum of their own linked
- * participants' balances (a user may own several — parent + children).
- * Returns null when none of the names appear in the stats.
+ * The viewer's remaining CASH FLOW in one chata — how much more money will
+ * leave (negative) or come back to (positive) their own pocket.
+ *
+ * This is deliberately NOT the finance view's `balance`. That balance is a
+ * projection of the settled end state: it already credits the payer of a
+ * PLANNED expense with money they have not spent yet. For someone who fronts
+ * the accommodation, that turns a 17 132 Kč bill still ahead of them into a
+ * cheerful "you'll receive 2 964 Kč" — true only after they pay the 17 132.
+ *
+ * Subtracting what they have merely promised to pay leaves the flow:
+ *
+ *   balance − plannedPaidExternal
+ *     = (paidExternal + prepaidInternal) − (cost + plannedCost)
+ *     = what they have already put in − their total share
+ *
+ * so the number answers "what do I still have to put in overall", netting the
+ * planned expenses they will front against the settlement coming back to them.
+ * With no planned expenses left the subtrahend is zero and this IS the
+ * balance — archived trips read exactly as before.
+ *
+ * Summed over the viewer's own participants (a user may own several — parent
+ * + children). Returns null when none of the names appear in the stats.
  */
-export function viewerBalance(stats: StatsLike | undefined, ownNames: string[]): number | null {
+export function viewerFlow(stats: StatsLike | undefined, ownNames: string[]): number | null {
   if (!stats || ownNames.length === 0) return null
   let sum = 0
   let found = false
   for (const name of ownNames) {
     const p = stats.participants[name]
     if (p) {
-      sum += p.balance
+      sum += p.balance - (p.plannedPaidExternal ?? 0)
       found = true
     }
   }

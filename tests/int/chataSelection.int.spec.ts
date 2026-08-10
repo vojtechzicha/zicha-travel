@@ -10,7 +10,7 @@ import {
   greetingName,
   settlementFromBalance,
   untilLabel,
-  viewerBalance,
+  viewerFlow,
   viewerCost,
 } from '@/lib/chataSelection'
 
@@ -133,7 +133,7 @@ describe('settlement (1 Kč threshold — see CLAUDE.md)', () => {
   })
 })
 
-describe('viewer balance/cost aggregation', () => {
+describe('viewer flow/cost aggregation', () => {
   const stats = {
     participants: {
       Vojta: { balance: -300, cost: 1240 },
@@ -142,16 +142,45 @@ describe('viewer balance/cost aggregation', () => {
     },
   }
 
-  it('sums the balances of all own participants', () => {
-    expect(viewerBalance(stats, ['Vojta', 'Katka ml.'])).toBeCloseTo(-445.4)
+  it('sums the flows of all own participants', () => {
+    expect(viewerFlow(stats, ['Vojta', 'Katka ml.'])).toBeCloseTo(-445.4)
     expect(viewerCost(stats, ['Vojta'])).toBe(1240)
   })
 
   it('returns null when nothing matches', () => {
-    expect(viewerBalance(stats, ['Nikdo'])).toBeNull()
-    expect(viewerBalance(undefined, ['Vojta'])).toBeNull()
-    expect(viewerBalance(stats, [])).toBeNull()
+    expect(viewerFlow(stats, ['Nikdo'])).toBeNull()
+    expect(viewerFlow(undefined, ['Vojta'])).toBeNull()
+    expect(viewerFlow(stats, [])).toBeNull()
     expect(viewerCost(stats, ['Nikdo'])).toBeNull()
+  })
+
+  it('does not credit the viewer with planned expenses they have not paid yet', () => {
+    // Real case (chata "Lázně v Jeseníkách 2026"): Vojta is the banker and the
+    // payer of a 16 332 Kč planned accommodation plus an 800 Kč planned pet
+    // fee, and covers Katka's shares via `paidBy`. His balance is a healthy
+    // +2 964 (Tomáš's share) only because the projection assumes the 17 132 Kč
+    // is already out of his pocket. The flow says what he actually faces.
+    const planned = {
+      participants: {
+        Vojta: { balance: 2964, plannedPaidExternal: 17132 },
+        Katka: { balance: 0, plannedPaidExternal: 0 },
+        Tomáš: { balance: -2964, plannedPaidExternal: 0 },
+      },
+    }
+    expect(viewerFlow(planned, ['Vojta'])).toBeCloseTo(-14168)
+    expect(viewerFlow(planned, ['Vojta', 'Katka'])).toBeCloseTo(-14168)
+    expect(viewerFlow(planned, ['Tomáš'])).toBeCloseTo(-2964)
+  })
+
+  it('equals the balance once nothing is planned any more', () => {
+    const settled = {
+      participants: {
+        Vojta: { balance: 2964, plannedPaidExternal: 0 },
+        Tomáš: { balance: -2964, plannedPaidExternal: 0 },
+      },
+    }
+    expect(viewerFlow(settled, ['Vojta'])).toBe(2964)
+    expect(viewerFlow(settled, ['Tomáš'])).toBe(-2964)
   })
 })
 

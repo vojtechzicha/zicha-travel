@@ -53,8 +53,12 @@ export interface HomeChataItem {
   participantNames: string[]
   /** the viewer has a linked participant in this chata */
   isOwn: boolean
-  /** combined balance of the viewer's participants (null = not linked) */
-  viewerBalance: number | null
+  /**
+   * Money still to flow out of (negative) or back into (positive) the viewer's
+   * pocket — NOT the finance view's balance, which counts planned expenses as
+   * already paid by their payer. See `viewerFlow`. Null = not linked.
+   */
+  viewerFlow: number | null
   /** the viewer's cost so far (live-chata chip) */
   viewerCost: number | null
 }
@@ -153,16 +157,21 @@ function AvatarStack({ names, max = 4 }: { names: string[]; max?: number }) {
 }
 
 /**
- * "Vyrovnáno" / "Doplácíš X Kč" / "Dostaneš X Kč" pill (archive + picker).
+ * "Vyrovnáno" / "Zaplatíš X Kč" / "Dostaneš X Kč" pill (archive + picker).
+ *
+ * Reads a FLOW, not the finance view's balance: on a trip whose big expenses
+ * are still only planned, the person fronting them has money going out, not
+ * coming in. Once nothing is planned any more the two coincide, so archived
+ * trips keep saying what they always said.
  *
  * Two variants because the backdrop differs. On white (the picker) a pastel
  * fill is the quiet option. On a cover photo it is the opposite — a filled
  * pastel pill becomes the brightest thing in the tile and outshouts the chata's
  * own name — so `compact` keeps the dark, and lets colour survive in the text.
  */
-function SettlementChip({ balance, compact = false }: { balance: number | null; compact?: boolean }) {
-  if (balance === null) return null
-  const settlement = settlementFromBalance(balance)
+function SettlementChip({ flow, compact = false }: { flow: number | null; compact?: boolean }) {
+  if (flow === null) return null
+  const settlement = settlementFromBalance(flow)
   const box = compact
     ? 'text-[10px] rounded-full px-2 py-0.5 shrink-0 bg-slate-950/60 backdrop-blur-[2px] ring-1 ring-white/15'
     : 'text-[11px] rounded-full px-2.5 py-1 shrink-0'
@@ -185,7 +194,7 @@ function SettlementChip({ balance, compact = false }: { balance: number | null; 
   if (settlement.status === 'debtor') {
     return (
       <span className={`font-bold ${box} ${compact ? 'text-red-300' : 'bg-red-100 text-red-700'}`}>
-        Doplácíš {formatCurrency(settlement.amount)}
+        Zaplatíš {formatCurrency(settlement.amount)}
       </span>
     )
   }
@@ -274,7 +283,7 @@ function CoverBackdrop({
 function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer }) {
   const isLive = chata.status === 'live'
   const canQuickAdd = isLive && viewer.authenticated && chata.isOwn
-  const settlement = chata.viewerBalance !== null ? settlementFromBalance(chata.viewerBalance) : null
+  const settlement = chata.viewerFlow !== null ? settlementFromBalance(chata.viewerFlow) : null
 
   return (
     <Link href={`/${chata.slug}`} className="block group">
@@ -369,7 +378,7 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
                   }`}
                 >
                   <Wallet size={15} />
-                  {settlement.status === 'debtor' ? 'Doplácíš' : 'Dostaneš'}{' '}
+                  {settlement.status === 'debtor' ? 'Zaplatíš ještě' : 'Dostaneš'}{' '}
                   {formatCurrency(settlement.amount)}
                 </span>
               ) : null}
@@ -437,9 +446,9 @@ function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeView
             The band alone loses to a sun sitting right behind the text, hence
             the text-shadow below as well */}
         <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent" />
-        {viewer.authenticated && chata.viewerBalance !== null && (
+        {viewer.authenticated && chata.viewerFlow !== null && (
           <div className="absolute top-2 right-2">
-            <SettlementChip balance={chata.viewerBalance} compact />
+            <SettlementChip flow={chata.viewerFlow} compact />
           </div>
         )}
         {/* the theme colour, not the icon, is what identifies a chata down here:
@@ -508,7 +517,7 @@ function PickerStatusChip({ chata, viewer }: { chata: HomeChataItem; viewer: Hom
       </span>
     )
   }
-  if (viewer.authenticated) return <SettlementChip balance={chata.viewerBalance} />
+  if (viewer.authenticated) return <SettlementChip flow={chata.viewerFlow} />
   return null
 }
 

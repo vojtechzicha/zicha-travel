@@ -16,8 +16,8 @@ import {
   formatMonthYear,
   greetingName,
   untilLabel,
-  viewerBalance,
   viewerCost,
+  viewerFlow,
 } from '@/lib/chataSelection'
 import { computeChataStats } from '@/utils/chataStatsBatch'
 import { resolveChataIdentities } from '@/lib/chataIdentity'
@@ -166,7 +166,7 @@ export default async function HomePage() {
       year: chataYear(chata),
       participantNames,
       isOwn: ownNames.length > 0,
-      viewerBalance: user ? viewerBalance(stats, ownNames) : null,
+      viewerFlow: user ? viewerFlow(stats, ownNames) : null,
       viewerCost: user ? viewerCost(stats, ownNames) : null,
     }
   })
