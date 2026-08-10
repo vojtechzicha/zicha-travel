@@ -375,11 +375,14 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
 
 // ─── upcoming ("Plánujeme") card ──────────────────────────────────────────
 
-function UpcomingCard({ chata }: { chata: HomeChataItem }) {
+function UpcomingCard({ chata, wide = false }: { chata: HomeChataItem; wide?: boolean }) {
   return (
     <Link href={`/${chata.slug}`} className="block group">
       <div className="relative h-[170px] rounded-2xl overflow-hidden flex items-end shadow-[0_15px_35px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:-translate-y-1">
-        <CoverBackdrop chata={chata} sizes="(max-width: 640px) 100vw, 540px" />
+        <CoverBackdrop
+          chata={chata}
+          sizes={wide ? '(max-width: 1140px) 100vw, 1100px' : '(max-width: 640px) 100vw, 540px'}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
         {chata.countdown && (
           <div className="absolute top-3 right-3 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-3 py-1 text-white text-xs font-bold">
@@ -714,9 +717,15 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
         {planned.length > 0 && (
           <section className="mb-8">
             <SectionLabel tone="amber">Plánujeme</SectionLabel>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            {/* a single planned trip spans the row — half a row of card with
+                dead space beside it reads as a layout that failed to load */}
+            <div
+              className={`grid gap-4 sm:gap-5 ${
+                planned.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'
+              }`}
+            >
               {planned.map((chata) => (
-                <UpcomingCard key={chata.id} chata={chata} />
+                <UpcomingCard key={chata.id} chata={chata} wide={planned.length === 1} />
               ))}
             </div>
           </section>
