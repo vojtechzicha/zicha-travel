@@ -31,7 +31,6 @@ const BANKER_ACCOUNT = '1902345678/3030'
 async function main() {
   const { getPayload } = await import('payload')
   const { default: config } = await import('../src/payload.config.js')
-  const { accountToIban } = await import('../src/utils/czechBankAccount.js')
   const payload = await getPayload({ config })
 
   // ─── wipe a previous run ────────────────────────────────────────────────
@@ -74,10 +73,8 @@ async function main() {
       location: 'Kokořínsko',
       slug: SLUG,
       themeColor: '#0e7490',
-      // required on the collection; the banker relationship follows once the
-      // participants exist
-      bankerAccountNumber: BANKER_ACCOUNT,
-      bankerIban: accountToIban(BANKER_ACCOUNT)!,
+      // the banker relationship follows once the participants exist; their
+      // own accountNumber is the account everyone pays into
       informationEnabled: true,
       tripDateFrom: '2026-09-11T00:00:00.000Z',
       tripDateTo: '2026-09-13T00:00:00.000Z',
@@ -134,7 +131,7 @@ async function main() {
   // ─── participants ───────────────────────────────────────────────────────
   const people = [
     { name: 'Katka', akuzativ: 'Katku', vokativ: 'Katko', accountNumber: '2701234567/2010' },
-    { name: 'Vojta', akuzativ: 'Vojtu', vokativ: 'Vojto', accountNumber: '1902345678/3030' },
+    { name: 'Vojta', akuzativ: 'Vojtu', vokativ: 'Vojto', accountNumber: BANKER_ACCOUNT },
     { name: 'Míša', akuzativ: 'Míšu', vokativ: 'Míšo', accountNumber: '1234567890/0800' },
     { name: 'Petr', akuzativ: 'Petra', vokativ: 'Petře', accountNumber: '6543210987/0300' },
     { name: 'Tereza', akuzativ: 'Terezu', vokativ: 'Terezo', accountNumber: '4455667788/0600' },
@@ -159,7 +156,7 @@ async function main() {
   ids['Ela'] = ela.id
   console.log(`participants: ${Object.keys(ids).join(', ')}`)
 
-  // ─── banker + banking details on the chata ──────────────────────────────
+  // ─── banker + rooms on the chata ────────────────────────────────────────
   await payload.update({
     collection: 'chatas',
     id: chata.id,

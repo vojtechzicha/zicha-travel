@@ -175,10 +175,11 @@ export const Chatas: CollectionConfig = {
       },
     },
 
-    // Banking Configuration
+    // Banker ("pokladník"). Their own participant record carries the account
+    // everyone pays into — the chata keeps no copy of it
     {
       type: 'collapsible',
-      label: 'Banking Configuration',
+      label: 'Banker',
       fields: [
         {
           name: 'banker',
@@ -189,11 +190,12 @@ export const Chatas: CollectionConfig = {
             description:
               'Person managing the money for this trip. On a new chata the list is ' +
               'empty — save the chata, add participants (e.g. via "Prefill ' +
-              'participants" above), then pick the banker. Selecting one prefills ' +
-              'the account fields below from their banking info.',
+              'participants" above), then pick the banker. Everyone pays into the ' +
+              "banker's own account, so their banking info is edited on the " +
+              'participant, not here.',
             components: {
               afterInput: [
-                '@/collections/Chatas/components/BankerBankingPrefill#BankerBankingPrefill',
+                '@/collections/Chatas/components/BankerAccountSummary#BankerAccountSummary',
               ],
             },
           },
@@ -208,38 +210,6 @@ export const Chatas: CollectionConfig = {
               }
             }
             return false
-          },
-        },
-        {
-          name: 'bankerAccountNumber',
-          type: 'text',
-          required: true,
-          admin: {
-            description: 'Banker\'s account number in Czech format (e.g., "123456/0100")',
-            components: {
-              Field:
-                '@/components/CzechBankAccountField#CzechBankAccountField',
-            },
-            custom: {
-              siblingPath: 'bankerIban',
-              direction: 'toIban',
-            },
-          },
-        },
-        {
-          name: 'bankerIban',
-          type: 'text',
-          required: true,
-          admin: {
-            description: 'Banker\'s IBAN for QR code generation',
-            components: {
-              Field:
-                '@/components/CzechBankAccountField#CzechBankAccountField',
-            },
-            custom: {
-              siblingPath: 'bankerAccountNumber',
-              direction: 'toAccount',
-            },
           },
         },
       ],

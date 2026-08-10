@@ -23,8 +23,9 @@ The main collection representing trips/events.
 - `name`, `shortName`, `location` - Basic identification
 - `slug` - URL-friendly identifier (auto-generated)
 - `domains[]` - Array of domain names that map to this chata
-- `banker` - Relationship to Participants
-- `bankerAccountNumber`, `bankerIban` - Banking configuration
+- `banker` - Relationship to Participants (their own `accountNumber`/`iban`
+  is the account everyone pays into; the chata carried its own copy in
+  `bankerAccountNumber`/`bankerIban` until those columns were dropped)
 - `assignedUsers[]` - Users who can manage this chata
 - `informationEnabled` - Toggle for trip information view
 - Trip details, destination, transportation, bedrooms (when information enabled)

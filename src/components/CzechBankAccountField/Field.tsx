@@ -6,8 +6,6 @@ import type { TextFieldClientComponent } from 'payload'
 import { accountToIban, ibanToAccount } from '@/utils/czechBankAccount'
 
 function getSiblingPath(path: string): string {
-  if (path === 'bankerAccountNumber') return 'bankerIban'
-  if (path === 'bankerIban') return 'bankerAccountNumber'
   if (path === 'accountNumber') return 'iban'
   if (path === 'iban') return 'accountNumber'
   return ''

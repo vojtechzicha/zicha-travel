@@ -174,17 +174,9 @@ export interface Chata {
       }[]
     | null;
   /**
-   * Person managing the money for this trip. On a new chata the list is empty — save the chata, add participants (e.g. via "Prefill participants" above), then pick the banker. Selecting one prefills the account fields below from their banking info.
+   * Person managing the money for this trip. On a new chata the list is empty — save the chata, add participants (e.g. via "Prefill participants" above), then pick the banker. Everyone pays into the banker's own account, so their banking info is edited on the participant, not here.
    */
   banker?: (number | null) | Participant;
-  /**
-   * Banker's account number in Czech format (e.g., "123456/0100")
-   */
-  bankerAccountNumber: string;
-  /**
-   * Banker's IBAN for QR code generation
-   */
-  bankerIban: string;
   /**
    * Background image (uses system default if not set)
    */
@@ -941,8 +933,6 @@ export interface ChatasSelect<T extends boolean = true> {
         id?: T;
       };
   banker?: T;
-  bankerAccountNumber?: T;
-  bankerIban?: T;
   background?: T;
   icon?: T;
   themeColor?: T;

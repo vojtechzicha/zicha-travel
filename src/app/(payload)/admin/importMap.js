@@ -1,9 +1,9 @@
 import { PrefillParticipantsButton as PrefillParticipantsButton_2ce241fd2ada445640ca571d7192d139 } from '@/collections/Chatas/components/PrefillParticipantsButton'
-import { BankerBankingPrefill as BankerBankingPrefill_aa5cdb8d1deafc7528621891c8517884 } from '@/collections/Chatas/components/BankerBankingPrefill'
-import { CzechBankAccountField as CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249 } from '@/components/CzechBankAccountField'
+import { BankerAccountSummary as BankerAccountSummary_329523f8066298fe63e3576be92a7047 } from '@/collections/Chatas/components/BankerAccountSummary'
 import { ColorPickerField as ColorPickerField_37fac220471b04d5e6dda304975d2c1e } from '@/components/ColorPickerField'
 import { CopyFromParticipantButton as CopyFromParticipantButton_bcbffcfd059f63a5b1188dfd4c7290db } from '@/collections/Participants/components/CopyFromParticipantButton'
 import { ApplyPaidByButton as ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487 } from '@/collections/Participants/components/ApplyPaidByButton'
+import { CzechBankAccountField as CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249 } from '@/components/CzechBankAccountField'
 import { AccountNamePrefill as AccountNamePrefill_2b0e282239bc1a562386f134b277cf37 } from '@/collections/Participants/components/AccountNamePrefill'
 import { CreateAccountButton as CreateAccountButton_6a36a97f8b2ba30c3a9051dfda776bc0 } from '@/collections/Participants/components/CreateAccountButton'
 import { WeightShareHint as WeightShareHint_63963a60997a410a90a159d982c94f8a } from '@/collections/Expenses/components/WeightShareHint'
@@ -19,11 +19,11 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 /** @type import('payload').ImportMap */
 export const importMap = {
   "@/collections/Chatas/components/PrefillParticipantsButton#PrefillParticipantsButton": PrefillParticipantsButton_2ce241fd2ada445640ca571d7192d139,
-  "@/collections/Chatas/components/BankerBankingPrefill#BankerBankingPrefill": BankerBankingPrefill_aa5cdb8d1deafc7528621891c8517884,
-  "@/components/CzechBankAccountField#CzechBankAccountField": CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249,
+  "@/collections/Chatas/components/BankerAccountSummary#BankerAccountSummary": BankerAccountSummary_329523f8066298fe63e3576be92a7047,
   "@/components/ColorPickerField#ColorPickerField": ColorPickerField_37fac220471b04d5e6dda304975d2c1e,
   "@/collections/Participants/components/CopyFromParticipantButton#CopyFromParticipantButton": CopyFromParticipantButton_bcbffcfd059f63a5b1188dfd4c7290db,
   "@/collections/Participants/components/ApplyPaidByButton#ApplyPaidByButton": ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487,
+  "@/components/CzechBankAccountField#CzechBankAccountField": CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249,
   "@/collections/Participants/components/AccountNamePrefill#AccountNamePrefill": AccountNamePrefill_2b0e282239bc1a562386f134b277cf37,
   "@/collections/Participants/components/CreateAccountButton#CreateAccountButton": CreateAccountButton_6a36a97f8b2ba30c3a9051dfda776bc0,
   "@/collections/Expenses/components/WeightShareHint#WeightShareHint": WeightShareHint_63963a60997a410a90a159d982c94f8a,

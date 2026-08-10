@@ -162,9 +162,8 @@ async function migrateJsonConfigs() {
       location: jsonConfig.location,
       slug,
       domains,
-      // banker will be set after participants are created
-      bankerAccountNumber: jsonConfig.config.account.number,
-      bankerIban: jsonConfig.config.account.iban,
+      // banker (and with them the account everyone pays into) is set after
+      // participants are created
       informationEnabled: jsonConfig.information?.enabled || false,
     }
 
@@ -208,7 +207,11 @@ async function migrateJsonConfigs() {
     const participantMap: Record<string, number> = {}
 
     for (const participantName of jsonConfig.participants) {
-      const bankingInfo = jsonConfig.config.contacts?.[participantName]
+      // The banker's own contact entry is often missing — the config kept
+      // their account at the top level, and that is where everyone pays
+      const bankingInfo =
+        jsonConfig.config.contacts?.[participantName] ||
+        (participantName === jsonConfig.config.banker ? jsonConfig.config.account : undefined)
 
       const participant = await payload.create({
         collection: 'participants',

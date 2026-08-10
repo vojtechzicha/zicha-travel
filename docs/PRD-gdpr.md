@@ -66,7 +66,7 @@ Every data collection is `read: () => true`:
 | Collection            | Location                            | Exposed to anyone, unauthenticated                    |
 | --------------------- | ----------------------------------- | ----------------------------------------------------- |
 | `participants`        | `src/collections/Participants.ts:119` | name, declension forms, **`accountNumber`, `iban`**, `hasPet`, `paidBy` |
-| `chatas`              | `src/collections/Chatas.ts:90`      | **`bankerAccountNumber`, `bankerIban`**, bedroom occupancy, car rosters, trip dates and location |
+| `chatas`              | `src/collections/Chatas.ts:90`      | bedroom occupancy, car rosters, trip dates and location (the banker's account is on their `participants` row) |
 | `expenses`            | `src/collections/Expenses.ts:132`   | who paid what, split weights, invitations             |
 | `prepayments`         | `src/collections/Prepayments.ts:14` | who transferred how much                              |
 | `joint-accounts`      | `src/collections/JointAccounts.ts:20` | which participants share a bank account             |

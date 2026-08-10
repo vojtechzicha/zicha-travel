@@ -405,10 +405,23 @@ pnpm generate:types   # Generate TypeScript types from collections
    the chata's own participants and show NONE while the chata is unsaved
    (`filterOptions` returns `false` without `data.id`) — never other chatas'
    participants. Flow: save the chata → add participants (e.g. "Prefill
-   participants") → pick the banker. Selecting a banker prefills
-   `bankerAccountNumber`/`bankerIban` from that participant's banking info
-   (`BankerBankingPrefill`, afterInput on the field; only fires on an actual
-   change, values stay editable, missing half derived account ↔ IBAN).
+   participants") → pick the banker. Nothing else on the create form is
+   required, so that order is actually walkable.
+
+   **The banker's bank account lives on the participant**, not on the chata.
+   The chata used to carry its own required `bankerAccountNumber`/`bankerIban`
+   (a leftover from the JSON-config import) — which deadlocked create: the
+   banker can only be picked after the first save, but the form refused to
+   save without their account. Both columns are gone; `PersonView` and
+   `/api/chatas/:id/full` read `banker.accountNumber` / `banker.iban`.
+   `BankerAccountSummary` (afterInput on the banker field) echoes the
+   resolved account read-only and links to the participant when it's missing.
+   Migration: `migrateBankerBanking()` in
+   `scripts/migrate-payer-polymorphic.mjs` copies the old chata values onto
+   the banker participant wherever that participant's own field was empty,
+   keeps a full copy in `_migration.chata_banker_banking`, then drops the
+   columns. Run `pnpm migrate:payer auto` BEFORE the first `pnpm dev` on this
+   code so the backfill happens before Payload's dev push drops the columns.
 
 4. **Partial banking info**: `resolveBankAccount` in
    `src/utils/czechBankAccount.ts` derives the missing half of an

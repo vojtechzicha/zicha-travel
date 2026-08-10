@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import { resolveBankAccount } from '@/utils/czechBankAccount'
 
 /**
  * GET /api/chatas/:id/full
@@ -56,8 +57,10 @@ export async function GET(
       depth: 1,
     })
 
-    // Get banker info
+    // Get banker info. Banking lives on the banker participant — derive the
+    // missing half of the account/IBAN pair the way the frontend does.
     const banker = typeof chata.banker === 'object' ? chata.banker : null
+    const bankerAccount = banker ? resolveBankAccount(banker.accountNumber, banker.iban) : null
 
     // Unwrap a populated polymorphic payer/from ({ relationTo, value }) to
     // the referenced doc's name (participant or joint account)
@@ -80,8 +83,8 @@ export async function GET(
       config: {
         banker: banker?.name || '',
         account: {
-          number: chata.bankerAccountNumber || '',
-          iban: chata.bankerIban || '',
+          number: bankerAccount?.accountNumber || '',
+          iban: bankerAccount?.iban || '',
         },
         contacts: {} as Record<string, { number: string; iban: string }>,
       },

@@ -71,10 +71,7 @@ export function PersonView({
   // Participants often fill only one of account number / IBAN — derive the
   // missing side so QR codes and manual-entry rows always have what they need
   const bankerBank = bankerParticipant
-    ? resolveBankAccount(
-        bankerParticipant.accountNumber || chata.bankerAccountNumber,
-        bankerParticipant.iban || chata.bankerIban
-      )
+    ? resolveBankAccount(bankerParticipant.accountNumber, bankerParticipant.iban)
     : null
   const bankerAccount = bankerBank
     ? { number: bankerBank.accountNumber, iban: bankerBank.iban }

@@ -519,8 +519,89 @@ async function migrateUserRoles() {
   }
 }
 
+// Banker banking moves onto the banker participant. The chata used to carry
+// its own `bankerAccountNumber`/`bankerIban` (both NOT NULL — a leftover from
+// the JSON-config import), which made a new chata unsavable: the banker
+// dropdown is empty until the chata exists, so its account could not be
+// prefilled before the first save. Participants already carry
+// accountNumber/iban and the frontend already preferred them, so the chata
+// columns were a fallback only.
+//
+// Backfill copies each chata's values onto its banker participant wherever
+// that participant's own field is empty, then drops the columns. Values are
+// copied verbatim — deriving the missing half is the frontend's job
+// (resolveBankAccount). Idempotent via the column check; a full copy of the
+// old columns is kept in _migration.chata_banker_banking.
+async function migrateBankerBanking() {
+  if (!(await tableExists('chatas'))) return
+  if (!(await columnExists('chatas', 'banker_account_number'))) return
+
+  await client.query('BEGIN')
+  // Serialize concurrent deploys racing on the drop
+  await client.query(`SELECT pg_advisory_xact_lock(hashtext('migrate-banker-banking'))`)
+  // Re-check under the lock — a racing deploy may have finished meanwhile
+  if (!(await columnExists('chatas', 'banker_account_number'))) {
+    await client.query('ROLLBACK')
+    return
+  }
+
+  // Safety copy outside the public schema, so Payload's dev push never
+  // offers to delete it (same convention as _migration.payer_backup)
+  await client.query('CREATE SCHEMA IF NOT EXISTS _migration')
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS _migration.chata_banker_banking (
+      chata_id integer NOT NULL,
+      slug text,
+      banker_id integer,
+      account_number text,
+      iban text
+    )`)
+  await client.query(`
+    INSERT INTO _migration.chata_banker_banking (chata_id, slug, banker_id, account_number, iban)
+      SELECT c.id, c.slug, c.banker_id, c.banker_account_number, c.banker_iban
+      FROM chatas c
+      WHERE NOT EXISTS (
+        SELECT 1 FROM _migration.chata_banker_banking b WHERE b.chata_id = c.id
+      )`)
+
+  const moved = await client.query(`
+    UPDATE participants p
+    SET account_number = COALESCE(NULLIF(p.account_number, ''), NULLIF(c.banker_account_number, '')),
+        iban           = COALESCE(NULLIF(p.iban, ''),           NULLIF(c.banker_iban, ''))
+    FROM chatas c
+    WHERE c.banker_id = p.id
+      AND (
+        (COALESCE(p.account_number, '') = '' AND COALESCE(c.banker_account_number, '') <> '')
+        OR (COALESCE(p.iban, '') = '' AND COALESCE(c.banker_iban, '') <> '')
+      )`)
+
+  // Banking info with nowhere to go: no banker set, so no participant owns
+  // it. The backup table keeps it; the chata needs a banker with their own
+  // account before settlements show a QR code again.
+  const orphans = await client.query(`
+    SELECT id, slug FROM chatas
+    WHERE banker_id IS NULL
+      AND (COALESCE(banker_account_number, '') <> '' OR COALESCE(banker_iban, '') <> '')`)
+
+  await client.query('ALTER TABLE chatas DROP COLUMN banker_account_number')
+  await client.query('ALTER TABLE chatas DROP COLUMN banker_iban')
+  await client.query('COMMIT')
+
+  console.log(
+    `banker banking: copied onto ${moved.rowCount} banker participant(s), dropped chatas.banker_account_number/banker_iban`
+  )
+  if (orphans.rowCount > 0) {
+    const list = orphans.rows.map((r) => r.slug || r.id).join(', ')
+    console.warn(
+      `banker banking: ${orphans.rowCount} chata(s) had an account but no banker — ` +
+        `values kept in _migration.chata_banker_banking only: ${list}`
+    )
+  }
+}
+
 async function auto() {
   await migrateUserRoles()
+  await migrateBankerBanking()
 
   await client.query('BEGIN')
   // Serialize concurrent release commands (e.g. two deploys racing)
