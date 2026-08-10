@@ -442,8 +442,14 @@ function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeView
             <SettlementChip balance={chata.viewerBalance} compact />
           </div>
         )}
-        <div className="relative w-full px-3 pb-2.5 text-white flex items-end gap-2">
-          <IconBadge chata={chata} size={13} className="!rounded-lg !p-1 !shadow-sm" />
+        {/* the theme colour, not the icon, is what identifies a chata down here:
+            a 13 px glyph on a photo is unreadable, a colour band is not — and it
+            is the same colour the chata's own page is themed in */}
+        <div
+          className="absolute inset-y-0 left-0 w-[3px] bg-[var(--theme)]"
+          style={{ '--theme': chata.themeColor } as React.CSSProperties}
+        />
+        <div className="relative w-full pl-3.5 pr-3 pb-2.5 text-white flex items-end gap-2">
           <div className="min-w-0">
             <div className="font-serif text-[13.5px] sm:text-sm font-bold leading-tight truncate [text-shadow:0_1px_6px_rgba(2,6,23,0.85)]">
               {chata.name}
