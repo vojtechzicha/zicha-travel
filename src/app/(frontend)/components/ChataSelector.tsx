@@ -418,8 +418,8 @@ function UpcomingCard({ chata, wide = false }: { chata: HomeChataItem; wide?: bo
 function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer }) {
   return (
     <Link href={`/${chata.slug}`} className="block group h-full">
-      <div className="relative h-[104px] sm:h-[118px] rounded-xl overflow-hidden flex items-end ring-1 ring-white/10 shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform duration-200 group-hover:-translate-y-0.5">
-        <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 100vw, 340px" />
+      <div className="relative h-[112px] sm:h-[132px] rounded-xl overflow-hidden flex items-end ring-1 ring-white/10 shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform duration-200 group-hover:-translate-y-0.5">
+        <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 100vw, 540px" />
         <div className="absolute inset-0 bg-slate-900/25 transition-opacity duration-300 group-hover:opacity-0" />
         {/* a defined bottom band rather than a full-height wash — the name has to
             stay crisp on a bright photo without greying out the whole picture */}
@@ -451,7 +451,7 @@ function ShowAllTile({ count, yearsLabel, onClick }: { count: number; yearsLabel
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-[104px] sm:h-[118px] border-[1.5px] border-dashed border-white/30 rounded-xl flex flex-col items-center justify-center gap-1.5 text-white/80 hover:bg-white/10 transition-colors cursor-pointer"
+      className="w-full h-[112px] sm:h-[132px] border-[1.5px] border-dashed border-white/30 rounded-xl flex flex-col items-center justify-center gap-1.5 text-white/80 hover:bg-white/10 transition-colors cursor-pointer"
     >
       <div className="flex">
         <div className="w-6 h-6 rounded-md bg-white/15 border border-white/25" />
@@ -740,7 +740,10 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
             {/* the tray: with every card now a photo, this faint panel is what
                 separates the archive from the hero band above it */}
             <div className="rounded-2xl bg-white/[0.045] border border-white/10 p-2.5 sm:p-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 items-stretch">
+              {/* two columns, not three: the archive is capped at ARCHIVE_LIMIT + the
+                  "show all" tile, so 4 tiles is the normal count and 2×2 fills the
+                  tray. Three columns left an orphan on its own row. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 items-stretch">
                 {archiveShown.map((chata) => (
                   <ArchiveCard key={chata.id} chata={chata} viewer={viewer} />
                 ))}
