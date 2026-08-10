@@ -316,8 +316,11 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
         ) : null}
 
         <div className="relative w-full p-5 sm:px-8 sm:py-7 text-white flex flex-col gap-3">
+          {/* no icon badge here on purpose: it indented the title while the meta
+              row and the avatars below stayed at the padding edge, so the card
+              had a ragged left margin. The hero is identified by a 340 px
+              photograph and the largest type on the page — it needs no mark. */}
           <div className="flex items-center gap-3">
-            <IconBadge chata={chata} size={26} className="hidden sm:block" />
             <div className="min-w-0">
               <div className="font-serif text-2xl sm:text-4xl font-black tracking-tight leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.6)]">
                 {chata.name}
