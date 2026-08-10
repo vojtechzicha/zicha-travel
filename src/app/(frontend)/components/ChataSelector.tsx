@@ -152,27 +152,34 @@ function AvatarStack({ names, max = 4 }: { names: string[]; max?: number }) {
   )
 }
 
-/** "Vyrovnáno" / "Doplácíš X Kč" / "Dostaneš X Kč" pill (archive + picker). */
-function SettlementChip({ balance }: { balance: number | null }) {
+/**
+ * "Vyrovnáno" / "Doplácíš X Kč" / "Dostaneš X Kč" pill (archive + picker).
+ * `compact` is the variant that sits ON a cover photo, where a full-size
+ * pastel pill shouts louder than the chata's own name.
+ */
+function SettlementChip({ balance, compact = false }: { balance: number | null; compact?: boolean }) {
   if (balance === null) return null
   const settlement = settlementFromBalance(balance)
+  const box = compact
+    ? 'text-[10px] rounded-full px-2 py-0.5 shrink-0 shadow-sm'
+    : 'text-[11px] rounded-full px-2.5 py-1 shrink-0'
   if (settlement.status === 'settled') {
     return (
-      <span className="flex items-center gap-1 bg-green-100 text-green-700 text-[11px] font-bold rounded-full px-2.5 py-1 shrink-0">
-        <Check size={11} strokeWidth={3} />
+      <span className={`flex items-center gap-1 bg-green-100 text-green-700 font-bold ${box}`}>
+        <Check size={compact ? 10 : 11} strokeWidth={3} />
         Vyrovnáno
       </span>
     )
   }
   if (settlement.status === 'debtor') {
     return (
-      <span className="bg-red-100 text-red-700 text-[11px] font-bold rounded-full px-2.5 py-1 shrink-0">
+      <span className={`bg-red-100 text-red-700 font-bold ${box}`}>
         Doplácíš {formatCurrency(settlement.amount)}
       </span>
     )
   }
   return (
-    <span className="bg-green-100 text-green-700 text-[11px] font-bold rounded-full px-2.5 py-1 shrink-0">
+    <span className={`bg-green-100 text-green-700 font-bold ${box}`}>
       Dostaneš {formatCurrency(settlement.amount)}
     </span>
   )
@@ -231,7 +238,11 @@ function CoverBackdrop({
         fill
         sizes={sizes}
         priority={priority}
-        className={`object-cover ${dimmed ? 'grayscale-[0.35] brightness-90' : ''}`}
+        className={`object-cover ${
+          dimmed
+            ? 'grayscale-[0.55] brightness-[0.82] transition-[filter] duration-300 group-hover:grayscale-[0.1] group-hover:brightness-100'
+            : ''
+        }`}
       />
     )
   }
@@ -394,24 +405,34 @@ function UpcomingCard({ chata }: { chata: HomeChataItem }) {
 
 // ─── archive ("Proběhlo") card — full-bleed cover photo, like the other cards ─
 
+/**
+ * Deliberately the smallest card on the page: hero (340) → upcoming (170) →
+ * archive (118). Once every card carries its own photo, size is the only thing
+ * left to carry the hierarchy. The cool tint + heavier desaturation is what
+ * says "past" now that the white card is gone; hovering restores the colour,
+ * which doubles as the "this one is clickable" cue.
+ */
 function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer }) {
   return (
     <Link href={`/${chata.slug}`} className="block group h-full">
-      <div className="relative h-[130px] sm:h-[150px] rounded-2xl overflow-hidden flex items-end shadow-[0_12px_30px_rgba(0,0,0,0.3)] transition-transform duration-200 group-hover:-translate-y-1">
-        <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 100vw, 360px" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
+      <div className="relative h-[104px] sm:h-[118px] rounded-xl overflow-hidden flex items-end ring-1 ring-white/10 shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform duration-200 group-hover:-translate-y-0.5">
+        <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 100vw, 340px" />
+        <div className="absolute inset-0 bg-slate-900/25 transition-opacity duration-300 group-hover:opacity-0" />
+        {/* a defined bottom band rather than a full-height wash — the name has to
+            stay crisp on a bright photo without greying out the whole picture */}
+        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-slate-950 via-slate-950/75 to-transparent" />
         {viewer.authenticated && chata.viewerBalance !== null && (
-          <div className="absolute top-3 right-3">
-            <SettlementChip balance={chata.viewerBalance} />
+          <div className="absolute top-2 right-2">
+            <SettlementChip balance={chata.viewerBalance} compact />
           </div>
         )}
-        <div className="relative w-full p-3.5 text-white flex items-center gap-2.5">
-          <IconBadge chata={chata} size={16} className="!rounded-[10px] !p-1.5 !shadow-md" />
+        <div className="relative w-full px-3 pb-2.5 text-white flex items-end gap-2">
+          <IconBadge chata={chata} size={13} className="!rounded-lg !p-1 !shadow-sm" />
           <div className="min-w-0">
-            <div className="font-serif text-[15px] sm:text-base font-black leading-snug truncate [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">
+            <div className="font-serif text-[13.5px] sm:text-sm font-bold leading-tight truncate">
               {chata.name}
             </div>
-            <div className="text-white/85 text-[12px] sm:text-[13px] truncate">
+            <div className="text-white/70 text-[11px] truncate">
               {chata.location}
               {chata.monthYear ? ` • ${chata.monthYear}` : ''}
             </div>
@@ -427,15 +448,15 @@ function ShowAllTile({ count, yearsLabel, onClick }: { count: number; yearsLabel
     <button
       type="button"
       onClick={onClick}
-      className="w-full min-h-[88px] sm:min-h-0 border-[1.5px] border-dashed border-white/35 rounded-2xl flex flex-col items-center justify-center gap-2 text-white/80 hover:bg-white/10 transition-colors cursor-pointer py-4"
+      className="w-full h-[104px] sm:h-[118px] border-[1.5px] border-dashed border-white/30 rounded-xl flex flex-col items-center justify-center gap-1.5 text-white/80 hover:bg-white/10 transition-colors cursor-pointer"
     >
       <div className="flex">
-        <div className="w-7 h-7 rounded-lg bg-white/15 border border-white/25" />
-        <div className="w-7 h-7 rounded-lg bg-white/10 border border-white/20 -ml-3" />
-        <div className="w-7 h-7 rounded-lg bg-white/[0.06] border border-white/15 -ml-3" />
+        <div className="w-6 h-6 rounded-md bg-white/15 border border-white/25" />
+        <div className="w-6 h-6 rounded-md bg-white/10 border border-white/20 -ml-2.5" />
+        <div className="w-6 h-6 rounded-md bg-white/[0.06] border border-white/15 -ml-2.5" />
       </div>
-      <span className="text-sm font-bold">Zobrazit všech {count} →</span>
-      {yearsLabel && <span className="text-xs text-white/50">{yearsLabel}</span>}
+      <span className="text-[13px] font-bold">Zobrazit všech {count} →</span>
+      {yearsLabel && <span className="text-[11px] text-white/50">{yearsLabel}</span>}
     </button>
   )
 }
@@ -707,17 +728,21 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
             <SectionLabel tone="muted">
               Proběhlo{archiveCapped ? ` (${past.length})` : ''}
             </SectionLabel>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-[18px] items-stretch">
-              {archiveShown.map((chata) => (
-                <ArchiveCard key={chata.id} chata={chata} viewer={viewer} />
-              ))}
-              {archiveCapped && (
-                <ShowAllTile
-                  count={past.length}
-                  yearsLabel={yearsLabel}
-                  onClick={() => setPickerOpen(true)}
-                />
-              )}
+            {/* the tray: with every card now a photo, this faint panel is what
+                separates the archive from the hero band above it */}
+            <div className="rounded-2xl bg-white/[0.045] border border-white/10 p-2.5 sm:p-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 items-stretch">
+                {archiveShown.map((chata) => (
+                  <ArchiveCard key={chata.id} chata={chata} viewer={viewer} />
+                ))}
+                {archiveCapped && (
+                  <ShowAllTile
+                    count={past.length}
+                    yearsLabel={yearsLabel}
+                    onClick={() => setPickerOpen(true)}
+                  />
+                )}
+              </div>
             </div>
           </section>
         )}

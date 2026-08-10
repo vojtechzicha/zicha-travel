@@ -15,7 +15,12 @@
   --radius-glass: 1rem;
   --radius-glass-lg: 1.5rem;
 
-  --breakpoint-lg: 850px;
+  /* 850px — but written in rem on purpose. Tailwind v4 sorts the breakpoint
+     variants by value and cannot compare a px override against the rem-valued
+     defaults, so a px value here lands BEFORE `sm` in the compiled sheet and
+     every `lg:` utility loses to the `sm:`/`md:` one it was meant to override
+     (the homepage archive grid never reached `lg:grid-cols-3`). */
+  --breakpoint-lg: 53.125rem;
 }
 
 @layer base {
