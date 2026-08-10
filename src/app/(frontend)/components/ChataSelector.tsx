@@ -392,44 +392,31 @@ function UpcomingCard({ chata }: { chata: HomeChataItem }) {
   )
 }
 
-// ─── archive ("Proběhlo") card — column on ≥sm, compact row on mobile ─────
+// ─── archive ("Proběhlo") card — full-bleed cover photo, like the other cards ─
 
 function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer }) {
   return (
-    <Link href={`/${chata.slug}`} className="block group">
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.3)] transition-transform duration-200 group-hover:-translate-y-1 flex items-center gap-3 p-2.5 sm:p-0 sm:block">
-        <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 sm:w-full sm:h-24 sm:rounded-none">
-          <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 56px, 280px" />
-        </div>
-        <div className="flex-1 min-w-0 sm:p-4">
-          <div className="flex items-center gap-2">
-            <span
-              className="hidden sm:flex rounded-lg p-1 bg-[color-mix(in_srgb,var(--theme)_12%,white)]"
-              style={{ '--theme': chata.themeColor } as React.CSSProperties}
-            >
-              <ChataIcon chata={chata} size={16} color={chata.themeColor} />
-            </span>
-            <span className="font-serif text-sm sm:text-base font-bold text-gray-900 truncate">
-              {chata.name}
-            </span>
+    <Link href={`/${chata.slug}`} className="block group h-full">
+      <div className="relative h-[130px] sm:h-[150px] rounded-2xl overflow-hidden flex items-end shadow-[0_12px_30px_rgba(0,0,0,0.3)] transition-transform duration-200 group-hover:-translate-y-1">
+        <CoverBackdrop chata={chata} dimmed sizes="(max-width: 640px) 100vw, 360px" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
+        {viewer.authenticated && chata.viewerBalance !== null && (
+          <div className="absolute top-3 right-3">
+            <SettlementChip balance={chata.viewerBalance} />
           </div>
-          <div className="flex items-center justify-between gap-2 mt-1 sm:mt-2">
-            <span className="text-gray-500 text-xs sm:text-[13px] truncate">
+        )}
+        <div className="relative w-full p-3.5 text-white flex items-center gap-2.5">
+          <IconBadge chata={chata} size={16} className="!rounded-[10px] !p-1.5 !shadow-md" />
+          <div className="min-w-0">
+            <div className="font-serif text-[15px] sm:text-base font-black leading-snug truncate [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">
+              {chata.name}
+            </div>
+            <div className="text-white/85 text-[12px] sm:text-[13px] truncate">
               {chata.location}
               {chata.monthYear ? ` • ${chata.monthYear}` : ''}
-            </span>
-            {viewer.authenticated && (
-              <span className="hidden sm:block">
-                <SettlementChip balance={chata.viewerBalance} />
-              </span>
-            )}
+            </div>
           </div>
         </div>
-        {viewer.authenticated && (
-          <span className="sm:hidden pr-1">
-            <SettlementChip balance={chata.viewerBalance} />
-          </span>
-        )}
       </div>
     </Link>
   )
