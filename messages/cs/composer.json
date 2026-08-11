@@ -64,7 +64,7 @@
     "subtitle": "hostitel zaplatí podíl pozvaného",
     "autoPrefix": "Automaticky:",
     "autoSuffixEdit": "(trvalé nastavení).",
-    "autoSuffixCreate": "— přidá se samo.",
+    "autoSuffixCreate": "– přidá se samo.",
     "youPayFor": "platíte za {guest}",
     "hostPaysFor": "{host} platí za {guest}",
     "youInvite": "Vy zvete {guest}",

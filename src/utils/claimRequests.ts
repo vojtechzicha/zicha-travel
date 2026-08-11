@@ -17,14 +17,14 @@ export function chataOrigin(chata: Pick<Chata, 'domains'>): string {
   return domain ? `https://${domain}` : 'https://zicha.travel'
 }
 
-/** The chata's finance view — used in requester emails. */
+/** The chata's finance view – used in requester emails. */
 export function chataFinanceUrl(chata: Pick<Chata, 'domains' | 'slug'>): string {
   const domain = chata.domains?.[0]?.domain
   const home = domain ? `https://${domain}` : `https://zicha.travel/${chata.slug}`
   return `${home}?view=finance`
 }
 
-/** Superadmins + admins with this chata assigned — the decision makers. */
+/** Superadmins + admins with this chata assigned – the decision makers. */
 export async function claimDecisionMakers(payload: Payload, chataId: unknown): Promise<User[]> {
   const admins = await payload.find({
     collection: 'users',
@@ -55,7 +55,7 @@ interface NotifyArgs {
 }
 
 /**
- * "Někdo říká, že je Katka" — email to every decision maker with signed
+ * "Někdo říká, že je Katka" – email to every decision maker with signed
  * approve/reject links (7-day tokens bound to the recipient). Failures are
  * logged, never thrown: a lost email must not lose the claim itself (the
  * queue stays visible in the admin panel).
@@ -64,7 +64,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
   const { claim, participant, chata, requester, origin, reminder } = args
   const secret = process.env.PAYLOAD_SECRET
   if (!secret) {
-    payload.logger.error('PAYLOAD_SECRET missing — cannot sign claim decide links')
+    payload.logger.error('PAYLOAD_SECRET missing – cannot sign claim decide links')
     return
   }
 
@@ -109,7 +109,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
   const accountNote =
     requesterLinkedElsewhere > 0
       ? 'účet už má propojené účastníky na jiných chatách'
-      : 'účet nový — zatím bez propojených účastníků'
+      : 'účet nový – zatím bez propojených účastníků'
   const othersNote =
     otherPending > 0
       ? `pozor, o účastníka žádá ještě ${otherPending} další žádost(i)`
@@ -167,7 +167,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
  * endpoint, the admin panel and auto-approval:
  * - approved: link the participant to the account, auto-reject every rival
  *   pending claim (each rejection re-enters the hook and emails its own
- *   requester), email the requester (unless auto-approved — they are
+ *   requester), email the requester (unless auto-approved – they are
  *   looking at the confirmation screen right now)
  * - rejected: email the requester with the reason
  */
@@ -218,7 +218,7 @@ export async function runClaimDecisionSideEffects(
     // missing: a claim-registered account starts as a bare email (take the
     // participant's name/vokativ), while a Microsoft account knows the
     // person's name/vokativ the participant may lack. Accounts carry no
-    // akuzativ — that form lives on participants only.
+    // akuzativ – that form lives on participants only.
     if (requester) {
       const accountFill = {
         ...(!requester.name && participant.name ? { name: participant.name } : {}),
@@ -285,7 +285,7 @@ export async function runClaimDecisionSideEffects(
     }
   }
 
-  // Tell the requester how it went (skip for auto-approvals — the person is
+  // Tell the requester how it went (skip for auto-approvals – the person is
   // looking at the "Propojeno!" screen right now)
   if (!requester?.email || !participant || doc.autoApproved) return
   try {
@@ -293,7 +293,7 @@ export async function runClaimDecisionSideEffects(
       const financeUrl = chata ? chataFinanceUrl(chata) : 'https://zicha.travel'
       await sendAppEmail(payload, {
         to: requester.email,
-        subject: `Propojení schváleno — ${participant.name} je teď tvoje`,
+        subject: `Propojení schváleno – ${participant.name} je teď tvoje`,
         text:
           `Správce chaty ${chata?.name ?? ''} potvrdil, že účastník ${participant.name} jsi ty. ` +
           `Po přihlášení uvidíš svoje výdaje a vyrovnání: ${financeUrl}`,
@@ -317,7 +317,7 @@ export async function runClaimDecisionSideEffects(
     } else if (doc.status === 'rejected') {
       await sendAppEmail(payload, {
         to: requester.email,
-        subject: `Tohle bohužel nevyšlo — propojení s účastníkem ${participant.name}`,
+        subject: `Tohle bohužel nevyšlo – propojení s účastníkem ${participant.name}`,
         text:
           `Správce chaty ${chata?.name ?? ''} nepotvrdil propojení s účastníkem ${participant.name}.` +
           (doc.reason ? ` Napsal k tomu: „${doc.reason}"` : '') +

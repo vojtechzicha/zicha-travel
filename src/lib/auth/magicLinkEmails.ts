@@ -2,7 +2,7 @@ import type { AppLocale } from '@/i18n/config'
 
 // Bilingual copy for the magic-link login emails. The Czech wording is the
 // original copy, preserved verbatim; English is a natural translation of the
-// same content. HTML structure and inline styling are identical per locale —
+// same content. HTML structure and inline styling are identical per locale –
 // only the copy differs.
 
 export type EmailContent = {
@@ -34,12 +34,12 @@ export function superadminNoticeEmail(locale: AppLocale): EmailContent {
   }
   return {
     subject: 'Přihlášení k zicha.travel',
-    text: 'Tento účet je superadmin — přihlašovací odkazy jsou pro něj vypnuté. Přihlaste se prosím přes Microsoft na /login nebo /admin.',
+    text: 'Tento účet je superadmin – přihlašovací odkazy jsou pro něj vypnuté. Přihlaste se prosím přes Microsoft na /login nebo /admin.',
     html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2 style="color: #d97706;">zicha.travel</h2>
           <p>
-            Tento účet je <strong>superadmin</strong> — přihlašovací odkazy jsou pro něj z
+            Tento účet je <strong>superadmin</strong> – přihlašovací odkazy jsou pro něj z
             bezpečnostních důvodů vypnuté.
           </p>
           <p>Přihlaste se prosím tlačítkem „Přihlásit se přes Microsoft".</p>

@@ -95,11 +95,17 @@ export default function PrivacyContentEn() {
                     <strong>only with your consent</strong>
                   </td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">payload-token</td>
                   <td className="py-2.5 pr-4">keeps you signed in</td>
                   <td className="py-2.5 pr-4">30 days (2 h for admins)</td>
                   <td className="py-2.5">necessary for signing in</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">NEXT_LOCALE</td>
+                  <td className="py-2.5 pr-4">remembers your language choice (Czech/English)</td>
+                  <td className="py-2.5 pr-4">12 months</td>
+                  <td className="py-2.5">necessary; stored only after you pick a language in the footer</td>
                 </tr>
               </tbody>
             </table>

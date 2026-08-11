@@ -19,24 +19,24 @@ export default function PrivacyContentCs() {
         <Section id="mereni" title="Co měříme" icon={<BarChart3 size={20} />}>
           <p>
             Zajímá nás jediné: jestli stránka funguje a jestli věci, které na ní stavíme, někomu
-            pomáhají. K tomu sbíráme <strong>anonymní statistiky</strong> — vždy, i bez cookies:
+            pomáhají. K tomu sbíráme <strong>anonymní statistiky</strong> – vždy, i bez cookies:
           </p>
           <List
             items={[
               <>návštěvy jednotlivých stránek a záložek (kolik lidí, ze kterého zařízení),</>,
-              <>použití funkcí — např. že si někdo otevřel přehled, rozbalil rozpis nákladů nebo
+              <>použití funkcí – např. že si někdo otevřel přehled, rozbalil rozpis nákladů nebo
                 zobrazil QR kód k platbě,</>,
-              <>technické chyby (že se něco nepodařilo uložit — nikdy ne co).</>,
+              <>technické chyby (že se něco nepodařilo uložit – nikdy ne co).</>,
             ]}
           />
           <p>
-            Bez cookies k tomu slouží pseudonymní identifikátor, který se každý den mění — nejde
+            Bez cookies k tomu slouží pseudonymní identifikátor, který se každý den mění – nejde
             z něj poznat, kdo jste, ani propojit dvě vaše návštěvy v různých dnech.
           </p>
           <p>
             Když v liště <strong>povolíte cookies</strong>, dostane váš prohlížeč stabilní
             anonymní identifikátor. Díky němu uvidíme i to, jestli se rozdělaná akce (přihlášení,
-            přidání výdaje) nedokončila a kde se zasekla — a budeme to umět spravit. Pořád ale
+            přidání výdaje) nedokončila a kde se zasekla – a budeme to umět spravit. Pořád ale
             nevíme, kdo jste.
           </p>
         </Section>
@@ -51,10 +51,10 @@ export default function PrivacyContentCs() {
                 <strong>žádná čísla účtů ani IBAN,</strong>
               </>,
               <>
-                <strong>žádné částky v korunách</strong> — kdo komu kolik dluží je to
+                <strong>žádné částky v korunách</strong> – kdo komu kolik dluží je to
                 nejcitlivější, co tu je, a do statistik nepatří,
               </>,
-              <>koho konkrétně si v přehledu financí zobrazujete — identifikátory účastníků se
+              <>koho konkrétně si v přehledu financí zobrazujete – identifikátory účastníků se
                 z adres stránek před odesláním odstraňují,</>,
               <>obsah stránek ani nic z toho, co do formulářů píšete,</>,
               <>nic z administrace (/admin) a nic z náhledových verzí webu.</>,
@@ -83,7 +83,7 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5 pr-4 font-mono text-[13px]">zt_consent</td>
                   <td className="py-2.5 pr-4">pamatuje si vaši odpověď v liště souhlasu</td>
                   <td className="py-2.5 pr-4">12 měsíců</td>
-                  <td className="py-2.5">nutná — je sama záznamem souhlasu</td>
+                  <td className="py-2.5">nutná – je sama záznamem souhlasu</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">ph_*</td>
@@ -94,18 +94,24 @@ export default function PrivacyContentCs() {
                     <strong>jen s vaším souhlasem</strong>
                   </td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">payload-token</td>
                   <td className="py-2.5 pr-4">drží vaše přihlášení</td>
                   <td className="py-2.5 pr-4">30 dní (2 h pro správce)</td>
                   <td className="py-2.5">nutná pro přihlášení</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">NEXT_LOCALE</td>
+                  <td className="py-2.5 pr-4">pamatuje si zvolený jazyk (čeština/angličtina)</td>
+                  <td className="py-2.5 pr-4">12 měsíců</td>
+                  <td className="py-2.5">nutná – ukládá se jen po vaší volbě v patičce</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p>
             Jedno rozhodnutí platí pro celý web včetně adres jednotlivých chat (např.{' '}
-            <span className="font-mono text-[13px]">lipno.zicha.travel</span>) — neptáme se na
+            <span className="font-mono text-[13px]">lipno.zicha.travel</span>) – neptáme se na
             každé zvlášť.
           </p>
         </Section>
@@ -115,12 +121,12 @@ export default function PrivacyContentCs() {
             items={[
               <>
                 Statistiky za nás zpracovává <strong>PostHog</strong> (PostHog EU, datové centrum
-                Frankfurt, EU) — data neopouštějí Evropskou unii.
+                Frankfurt, EU) – data neopouštějí Evropskou unii.
               </>,
               <>Surové události uchováváme nejdéle 12 měsíců; poté zůstávají jen souhrnná čísla.</>,
               <>
                 Právní základ: anonymní statistiky zpracováváme na základě oprávněného zájmu
-                (čl. 6 odst. 1 písm. f GDPR) — vědět, jestli web funguje. Cookies ukládáme jen
+                (čl. 6 odst. 1 písm. f GDPR) – vědět, jestli web funguje. Cookies ukládáme jen
                 s vaším souhlasem (§ 89 odst. 3 zákona č. 127/2005 Sb.).
               </>,
               <>Statistiky nikomu neprodáváme ani nepředáváme; slouží jen správci webu.</>,
@@ -130,7 +136,7 @@ export default function PrivacyContentCs() {
 
         <Section id="volba" title="Změna rozhodnutí" icon={<SlidersHorizontal size={20} />}>
           <p>
-            Souhlas můžete kdykoli odvolat (nebo naopak udělit) — stejně snadno, jako jste ho
+            Souhlas můžete kdykoli odvolat (nebo naopak udělit) – stejně snadno, jako jste ho
             dali. Odvoláním se smažou i statistické cookies.
           </p>
           {analyticsEnabled() ? (
