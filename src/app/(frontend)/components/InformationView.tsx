@@ -15,6 +15,8 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
+import type { AppLocale } from '@/i18n/config'
 import type { Chata, Media } from '@/payload-types'
 import { googleCalendarEventUrl } from '@/lib/gcal'
 
@@ -22,14 +24,20 @@ interface InformationViewProps {
   chata: Chata
 }
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })
+type Translator = ReturnType<typeof useTranslations>
+
+function dateLocale(locale: AppLocale): string {
+  return locale === 'cs' ? 'cs-CZ' : 'en-GB'
 }
 
-function getDayOfWeek(dateString: string): string {
+function formatDate(dateString: string, locale: AppLocale): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString('cs-CZ', { weekday: 'long' })
+  return date.toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function getDayOfWeek(dateString: string, locale: AppLocale): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString(dateLocale(locale), { weekday: 'long' })
 }
 
 type TransportOption = NonNullable<Chata['publicTransportOptions']>[number]
@@ -40,8 +48,9 @@ type TransportConnection = NonNullable<TransportOption['connections']>[number]
  * The vehicle identity is bolded — Google Calendar renders a subset of HTML
  * in the description.
  */
-function connectionLine(conn: TransportConnection): string {
-  const vehicle = conn.type === 'autobus' ? 'bus' : 'vlak'
+function connectionLine(conn: TransportConnection, t: Translator): string {
+  const vehicle =
+    conn.type === 'autobus' ? t('information.calendar.bus') : t('information.calendar.train')
   return `<b>${vehicle} ${conn.number}</b>: ${conn.from} (${conn.departure}) -> ${conn.to} (${conn.arrival})`
 }
 
@@ -49,12 +58,22 @@ function connectionLine(conn: TransportConnection): string {
  * Google Calendar "add event" URL for one public transport option — on the
  * arrival day for "tam" options, the departure day for "zpět" ones.
  */
-function transportEventUrl(option: TransportOption, chataName: string, tripDate: string): string {
+function transportEventUrl(
+  option: TransportOption,
+  chataName: string,
+  tripDate: string,
+  t: Translator,
+): string {
   const connections = option.connections || []
-  const legs = connections.map(connectionLine).join('<br><br>')
-  const total = option.totalDuration ? `<br><br><b>Celkem ${option.totalDuration}.</b>` : ''
+  const legs = connections.map((conn) => connectionLine(conn, t)).join('<br><br>')
+  const total = option.totalDuration
+    ? `<br><br><b>${t('information.calendar.total', { duration: option.totalDuration })}</b>`
+    : ''
   const notes = option.notes ? `<br><br>${option.notes}` : ''
-  const journey = option.direction === 'zpet' ? 'Cesta z chaty' : 'Cesta na chatu'
+  const journey =
+    option.direction === 'zpet'
+      ? t('information.calendar.journeyBack')
+      : t('information.calendar.journeyThere')
   return googleCalendarEventUrl({
     title: `${journey} – ${option.title} (${chataName})`,
     // Same day the page shows: Payload stores the day-only picker as an ISO
@@ -67,14 +86,15 @@ function transportEventUrl(option: TransportOption, chataName: string, tripDate:
   })
 }
 
-function getDuration(from: string, to: string): string {
+function getNights(from: string, to: string): number {
   const fromDate = new Date(from)
   const toDate = new Date(to)
-  const nights = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24))
-  return `${nights} ${nights === 1 ? 'noc' : nights < 5 ? 'noci' : 'nocí'}`
+  return Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 export function InformationView({ chata }: InformationViewProps) {
+  const t = useTranslations('trip')
+  const locale = useLocale() as AppLocale
   const [expandedTransport, setExpandedTransport] = useState<number[]>([])
 
   const toggleTransport = (idx: number) => {
@@ -91,7 +111,7 @@ export function InformationView({ chata }: InformationViewProps) {
       <div className="information-view">
         <div className="text-center py-8">
           <Info className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600 text-lg">Informace o této chatě nejsou k dispozici.</p>
+          <p className="text-gray-600 text-lg">{t('information.notAvailable')}</p>
         </div>
       </div>
     )
@@ -106,26 +126,30 @@ export function InformationView({ chata }: InformationViewProps) {
         <div className="info-hero">
           <div className="info-hero-content">
             <Calendar size={48} className="text-primary-light" />
-            <h2>Kdy jedeme?</h2>
+            <h2>{t('information.whenTitle')}</h2>
             <div className="dates-display">
               {chata.tripDateFrom && (
                 <div className="date-box">
-                  <span className="date-label">Příjezd</span>
-                  <span className="date-weekday">{getDayOfWeek(chata.tripDateFrom)}</span>
-                  <span className="date-value">{formatDate(chata.tripDateFrom)}</span>
+                  <span className="date-label">{t('information.arrival')}</span>
+                  <span className="date-weekday">{getDayOfWeek(chata.tripDateFrom, locale)}</span>
+                  <span className="date-value">{formatDate(chata.tripDateFrom, locale)}</span>
                 </div>
               )}
               {chata.tripDateFrom && chata.tripDateTo && <ArrowRight size={32} className="text-primary" />}
               {chata.tripDateTo && (
                 <div className="date-box">
-                  <span className="date-label">Odjezd</span>
-                  <span className="date-weekday">{getDayOfWeek(chata.tripDateTo)}</span>
-                  <span className="date-value">{formatDate(chata.tripDateTo)}</span>
+                  <span className="date-label">{t('information.departure')}</span>
+                  <span className="date-weekday">{getDayOfWeek(chata.tripDateTo, locale)}</span>
+                  <span className="date-value">{formatDate(chata.tripDateTo, locale)}</span>
                 </div>
               )}
             </div>
             {chata.tripDateFrom && chata.tripDateTo && (
-              <p className="duration-text">{getDuration(chata.tripDateFrom, chata.tripDateTo)}</p>
+              <p className="duration-text">
+                {t('information.nightsCount', {
+                  count: getNights(chata.tripDateFrom, chata.tripDateTo),
+                })}
+              </p>
             )}
           </div>
         </div>
@@ -136,7 +160,9 @@ export function InformationView({ chata }: InformationViewProps) {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <MapPin size={24} className="text-primary" />
-            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Kam jedeme?</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">
+              {t('information.whereTitle')}
+            </h3>
           </div>
           <div className="bg-white p-8 rounded-2xl shadow-md border-l-[5px] border-primary">
             {chata.destinationName && (
@@ -174,7 +200,9 @@ export function InformationView({ chata }: InformationViewProps) {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Mountain size={24} className="text-primary" />
-            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Jak to tam vypadá</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">
+              {t('information.galleryTitle')}
+            </h3>
           </div>
           <div className="photo-gallery">
             {chata.photos.map((photoItem, idx) => {
@@ -183,7 +211,10 @@ export function InformationView({ chata }: InformationViewProps) {
               if (!photoUrl) return null
               return (
                 <div key={idx} className="photo-item">
-                  <img src={photoUrl} alt={photo?.alt || `${chataName} fotka ${idx + 1}`} />
+                  <img
+                    src={photoUrl}
+                    alt={photo?.alt || t('information.photoAlt', { name: chataName, number: idx + 1 })}
+                  />
                 </div>
               )
             })}
@@ -196,7 +227,9 @@ export function InformationView({ chata }: InformationViewProps) {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Info size={24} className="text-primary" />
-            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Důležité informace</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">
+              {t('information.importantInfoTitle')}
+            </h3>
           </div>
           <ul className="info-list">
             {chata.basicInfo.map((item, idx) => (
@@ -211,14 +244,16 @@ export function InformationView({ chata }: InformationViewProps) {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-5 pb-3 border-b-[3px] border-gray-100">
             <Car size={24} className="text-primary" />
-            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">Doprava</h3>
+            <h3 className="font-serif text-3xl m-0 text-gray-900 font-bold">
+              {t('information.transportTitle')}
+            </h3>
           </div>
 
           {/* Car Routes */}
           {chata.carRoutes && chata.carRoutes.length > 0 && (
             <div className="mb-9 last:mb-0">
               <h4 className="transport-subtitle">
-                <Car size={20} /> Autem
+                <Car size={20} /> {t('information.byCar')}
               </h4>
               <div className="car-routes-grid">
                 {chata.carRoutes.map((route, idx) => (
@@ -234,7 +269,7 @@ export function InformationView({ chata }: InformationViewProps) {
               </div>
               {chata.parking && (
                 <div className="parking-note">
-                  <strong>Parkování:</strong> {chata.parking}
+                  <strong>{t('information.parking')}</strong> {chata.parking}
                 </div>
               )}
             </div>
@@ -244,7 +279,7 @@ export function InformationView({ chata }: InformationViewProps) {
           {chata.publicTransportOptions && chata.publicTransportOptions.length > 0 && (
             <div className="mb-9 last:mb-0">
               <h4 className="transport-subtitle">
-                <Train size={20} /> Veřejnou dopravou
+                <Train size={20} /> {t('information.byPublicTransport')}
               </h4>
               {chata.publicTransportOptions.map((option, idx) => {
                 const isExpanded = expandedTransport.includes(idx)
@@ -308,12 +343,12 @@ export function InformationView({ chata }: InformationViewProps) {
                         {option.notes && <div className="transport-notes">{option.notes}</div>}
                         {firstDeparture && lastArrival && eventDate && (
                           <a
-                            href={transportEventUrl(option, chataName, eventDate)}
+                            href={transportEventUrl(option, chataName, eventDate, t)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 self-start px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold transition-all hover:bg-primary-dark hover:-translate-y-0.5 shadow-md"
                           >
-                            <CalendarPlus size={16} /> Přidat do kalendáře
+                            <CalendarPlus size={16} /> {t('information.addToCalendar')}
                           </a>
                         )}
                       </div>

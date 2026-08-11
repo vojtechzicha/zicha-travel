@@ -1,6 +1,10 @@
 'use client'
 
-import { useAllFormFields } from '@payloadcms/ui'
+import { useAllFormFields, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const formatCzk = (n: number) =>
   new Intl.NumberFormat('cs-CZ', {
@@ -18,6 +22,7 @@ const toNumber = (v: unknown): number => {
 // Rendered under each weight input: the Kč share this row's weight currently
 // works out to, recalculated live as the amount or any weight changes
 export const WeightShareHint: React.FC<{ path: string }> = ({ path }) => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const [fields] = useAllFormFields()
 
   const amount = toNumber(fields?.amount?.value)
@@ -35,7 +40,7 @@ export const WeightShareHint: React.FC<{ path: string }> = ({ path }) => {
 
   return (
     <div style={{ marginTop: '0.25rem', fontSize: '0.8rem', color: 'var(--theme-elevation-500)' }}>
-      = {formatCzk(share)} ({ownWeight} of {totalUnits} weight units)
+      = {formatCzk(share)} ({t('zicha:weightShareOf', { weight: ownWeight, total: totalUnits })})
     </div>
   )
 }

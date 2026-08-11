@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { ArrowLeft, BedDouble, Info, Users, Wallet } from 'lucide-react'
 import { DynamicIcon } from './DynamicIcon'
 
@@ -26,6 +27,7 @@ export function Header({
   showParticipantsTab = false,
   onSwitchChata,
 }: HeaderProps) {
+  const t = useTranslations('chata.header')
   return (
     <header className="text-center mb-10 text-white">
       <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20 shadow-lg">
@@ -38,7 +40,7 @@ export function Header({
         <p className="text-white/80 text-lg text-shadow-subheading">
           {location}
           {location && bankerName && ' • '}
-          {bankerName && <>Pokladník: <strong>{bankerName}</strong></>}
+          {bankerName && <>{t('banker')} <strong>{bankerName}</strong></>}
         </p>
       )}
 
@@ -51,7 +53,7 @@ export function Header({
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border border-white/30 hover:-translate-y-0.5"
             >
               <ArrowLeft size={16} />
-              Změnit chatu
+              {t('switchChata')}
             </button>
           )}
 
@@ -70,7 +72,7 @@ export function Header({
                   `}
                 >
                   <Info size={16} />
-                  Informace
+                  {t('tabInformation')}
                 </button>
               )}
               {showOrganizationTab && (
@@ -86,7 +88,7 @@ export function Header({
                   `}
                 >
                   <BedDouble size={16} />
-                  Organizace
+                  {t('tabOrganization')}
                 </button>
               )}
               {showParticipantsTab && (
@@ -102,7 +104,7 @@ export function Header({
                   `}
                 >
                   <Users size={16} />
-                  Účastníci
+                  {t('tabParticipants')}
                 </button>
               )}
               <button
@@ -117,7 +119,7 @@ export function Header({
                 `}
               >
                 <Wallet size={16} />
-                Finance
+                {t('tabFinance')}
               </button>
             </div>
           )}

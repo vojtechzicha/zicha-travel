@@ -1,6 +1,10 @@
 'use client'
 
-import { useAllFormFields } from '@payloadcms/ui'
+import { useAllFormFields, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const formatCzk = (n: number) =>
   new Intl.NumberFormat('cs-CZ', {
@@ -14,6 +18,7 @@ const formatCzk = (n: number) =>
 // matches the expense amount (1 Kč tolerance), in which case the expense card
 // renders the weights as Kč amounts instead of "2x" multipliers
 export const WeightsSumIndicator: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const [fields] = useAllFormFields()
 
   const amountRaw = fields?.amount?.value
@@ -40,16 +45,18 @@ export const WeightsSumIndicator: React.FC = () => {
     >
       {matchesTotal ? (
         <>
-          Weights sum: <strong>{formatCzk(weightSum)}</strong> — matches the total amount, so the
-          expense card shows each weight as a Kč amount.
+          {t('zicha:weightsSumLabel')} <strong>{formatCzk(weightSum)}</strong>{' '}
+          {t('zicha:weightsSumMatches')}
         </>
       ) : (
         <>
-          Weights sum: <strong>{weightSum}</strong> — shown as multipliers (e.g. “2x”). Make the
-          weights add up to the total amount{typeof amount === 'number' && Number.isFinite(amount)
-            ? ` (${formatCzk(amount)})`
-            : ''}{' '}
-          to display them as Kč amounts.
+          {t('zicha:weightsSumLabel')} <strong>{weightSum}</strong>{' '}
+          {t('zicha:weightsSumMultipliers', {
+            amount:
+              typeof amount === 'number' && Number.isFinite(amount)
+                ? ` (${formatCzk(amount)})`
+                : '',
+          })}
         </>
       )}
     </div>

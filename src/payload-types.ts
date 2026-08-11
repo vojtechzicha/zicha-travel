@@ -391,11 +391,11 @@ export interface Chata {
          */
         driver: number | Participant;
         /**
-         * Spolujezdec v předu
+         * Front-seat passenger
          */
         frontPassenger?: (number | null) | Participant;
         /**
-         * Další cestující
+         * Other passengers
          */
         passengers?:
           | {
@@ -404,12 +404,12 @@ export interface Chata {
             }[]
           | null;
         /**
-         * Vybavení/náklad v autě
+         * Equipment/cargo in the car
          */
         equipment?:
           | {
               /**
-               * Název vybavení (např. "Pivo", "Kufry")
+               * Equipment name (e.g., "Pivo", "Kufry")
                */
               name: string;
               id?: string | null;
@@ -665,7 +665,7 @@ export interface Expense {
    */
   note?: string | null;
   /**
-   * Účtenky a další přílohy (fotky, PDF) - on mobile the file picker offers taking a photo directly
+   * Receipts and other attachments (photos, PDF) - on mobile the file picker offers taking a photo directly
    */
   attachments?: (number | ExpenseAttachment)[] | null;
   /**
@@ -702,7 +702,7 @@ export interface JointAccount {
   createdAt: string;
 }
 /**
- * Účtenky a další přílohy výdajů (fotky, PDF)
+ * Receipts and other expense attachments (photos, PDF)
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "expense-attachments".
@@ -713,7 +713,6 @@ export interface ExpenseAttachment {
    * Optional description of the attachment
    */
   alt?: string | null;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1136,7 +1135,6 @@ export interface ClaimRequestsSelect<T extends boolean = true> {
  */
 export interface ExpenseAttachmentsSelect<T extends boolean = true> {
   alt?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

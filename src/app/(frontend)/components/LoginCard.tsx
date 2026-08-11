@@ -2,30 +2,41 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Mail, Send } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
 import { referrerHost, track } from '@/lib/analytics'
 
-const ERROR_MESSAGES: Record<string, string> = {
-  captcha:
-    'Nepodařilo se ověřit, že nejste robot. Obnovte prosím stránku a zkuste to znovu.',
-  invalid_link: 'Přihlašovací odkaz je neplatný. Nechte si poslat nový.',
-  expired_link: 'Přihlašovací odkaz vypršel nebo už byl použit. Nechte si poslat nový.',
-  oauth: 'Přihlášení přes Microsoft se nezdařilo. Zkuste to prosím znovu.',
-  unauthorized:
-    'K tomuto e-mailu neexistuje účet. Požádejte správce chaty o vytvoření účtu.',
-  missing_params: 'Neplatná odpověď přihlašovací služby. Zkuste to prosím znovu.',
-  invalid_state: 'Přihlašování vypršelo. Zkuste to prosím znovu.',
-  superadmin_microsoft:
-    'Superadmin se přihlašuje výhradně přes Microsoft — přihlašovací odkazy jsou vypnuté.',
-  no_email: 'Od Microsoftu se nepodařilo získat e-mail. Zkuste to prosím znovu.',
-  callback_failed: 'Přihlášení se nezdařilo. Zkuste to prosím znovu.',
-}
+// API error codes with a dedicated message in messages/{cs,en}/auth.json
+// under `login.errors.*` — anything else falls back to a generic message.
+const KNOWN_ERROR_CODES = [
+  'captcha',
+  'invalid_link',
+  'expired_link',
+  'oauth',
+  'unauthorized',
+  'missing_params',
+  'invalid_state',
+  'superadmin_microsoft',
+  'no_email',
+  'callback_failed',
+] as const
 
 export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
+  const t = useTranslations('auth')
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
+
+  // Translate a known API error code; unknown codes get a generic localized
+  // message (the raw code is only logged — never rendered to the user).
+  const errorText = (code: string, fallbackKey: 'unknown' | 'sendFailed'): string => {
+    if ((KNOWN_ERROR_CODES as readonly string[]).includes(code)) {
+      return t(`login.errors.${code}`)
+    }
+    console.warn('[auth] unmapped login error code:', code)
+    return t(`login.errors.${fallbackKey}`)
+  }
 
   // Where to land after login: explicit ?returnTo wins; otherwise the page
   // the visitor came from (same-origin referrer — e.g. the footer link),
@@ -53,8 +64,8 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
   const [email, setEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
-  const [error, setError] = useState<string | null>(
-    errorParam ? ERROR_MESSAGES[errorParam] || errorParam : null
+  const [error, setError] = useState<string | null>(() =>
+    errorParam ? errorText(errorParam, 'unknown') : null
   )
   // Invisible bot check (Turnstile "interaction-only") — tokens are
   // single-use, so every submit bumps the reset signal for a fresh one
@@ -77,16 +88,14 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
       if (!response.ok) {
         const data = await response.json().catch(() => null)
         setError(
-          (data?.error && ERROR_MESSAGES[data.error]) ||
-            data?.error ||
-            'Odeslání se nezdařilo. Zkuste to prosím znovu.'
+          data?.error ? errorText(data.error, 'sendFailed') : t('login.errors.sendFailed')
         )
         return
       }
       setSent(true)
       track('login_link_requested', {})
     } catch {
-      setError('Odeslání se nezdařilo. Zkuste to prosím znovu.')
+      setError(t('login.errors.sendFailed'))
     } finally {
       setCaptchaReset((n) => n + 1)
       setSending(false)
@@ -99,10 +108,8 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary mb-3">
           <Mail size={28} />
         </div>
-        <h1 className="font-serif text-3xl font-bold text-gray-900 mb-2">Přihlášení</h1>
-        <p className="text-gray-600">
-          Zadejte svůj e-mail a pošleme vám jednorázový přihlašovací odkaz.
-        </p>
+        <h1 className="font-serif text-3xl font-bold text-gray-900 mb-2">{t('login.title')}</h1>
+        <p className="text-gray-600">{t('login.intro')}</p>
       </div>
 
       {error && (
@@ -116,16 +123,18 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-3">
             <Send size={24} />
           </div>
-          <p className="text-gray-800 font-semibold mb-1">Odkaz je na cestě</p>
+          <p className="text-gray-800 font-semibold mb-1">{t('login.sentTitle')}</p>
           <p className="text-gray-600 text-sm">
-            Pokud k e-mailu <strong>{email.trim()}</strong> existuje účet, přišel na něj
-            přihlašovací odkaz. Platí 15 minut.
+            {t.rich('login.sentBody', {
+              email: email.trim(),
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <button
             onClick={() => setSent(false)}
             className="mt-4 text-primary font-semibold text-sm hover:underline"
           >
-            Poslat znovu
+            {t('login.resend')}
           </button>
         </div>
       ) : (
@@ -133,7 +142,7 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
           <input
             type="email"
             required
-            placeholder="vas@email.cz"
+            placeholder={t('login.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80
@@ -151,7 +160,11 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
             className="w-full bg-primary hover:bg-primary-dark text-white font-semibold
                        px-6 py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {sending ? 'Odesílám...' : captchaPending ? 'Ověřuji prohlížeč...' : 'Poslat přihlašovací odkaz'}
+            {sending
+              ? t('login.sending')
+              : captchaPending
+                ? t('login.verifyingBrowser')
+                : t('login.submit')}
           </button>
         </form>
       )}
@@ -160,7 +173,7 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
         <>
           <div className="flex items-center gap-3 my-5 text-gray-400 text-sm">
             <div className="flex-1 h-px bg-gray-200" />
-            nebo
+            {t('login.or')}
             <div className="flex-1 h-px bg-gray-200" />
           </div>
           <a
@@ -171,15 +184,12 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
                        hover:bg-gray-50 transition-colors"
           >
             <MicrosoftIcon />
-            Přihlásit se přes Microsoft
+            {t('login.microsoft')}
           </a>
         </>
       )}
 
-      <p className="text-center text-gray-500 text-xs mt-6">
-        Účty vytváří správce chaty — bez účtu jsou finance dostupné anonymně jen pro
-        účastníky bez účtu.
-      </p>
+      <p className="text-center text-gray-500 text-xs mt-6">{t('login.footnote')}</p>
     </GlassCard>
   )
 }

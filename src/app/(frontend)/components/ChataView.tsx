@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Header } from './Header'
 import { FinanceView } from './FinanceView'
 import { FinanceOverview } from './FinanceOverview'
@@ -64,6 +65,7 @@ function useDelayedLoading(isLoading: boolean, delay = 200) {
 }
 
 export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewProps) {
+  const t = useTranslations('chata.chataView')
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -232,14 +234,14 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
         <div className="relative z-10 max-w-app mx-auto px-5 py-10">
           <div className="text-center text-white py-20">
-            <h1 className="text-4xl font-bold mb-4">Chata nenalezena</h1>
+            <h1 className="text-4xl font-bold mb-4">{t('notFound')}</h1>
             <p className="text-lg mb-8">{error}</p>
             {allowSwitch && (
               <button
                 onClick={handleSwitchChata}
                 className="bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-xl transition-colors"
               >
-                Zpět na výběr chaty
+                {t('backToSelection')}
               </button>
             )}
           </div>

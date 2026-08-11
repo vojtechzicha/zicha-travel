@@ -1,4 +1,9 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+// Locale lives in a cookie (src/i18n/request.ts) — no URL segment, so the
+// hostname middleware and /[chataSlug] routing stay untouched.
+const withNextIntl = createNextIntlPlugin()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -63,4 +68,4 @@ const nextConfig = {
   },
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+export default withNextIntl(withPayload(nextConfig, { devBundleServerPackages: false }))

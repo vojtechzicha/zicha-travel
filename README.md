@@ -2,7 +2,7 @@
 
 Expense tracker for group trips and shared accommodations. Built with Payload CMS, Next.js, and PostgreSQL.
 
-Features automatic expense splitting, QR payment codes (Czech banking), multi-domain routing, and a mobile-friendly glass-morphism UI.
+Features automatic expense splitting, QR payment codes (Czech banking), multi-domain routing, a bilingual Czech/English interface, and a mobile-friendly glass-morphism UI.
 
 ## Quick Start
 
@@ -42,6 +42,18 @@ pnpm build            # Build for production
 pnpm generate:types   # Generate TypeScript types from collections
 pnpm test             # Run integration and e2e tests
 ```
+
+## Languages
+
+The frontend is bilingual: Czech (the home language) and English.
+
+- The first visit follows the browser's `Accept-Language` header (Slovak browsers get Czech); the footer switcher stores an explicit choice in the `NEXT_LOCALE` cookie, shared across chata subdomains via `SESSION_COOKIE_DOMAIN`.
+- There is no locale URL segment. Locale resolution lives in `src/i18n/`, UI strings in `messages/{cs,en}/*.json` (next-intl, ICU plurals), and the prose-heavy help and privacy pages in per-locale `content.cs.tsx` / `content.en.tsx` modules.
+- Czech grammar is handled properly: declined name forms (accusative/vocative) from the Participants collection, genitive month and weekday names in date ranges, and three-form plurals.
+- The Payload admin panel is bilingual too (English default); each admin picks their language in their account settings.
+- Magic-link sign-in emails follow the language the requester was using; other emails stay Czech.
+
+Help screenshots show the Czech interface; the English help pages say so.
 
 ## Authentication
 

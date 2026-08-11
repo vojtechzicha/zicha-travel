@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Button, useDocumentInfo, useField } from '@payloadcms/ui'
+import { Button, useDocumentInfo, useField, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 /**
  * Creates a frontend user account for this participant from an email (or
@@ -10,6 +14,7 @@ import { Button, useDocumentInfo, useField } from '@payloadcms/ui'
  * receives mail when they request a login link themselves.
  */
 export const CreateAccountButton: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [open, setOpen] = useState(false)
@@ -30,7 +35,7 @@ export const CreateAccountButton: React.FC = () => {
       })
       const data = await response.json()
       if (!response.ok) {
-        alert(`Error: ${data?.error || response.statusText}`)
+        alert(t('zicha:errorPrefix', { message: data?.error || response.statusText }))
         return
       }
       setAccountValue(data.userId)
@@ -38,16 +43,16 @@ export const CreateAccountButton: React.FC = () => {
       setEmail('')
       alert(
         data.created
-          ? `Account ${data.email} created and linked. No email was sent - they can sign in via magic link or Microsoft.`
-          : `Existing account ${data.email} linked to this participant.`
+          ? t('zicha:createAccountCreatedAlert', { email: data.email })
+          : t('zicha:createAccountLinkedAlert', { email: data.email })
       )
     } catch (error) {
       console.error('Error creating account:', error)
-      alert('Error creating account')
+      alert(t('zicha:createAccountError'))
     } finally {
       setLoading(false)
     }
-  }, [id, email, setAccountValue])
+  }, [id, email, setAccountValue, t])
 
   if (accountValue) return null
 
@@ -55,11 +60,11 @@ export const CreateAccountButton: React.FC = () => {
     return (
       <div style={{ marginTop: '0.5rem' }}>
         <Button buttonStyle="secondary" size="small" onClick={() => setOpen(true)} disabled={!id}>
-          Create account from email...
+          {t('zicha:createAccountOpen')}
         </Button>
         {!id && (
           <div style={{ fontSize: '0.75rem', color: 'var(--theme-elevation-500)' }}>
-            Save the participant first.
+            {t('zicha:saveParticipantFirst')}
           </div>
         )}
       </div>
@@ -94,10 +99,10 @@ export const CreateAccountButton: React.FC = () => {
         onClick={handleCreate}
         disabled={loading || !email.trim()}
       >
-        {loading ? 'Creating...' : 'Create & link'}
+        {loading ? t('zicha:createAccountCreating') : t('zicha:createAccountSubmit')}
       </Button>
       <Button buttonStyle="secondary" size="small" onClick={() => setOpen(false)} disabled={loading}>
-        Cancel
+        {t('zicha:cancel')}
       </Button>
     </div>
   )

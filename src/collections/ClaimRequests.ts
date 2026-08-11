@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { APIError, type CollectionConfig, type Where } from 'payload'
+import { APIError, type CollectionConfig, type PayloadRequest, type Where } from 'payload'
 import type { ClaimRequest } from '../payload-types'
 import { canManageChata, chataScopedAccess, isSuperadmin, refId } from '../lib/access'
 import { autoApproveReason, verifyDecideToken } from '../lib/claimRequests'
@@ -10,6 +10,7 @@ import {
   notifyClaimDecisionMakers,
   runClaimDecisionSideEffects,
 } from '../utils/claimRequests'
+import { pickValidationMessage } from '../i18n/adminTranslations'
 
 const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
 
@@ -24,16 +25,22 @@ const REMINDER_AFTER_DAYS = 3
 export const ClaimRequests: CollectionConfig = {
   slug: 'claim-requests',
   labels: {
-    singular: 'Claim Request',
-    plural: 'Claim Requests',
+    singular: { en: 'Claim Request', cs: 'Žádost o propojení' },
+    plural: { en: 'Claim Requests', cs: 'Žádosti o propojení' },
   },
   admin: {
     defaultColumns: ['participant', 'user', 'status', 'createdAt'],
-    group: 'Expense Tracking',
-    description:
-      'Requests to link a participant to a frontend account ("žádosti o propojení"). ' +
-      'Approve by setting status to approved — that links the participant, rejects rival ' +
-      'claims and emails the requester. Rejections require a reason (it is emailed).',
+    group: { en: 'Expense Tracking', cs: 'Evidence výdajů' },
+    description: {
+      en:
+        'Requests to link a participant to a frontend account ("žádosti o propojení"). ' +
+        'Approve by setting status to approved — that links the participant, rejects rival ' +
+        'claims and emails the requester. Rejections require a reason (it is emailed).',
+      cs:
+        'Žádosti o propojení účastníka s uživatelským účtem. Schválíte nastavením ' +
+        'stavu na „Schváleno“ – tím se účastník propojí, konkurenční žádosti se ' +
+        'zamítnou a žadateli odejde e-mail. Zamítnutí vyžaduje důvod (odešle se e-mailem).',
+    },
   },
   access: {
     // NOT public — rows link users (emails) to participants. Admins see
@@ -581,7 +588,10 @@ export const ClaimRequests: CollectionConfig = {
       relationTo: 'participants',
       required: true,
       admin: {
-        description: 'The participant being claimed',
+        description: {
+          en: 'The participant being claimed',
+          cs: 'Účastník, o jehož propojení se žádá',
+        },
       },
     },
     {
@@ -590,7 +600,10 @@ export const ClaimRequests: CollectionConfig = {
       relationTo: 'chatas',
       admin: {
         readOnly: true,
-        description: 'Derived from the participant — drives admin-scoped access',
+        description: {
+          en: 'Derived from the participant — drives admin-scoped access',
+          cs: 'Odvozeno z účastníka – řídí přístup správců podle chaty',
+        },
       },
     },
     {
@@ -599,7 +612,10 @@ export const ClaimRequests: CollectionConfig = {
       relationTo: 'users',
       required: true,
       admin: {
-        description: 'The account that claims to be this participant',
+        description: {
+          en: 'The account that claims to be this participant',
+          cs: 'Účet, který tvrdí, že je tímto účastníkem',
+        },
       },
     },
     {
@@ -608,28 +624,43 @@ export const ClaimRequests: CollectionConfig = {
       required: true,
       defaultValue: 'pending',
       options: [
-        { label: 'Pending', value: 'pending' },
-        { label: 'Approved', value: 'approved' },
-        { label: 'Rejected', value: 'rejected' },
-        { label: 'Cancelled (by requester)', value: 'cancelled' },
+        { label: { en: 'Pending', cs: 'Čeká na rozhodnutí' }, value: 'pending' },
+        { label: { en: 'Approved', cs: 'Schváleno' }, value: 'approved' },
+        { label: { en: 'Rejected', cs: 'Zamítnuto' }, value: 'rejected' },
+        { label: { en: 'Cancelled (by requester)', cs: 'Staženo (žadatelem)' }, value: 'cancelled' },
       ],
       admin: {
-        description:
-          'Approving links the participant to the account and auto-rejects rival claims; ' +
-          'rejecting requires a reason (emailed to the requester).',
+        description: {
+          en:
+            'Approving links the participant to the account and auto-rejects rival claims; ' +
+            'rejecting requires a reason (emailed to the requester).',
+          cs:
+            'Schválení propojí účastníka s účtem a automaticky zamítne konkurenční žádosti; ' +
+            'zamítnutí vyžaduje důvod (odešle se žadateli e-mailem).',
+        },
       },
     },
     {
       name: 'reason',
       type: 'textarea',
-      validate: (value: string | null | undefined, { data }: { data?: { status?: string } }) => {
+      validate: (
+        value: string | null | undefined,
+        { data, req }: { data?: { status?: string }; req?: PayloadRequest },
+      ) => {
         if (data?.status === 'rejected' && !value?.trim()) {
-          return 'A reason is required when rejecting — it is emailed to the requester.'
+          return pickValidationMessage(
+            req,
+            'A reason is required when rejecting — it is emailed to the requester.',
+            'Při zamítnutí je nutný důvod – odešle se žadateli e-mailem.',
+          )
         }
         return true
       },
       admin: {
-        description: 'Rejection reason — emailed to the requester',
+        description: {
+          en: 'Rejection reason — emailed to the requester',
+          cs: 'Důvod zamítnutí – odešle se žadateli e-mailem',
+        },
         condition: (data) => data?.status === 'rejected',
       },
     },
@@ -639,7 +670,10 @@ export const ClaimRequests: CollectionConfig = {
       relationTo: 'users',
       admin: {
         readOnly: true,
-        description: 'Admin who decided (empty for auto-approvals)',
+        description: {
+          en: 'Admin who decided (empty for auto-approvals)',
+          cs: 'Správce, který rozhodl (u automatických schválení prázdné)',
+        },
       },
     },
     {
@@ -656,7 +690,10 @@ export const ClaimRequests: CollectionConfig = {
       defaultValue: false,
       admin: {
         readOnly: true,
-        description: 'Approved without an admin ("známá tvář" — linked participant in another chata)',
+        description: {
+          en: 'Approved without an admin ("známá tvář" — linked participant in another chata)',
+          cs: 'Schváleno bez správce („známá tvář“ – propojený účastník na jiné chatě)',
+        },
       },
     },
     {
@@ -664,7 +701,10 @@ export const ClaimRequests: CollectionConfig = {
       type: 'date',
       admin: {
         readOnly: true,
-        description: 'When the 3-day reminder went out to admins',
+        description: {
+          en: 'When the 3-day reminder went out to admins',
+          cs: 'Kdy správcům odešla připomínka po 3 dnech',
+        },
         date: { displayFormat: 'yyyy-MM-dd HH:mm' },
       },
     },

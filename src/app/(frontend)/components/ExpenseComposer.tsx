@@ -29,11 +29,13 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 import { formatCurrency, getAvatarColor, getInitials } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
-import { akuzativName } from '@/lib/czechNames'
+import { accusativeName } from '@/lib/czechNames'
 import { ownJointAccounts } from '@/lib/expenseAuthoring'
 import { downscaleImage } from '@/lib/imageDownscale'
+import type { AppLocale } from '@/i18n/config'
 import type { FinanceViewer } from '@/lib/financeAccess'
 import type { Chata, Expense, ExpenseAttachment, JointAccount, Participant } from '@/payload-types'
 
@@ -94,10 +96,10 @@ const toDateInput = (value: string | Date): string => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-const formatDayShort = (dateStr: string): string => {
+const formatDayShort = (dateStr: string, locale: AppLocale): string => {
   const d = new Date(`${dateStr}T12:00:00`)
   if (Number.isNaN(d.getTime())) return dateStr
-  return new Intl.DateTimeFormat('cs-CZ', {
+  return new Intl.DateTimeFormat(locale === 'cs' ? 'cs-CZ' : 'en-GB', {
     weekday: 'long',
     day: 'numeric',
     month: 'numeric',
@@ -131,6 +133,8 @@ export function ExpenseComposer({
 }: ExpenseComposerProps) {
   const isEdit = expense !== null
   const isDesktop = useIsDesktop()
+  const t = useTranslations('composer')
+  const locale = useLocale() as AppLocale
 
   const ownIds = viewer.linkedParticipantIds
   const ownIdsStr = useMemo(() => ownIds.map(String), [ownIds])
@@ -392,13 +396,13 @@ export function ExpenseComposer({
       const host = participantById.get(pair.host)
       const guest = participantById.get(pair.guest)
       if (!guest) return null
-      const guestName = akuzativName(guest)
+      const guestName = accusativeName(guest, locale)
       return host && ownIds.includes(host.id)
-        ? `platíte za ${guestName}`
-        : `${host?.name ?? '—'} platí za ${guestName}`
+        ? t('invites.youPayFor', { guest: guestName })
+        : t('invites.hostPaysFor', { host: host?.name ?? '—', guest: guestName })
     })
     return parts.filter(Boolean).join(', ')
-  }, [applicableAutoPairs, participantById, ownIds])
+  }, [applicableAutoPairs, participantById, ownIds, t, locale])
 
   // ── attachments ──────────────────────────────────────────────────────
   const addFiles = useCallback((files: FileList | File[]) => {
@@ -462,7 +466,7 @@ export function ExpenseComposer({
       for (const nf of newFiles) {
         const prepared = await downscaleImage(nf.file)
         if (prepared.size > 4 * 1024 * 1024) {
-          throw new Error(`Soubor „${nf.file.name}“ je příliš velký (max 4 MB).`)
+          throw new Error(t('errors.fileTooLarge', { name: nf.file.name }))
         }
         const fd = new FormData()
         fd.append('file', prepared)
@@ -473,11 +477,11 @@ export function ExpenseComposer({
         })
         if (!res.ok) {
           track('save_failed', { operation: 'attachment_upload', status: res.status })
-          throw new Error('Nahrání účtenky se nepovedlo. Zkuste to znovu.')
+          throw new Error(t('errors.uploadFailedRetry'))
         }
         const json = await res.json()
         const id = json?.doc?.id
-        if (typeof id !== 'number') throw new Error('Nahrání účtenky se nepovedlo.')
+        if (typeof id !== 'number') throw new Error(t('errors.uploadFailed'))
         uploadedIds.push(id)
       }
 
@@ -531,20 +535,20 @@ export function ExpenseComposer({
           status: res.status,
         })
         throw new Error(
-          json?.errors?.[0]?.message || 'Uložení výdaje se nepovedlo. Zkuste to znovu.',
+          json?.errors?.[0]?.message || t('errors.saveFailedRetry'),
         )
       }
       savedRef.current = true
       if (!isEdit) track('expense_created', { split_mode: splitMode })
       await onSaved()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Uložení výdaje se nepovedlo.')
+      setError(e instanceof Error ? e.message : t('errors.saveFailed'))
       setSaving(false)
     }
   }
 
   // ── shared render helpers ────────────────────────────────────────────
-  const heading = isEdit ? 'Upravit výdaj' : 'Nový výdaj'
+  const heading = isEdit ? t('headingEdit') : t('headingNew')
 
   const payerName = (choice: PayerChoice): string => {
     if (choice.relationTo === 'participants') {
@@ -558,7 +562,7 @@ export function ExpenseComposer({
     for (const p of ownParticipants) {
       options.push({
         choice: { relationTo: 'participants', value: p.id },
-        label: ownParticipants.length === 1 ? 'Vy' : `${p.name} (vy)`,
+        label: ownParticipants.length === 1 ? t('payer.you') : t('payer.nameYou', { name: p.name }),
         initialsOf: p.name,
       })
     }
@@ -645,7 +649,7 @@ export function ExpenseComposer({
           />
         </button>
       )}
-      <span className="text-sm text-gray-600">Byly vám vráceny peníze (vratka)</span>
+      <span className="text-sm text-gray-600">{t('stepWhat.refundToggle')}</span>
       {!compact && (
         <button
           type="button"
@@ -677,7 +681,7 @@ export function ExpenseComposer({
       {orderedParticipants.map((p) => {
         const row = rows[p.id] ?? { included: true, shares: 1, amountText: '' }
         const isOwn = ownIds.includes(p.id)
-        const label = isOwn ? `${p.name} (vy)` : p.name
+        const label = isOwn ? t('payer.nameYou', { name: p.name }) : p.name
         const isAuto =
           mode === 'amounts' && row.included && row.amountText.trim() === ''
         const autoValue = amountsPlan.autoValues.get(p.id)
@@ -696,7 +700,7 @@ export function ExpenseComposer({
               type="button"
               role="checkbox"
               aria-checked={row.included}
-              aria-label={`Účastní se: ${p.name}`}
+              aria-label={t('stepWho.ariaIncluded', { name: p.name })}
               onClick={() => setRow(p.id, { included: !row.included })}
               className={`w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${
                 row.included ? 'bg-primary' : 'border-2 border-gray-300'
@@ -716,7 +720,7 @@ export function ExpenseComposer({
               <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white flex-shrink-0">
                 <button
                   type="button"
-                  aria-label="Méně podílů"
+                  aria-label={t('stepWho.ariaFewerShares')}
                   onClick={() => setRow(p.id, { shares: Math.max(1, row.shares - 1) })}
                   className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50"
                 >
@@ -731,7 +735,7 @@ export function ExpenseComposer({
                 </span>
                 <button
                   type="button"
-                  aria-label="Více podílů"
+                  aria-label={t('stepWho.ariaMoreShares')}
                   onClick={() => setRow(p.id, { shares: row.shares + 1 })}
                   className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50"
                 >
@@ -742,7 +746,7 @@ export function ExpenseComposer({
             {row.included && mode === 'amounts' && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 {isAuto && (
-                  <span className="text-xs text-primary-dark font-medium">dopočítáno</span>
+                  <span className="text-xs text-primary-dark font-medium">{t('stepWho.computed')}</span>
                 )}
                 <div className="relative">
                   <input
@@ -750,7 +754,7 @@ export function ExpenseComposer({
                     inputMode="numeric"
                     value={isAuto ? (autoValue !== undefined ? String(autoValue) : '') : row.amountText}
                     placeholder="0"
-                    aria-label={`Částka pro ${p.name}`}
+                    aria-label={t('stepWho.ariaAmountFor', { name: p.name })}
                     onChange={(e) => setRow(p.id, { amountText: sanitizeAmountInput(e.target.value) })}
                     onFocus={(e) => {
                       // touching the auto field makes it a typed one
@@ -766,12 +770,14 @@ export function ExpenseComposer({
                     }`}
                   />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
-                    Kč
+                    {t('currencySuffix')}
                   </span>
                 </div>
               </div>
             )}
-            {!row.included && <span className="text-[13px] text-gray-400">neúčastní se</span>}
+            {!row.included && (
+              <span className="text-[13px] text-gray-400">{t('stepWho.notIncluded')}</span>
+            )}
           </div>
         )
       })}
@@ -785,13 +791,7 @@ export function ExpenseComposer({
     const count = orderedParticipants.length
     const shown = orderedParticipants.slice(0, 6)
     const extra = count - shown.length
-    // Czech plural: 1 účastník, 2–4 všichni … účastníci, 5+ všech … účastníků
-    const headline =
-      count === 1
-        ? 'Jediný účastník'
-        : count <= 4
-          ? `Všichni ${count} účastníci`
-          : `Všech ${count} účastníků`
+    const headline = t('stepWho.headline', { count })
     const total = amount !== null ? (isRefund ? -amount : amount) : null
     return (
       <div>
@@ -814,15 +814,17 @@ export function ExpenseComposer({
           <div className="text-[15px] font-semibold text-gray-900 mb-1">{headline}</div>
           {total !== null && count > 0 && (
             <div className="text-sm text-gray-500">
-              {formatCurrency(total)} ÷ {count} {perPersonOp(total / count)}{' '}
-              <strong className="text-gray-900">{formatCurrency(Math.round(total / count))}</strong>{' '}
-              na osobu
+              {formatCurrency(total, locale)} ÷ {count} {perPersonOp(total / count)}{' '}
+              <strong className="text-gray-900">
+                {formatCurrency(Math.round(total / count), locale)}
+              </strong>{' '}
+              {t('stepWho.perPerson')}
             </div>
           )}
         </div>
         {count > 1 && (
           <p className="text-[13px] text-gray-400 text-center mt-3.5">
-            Platí to jen část lidí, nebo nerovným dílem? Přepněte na „{switchLabel}“.
+            {t('stepWho.equalNudge', { label: switchLabel })}
           </p>
         )}
       </div>
@@ -836,7 +838,8 @@ export function ExpenseComposer({
       return (
         <div className="flex items-center justify-between mt-2.5 px-1">
           <span className="text-[13px] text-gray-500">
-            Rozdělit: <strong className="text-gray-700">{formatCurrency(amount!)}</strong>
+            {t('stepWho.toSplit')}{' '}
+            <strong className="text-gray-700">{formatCurrency(amount!, locale)}</strong>
           </span>
           <span
             className={`flex items-center gap-1.5 text-[13px] font-semibold ${
@@ -844,22 +847,19 @@ export function ExpenseComposer({
             }`}
           >
             {ok && <Check size={14} strokeWidth={2.5} />}
-            Zbývá rozdělit: {formatCurrency(amountsPlan.leftover)}
+            {t('stepWho.leftToSplit')} {formatCurrency(amountsPlan.leftover, locale)}
           </span>
         </div>
       )
     }
     if (splitMode === 'shares' && includedParticipants.length > 0 && totalShares > 0) {
       const perShare = (isRefund ? -amount! : amount!) / totalShares
-      // Czech plural: 1 podíl, 2–4 podíly, 5+ podílů
-      const sharesLabel =
-        totalShares === 1
-          ? '1 podíl'
-          : `${totalShares} ${totalShares >= 2 && totalShares <= 4 ? 'podíly' : 'podílů'}`
+      const sharesLabel = t('stepWho.sharesCount', { count: totalShares })
       return (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3 text-[13px] text-amber-800 mt-2.5">
-          <strong>{formatCurrency(isRefund ? -amount! : amount!)}</strong> · {sharesLabel}{' '}
-          {perPersonOp(perShare)} <strong>{formatCurrency(Math.round(perShare))}</strong> na podíl.
+          <strong>{formatCurrency(isRefund ? -amount! : amount!, locale)}</strong> · {sharesLabel}{' '}
+          {perPersonOp(perShare)} <strong>{formatCurrency(Math.round(perShare), locale)}</strong>{' '}
+          {t('stepWho.perShare')}
         </div>
       )
     }
@@ -869,15 +869,15 @@ export function ExpenseComposer({
   const renderInvitations = () => (
     <div>
       <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-sm font-semibold text-gray-700">Pozvání</span>
-        <span className="text-xs text-gray-400">hostitel zaplatí podíl pozvaného</span>
+        <span className="text-sm font-semibold text-gray-700">{t('invites.title')}</span>
+        <span className="text-xs text-gray-400">{t('invites.subtitle')}</span>
       </div>
       {autoBannerText && (
         <div className="flex items-center gap-2.5 bg-pink-50 border border-pink-200 rounded-xl px-3 py-2.5 mb-2">
           <HeartHandshake size={15} className="text-pink-700 flex-shrink-0" />
           <span className="text-[13px] text-pink-900">
-            Automaticky: <strong>{autoBannerText}</strong>
-            {isEdit ? ' (trvalé nastavení).' : ' — přidá se samo.'}
+            {t('invites.autoPrefix')} <strong>{autoBannerText}</strong>{' '}
+            {isEdit ? t('invites.autoSuffixEdit') : t('invites.autoSuffixCreate')}
           </span>
         </div>
       )}
@@ -886,20 +886,21 @@ export function ExpenseComposer({
           {manualInvites.map((inv, i) => {
             const host = participantById.get(inv.host)
             const guest = participantById.get(inv.guest)
-            const hostLabel =
+            const guestName = guest ? accusativeName(guest, locale) : '—'
+            const chipLabel =
               host && ownIds.includes(host.id) && ownParticipants.length === 1
-                ? 'Vy zvete'
-                : `${host?.name ?? '—'} zve`
+                ? t('invites.youInvite', { guest: guestName })
+                : t('invites.hostInvites', { host: host?.name ?? '—', guest: guestName })
             return (
               <span
                 key={`${inv.host}-${inv.guest}-${i}`}
                 className="flex items-center gap-1.5 bg-pink-50 text-pink-700 text-[13px] font-medium px-3 py-2 rounded-full"
               >
                 <HeartHandshake size={13} />
-                {hostLabel} {guest ? akuzativName(guest) : '—'}
+                {chipLabel}
                 <button
                   type="button"
-                  aria-label="Odebrat pozvání"
+                  aria-label={t('invites.ariaRemove')}
                   onClick={() => setManualInvites((prev) => prev.filter((_, j) => j !== i))}
                   className="hover:text-pink-900"
                 >
@@ -913,21 +914,21 @@ export function ExpenseComposer({
       <div className="flex items-center gap-2">
         <select
           value={draftHost}
-          aria-label="Hostitel pozvání"
+          aria-label={t('invites.ariaHost')}
           onChange={(e) => setDraftHost(e.target.value === '' ? '' : Number(e.target.value))}
           className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
-          <option value="">Kdo zve…</option>
+          <option value="">{t('invites.hostPlaceholder')}</option>
           {inviteHostOptions.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
           ))}
         </select>
-        <span className="text-[13px] text-gray-500 flex-shrink-0">zve</span>
+        <span className="text-[13px] text-gray-500 flex-shrink-0">{t('invites.between')}</span>
         <select
           value=""
-          aria-label="Pozvaný"
+          aria-label={t('invites.ariaGuest')}
           disabled={draftHost === ''}
           onChange={(e) => {
             const guest = Number(e.target.value)
@@ -938,7 +939,7 @@ export function ExpenseComposer({
           }}
           className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white disabled:text-gray-400 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
-          <option value="">Vyberte…</option>
+          <option value="">{t('invites.guestPlaceholder')}</option>
           {inviteGuestOptions.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -957,7 +958,7 @@ export function ExpenseComposer({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={att.url}
-              alt={att.alt || att.filename || 'účtenka'}
+              alt={att.alt || att.filename || t('attachments.receiptAlt')}
               className="w-full h-full object-cover rounded-lg border border-gray-200"
             />
           ) : (
@@ -967,7 +968,7 @@ export function ExpenseComposer({
           )}
           <button
             type="button"
-            aria-label="Odebrat přílohu"
+            aria-label={t('attachments.ariaRemove')}
             onClick={() =>
               setExistingAttachments((prev) => prev.filter((a) => a.id !== att.id))
             }
@@ -993,7 +994,7 @@ export function ExpenseComposer({
           )}
           <button
             type="button"
-            aria-label="Odebrat přílohu"
+            aria-label={t('attachments.ariaRemove')}
             onClick={() => removeNewFile(nf.key)}
             className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full bg-gray-700 text-white flex items-center justify-center hover:bg-gray-900"
           >
@@ -1048,8 +1049,8 @@ export function ExpenseComposer({
         <div className="absolute inset-0 bg-slate-900/45" onClick={onClose} />
         <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[28px] px-5 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(0,0,0,0.35)] animate-slideUp">
           <div className="w-9 h-[5px] rounded-full bg-gray-300 mx-auto mb-4" />
-          <h3 className="font-serif text-xl font-bold text-gray-900 mb-1">Nový výdaj</h3>
-          <p className="text-sm text-gray-500 mb-4">Jak ho chcete zadat?</p>
+          <h3 className="font-serif text-xl font-bold text-gray-900 mb-1">{t('headingNew')}</h3>
+          <p className="text-sm text-gray-500 mb-4">{t('entry.prompt')}</p>
           <div className="flex flex-col gap-3">
             <button
               type="button"
@@ -1063,10 +1064,8 @@ export function ExpenseComposer({
                 <Camera size={21} className="text-primary" />
               </span>
               <span>
-                <span className="block font-semibold text-gray-900">Vyfotit účtenku</span>
-                <span className="block text-[13px] text-gray-500">
-                  Částku a popis doplníte v dalším kroku
-                </span>
+                <span className="block font-semibold text-gray-900">{t('entry.photo')}</span>
+                <span className="block text-[13px] text-gray-500">{t('entry.photoHint')}</span>
               </span>
             </button>
             <button
@@ -1081,10 +1080,8 @@ export function ExpenseComposer({
                 <Pencil size={19} className="text-primary" />
               </span>
               <span>
-                <span className="block font-semibold text-gray-900">Zadat ručně</span>
-                <span className="block text-[13px] text-gray-500">
-                  Účtenku můžete přiložit kdykoli později
-                </span>
+                <span className="block font-semibold text-gray-900">{t('entry.manual')}</span>
+                <span className="block text-[13px] text-gray-500">{t('entry.manualHint')}</span>
               </span>
             </button>
           </div>
@@ -1093,7 +1090,7 @@ export function ExpenseComposer({
             onClick={onClose}
             className="w-full text-center text-[15px] font-medium text-gray-500 pt-4"
           >
-            Zrušit
+            {t('cancel')}
           </button>
         </div>
       </div>,
@@ -1106,10 +1103,10 @@ export function ExpenseComposer({
     const stepIndex = mobileStep === 'details' ? 1 : mobileStep === 'split' ? 2 : 3
     const stepLabel =
       mobileStep === 'details'
-        ? 'Co a kolik'
+        ? t('wizard.stepWhat')
         : mobileStep === 'split'
-          ? 'Kdo se dělí'
-          : 'Zkontrolovat a uložit'
+          ? t('wizard.stepWho')
+          : t('wizard.stepReview')
     const goBack = () => {
       if (mobileStep === 'details') {
         if (isEdit) onClose()
@@ -1131,14 +1128,14 @@ export function ExpenseComposer({
           <button
             type="button"
             onClick={goBack}
-            aria-label="Zpět"
+            aria-label={t('back')}
             className="p-1 -ml-1 text-gray-500"
           >
             <ChevronLeft size={24} />
           </button>
           <span className="font-semibold text-gray-900">{heading}</span>
           <button type="button" onClick={onClose} className="text-sm text-gray-500">
-            Zrušit
+            {t('cancel')}
           </button>
         </div>
         {/* progress */}
@@ -1152,7 +1149,7 @@ export function ExpenseComposer({
             ))}
           </div>
           <div className="text-[13px] text-gray-500 mb-4">
-            Krok {stepIndex} ze 3 · {stepLabel}
+            {t('wizard.progress', { step: stepIndex, label: stepLabel })}
           </div>
         </div>
 
@@ -1164,7 +1161,7 @@ export function ExpenseComposer({
                 <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-3 py-2.5">
                   <div className="flex gap-2 flex-wrap flex-1 min-w-0 items-center">
                     {renderAttachmentThumbs()}
-                    <span className="text-xs text-gray-400">účtenka přiložena</span>
+                    <span className="text-xs text-gray-400">{t('stepWhat.receiptAttached')}</span>
                   </div>
                 </div>
               )}
@@ -1173,14 +1170,14 @@ export function ExpenseComposer({
                   htmlFor="expense-title"
                   className="block text-[13px] font-semibold text-gray-700 mb-1.5"
                 >
-                  Co jste platili?
+                  {t('stepWhat.titleLabel')}
                 </label>
                 <input
                   id="expense-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="např. Velký nákup potravin"
+                  placeholder={t('stepWhat.titlePlaceholder')}
                   className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 />
               </div>
@@ -1189,7 +1186,7 @@ export function ExpenseComposer({
                   htmlFor="expense-amount"
                   className="block text-[13px] font-semibold text-gray-700 mb-1.5"
                 >
-                  Kolik to stálo?
+                  {t('stepWhat.amountLabelMobile')}
                 </label>
                 <div className="border-2 border-primary rounded-2xl px-3.5 py-3 flex items-baseline justify-center gap-2 shadow-[0_0_0_4px] shadow-primary/10">
                   <input
@@ -1201,7 +1198,7 @@ export function ExpenseComposer({
                     placeholder="0"
                     className="w-40 text-3xl font-bold text-gray-900 text-right focus:outline-none bg-transparent"
                   />
-                  <span className="text-lg text-gray-400 font-medium">Kč</span>
+                  <span className="text-lg text-gray-400 font-medium">{t('currencySuffix')}</span>
                 </div>
                 {renderRefundToggle()}
               </div>
@@ -1210,7 +1207,7 @@ export function ExpenseComposer({
                   htmlFor="expense-date"
                   className="block text-[13px] font-semibold text-gray-700 mb-1.5"
                 >
-                  Kdy?
+                  {t('stepWhat.dateLabelMobile')}
                 </label>
                 <div className="relative">
                   <Calendar
@@ -1227,7 +1224,7 @@ export function ExpenseComposer({
                 </div>
               </div>
               <div>
-                <div className="text-[13px] font-semibold text-gray-700 mb-1.5">Kdo platil?</div>
+                <div className="text-[13px] font-semibold text-gray-700 mb-1.5">{t('stepWhat.payerLabel')}</div>
                 {renderPayerChips()}
               </div>
             </>
@@ -1245,7 +1242,7 @@ export function ExpenseComposer({
                       : 'font-medium text-gray-500'
                   }`}
                 >
-                  Všichni rovným dílem
+                  {t('stepWho.modeEqual')}
                 </button>
                 <button
                   type="button"
@@ -1256,11 +1253,11 @@ export function ExpenseComposer({
                       : 'font-medium text-gray-500'
                   }`}
                 >
-                  Vybrat podíly
+                  {t('stepWho.selectShares')}
                 </button>
               </div>
               {splitMode === 'equal' ? (
-                renderEqualSummary('Vybrat podíly')
+                renderEqualSummary(t('stepWho.selectShares'))
               ) : (
                 <>
                   {renderSplitRows(splitMode === 'amounts' ? 'amounts' : 'shares')}
@@ -1274,8 +1271,8 @@ export function ExpenseComposer({
                       className="text-center text-[13px] text-primary-dark underline underline-offset-2"
                     >
                       {splitMode === 'amounts'
-                        ? 'Raději rozdělit na podíly'
-                        : 'Raději zadat přesné částky v Kč'}
+                        ? t('stepWho.switchToShares')
+                        : t('stepWho.switchToAmounts')}
                     </button>
                   )}
                 </>
@@ -1310,18 +1307,18 @@ export function ExpenseComposer({
                         }`}
                       >
                         {amount !== null
-                          ? formatCurrency(isRefund ? -amount : amount)
+                          ? formatCurrency(isRefund ? -amount : amount, locale)
                           : '—'}
                       </span>
                     </div>
                     <div className="text-[13px] text-gray-600 mb-2">
-                      Platí <strong>{payer ? payerName(payer) : '—'}</strong> ·{' '}
-                      {formatDayShort(dateStr)}
+                      {t('summary.paidBy')} <strong>{payer ? payerName(payer) : '—'}</strong> ·{' '}
+                      {formatDayShort(dateStr, locale)}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {splitMode === 'equal' ? (
                         <span className="bg-white border border-gray-200 text-gray-700 text-[11px] px-2 py-1 rounded-md">
-                          Všichni rovným dílem
+                          {t('stepWho.modeEqual')}
                         </span>
                       ) : (
                         includedParticipants.map((p) => (
@@ -1336,6 +1333,7 @@ export function ExpenseComposer({
                                   amountsPlan.typedValues.get(p.id) ??
                                     amountsPlan.autoValues.get(p.id) ??
                                     0,
+                                  locale,
                                 )}
                           </span>
                         ))
@@ -1345,7 +1343,7 @@ export function ExpenseComposer({
                       {renderAttachmentThumbs()}
                       <button
                         type="button"
-                        aria-label="Přiložit účtenku"
+                        aria-label={t('attachments.ariaAdd')}
                         onClick={() => fileInputRef.current?.click()}
                         className="w-11 h-11 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-400"
                       >
@@ -1371,10 +1369,10 @@ export function ExpenseComposer({
                 onClick={handleSave}
                 className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white text-center font-semibold text-base rounded-2xl py-[15px] shadow-lg shadow-primary/40 transition-colors"
               >
-                {saving ? 'Ukládám…' : 'Uložit výdaj'}
+                {saving ? t('saving') : t('save')}
               </button>
               <p className="text-center text-xs text-gray-400 mt-2.5">
-                Výdaj můžete kdykoli upravit nebo smazat.
+                {t('summary.editHint')}
               </p>
             </>
           ) : (
@@ -1384,7 +1382,7 @@ export function ExpenseComposer({
               onClick={() => setMobileStep(mobileStep === 'details' ? 'split' : 'review')}
               className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white text-center font-semibold text-base rounded-2xl py-[15px] shadow-lg shadow-primary/40 transition-colors"
             >
-              Pokračovat
+              {t('continue')}
             </button>
           )}
         </div>
@@ -1409,7 +1407,7 @@ export function ExpenseComposer({
           <h2 className="font-serif text-[22px] font-bold text-gray-900">{heading}</h2>
           <button
             type="button"
-            aria-label="Zavřít"
+            aria-label={t('close')}
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
           >
@@ -1425,7 +1423,7 @@ export function ExpenseComposer({
                 htmlFor="expense-title"
                 className="block text-[13px] font-semibold text-gray-700 mb-1.5"
               >
-                Co jste platili?
+                {t('stepWhat.titleLabel')}
               </label>
               <input
                 id="expense-title"
@@ -1433,7 +1431,7 @@ export function ExpenseComposer({
                 autoFocus
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="např. Velký nákup potravin"
+                placeholder={t('stepWhat.titlePlaceholder')}
                 className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-[15px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               />
             </div>
@@ -1442,7 +1440,7 @@ export function ExpenseComposer({
                 htmlFor="expense-amount"
                 className="block text-[13px] font-semibold text-gray-700 mb-1.5"
               >
-                Částka
+                {t('stepWhat.amountLabel')}
               </label>
               <div className="relative">
                 <input
@@ -1455,7 +1453,7 @@ export function ExpenseComposer({
                   className="w-full border border-gray-200 rounded-xl pl-3.5 pr-10 py-3 text-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
-                  Kč
+                  {t('currencySuffix')}
                 </span>
               </div>
               {renderRefundToggle(true)}
@@ -1465,7 +1463,7 @@ export function ExpenseComposer({
                 htmlFor="expense-date"
                 className="block text-[13px] font-semibold text-gray-700 mb-1.5"
               >
-                Datum
+                {t('stepWhat.dateLabel')}
               </label>
               <div className="relative">
                 <Calendar
@@ -1482,7 +1480,7 @@ export function ExpenseComposer({
               </div>
             </div>
             <div className="col-span-2">
-              <div className="text-[13px] font-semibold text-gray-700 mb-1.5">Kdo platil?</div>
+              <div className="text-[13px] font-semibold text-gray-700 mb-1.5">{t('stepWhat.payerLabel')}</div>
               {renderPayerChips()}
             </div>
           </div>
@@ -1490,7 +1488,7 @@ export function ExpenseComposer({
           {/* attachments */}
           <div>
             <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 mb-2.5">
-              Účtenky
+              {t('attachments.title')}
             </div>
             <div
               onDragOver={(e) => {
@@ -1514,18 +1512,18 @@ export function ExpenseComposer({
               )}
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-700">
-                  Přetáhněte sem fotky nebo PDF
+                  {t('attachments.dropHere')}
                 </div>
                 <div className="text-[13px] text-gray-400">
-                  …nebo{' '}
+                  {t('attachments.orPrefix')}{' '}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="text-primary-dark font-semibold hover:underline"
                   >
-                    vyberte soubor
+                    {t('attachments.chooseFile')}
                   </button>{' '}
-                  · na mobilu jde rovnou vyfotit
+                  {t('attachments.mobileHint')}
                 </div>
               </div>
               <Upload size={22} className="text-gray-400 flex-shrink-0" />
@@ -1535,14 +1533,14 @@ export function ExpenseComposer({
           {/* split */}
           <div>
             <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 mb-2.5">
-              Rozdělení
+              {t('stepWho.sectionTitle')}
             </div>
             <div className="flex gap-2 mb-3.5 flex-wrap">
               {(
                 [
-                  { mode: 'equal' as const, label: 'Všichni rovným dílem' },
-                  { mode: 'shares' as const, label: 'Podíly' },
-                  { mode: 'amounts' as const, label: 'Přesné částky' },
+                  { mode: 'equal' as const, label: t('stepWho.modeEqual') },
+                  { mode: 'shares' as const, label: t('stepWho.modeShares') },
+                  { mode: 'amounts' as const, label: t('stepWho.modeAmounts') },
                 ] as const
               ).map(({ mode, label }) => {
                 const disabled = mode === 'amounts' && isRefund
@@ -1551,7 +1549,7 @@ export function ExpenseComposer({
                     key={mode}
                     type="button"
                     disabled={disabled}
-                    title={disabled ? 'U vratky zadejte podíly' : undefined}
+                    title={disabled ? t('stepWho.refundSharesOnly') : undefined}
                     onClick={() => setSplitMode(mode)}
                     className={`text-[13px] px-3.5 py-2 rounded-full border transition-colors ${
                       splitMode === mode
@@ -1565,7 +1563,7 @@ export function ExpenseComposer({
               })}
             </div>
             {splitMode === 'equal' ? (
-              renderEqualSummary('Podíly')
+              renderEqualSummary(t('stepWho.modeShares'))
             ) : (
               <>
                 {renderSplitRows(splitMode === 'amounts' ? 'amounts' : 'shares')}
@@ -1588,7 +1586,7 @@ export function ExpenseComposer({
               disabled={saving}
               className="text-sm font-semibold text-gray-600 px-4.5 py-2.5 rounded-xl hover:bg-gray-100 transition-colors"
             >
-              Zrušit
+              {t('cancel')}
             </button>
             <button
               type="button"
@@ -1596,7 +1594,7 @@ export function ExpenseComposer({
               onClick={handleSave}
               className="text-sm font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 px-5.5 py-2.5 rounded-xl shadow-lg shadow-primary/30 transition-colors"
             >
-              {saving ? 'Ukládám…' : 'Uložit výdaj'}
+              {saving ? t('saving') : t('save')}
             </button>
           </div>
         </div>

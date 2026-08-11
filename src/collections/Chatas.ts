@@ -4,6 +4,10 @@ import { canManageChata, ownChataAccess, refId, superadminOnly } from '../lib/ac
 
 export const Chatas: CollectionConfig = {
   slug: 'chatas',
+  labels: {
+    singular: { en: 'Chata', cs: 'Chata' },
+    plural: { en: 'Chatas', cs: 'Chaty' },
+  },
   endpoints: [
     {
       // Bulk prefill: clone selected participants from previous chatas into
@@ -80,7 +84,7 @@ export const Chatas: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'location', 'slug'],
-    group: 'Chata',
+    group: { en: 'Chata', cs: 'Chata' },
   },
   hooks: {
     afterRead: [afterReadHook],
@@ -101,7 +105,10 @@ export const Chatas: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Full name of the chata/trip (e.g., "Chaloupka pod Medem")',
+        description: {
+          en: 'Full name of the chata/trip (e.g., "Chaloupka pod Medem")',
+          cs: 'Celý název chaty/výletu (např. „Chaloupka pod Medem“)',
+        },
       },
     },
     {
@@ -109,7 +116,10 @@ export const Chatas: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Short name used in QR codes and messages (e.g., "Chaloupka")',
+        description: {
+          en: 'Short name used in QR codes and messages (e.g., "Chaloupka")',
+          cs: 'Krátký název používaný v QR kódech a zprávách (např. „Chaloupka“)',
+        },
       },
     },
     {
@@ -117,7 +127,10 @@ export const Chatas: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Location description (e.g., "Beskydy")',
+        description: {
+          en: 'Location description (e.g., "Beskydy")',
+          cs: 'Popis lokality (např. „Beskydy“)',
+        },
       },
     },
     {
@@ -127,7 +140,10 @@ export const Chatas: CollectionConfig = {
       unique: true,
       index: true,
       admin: {
-        description: 'URL-friendly identifier for this chata',
+        description: {
+          en: 'URL-friendly identifier for this chata',
+          cs: 'Identifikátor této chaty pro použití v URL',
+        },
       },
       hooks: {
         beforeValidate: [
@@ -147,7 +163,10 @@ export const Chatas: CollectionConfig = {
       name: 'domains',
       type: 'array',
       admin: {
-        description: 'Domain names that should automatically load this chata',
+        description: {
+          en: 'Domain names that should automatically load this chata',
+          cs: 'Domény, které automaticky načtou tuto chatu',
+        },
       },
       fields: [
         {
@@ -155,7 +174,10 @@ export const Chatas: CollectionConfig = {
           type: 'text',
           required: true,
           admin: {
-            description: 'Domain hostname (e.g., "trips.example.com")',
+            description: {
+              en: 'Domain hostname (e.g., "trips.example.com")',
+              cs: 'Doménové jméno (např. „trips.example.com“)',
+            },
           },
         },
       ],
@@ -179,7 +201,7 @@ export const Chatas: CollectionConfig = {
     // everyone pays into — the chata keeps no copy of it
     {
       type: 'collapsible',
-      label: 'Banker',
+      label: { en: 'Banker', cs: 'Pokladník' },
       fields: [
         {
           name: 'banker',
@@ -187,12 +209,20 @@ export const Chatas: CollectionConfig = {
           relationTo: 'participants',
           required: false,
           admin: {
-            description:
-              'Person managing the money for this trip. On a new chata the list is ' +
-              'empty — save the chata, add participants (e.g. via "Prefill ' +
-              'participants" above), then pick the banker. Everyone pays into the ' +
-              "banker's own account, so their banking info is edited on the " +
-              'participant, not here.',
+            description: {
+              en:
+                'Person managing the money for this trip. On a new chata the list is ' +
+                'empty — save the chata, add participants (e.g. via "Prefill ' +
+                'participants" above), then pick the banker. Everyone pays into the ' +
+                "banker's own account, so their banking info is edited on the " +
+                'participant, not here.',
+              cs:
+                'Osoba spravující peníze tohoto výletu. U nové chaty je seznam ' +
+                'prázdný – chatu uložte, přidejte účastníky (např. tlačítkem ' +
+                '„Předvyplnit účastníky“ výše) a pak pokladníka vyberte. Všichni ' +
+                'platí na vlastní účet pokladníka, jeho bankovní údaje se tedy ' +
+                'upravují u účastníka, ne tady.',
+            },
             components: {
               afterInput: [
                 '@/collections/Chatas/components/BankerAccountSummary#BankerAccountSummary',
@@ -218,7 +248,7 @@ export const Chatas: CollectionConfig = {
     // Appearance
     {
       type: 'collapsible',
-      label: 'Appearance',
+      label: { en: 'Appearance', cs: 'Vzhled' },
       admin: {
         initCollapsed: true,
       },
@@ -228,7 +258,10 @@ export const Chatas: CollectionConfig = {
           type: 'relationship',
           relationTo: 'backgrounds',
           admin: {
-            description: 'Background image (uses system default if not set)',
+            description: {
+              en: 'Background image (uses system default if not set)',
+              cs: 'Obrázek na pozadí (bez nastavení se použije systémové výchozí)',
+            },
           },
         },
         {
@@ -236,7 +269,10 @@ export const Chatas: CollectionConfig = {
           type: 'relationship',
           relationTo: 'icons',
           admin: {
-            description: 'Icon (uses cottage icon if not set)',
+            description: {
+              en: 'Icon (uses cottage icon if not set)',
+              cs: 'Ikona (bez nastavení se použije ikona chaty)',
+            },
           },
         },
         {
@@ -244,7 +280,10 @@ export const Chatas: CollectionConfig = {
           type: 'text',
           defaultValue: '#d97706',
           admin: {
-            description: 'Theme color (hex)',
+            description: {
+              en: 'Theme color (hex)',
+              cs: 'Barva motivu (hex)',
+            },
             components: {
               Field: '@/components/ColorPickerField#ColorPickerField',
             },
@@ -256,7 +295,7 @@ export const Chatas: CollectionConfig = {
     // Trip Information
     {
       type: 'collapsible',
-      label: 'Trip Information',
+      label: { en: 'Trip Information', cs: 'Informace o výletu' },
       admin: {
         initCollapsed: true,
       },
@@ -266,7 +305,10 @@ export const Chatas: CollectionConfig = {
           type: 'checkbox',
           defaultValue: false,
           admin: {
-            description: 'Enable the information/details view for this trip',
+            description: {
+          en: 'Enable the information/details view for this trip',
+          cs: 'Zapnout informační sekci pro tento výlet',
+        },
           },
         },
         {
@@ -295,7 +337,7 @@ export const Chatas: CollectionConfig = {
     // Destination Information
     {
       type: 'collapsible',
-      label: 'Destination',
+      label: { en: 'Destination', cs: 'Cíl cesty' },
       admin: {
         initCollapsed: true,
         condition: (data) => data.informationEnabled === true,
@@ -305,28 +347,40 @@ export const Chatas: CollectionConfig = {
           name: 'destinationName',
           type: 'text',
           admin: {
-            description: 'Name of the accommodation (e.g., "Chaloupka pod Medem")',
+            description: {
+              en: 'Name of the accommodation (e.g., "Chaloupka pod Medem")',
+              cs: 'Název ubytování (např. „Chaloupka pod Medem“)',
+            },
           },
         },
         {
           name: 'destinationLocation',
           type: 'text',
           admin: {
-            description: 'Specific location (e.g., "Horní Lomná")',
+            description: {
+              en: 'Specific location (e.g., "Horní Lomná")',
+              cs: 'Konkrétní místo (např. „Horní Lomná“)',
+            },
           },
         },
         {
           name: 'destinationDescription',
           type: 'textarea',
           admin: {
-            description: 'Description of the destination',
+            description: {
+              en: 'Description of the destination',
+              cs: 'Popis cíle cesty',
+            },
           },
         },
         {
           name: 'destinationLinks',
           type: 'array',
           admin: {
-            description: 'Useful links about the destination',
+            description: {
+              en: 'Useful links about the destination',
+              cs: 'Užitečné odkazy o cíli cesty',
+            },
           },
           fields: [
             {
@@ -345,7 +399,10 @@ export const Chatas: CollectionConfig = {
           name: 'photos',
           type: 'array',
           admin: {
-            description: 'Photos of the destination',
+            description: {
+              en: 'Photos of the destination',
+              cs: 'Fotky cíle cesty',
+            },
           },
           fields: [
             {
@@ -360,7 +417,10 @@ export const Chatas: CollectionConfig = {
           name: 'basicInfo',
           type: 'array',
           admin: {
-            description: 'Basic information bullets',
+            description: {
+              en: 'Basic information bullets',
+              cs: 'Základní informace v bodech',
+            },
           },
           fields: [
             {
@@ -376,7 +436,7 @@ export const Chatas: CollectionConfig = {
     // Transportation
     {
       type: 'collapsible',
-      label: 'Transportation',
+      label: { en: 'Transportation', cs: 'Doprava' },
       admin: {
         initCollapsed: true,
         condition: (data) => data.informationEnabled === true,
@@ -386,14 +446,20 @@ export const Chatas: CollectionConfig = {
           name: 'parking',
           type: 'text',
           admin: {
-            description: 'Parking information',
+            description: {
+              en: 'Parking information',
+              cs: 'Informace o parkování',
+            },
           },
         },
         {
           name: 'carRoutes',
           type: 'array',
           admin: {
-            description: 'Driving directions',
+            description: {
+              en: 'Driving directions',
+              cs: 'Trasy autem',
+            },
           },
           fields: [
             {
@@ -406,7 +472,10 @@ export const Chatas: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'e.g., "3:30"',
+                description: {
+                  en: 'e.g., "3:30"',
+                  cs: 'např. „3:30“',
+                },
               },
             },
             {
@@ -414,7 +483,10 @@ export const Chatas: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'e.g., "300 km"',
+                description: {
+                  en: 'e.g., "300 km"',
+                  cs: 'např. „300 km“',
+                },
               },
             },
             {
@@ -422,7 +494,10 @@ export const Chatas: CollectionConfig = {
               type: 'textarea',
               required: true,
               admin: {
-                description: 'Route description',
+                description: {
+                  en: 'Route description',
+                  cs: 'Popis trasy',
+                },
               },
             },
           ],
@@ -431,7 +506,10 @@ export const Chatas: CollectionConfig = {
           name: 'publicTransportOptions',
           type: 'array',
           admin: {
-            description: 'Public transport options',
+            description: {
+              en: 'Public transport options',
+              cs: 'Spojení veřejnou dopravou',
+            },
           },
           fields: [
             {
@@ -439,7 +517,10 @@ export const Chatas: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'e.g., "Z Prahy"',
+                description: {
+                  en: 'e.g., "Z Prahy"',
+                  cs: 'např. „Z Prahy“',
+                },
               },
             },
             {
@@ -447,26 +528,34 @@ export const Chatas: CollectionConfig = {
               type: 'select',
               defaultValue: 'tam',
               options: [
-                { label: 'Tam (to the chata)', value: 'tam' },
-                { label: 'Zpět (back home)', value: 'zpet' },
+                { label: { en: 'To the chata', cs: 'Tam' }, value: 'tam' },
+                { label: { en: 'Back home', cs: 'Zpět' }, value: 'zpet' },
               ],
               admin: {
-                description:
-                  'Day used by the "add to calendar" link: tam → arrival day, zpět → departure day',
+                description: {
+                  en: 'Day used by the "add to calendar" link: tam → arrival day, zpět → departure day',
+                  cs: 'Den použitý odkazem „přidat do kalendáře“: tam → den příjezdu, zpět → den odjezdu',
+                },
               },
             },
             {
               name: 'totalDuration',
               type: 'text',
               admin: {
-                description: 'Total journey time',
+                description: {
+                  en: 'Total journey time',
+                  cs: 'Celková doba cesty',
+                },
               },
             },
             {
               name: 'notes',
               type: 'textarea',
               admin: {
-                description: 'Additional notes',
+                description: {
+                  en: 'Additional notes',
+                  cs: 'Další poznámky',
+                },
               },
             },
             {
@@ -478,8 +567,8 @@ export const Chatas: CollectionConfig = {
                   type: 'select',
                   required: true,
                   options: [
-                    { label: 'Vlak (Train)', value: 'vlak' },
-                    { label: 'Autobus (Bus)', value: 'autobus' },
+                    { label: { en: 'Train', cs: 'Vlak' }, value: 'vlak' },
+                    { label: { en: 'Bus', cs: 'Autobus' }, value: 'autobus' },
                   ],
                 },
                 {
@@ -487,7 +576,10 @@ export const Chatas: CollectionConfig = {
                   type: 'text',
                   required: true,
                   admin: {
-                    description: 'Train/bus number',
+                    description: {
+                      en: 'Train/bus number',
+                      cs: 'Číslo vlaku/autobusu',
+                    },
                   },
                 },
                 {
@@ -505,7 +597,10 @@ export const Chatas: CollectionConfig = {
                   type: 'text',
                   required: true,
                   admin: {
-                    description: 'Format: HH:MM (e.g., "08:45")',
+                    description: {
+                      en: 'Format: HH:MM (e.g., "08:45")',
+                      cs: 'Formát: HH:MM (např. „08:45“)',
+                    },
                   },
                 },
                 {
@@ -513,7 +608,10 @@ export const Chatas: CollectionConfig = {
                   type: 'text',
                   required: true,
                   admin: {
-                    description: 'Format: HH:MM (e.g., "12:30")',
+                    description: {
+                      en: 'Format: HH:MM (e.g., "12:30")',
+                      cs: 'Formát: HH:MM (např. „12:30“)',
+                    },
                   },
                 },
               ],
@@ -526,7 +624,7 @@ export const Chatas: CollectionConfig = {
     // Bedroom Organization
     {
       type: 'collapsible',
-      label: 'Bedroom Organization',
+      label: { en: 'Bedroom Organization', cs: 'Rozdělení pokojů' },
       admin: {
         initCollapsed: true,
       },
@@ -536,7 +634,10 @@ export const Chatas: CollectionConfig = {
           type: 'checkbox',
           defaultValue: false,
           admin: {
-            description: 'Enable the bedroom organization view for this trip',
+            description: {
+            en: 'Enable the bedroom organization view for this trip',
+            cs: 'Zapnout sekci rozdělení pokojů pro tento výlet',
+          },
           },
         },
         {
@@ -544,7 +645,10 @@ export const Chatas: CollectionConfig = {
           type: 'checkbox',
           defaultValue: false,
           admin: {
-            description: 'Enable per-night occupancy tracking (requires trip dates)',
+            description: {
+            en: 'Enable per-night occupancy tracking (requires trip dates)',
+            cs: 'Zapnout evidenci obsazenosti po jednotlivých nocích (vyžaduje termín výletu)',
+          },
             condition: (data) =>
               data.bedroomOrganizationEnabled === true && data.informationEnabled === true,
           },
@@ -553,7 +657,10 @@ export const Chatas: CollectionConfig = {
           name: 'rooms',
           type: 'array',
           admin: {
-            description: 'Rooms available at this accommodation',
+            description: {
+              en: 'Rooms available at this accommodation',
+              cs: 'Pokoje dostupné v tomto ubytování',
+            },
             condition: (data) => data.bedroomOrganizationEnabled === true,
           },
           fields: [
@@ -562,14 +669,20 @@ export const Chatas: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'Room name (e.g., "Pokoj u krbu", "Podkroví")',
+                description: {
+                  en: 'Room name (e.g., "Pokoj u krbu", "Podkroví")',
+                  cs: 'Název pokoje (např. „Pokoj u krbu“, „Podkroví“)',
+                },
               },
             },
             {
               name: 'description',
               type: 'textarea',
               admin: {
-                description: 'Optional description of the room',
+                description: {
+                  en: 'Optional description of the room',
+                  cs: 'Volitelný popis pokoje',
+                },
               },
             },
             {
@@ -577,7 +690,10 @@ export const Chatas: CollectionConfig = {
               type: 'upload',
               relationTo: 'media',
               admin: {
-                description: 'Photo of the room',
+                description: {
+                  en: 'Photo of the room',
+                  cs: 'Fotka pokoje',
+                },
               },
             },
             {
@@ -587,14 +703,20 @@ export const Chatas: CollectionConfig = {
               min: 1,
               defaultValue: 2,
               admin: {
-                description: 'Maximum number of people who can sleep in this room',
+                description: {
+                  en: 'Maximum number of people who can sleep in this room',
+                  cs: 'Maximální počet lidí, kteří mohou v pokoji spát',
+                },
               },
             },
             {
               name: 'beds',
               type: 'array',
               admin: {
-                description: 'Beds in this room',
+                description: {
+                  en: 'Beds in this room',
+                  cs: 'Postele v tomto pokoji',
+                },
               },
               fields: [
                 {
@@ -602,14 +724,20 @@ export const Chatas: CollectionConfig = {
                   type: 'text',
                   required: true,
                   admin: {
-                    description: 'Bed name/type (e.g., "Manželská postel", "Palanda - horní")',
+                    description: {
+                      en: 'Bed name/type (e.g., "Manželská postel", "Palanda - horní")',
+                      cs: 'Název/typ postele (např. „Manželská postel“, „Palanda – horní“)',
+                    },
                   },
                 },
                 {
                   name: 'occupants',
                   type: 'array',
                   admin: {
-                    description: 'Who sleeps in this bed',
+                    description: {
+                      en: 'Who sleeps in this bed',
+                      cs: 'Kdo v této posteli spí',
+                    },
                   },
                   fields: [
                     {
@@ -632,7 +760,10 @@ export const Chatas: CollectionConfig = {
                       name: 'nights',
                       type: 'json',
                       admin: {
-                        description: 'Which nights (1-indexed). Empty = all nights. E.g. [1, 2, 3]',
+                        description: {
+                          en: 'Which nights (1-indexed). Empty = all nights. E.g. [1, 2, 3]',
+                          cs: 'Které noci (číslováno od 1). Prázdné = všechny noci. Např. [1, 2, 3]',
+                        },
                         condition: (data) => data.advancedBedroomMode === true,
                       },
                     },
@@ -648,7 +779,7 @@ export const Chatas: CollectionConfig = {
     // Shared Cars Organization
     {
       type: 'collapsible',
-      label: 'Shared Cars Organization',
+      label: { en: 'Shared Cars Organization', cs: 'Sdílená auta' },
       admin: {
         initCollapsed: true,
       },
@@ -658,14 +789,20 @@ export const Chatas: CollectionConfig = {
           type: 'checkbox',
           defaultValue: false,
           admin: {
-            description: 'Enable the shared cars organization view for this trip',
+            description: {
+            en: 'Enable the shared cars organization view for this trip',
+            cs: 'Zapnout sekci sdílených aut pro tento výlet',
+          },
           },
         },
         {
           name: 'sharedCars',
           type: 'array',
           admin: {
-            description: 'Cars/rides for this trip',
+            description: {
+              en: 'Cars/rides for this trip',
+              cs: 'Auta/jízdy na tomto výletu',
+            },
             condition: (data) => data.sharedCarsEnabled === true,
           },
           fields: [
@@ -674,14 +811,20 @@ export const Chatas: CollectionConfig = {
               type: 'text',
               required: true,
               admin: {
-                description: 'Car/trip name (e.g., "Auto tam - Petr", "Cesta zpět")',
+                description: {
+                  en: 'Car/trip name (e.g., "Auto tam - Petr", "Cesta zpět")',
+                  cs: 'Název auta/jízdy (např. „Auto tam – Petr“, „Cesta zpět“)',
+                },
               },
             },
             {
               name: 'description',
               type: 'textarea',
               admin: {
-                description: 'Additional details about this ride',
+                description: {
+                  en: 'Additional details about this ride',
+                  cs: 'Další podrobnosti o této jízdě',
+                },
               },
             },
             {
@@ -690,7 +833,10 @@ export const Chatas: CollectionConfig = {
               relationTo: 'participants',
               required: true,
               admin: {
-                description: 'Who is driving this car',
+                description: {
+                  en: 'Who is driving this car',
+                  cs: 'Kdo toto auto řídí',
+                },
               },
               filterOptions: ({ data }) => {
                 if (data?.id) {
@@ -708,7 +854,10 @@ export const Chatas: CollectionConfig = {
               type: 'relationship',
               relationTo: 'participants',
               admin: {
-                description: 'Spolujezdec v předu',
+                description: {
+                  en: 'Front-seat passenger',
+                  cs: 'Spolujezdec vpředu',
+                },
               },
               filterOptions: ({ data }) => {
                 if (data?.id) {
@@ -725,7 +874,10 @@ export const Chatas: CollectionConfig = {
               name: 'passengers',
               type: 'array',
               admin: {
-                description: 'Další cestující',
+                description: {
+                  en: 'Other passengers',
+                  cs: 'Další cestující',
+                },
               },
               fields: [
                 {
@@ -750,7 +902,10 @@ export const Chatas: CollectionConfig = {
               name: 'equipment',
               type: 'array',
               admin: {
-                description: 'Vybavení/náklad v autě',
+                description: {
+                  en: 'Equipment/cargo in the car',
+                  cs: 'Vybavení/náklad v autě',
+                },
               },
               fields: [
                 {
@@ -758,7 +913,10 @@ export const Chatas: CollectionConfig = {
                   type: 'text',
                   required: true,
                   admin: {
-                    description: 'Název vybavení (např. "Pivo", "Kufry")',
+                    description: {
+                      en: 'Equipment name (e.g., "Pivo", "Kufry")',
+                      cs: 'Název vybavení (např. „Pivo“, „Kufry“)',
+                    },
                   },
                 },
               ],

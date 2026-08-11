@@ -1,8 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useFormFields } from '@payloadcms/ui'
+import { useFormFields, useTranslation } from '@payloadcms/ui'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const toId = (value: unknown): string | null => {
   if (value === null || value === undefined || value === '') return null
@@ -22,6 +26,7 @@ type Resolved = {
  * links to the participant when something is missing.
  */
 export const BankerAccountSummary: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const bankerValue = useFormFields(([fields]) => fields?.banker?.value)
   const bankerId = toId(bankerValue)
   const [resolved, setResolved] = useState<Resolved | null>(null)
@@ -75,20 +80,21 @@ export const BankerAccountSummary: React.FC = () => {
     >
       {missing ? (
         <>
-          <strong>{resolved.name}</strong> has no banking info yet — settlements will
-          show no account or QR code.{' '}
-          <a href={editHref}>Add it on the participant →</a>
+          <strong>{resolved.name}</strong> {t('zicha:bankerNoBankingInfo')}{' '}
+          <a href={editHref}>{t('zicha:bankerAddOnParticipant')}</a>
         </>
       ) : (
         <>
           <div style={{ color: 'var(--theme-elevation-500)' }}>
-            Payments go to <strong>{resolved.name}</strong>&apos;s own account:
+            {t('zicha:bankerPaymentsGoToPrefix')}
+            <strong>{resolved.name}</strong>
+            {t('zicha:bankerPaymentsGoToSuffix')}
           </div>
           <div>
             {resolved.account?.accountNumber || '—'}
             {resolved.account?.iban ? ` · ${resolved.account.iban}` : ''}
           </div>
-          <a href={editHref}>Edit on the participant →</a>
+          <a href={editHref}>{t('zicha:bankerEditOnParticipant')}</a>
         </>
       )}
     </div>

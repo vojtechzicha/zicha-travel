@@ -1,13 +1,18 @@
 import crypto from 'crypto'
-import type { CollectionConfig, Where } from 'payload'
+import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
 import { adminRoleOnly, canManageChata, chataScopedAccess } from '../lib/access'
+import { pickValidationMessage } from '../i18n/adminTranslations'
 
 const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
 
 export const Participants: CollectionConfig = {
   slug: 'participants',
+  labels: {
+    singular: { en: 'Participant', cs: 'Účastník' },
+    plural: { en: 'Participants', cs: 'Účastníci' },
+  },
   endpoints: [
     {
       // Retroactive sync of the standing "paid by" invitation onto all
@@ -132,7 +137,7 @@ export const Participants: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'chata', 'accountNumber'],
-    group: 'Expense Tracking',
+    group: { en: 'Expense Tracking', cs: 'Evidence výdajů' },
   },
   access: {
     // Public read access for API consumption
@@ -160,7 +165,10 @@ export const Participants: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Participant\'s full name',
+        description: {
+          en: 'Participant\'s full name',
+          cs: 'Celé jméno účastníka',
+        },
       },
     },
     {
@@ -169,21 +177,31 @@ export const Participants: CollectionConfig = {
         {
           name: 'akuzativ',
           type: 'text',
-          label: 'Akuzativ (4. pád)',
+          label: { en: 'Accusative (Czech "akuzativ")', cs: 'Akuzativ (4. pád)' },
           admin: {
-            description:
-              'Name in the accusative case, e.g. "Katku" — used in phrases like ' +
-              '"Vojta zve Katku". Falls back to the plain name when empty.',
+            description: {
+              en:
+                'Name in the accusative case, e.g. "Katku" — used in phrases like ' +
+                '"Vojta zve Katku". Falls back to the plain name when empty.',
+              cs:
+                'Jméno ve 4. pádě, např. „Katku“ – používá se ve frázích jako ' +
+                '„Vojta zve Katku“. Když je prázdné, použije se běžné jméno.',
+            },
           },
         },
         {
           name: 'vokativ',
           type: 'text',
-          label: 'Vokativ (5. pád)',
+          label: { en: 'Vocative (Czech "vokativ")', cs: 'Vokativ (5. pád)' },
           admin: {
-            description:
-              'Name in the vocative case, e.g. "Katko" — stored for future ' +
-              'greetings, not displayed anywhere yet.',
+            description: {
+              en:
+                'Name in the vocative case, e.g. "Katko" — stored for future ' +
+                'greetings, not displayed anywhere yet.',
+              cs:
+                'Jméno v 5. pádě, např. „Katko“ – uloženo pro budoucí oslovení, ' +
+                'zatím se nikde nezobrazuje.',
+            },
           },
         },
       ],
@@ -194,7 +212,10 @@ export const Participants: CollectionConfig = {
       relationTo: 'chatas',
       required: true,
       admin: {
-        description: 'The trip/chata this participant belongs to',
+        description: {
+          en: 'The trip/chata this participant belongs to',
+          cs: 'Chata/výlet, kam tento účastník patří',
+        },
       },
     },
     {
@@ -202,7 +223,10 @@ export const Participants: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'Participant is travelling with a pet',
+        description: {
+          en: 'Participant is travelling with a pet',
+          cs: 'Účastník cestuje s domácím mazlíčkem',
+        },
       },
     },
     {
@@ -210,11 +234,18 @@ export const Participants: CollectionConfig = {
       type: 'relationship',
       relationTo: 'participants',
       admin: {
-        description:
-          'This participant\'s expense shares are permanently covered by another ' +
-          'participant (e.g. a child paid by a parent). New expenses automatically ' +
-          'get a standing invitation; use the button below to apply the SAVED ' +
-          'value to existing expenses.',
+        description: {
+          en:
+            'This participant\'s expense shares are permanently covered by another ' +
+            'participant (e.g. a child paid by a parent). New expenses automatically ' +
+            'get a standing invitation; use the button below to apply the SAVED ' +
+            'value to existing expenses.',
+          cs:
+            'Podíly tohoto účastníka na výdajích trvale hradí jiný účastník ' +
+            '(např. dítě, za které platí rodič). Nové výdaje dostanou trvalé ' +
+            'pozvání automaticky; tlačítkem níže promítnete ULOŽENOU hodnotu ' +
+            'do existujících výdajů.',
+        },
         condition: (data) => Boolean(data?.chata),
         components: {
           afterInput: ['@/collections/Participants/components/ApplyPaidByButton#ApplyPaidByButton'],
@@ -233,20 +264,27 @@ export const Participants: CollectionConfig = {
         }
         return { and: conditions }
       },
-      validate: (value: unknown, { id }: { id?: unknown }) => {
+      validate: (value: unknown, { id, req }: { id?: unknown; req?: PayloadRequest }) => {
         const ref = value as null | undefined | number | string | { id: number | string }
         const refValue = typeof ref === 'object' && ref !== null ? ref.id : ref
         if (refValue !== null && refValue !== undefined && id && String(refValue) === String(id)) {
-          return 'A participant cannot be paid by themselves'
+          return pickValidationMessage(
+            req,
+            'A participant cannot be paid by themselves',
+            'Účastník nemůže platit sám za sebe',
+          )
         }
         return true
       },
     },
     {
       type: 'collapsible',
-      label: 'Banking Information',
+      label: { en: 'Banking Information', cs: 'Bankovní údaje' },
       admin: {
-        description: 'Required only for creditors who will receive money back',
+        description: {
+          en: 'Required only for creditors who will receive money back',
+          cs: 'Potřeba jen u věřitelů, kterým se budou vracet peníze',
+        },
         initCollapsed: true,
       },
       fields: [
@@ -254,7 +292,10 @@ export const Participants: CollectionConfig = {
           name: 'accountNumber',
           type: 'text',
           admin: {
-            description: 'Account number in Czech format (e.g., "123456/0100") - only needed for creditors',
+            description: {
+              en: 'Account number in Czech format (e.g., "123456/0100") - only needed for creditors',
+              cs: 'Číslo účtu v českém formátu (např. „123456/0100“) – potřeba jen u věřitelů',
+            },
             components: {
               Field:
                 '@/components/CzechBankAccountField#CzechBankAccountField',
@@ -269,7 +310,10 @@ export const Participants: CollectionConfig = {
           name: 'iban',
           type: 'text',
           admin: {
-            description: 'Full IBAN for QR code generation - only needed for creditors',
+            description: {
+              en: 'Full IBAN for QR code generation - only needed for creditors',
+              cs: 'Celý IBAN pro generování QR kódu – potřeba jen u věřitelů',
+            },
             components: {
               Field:
                 '@/components/CzechBankAccountField#CzechBankAccountField',
@@ -293,10 +337,16 @@ export const Participants: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description:
-          'User account linked to this participant ("účet"). Use the button below to ' +
-          'create a new account from an email — nothing is emailed until the person ' +
-          'requests a login link themselves.',
+        description: {
+          en:
+            'User account linked to this participant ("účet"). Use the button below to ' +
+            'create a new account from an email — nothing is emailed until the person ' +
+            'requests a login link themselves.',
+          cs:
+            'Uživatelský účet propojený s tímto účastníkem. Tlačítkem níže vytvoříte ' +
+            'nový účet z e-mailu – nic se neposílá, dokud si dotyčný sám nevyžádá ' +
+            'přihlašovací odkaz.',
+        },
         components: {
           afterInput: [
             // Empty name/vokativ prefill from the selected account's display name

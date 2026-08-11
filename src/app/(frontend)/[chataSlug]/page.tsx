@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 import { ChataView } from '../components/ChataView'
 import { fetchChataBySlug } from '../utils/fetchChata'
 
@@ -12,21 +13,21 @@ interface ChataPageProps {
 
 export async function generateMetadata({ params }: ChataPageProps): Promise<Metadata> {
   const { chataSlug } = await params
-  const chata = await fetchChataBySlug(chataSlug)
+  const [chata, t] = await Promise.all([fetchChataBySlug(chataSlug), getTranslations('chata.meta')])
 
   if (chata) {
     return {
       title: chata.name,
-      description: `${chata.name} - ${chata.location} - plánování, informace, finance`,
+      description: t('chataDescription', { name: chata.name, location: chata.location }),
       openGraph: {
         title: `${chata.name} | zicha.travel`,
-        description: `Společně na chatu: ${chata.location}`,
+        description: t('ogDescription', { location: chata.location }),
       },
     }
   }
 
   return {
-    title: 'Chata nenalezena',
+    title: t('notFoundTitle'),
   }
 }
 

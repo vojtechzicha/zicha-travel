@@ -3,10 +3,14 @@ import { isSuperadmin } from '../lib/access'
 
 export const Icons: CollectionConfig = {
   slug: 'icons',
+  labels: {
+    singular: { en: 'Icon', cs: 'Ikona' },
+    plural: { en: 'Icons', cs: 'Ikony' },
+  },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'isDefault'],
-    group: 'Appearance',
+    group: { en: 'Appearance', cs: 'Vzhled' },
   },
   access: {
     read: () => true,
@@ -23,7 +27,10 @@ export const Icons: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Display name for this icon',
+        description: {
+          en: 'Display name for this icon',
+          cs: 'Zobrazovaný název této ikony',
+        },
       },
     },
     {
@@ -31,7 +38,10 @@ export const Icons: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'System default - cannot be deleted',
+        description: {
+          en: 'System default - cannot be deleted',
+          cs: 'Systémové výchozí – nelze smazat',
+        },
         readOnly: true,
       },
     },
@@ -41,7 +51,10 @@ export const Icons: CollectionConfig = {
       relationTo: 'media',
       required: true,
       admin: {
-        description: 'Upload an SVG icon file',
+        description: {
+          en: 'Upload an SVG icon file',
+          cs: 'Nahrajte soubor ikony ve formátu SVG',
+        },
       },
     },
   ],

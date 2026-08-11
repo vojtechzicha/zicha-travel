@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import {
   Crown,
   ChevronDown,
@@ -22,6 +23,7 @@ import { track } from '@/lib/analytics'
 import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
 import { akuzativByName } from '@/lib/czechNames'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
+import type { AppLocale } from '@/i18n/config'
 import type { Participant, Chata, Prepayment, Expense } from '@/payload-types'
 import type { ParticipantStats } from '@/utils/calculateStats'
 
@@ -52,13 +54,18 @@ export function PersonView({
 }: PersonViewProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
   const [isPlannedBreakdownOpen, setIsPlannedBreakdownOpen] = useState(false)
+  const t = useTranslations('finance')
+  const locale = useLocale() as AppLocale
 
   const avatarColor = getAvatarColor(participant.name)
   const balance = stats.balance
 
   // Breakdown entries carry plain names; "platíš za …" / "pozvání pro …"
   // need the guest in the accusative case ("za Katku")
-  const akuzativNames = useMemo(() => akuzativByName(allParticipants), [allParticipants])
+  const akuzativNames = useMemo(
+    () => akuzativByName(allParticipants, locale),
+    [allParticipants, locale]
+  )
   const inAkuzativ = (name: string) => akuzativNames.get(name) ?? name
 
   // Settlement threshold: 1 Kč to avoid small rounding differences
@@ -139,7 +146,7 @@ export function PersonView({
               </h2>
               {isBanker && (
                 <span className="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md mt-1 uppercase tracking-wide">
-                  Pokladník
+                  {t('personView.bankerBadge')}
                 </span>
               )}
             </div>
@@ -153,18 +160,20 @@ export function PersonView({
           {/* Row: Zaplaceno za ostatní */}
           <div className="flex justify-between items-center text-sm">
             <span className="flex items-center gap-2 text-gray-600">
-              <Wallet size={14} /> Zaplaceno za ostatní:
+              <Wallet size={14} /> {t('personView.paidForOthers')}
             </span>
-            <strong className="text-gray-900">{formatCurrency(stats.paidExternal)}</strong>
+            <strong className="text-gray-900">{formatCurrency(stats.paidExternal, locale)}</strong>
           </div>
 
           {/* Row: Kolik ještě musíš zaplatit (planned expenses) - only if > 0 */}
           {stats.plannedPaidExternal > 0 && (
             <div className="flex justify-between items-center text-sm">
               <span className="flex items-center gap-2 text-amber-700">
-                <Clock size={14} /> Kolik ještě musíš zaplatit:
+                <Clock size={14} /> {t('personView.stillToPay')}
               </span>
-              <strong className="text-amber-700">{formatCurrency(stats.plannedPaidExternal)}</strong>
+              <strong className="text-amber-700">
+                {formatCurrency(stats.plannedPaidExternal, locale)}
+              </strong>
             </div>
           )}
 
@@ -174,30 +183,30 @@ export function PersonView({
               {stats.prepaidAdvance !== 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
-                    <ArrowDownLeft size={14} /> Vybráno na zálohách:
+                    <ArrowDownLeft size={14} /> {t('personView.collectedAdvances')}
                   </span>
                   <strong className="text-gray-900">
-                    - {formatCurrency(Math.abs(stats.prepaidAdvance))}
+                    - {formatCurrency(Math.abs(stats.prepaidAdvance), locale)}
                   </strong>
                 </div>
               )}
               {stats.prepaidSupplement !== 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
-                    <ArrowDownLeft size={14} /> Vybráno na doplatcích:
+                    <ArrowDownLeft size={14} /> {t('personView.collectedSupplements')}
                   </span>
                   <strong className="text-gray-900">
-                    - {formatCurrency(Math.abs(stats.prepaidSupplement))}
+                    - {formatCurrency(Math.abs(stats.prepaidSupplement), locale)}
                   </strong>
                 </div>
               )}
               {stats.prepaidRefund !== 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
-                    <ArrowRight size={14} /> Vráceno přeplatky:
+                    <ArrowRight size={14} /> {t('personView.refundedOverpayments')}
                   </span>
                   <strong className="text-green-600">
-                    + {formatCurrency(Math.abs(stats.prepaidRefund))}
+                    + {formatCurrency(Math.abs(stats.prepaidRefund), locale)}
                   </strong>
                 </div>
               )}
@@ -207,30 +216,30 @@ export function PersonView({
               {stats.prepaidAdvance > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
-                    <ArrowRight size={14} /> Záloha:
+                    <ArrowRight size={14} /> {t('personView.advance')}
                   </span>
                   <strong className="text-green-600">
-                    + {formatCurrency(stats.prepaidAdvance)}
+                    + {formatCurrency(stats.prepaidAdvance, locale)}
                   </strong>
                 </div>
               )}
               {stats.prepaidSupplement > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
-                    <ArrowRight size={14} /> Doplatek:
+                    <ArrowRight size={14} /> {t('personView.supplement')}
                   </span>
                   <strong className="text-green-600">
-                    + {formatCurrency(stats.prepaidSupplement)}
+                    + {formatCurrency(stats.prepaidSupplement, locale)}
                   </strong>
                 </div>
               )}
               {stats.prepaidRefund < 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
-                    <ArrowDownLeft size={14} /> Vrácený přeplatek:
+                    <ArrowDownLeft size={14} /> {t('personView.refundedOverpayment')}
                   </span>
                   <strong className="text-gray-900">
-                    - {formatCurrency(Math.abs(stats.prepaidRefund))}
+                    - {formatCurrency(Math.abs(stats.prepaidRefund), locale)}
                   </strong>
                 </div>
               )}
@@ -246,14 +255,14 @@ export function PersonView({
             }}
           >
             <div className="flex items-center gap-2 text-gray-600">
-              <User size={14} /> Tvá útrata (Fair Share):
+              <User size={14} /> {t('personView.fairShare')}
               {isBreakdownOpen ? (
                 <ChevronUp size={14} />
               ) : (
                 <ChevronDown size={14} />
               )}
             </div>
-            <strong className="text-gray-900">- {formatCurrency(stats.cost)}</strong>
+            <strong className="text-gray-900">- {formatCurrency(stats.cost, locale)}</strong>
           </div>
 
           {/* Breakdown list for actual costs (expanded) */}
@@ -265,22 +274,22 @@ export function PersonView({
                   <div key={idx} className="flex justify-between text-xs text-gray-600">
                     <span>
                       {item.title}
-                      {' '}<small className="text-gray-500">({item.weightIsAmount ? `podíl ${formatCurrency(item.weight)}` : `${item.weight} ${item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'}`})</small>
+                      {' '}<small className="text-gray-500">({item.weightIsAmount ? t('share.amount', { amount: formatCurrency(item.weight, locale) }) : t('share.count', { count: item.weight })})</small>
                       {item.invitedGuest && (
                         <small className="text-pink-600">
-                          {' '}· {item.auto ? `platíš za ${inAkuzativ(item.invitedGuest)}` : `pozvání pro ${inAkuzativ(item.invitedGuest)}`}
+                          {' '}· {item.auto ? t('invitation.youPayFor', { name: inAkuzativ(item.invitedGuest) }) : t('invitation.invitationFor', { name: inAkuzativ(item.invitedGuest) })}
                         </small>
                       )}
                       {item.invitedBy && (
                         <small className="text-green-600">
-                          {' '}· {item.auto ? `platí za tebe ${item.invitedBy}` : `pozval/a tě ${item.invitedBy}`}
+                          {' '}· {item.auto ? t('invitation.paysForYou', { name: item.invitedBy }) : t('invitation.invitedYou', { name: item.invitedBy })}
                         </small>
                       )}
                     </span>
                     <span className={isCredit || item.invitedBy ? 'text-green-600' : ''}>
                       {item.invitedBy
-                        ? formatCurrency(0)
-                        : `${isCredit ? '+' : '-'} ${formatCurrency(Math.abs(item.cost))}`}
+                        ? formatCurrency(0, locale)
+                        : `${isCredit ? '+' : '-'} ${formatCurrency(Math.abs(item.cost), locale)}`}
                     </span>
                   </div>
                 )
@@ -295,14 +304,14 @@ export function PersonView({
               onClick={() => setIsPlannedBreakdownOpen(!isPlannedBreakdownOpen)}
             >
               <div className="flex items-center gap-2 text-amber-700">
-                <Clock size={14} /> Plánovaná útrata (Fair Share):
+                <Clock size={14} /> {t('personView.plannedFairShare')}
                 {isPlannedBreakdownOpen ? (
                   <ChevronUp size={14} />
                 ) : (
                   <ChevronDown size={14} />
                 )}
               </div>
-              <strong className="text-amber-700">- {formatCurrency(stats.plannedCost)}</strong>
+              <strong className="text-amber-700">- {formatCurrency(stats.plannedCost, locale)}</strong>
             </div>
           )}
 
@@ -315,22 +324,22 @@ export function PersonView({
                   <div key={idx} className="flex justify-between text-xs text-amber-800">
                     <span>
                       {item.title}
-                      {' '}<small className="text-amber-700/80">({item.weightIsAmount ? `podíl ${formatCurrency(item.weight)}` : `${item.weight} ${item.weight === 1 ? 'podíl' : item.weight >= 2 && item.weight <= 4 ? 'podíly' : 'podílů'}`})</small>
+                      {' '}<small className="text-amber-700/80">({item.weightIsAmount ? t('share.amount', { amount: formatCurrency(item.weight, locale) }) : t('share.count', { count: item.weight })})</small>
                       {item.invitedGuest && (
                         <small className="text-pink-700">
-                          {' '}· {item.auto ? `platíš za ${inAkuzativ(item.invitedGuest)}` : `pozvání pro ${inAkuzativ(item.invitedGuest)}`}
+                          {' '}· {item.auto ? t('invitation.youPayFor', { name: inAkuzativ(item.invitedGuest) }) : t('invitation.invitationFor', { name: inAkuzativ(item.invitedGuest) })}
                         </small>
                       )}
                       {item.invitedBy && (
                         <small className="text-green-700">
-                          {' '}· {item.auto ? `platí za tebe ${item.invitedBy}` : `pozval/a tě ${item.invitedBy}`}
+                          {' '}· {item.auto ? t('invitation.paysForYou', { name: item.invitedBy }) : t('invitation.invitedYou', { name: item.invitedBy })}
                         </small>
                       )}
                     </span>
                     <span className={isCredit || item.invitedBy ? 'text-green-700' : ''}>
                       {item.invitedBy
-                        ? formatCurrency(0)
-                        : `${isCredit ? '+' : '-'} ${formatCurrency(Math.abs(item.cost))}`}
+                        ? formatCurrency(0, locale)
+                        : `${isCredit ? '+' : '-'} ${formatCurrency(Math.abs(item.cost), locale)}`}
                     </span>
                   </div>
                 )
@@ -348,7 +357,7 @@ export function PersonView({
           {isBanker && isSettled && (
             <div className="flex flex-col items-center text-green-600">
               <CheckCircle2 size={48} className="mb-2" />
-              <div className="text-2xl font-bold font-serif">Vše vyrovnáno</div>
+              <div className="text-2xl font-bold font-serif">{t('personView.allSettled')}</div>
             </div>
           )}
 
@@ -356,14 +365,14 @@ export function PersonView({
           {isBanker && !isSettled && (
             <>
               <span className="uppercase text-xs font-bold tracking-wider text-gray-500">
-                {balance < 0 ? 'Přebytek k rozdělení' : 'Chybí vybrat'}
+                {balance < 0 ? t('personView.surplusToDistribute') : t('personView.missingToCollect')}
               </span>
               <div
                 className={`text-5xl font-black font-serif mt-1 ${
                   balance < 0 ? 'text-blue-600' : 'text-red-600'
                 }`}
               >
-                {formatCurrency(Math.abs(balance))}
+                {formatCurrency(Math.abs(balance), locale)}
               </div>
             </>
           )}
@@ -372,7 +381,7 @@ export function PersonView({
           {!isBanker && isSettled && (
             <div className="flex flex-col items-center text-green-600">
               <CheckCircle2 size={48} className="mb-2" />
-              <div className="text-2xl font-bold font-serif">Vše vyrovnáno</div>
+              <div className="text-2xl font-bold font-serif">{t('personView.allSettled')}</div>
             </div>
           )}
 
@@ -380,10 +389,10 @@ export function PersonView({
           {!isBanker && !isSettled && (
             <>
               <span className="uppercase text-xs font-bold tracking-wider text-gray-500">
-                {isPositive ? 'Dostaneš zpět' : 'Doplácíš'}
+                {isPositive ? t('personView.youGetBack') : t('personView.youOwe')}
               </span>
               <div className="text-5xl font-black font-serif mt-1 text-gray-900">
-                {formatCurrency(Math.abs(balance))}
+                {formatCurrency(Math.abs(balance), locale)}
               </div>
             </>
           )}
@@ -394,7 +403,7 @@ export function PersonView({
       {(!isSettled || isBanker) && (
         <GlassCard padding="medium">
           <h3 className="flex items-center gap-2 text-gray-500 text-lg font-semibold border-b-2 border-gray-100 pb-2 mb-4">
-            <Banknote size={20} /> Jak se vyrovnat
+            <Banknote size={20} /> {t('personView.howToSettle')}
           </h3>
           <SettlementActions
             participant={participant}
@@ -411,14 +420,14 @@ export function PersonView({
 
       {/* History Section */}
       <GlassCard padding="medium">
-        <h3 className="font-serif text-xl font-bold text-gray-900 mb-4">Historie plateb</h3>
+        <h3 className="font-serif text-xl font-bold text-gray-900 mb-4">{t('personView.paymentHistory')}</h3>
         <div className="divide-y divide-gray-100">
           {/* Banker's incoming prepayments */}
           {isBanker &&
             incomingPrepayments.map((p, i) => {
               const isRefund = p.type === 'refund' || p.type === 'distribution'
               const fromInfo = getPayerDisplay(p.from)
-              const fromName = getPayerName(p.from) || 'Neznámý'
+              const fromName = getPayerName(p.from) || t('personView.unknown')
               const isJointAccount = fromInfo.kind === 'jointAccount'
               // For a joint-account prepayment, only the non-banker members'
               // shares move money into the pot (the banker's share is
@@ -439,16 +448,16 @@ export function PersonView({
                   </div>
                   <div className="flex-1 font-medium text-gray-700">
                     {isRefund
-                      ? `Vrácen přeplatek (${fromName})`
+                      ? t('personView.refundReturned', { name: fromName })
                       : p.type === 'supplement'
-                        ? `Přijatý doplatek (${fromName})`
-                        : `Přijatá záloha (${fromName})`}
+                        ? t('personView.receivedSupplement', { name: fromName })
+                        : t('personView.receivedAdvance', { name: fromName })}
                     {isJointAccount && (
-                      <span className="text-gray-400 text-sm"> – společný účet</span>
+                      <span className="text-gray-400 text-sm"> {t('personView.jointAccountSuffix')}</span>
                     )}
                   </div>
                   <span className={isRefund ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
-                    {isRefund ? '-' : '+'} {formatCurrency(Math.abs(countedAmount))}
+                    {isRefund ? '-' : '+'} {formatCurrency(Math.abs(countedAmount), locale)}
                   </span>
                 </div>
               )
@@ -475,16 +484,16 @@ export function PersonView({
                 </div>
                 <div className="flex-1 font-medium text-gray-700">
                   {isRefund
-                    ? `Vrácen přeplatek (${bankerName})`
+                    ? t('personView.refundReturned', { name: bankerName })
                     : p.type === 'supplement'
-                      ? `Odeslán doplatek (${bankerName})`
-                      : `Odeslána záloha (${bankerName})`}
+                      ? t('personView.sentSupplement', { name: bankerName })
+                      : t('personView.sentAdvance', { name: bankerName })}
                   {isJointAccount && (
-                    <span className="text-gray-400 text-sm"> – společný účet, tvá část</span>
+                    <span className="text-gray-400 text-sm"> {t('personView.jointAccountYourShare')}</span>
                   )}
                 </div>
                 <span className="text-green-600 font-bold">
-                  {isRefund ? 'Přijato ' : '+'} {formatCurrency(Math.abs(myShare))}
+                  {isRefund ? `${t('personView.received')} ` : '+'} {formatCurrency(Math.abs(myShare), locale)}
                 </span>
               </div>
             )
@@ -514,12 +523,14 @@ export function PersonView({
                   {isJointAccount && (
                     <span className="text-gray-400 text-sm">
                       {' '}
-                      – společný účet, tvá část (celkem {formatCurrency(Math.abs(e.amount))})
+                      {t('personView.jointAccountYourShareTotal', {
+                        amount: formatCurrency(Math.abs(e.amount), locale),
+                      })}
                     </span>
                   )}
                 </div>
                 <span className={isRefund ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                  {isRefund ? 'Vráceno ' : 'Platba '} {formatCurrency(Math.abs(myShare))}
+                  {isRefund ? `${t('personView.refunded')} ` : `${t('personView.payment')} `} {formatCurrency(Math.abs(myShare), locale)}
                 </span>
               </div>
             )
@@ -527,7 +538,7 @@ export function PersonView({
 
           {/* Empty state */}
           {myExpenses.length === 0 && myPrepayments.length === 0 && incomingPrepayments.length === 0 && (
-            <div className="text-center text-gray-500 py-4">Žádné transakce.</div>
+            <div className="text-center text-gray-500 py-4">{t('personView.noTransactions')}</div>
           )}
         </div>
       </GlassCard>

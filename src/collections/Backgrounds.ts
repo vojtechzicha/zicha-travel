@@ -3,10 +3,14 @@ import { isSuperadmin } from '../lib/access'
 
 export const Backgrounds: CollectionConfig = {
   slug: 'backgrounds',
+  labels: {
+    singular: { en: 'Background', cs: 'Pozadí' },
+    plural: { en: 'Backgrounds', cs: 'Pozadí' },
+  },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'isDefault', 'type'],
-    group: 'Appearance',
+    group: { en: 'Appearance', cs: 'Vzhled' },
   },
   access: {
     read: () => true,
@@ -23,7 +27,10 @@ export const Backgrounds: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Display name for this background',
+        description: {
+          en: 'Display name for this background',
+          cs: 'Zobrazovaný název tohoto pozadí',
+        },
       },
     },
     {
@@ -31,7 +38,10 @@ export const Backgrounds: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'System default - cannot be deleted',
+        description: {
+          en: 'System default - cannot be deleted',
+          cs: 'Systémové výchozí – nelze smazat',
+        },
         readOnly: true,
       },
     },
@@ -41,15 +51,18 @@ export const Backgrounds: CollectionConfig = {
       required: true,
       defaultValue: 'url',
       options: [
-        { label: 'External URL', value: 'url' },
-        { label: 'Uploaded Image', value: 'upload' },
+        { label: { en: 'External URL', cs: 'Externí URL' }, value: 'url' },
+        { label: { en: 'Uploaded Image', cs: 'Nahraný obrázek' }, value: 'upload' },
       ],
     },
     {
       name: 'url',
       type: 'text',
       admin: {
-        description: 'External image URL (e.g., Unsplash)',
+        description: {
+          en: 'External image URL (e.g., Unsplash)',
+          cs: 'URL externího obrázku (např. Unsplash)',
+        },
         condition: (data) => data.type === 'url',
       },
     },
@@ -58,7 +71,10 @@ export const Backgrounds: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
       admin: {
-        description: 'Upload a background image',
+        description: {
+          en: 'Upload a background image',
+          cs: 'Nahrajte obrázek pozadí',
+        },
         condition: (data) => data.type === 'upload',
       },
     },

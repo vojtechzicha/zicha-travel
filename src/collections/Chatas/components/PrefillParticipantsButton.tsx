@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { Button, useDocumentInfo } from '@payloadcms/ui'
+import { Button, useDocumentInfo, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 type SourceParticipant = {
   id: number
@@ -24,6 +28,7 @@ const chataName = (p: SourceParticipant): string => {
  * here and skipped server-side.
  */
 export const PrefillParticipantsButton: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const { id } = useDocumentInfo()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -98,13 +103,13 @@ export const PrefillParticipantsButton: React.FC = () => {
       })
       const data = await response.json()
       if (!response.ok) {
-        alert(`Error: ${data?.error || response.statusText}`)
+        alert(t('zicha:errorPrefix', { message: data?.error || response.statusText }))
         return
       }
       alert(
-        `Created ${data.created} participant(s).` +
+        t('zicha:prefillCreatedAlert', { count: data.created }) +
           (data.skipped?.length
-            ? ` Skipped (name already in this chata): ${data.skipped.join(', ')}.`
+            ? t('zicha:prefillSkippedAlert', { names: data.skipped.join(', ') })
             : '')
       )
       // Mark the created names as taken so their rows disable immediately
@@ -115,16 +120,16 @@ export const PrefillParticipantsButton: React.FC = () => {
       setSelected(new Set())
     } catch (error) {
       console.error('Error prefilling participants:', error)
-      alert('Error creating participants')
+      alert(t('zicha:prefillCreateError'))
     } finally {
       setCreating(false)
     }
-  }, [id, selected, sorted])
+  }, [id, selected, sorted, t])
 
   return (
     <div style={{ marginBottom: '1.5rem' }}>
       <Button buttonStyle="secondary" size="small" onClick={handleToggle}>
-        {open ? 'Hide "Prefill participants"' : 'Prefill participants from previous chatas…'}
+        {open ? t('zicha:prefillHide') : t('zicha:prefillShow')}
       </Button>
       {open && (
         <div
@@ -137,11 +142,13 @@ export const PrefillParticipantsButton: React.FC = () => {
         >
           <div style={{ maxHeight: '16rem', overflowY: 'auto', padding: '0.5rem 0.75rem' }}>
             {loading && (
-              <div style={{ color: 'var(--theme-elevation-500)' }}>Loading participants…</div>
+              <div style={{ color: 'var(--theme-elevation-500)' }}>
+                {t('zicha:prefillLoading')}
+              </div>
             )}
             {!loading && sorted.length === 0 && options !== null && (
               <div style={{ color: 'var(--theme-elevation-500)' }}>
-                No participants in other chatas.
+                {t('zicha:prefillNoOthers')}
               </div>
             )}
             {!loading &&
@@ -173,7 +180,7 @@ export const PrefillParticipantsButton: React.FC = () => {
                       {alreadyExists && (
                         <span style={{ color: 'var(--theme-elevation-400)' }}>
                           {' '}
-                          — already in this chata
+                          {t('zicha:prefillAlreadyInChata')}
                         </span>
                       )}
                     </span>
@@ -193,15 +200,14 @@ export const PrefillParticipantsButton: React.FC = () => {
               disabled={creating || selected.size === 0}
             >
               {creating
-                ? 'Creating…'
-                : `Create ${selected.size} participant(s) for this chata`}
+                ? t('zicha:prefillCreating')
+                : t('zicha:prefillCreateCount', { count: selected.size })}
             </Button>
           </div>
         </div>
       )}
       <div style={{ fontSize: '0.75rem', color: 'var(--theme-elevation-500)' }}>
-        Creates new participants of this chata copied from previous ones (name, declension forms,
-        banking info).
+        {t('zicha:prefillFooter')}
       </div>
     </div>
   )

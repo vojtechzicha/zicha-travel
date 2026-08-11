@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Users, Moon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { Chata, Participant } from '@/payload-types'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import {
@@ -52,19 +53,8 @@ function buildParticipantNightMap(chata: Chata): Map<number, ParticipantNightInf
   return nightMap
 }
 
-function getNightsText(count: number): string {
-  if (count === 1) return 'noc'
-  if (count >= 2 && count <= 4) return 'noci'
-  return 'nocí'
-}
-
-function getParticipantCountText(count: number): string {
-  if (count === 1) return 'účastník'
-  if (count >= 2 && count <= 4) return 'účastníci'
-  return 'účastníků'
-}
-
 export function ParticipantsView({ chata, participants }: ParticipantsViewProps) {
+  const t = useTranslations('trip')
   const sortedParticipants = useMemo(
     () => [...participants].sort((a, b) => a.name.localeCompare(b.name, 'cs')),
     [participants],
@@ -80,7 +70,7 @@ export function ParticipantsView({ chata, participants }: ParticipantsViewProps)
       <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8 border-2 border-primary/10">
         <Users size={48} className="mx-auto text-primary mb-4" />
         <h2 className="font-serif text-2xl sm:text-3xl font-black text-gray-900 mb-6">
-          Kdo všechno jede?
+          {t('participants.title')}
         </h2>
         <div className="flex justify-center gap-4 sm:gap-8 flex-wrap">
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
@@ -89,7 +79,7 @@ export function ParticipantsView({ chata, participants }: ParticipantsViewProps)
               {participants.length}
             </span>
             <span className="block text-sm text-gray-600 font-medium">
-              {getParticipantCountText(participants.length)}
+              {t('participants.participantsCountLabel', { count: participants.length })}
             </span>
           </div>
           {totalNights > 0 && (
@@ -97,7 +87,7 @@ export function ParticipantsView({ chata, participants }: ParticipantsViewProps)
               <span className="text-3xl block mb-1">🌙</span>
               <span className="text-2xl font-bold text-primary font-serif">{totalNights}</span>
               <span className="block text-sm text-gray-600 font-medium">
-                {getNightsText(totalNights)}
+                {t('participants.nightsCountLabel', { count: totalNights })}
               </span>
             </div>
           )}
@@ -130,8 +120,11 @@ export function ParticipantsView({ chata, participants }: ParticipantsViewProps)
                   <div className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
                     <Moon size={14} />
                     {nightInfo.isPartialStay
-                      ? `${nightInfo.nights}/${totalNights} ${getNightsText(nightInfo.nights)}`
-                      : 'celý pobyt'}
+                      ? t('participants.partialStay', {
+                          nights: nightInfo.nights,
+                          total: totalNights,
+                        })
+                      : t('participants.wholeStay')}
                   </div>
                 )}
               </div>

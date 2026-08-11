@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, useDocumentInfo, useFormFields } from '@payloadcms/ui'
+import { Button, useDocumentInfo, useFormFields, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const toId = (value: unknown): string | null => {
   if (value === null || value === undefined || value === '') return null
@@ -20,6 +24,7 @@ const toId = (value: unknown): string | null => {
  * rows left on existing expenses (removal mode).
  */
 export const ApplyPaidByButton: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const [loading, setLoading] = useState(false)
   const [hasStaleRows, setHasStaleRows] = useState(false)
   const { id, savedDocumentData } = useDocumentInfo()
@@ -65,11 +70,11 @@ export const ApplyPaidByButton: React.FC = () => {
 
   let hint: string | null = null
   if (!id) {
-    hint = 'Save the participant first.'
+    hint = t('zicha:saveParticipantFirst')
   } else if (isDirty) {
-    hint = 'Unsaved change - the button applies the saved value. Save first.'
+    hint = t('zicha:paidByHintUnsaved')
   } else if (!savedId && !hasStaleRows) {
-    hint = 'Select and save "Paid By" first.'
+    hint = t('zicha:paidByHintSelectFirst')
   }
 
   const handleApply = useCallback(async () => {
@@ -82,30 +87,30 @@ export const ApplyPaidByButton: React.FC = () => {
       })
       const data = await response.json()
       if (!response.ok) {
-        alert(`Error: ${data?.error || response.statusText}`)
+        alert(t('zicha:errorPrefix', { message: data?.error || response.statusText }))
         return
       }
       alert(
-        `Done - expenses checked: ${data.scanned}, updated: ${data.updated}.` +
-          (data.updated === 0 ? ' Everything was already in sync.' : '')
+        t('zicha:paidByDoneAlert', { scanned: data.scanned, updated: data.updated }) +
+          (data.updated === 0 ? t('zicha:paidByAllInSync') : '')
       )
       if (removalMode) setHasStaleRows(false)
     } catch (error) {
       console.error('Error applying paidBy retroactively:', error)
-      alert('Error applying retroactively')
+      alert(t('zicha:paidByError'))
     } finally {
       setLoading(false)
     }
-  }, [id, removalMode])
+  }, [id, removalMode, t])
 
   return (
     <div style={{ marginTop: '0.5rem' }}>
       <Button buttonStyle="secondary" size="small" onClick={handleApply} disabled={disabled}>
         {loading
-          ? 'Applying...'
+          ? t('zicha:paidByApplying')
           : removalMode
-            ? 'Remove standing invitations from existing expenses'
-            : 'Apply retroactively to existing expenses'}
+            ? t('zicha:paidByRemoveStanding')
+            : t('zicha:paidByApplyRetro')}
       </Button>
       {hint && (
         <div style={{ fontSize: '0.75rem', color: 'var(--theme-elevation-500)' }}>{hint}</div>

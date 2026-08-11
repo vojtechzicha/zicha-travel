@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { ArrowLeft, Crown, LayoutGrid, Table2 } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
@@ -14,6 +15,7 @@ import {
   verdict,
   type PrepaymentRowKind,
 } from '@/lib/financeOverview'
+import type { AppLocale } from '@/i18n/config'
 import type { Chata, Participant, Expense } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 
@@ -28,21 +30,25 @@ interface FinanceOverviewProps {
 type Mode = 'table' | 'cards'
 const MODE_STORAGE_KEY = 'chata-overview-mode'
 
-const PREPAYMENT_ROWS: Array<{ kind: PrepaymentRowKind; label: string }> = [
-  { kind: 'advance', label: 'Záloha pokladníkovi' },
-  { kind: 'supplement', label: 'Doplatek pokladníkovi' },
-  { kind: 'refund', label: 'Vrácené přeplatky' },
-]
+const PREPAYMENT_KINDS: PrepaymentRowKind[] = ['advance', 'supplement', 'refund']
 
-const podilLabel = (weight: number, weightIsAmount?: boolean): string =>
+type FinanceTranslator = ReturnType<typeof useTranslations>
+
+const podilLabel = (
+  t: FinanceTranslator,
+  locale: AppLocale,
+  weight: number,
+  weightIsAmount?: boolean,
+): string =>
   weightIsAmount
-    ? `podíl ${formatCurrency(weight)}`
-    : `${weight} ${weight === 1 ? 'podíl' : weight >= 2 && weight <= 4 ? 'podíly' : 'podílů'}`
+    ? t('share.amount', { amount: formatCurrency(weight, locale) })
+    : t('share.count', { count: weight })
 
 /** "+ 2 500 Kč" green / "− 2 500 Kč" plain, matching PersonView's rows. */
 function SignedAmount({ value }: { value: number }) {
-  if (value > 0) return <strong className="text-green-600">+ {formatCurrency(value)}</strong>
-  return <strong className="text-gray-900">− {formatCurrency(Math.abs(value))}</strong>
+  const locale = useLocale() as AppLocale
+  if (value > 0) return <strong className="text-green-600">+ {formatCurrency(value, locale)}</strong>
+  return <strong className="text-gray-900">− {formatCurrency(Math.abs(value), locale)}</strong>
 }
 
 /**
@@ -50,11 +56,14 @@ function SignedAmount({ value }: { value: number }) {
  * a refund expense) flips to green "+ 500 Kč", like PersonView's breakdown.
  */
 function ShareAmount({ cost }: { cost: number }) {
-  if (cost < 0) return <span className="text-green-600">+ {formatCurrency(Math.abs(cost))}</span>
-  return <>− {formatCurrency(cost)}</>
+  const locale = useLocale() as AppLocale
+  if (cost < 0) return <span className="text-green-600">+ {formatCurrency(Math.abs(cost), locale)}</span>
+  return <>− {formatCurrency(cost, locale)}</>
 }
 
 export function FinanceOverview({ chata, participants, expenses, stats, onBack }: FinanceOverviewProps) {
+  const t = useTranslations('finance')
+  const locale = useLocale() as AppLocale
   // Table is the default on desktop, cards on mobile; a manual switch is
   // remembered per browser
   const [mode, setMode] = useState<Mode | null>(null)
@@ -100,9 +109,9 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
 
   const p = (name: string) => stats.participants[name]
   const paidRow = Object.fromEntries(names.map((n) => [n, p(n).paidExternal]))
-  const prepayRows = PREPAYMENT_ROWS.map(({ kind, label }) => ({
+  const prepayRows = PREPAYMENT_KINDS.map((kind) => ({
     kind,
-    label,
+    label: t(`overview.prepaymentRows.${kind}`),
     values: prepaymentRow(kind, stats),
   })).filter((r) => r.values !== null) as Array<{
     kind: PrepaymentRowKind
@@ -129,7 +138,7 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
             className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border border-white/30"
           >
             <ArrowLeft size={15} />
-            Zpět na finance
+            {t('overview.backToFinance')}
           </button>
         ) : (
           <span />
@@ -141,7 +150,7 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
               mode === 'table' ? 'bg-primary text-white shadow-lg shadow-primary/40' : 'text-white/80 hover:text-white hover:bg-white/15'
             }`}
           >
-            <Table2 size={15} /> Tabulka
+            <Table2 size={15} /> {t('overview.table')}
           </button>
           <button
             onClick={() => switchMode('cards')}
@@ -149,7 +158,7 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
               mode === 'cards' ? 'bg-primary text-white shadow-lg shadow-primary/40' : 'text-white/80 hover:text-white hover:bg-white/15'
             }`}
           >
-            <LayoutGrid size={15} /> Karty
+            <LayoutGrid size={15} /> {t('overview.cards')}
           </button>
         </div>
       </div>
@@ -157,13 +166,30 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
       {/* Summary chips */}
       <div className="flex flex-wrap justify-center gap-2 text-[13px]">
         {[
-          <>Celkové výdaje: <strong className="text-white">{formatCurrency(totalActual)}</strong></>,
-          <><strong className="text-white">{actualExpenses.length}</strong> výdajů</>,
-          <><strong className="text-white">{names.length}</strong> účastníků</>,
+          t.rich('overview.chipTotal', {
+            amount: formatCurrency(totalActual, locale),
+            strong: (chunks) => <strong className="text-white">{chunks}</strong>,
+          }),
+          t.rich('overview.chipExpenses', {
+            count: actualExpenses.length,
+            strong: (chunks) => <strong className="text-white">{chunks}</strong>,
+          }),
+          t.rich('overview.chipParticipants', {
+            count: names.length,
+            strong: (chunks) => <strong className="text-white">{chunks}</strong>,
+          }),
           ...(collected > 0
-            ? [<>Vybráno na zálohách: <strong className="text-white">{formatCurrency(collected)}</strong></>]
+            ? [
+                t.rich('overview.chipCollected', {
+                  amount: formatCurrency(collected, locale),
+                  strong: (chunks) => <strong className="text-white">{chunks}</strong>,
+                }),
+              ]
             : []),
-          <>Σ výsledků: <strong className="text-green-300">{formatCurrency(Math.round(Math.abs(zeroSum)))} ✓</strong></>,
+          t.rich('overview.chipZeroSum', {
+            amount: formatCurrency(Math.round(Math.abs(zeroSum)), locale),
+            strong: (chunks) => <strong className="text-green-300">{chunks}</strong>,
+          }),
         ].map((content, i) => (
           <span
             key={i}
@@ -216,6 +242,8 @@ function OverviewTable({
   totalActual: number
   zeroSum: number
 }) {
+  const t = useTranslations('finance')
+  const locale = useLocale() as AppLocale
   const p = (name: string) => stats.participants[name]
   const bankerCol = (n: string) => (n === bankerName ? 'bg-blue-50/70' : '')
   const labelCell =
@@ -230,7 +258,7 @@ function OverviewTable({
         <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13px]">
           <thead>
             <tr>
-              <th className={`${labelCell} z-[3] align-bottom text-gray-500 text-xs font-semibold`}>Položka</th>
+              <th className={`${labelCell} z-[3] align-bottom text-gray-500 text-xs font-semibold`}>{t('overview.item')}</th>
               {names.map((n) => (
                 <th key={n} className={`${numCell} ${bankerCol(n)} align-bottom border-b-2 border-gray-300`}>
                   <span className="inline-flex flex-col items-end gap-1">
@@ -246,19 +274,19 @@ function OverviewTable({
                   </span>
                 </th>
               ))}
-              <th className={`${totCell} align-bottom text-amber-800 border-b-2 border-gray-300`}>Σ kontrola</th>
+              <th className={`${totCell} align-bottom text-amber-800 border-b-2 border-gray-300`}>{t('overview.sumCheck')}</th>
             </tr>
           </thead>
           <tbody>
             {/* Zaplaceno za ostatní */}
             <tr>
-              <td className={labelCell}>💳 Zaplaceno za ostatní</td>
+              <td className={labelCell}>💳 {t('overview.paidForOthers')}</td>
               {names.map((n) => (
                 <td key={n} className={`${numCell} ${bankerCol(n)}`}>
-                  {paidRow[n] ? formatCurrency(paidRow[n]) : <span className="text-gray-300">—</span>}
+                  {paidRow[n] ? formatCurrency(paidRow[n], locale) : <span className="text-gray-300">—</span>}
                 </td>
               ))}
-              <td className={totCell}>{formatCurrency(rowSum(paidRow))}</td>
+              <td className={totCell}>{formatCurrency(rowSum(paidRow), locale)}</td>
             </tr>
 
             {/* Zálohy / doplatky / vrácené přeplatky (signed → Σ = 0) */}
@@ -267,7 +295,7 @@ function OverviewTable({
                 <td className={labelCell}>
                   📤 {label}
                   <small className="block font-normal text-gray-400 text-[11px]">
-                    u pokladníka: vybráno/vráceno celkem
+                    {t('overview.prepaymentNote')}
                   </small>
                 </td>
                 {names.map((n) => (
@@ -279,29 +307,29 @@ function OverviewTable({
                     )}
                   </td>
                 ))}
-                <td className={totCell}>{formatCurrency(Math.round(Math.abs(rowSum(values))))}</td>
+                <td className={totCell}>{formatCurrency(Math.round(Math.abs(rowSum(values))), locale)}</td>
               </tr>
             ))}
 
             {/* Útrata — one row per expense */}
             <tr>
               <td className={`${labelCell} bg-[#f3efe7] uppercase tracking-wider text-[11px] text-gray-500`}>
-                👤 Útrata (Fair Share)
+                👤 {t('overview.fairShareHeader')}
               </td>
               <td
                 colSpan={names.length}
                 className={`${numCell} bg-gray-50/80 text-left uppercase tracking-wider text-[11px] text-gray-500`}
               >
-                − podíl na jednotlivých výdajích
+                {t('overview.fairShareNote')}
               </td>
-              <td className={`${totCell} uppercase tracking-wider text-[11px] text-amber-800`}>cena výdaje</td>
+              <td className={`${totCell} uppercase tracking-wider text-[11px] text-amber-800`}>{t('overview.expensePrice')}</td>
             </tr>
             {expenseRows.map((row) => (
               <tr key={row.id}>
                 <td className={labelCell}>
                   <span className="font-medium">{row.title}</span>
                   <small className="block font-normal text-gray-400 text-[11px] whitespace-normal">
-                    platil(a) {row.payerLabel || '—'}
+                    {t('overview.paidBy', { name: row.payerLabel || '—' })}
                   </small>
                 </td>
                 {names.map((n) => {
@@ -315,9 +343,11 @@ function OverviewTable({
                   if (cell.invitedBy)
                     return (
                       <td key={n} className={`${numCell} ${bankerCol(n)} text-green-600`}>
-                        {formatCurrency(0)}
+                        {formatCurrency(0, locale)}
                         <span className="block text-[10.5px] text-green-600 font-normal">
-                          {cell.auto ? `platí za tebe ${cell.invitedBy}` : `platí ${cell.invitedBy}`}
+                          {cell.auto
+                            ? t('invitation.paysForYou', { name: cell.invitedBy })
+                            : t('overview.pays', { name: cell.invitedBy })}
                         </span>
                       </td>
                     )
@@ -326,30 +356,30 @@ function OverviewTable({
                       <ShareAmount cost={cell.cost} />
                       {(cell.weightIsAmount || cell.weight !== 1) && (
                         <span className="block text-[10.5px] text-gray-400 font-normal">
-                          {podilLabel(cell.weight, cell.weightIsAmount)}
+                          {podilLabel(t, locale, cell.weight, cell.weightIsAmount)}
                         </span>
                       )}
                       {cell.invitedGuests.length > 0 && (
                         <span className="block text-[10.5px] text-pink-600 font-normal">
-                          + za {cell.invitedGuests.join(', ')}
+                          {t('overview.plusFor', { names: cell.invitedGuests.join(', ') })}
                         </span>
                       )}
                     </td>
                   )
                 })}
-                <td className={totCell}>{formatCurrency(row.amount)}</td>
+                <td className={totCell}>{formatCurrency(row.amount, locale)}</td>
               </tr>
             ))}
 
             {/* Útrata celkem */}
             <tr>
-              <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-300`}>Útrata celkem</td>
+              <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-300`}>{t('overview.totalFairShare')}</td>
               {names.map((n) => (
                 <td key={n} className={`${numCell} ${bankerCol(n)} font-bold border-t-2 border-gray-300`}>
                   <ShareAmount cost={p(n).cost} />
                 </td>
               ))}
-              <td className={`${totCell} border-t-2 border-gray-300`}>{formatCurrency(totalActual)}</td>
+              <td className={`${totCell} border-t-2 border-gray-300`}>{formatCurrency(totalActual, locale)}</td>
             </tr>
 
             {/* Aggregated planned rows — only when planned data exists, so the
@@ -358,41 +388,41 @@ function OverviewTable({
               <>
                 <tr>
                   <td className={labelCell}>
-                    🕑 Plánované výdaje (zaplatí)
-                    <small className="block font-normal text-gray-400 text-[11px]">souhrn, viz detail osoby</small>
+                    🕑 {t('overview.plannedExpenses')}
+                    <small className="block font-normal text-gray-400 text-[11px]">{t('overview.plannedNote')}</small>
                   </td>
                   {names.map((n) => (
                     <td key={n} className={`${numCell} ${bankerCol(n)} text-amber-700`}>
                       {p(n).plannedPaidExternal > 0 ? (
-                        formatCurrency(p(n).plannedPaidExternal)
+                        formatCurrency(p(n).plannedPaidExternal, locale)
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
                   ))}
                   <td className={totCell}>
-                    {formatCurrency(names.reduce((s, n) => s + p(n).plannedPaidExternal, 0))}
+                    {formatCurrency(names.reduce((s, n) => s + p(n).plannedPaidExternal, 0), locale)}
                   </td>
                 </tr>
                 <tr>
-                  <td className={labelCell}>🕑 Plánovaná útrata</td>
+                  <td className={labelCell}>🕑 {t('overview.plannedFairShare')}</td>
                   {names.map((n) => (
                     <td key={n} className={`${numCell} ${bankerCol(n)} text-amber-700`}>
                       {p(n).plannedCost > 0 ? (
-                        <>− {formatCurrency(p(n).plannedCost)}</>
+                        <>− {formatCurrency(p(n).plannedCost, locale)}</>
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
                   ))}
-                  <td className={totCell}>{formatCurrency(names.reduce((s, n) => s + p(n).plannedCost, 0))}</td>
+                  <td className={totCell}>{formatCurrency(names.reduce((s, n) => s + p(n).plannedCost, 0), locale)}</td>
                 </tr>
               </>
             )}
 
             {/* Výsledek */}
             <tr>
-              <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-400 text-sm`}>Výsledek</td>
+              <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-400 text-sm`}>{t('overview.result')}</td>
               {names.map((n) => {
                 const v = verdict(p(n).balance)
                 return (
@@ -403,13 +433,13 @@ function OverviewTable({
                     }`}
                   >
                     {v === 'settled'
-                      ? formatCurrency(0)
-                      : `${p(n).balance > 0 ? '+ ' : ''}${formatCurrency(Math.round(p(n).balance))}`}
+                      ? formatCurrency(0, locale)
+                      : `${p(n).balance > 0 ? '+ ' : ''}${formatCurrency(Math.round(p(n).balance), locale)}`}
                   </td>
                 )
               })}
               <td className={`${totCell} border-t-2 border-gray-400`}>
-                {formatCurrency(Math.round(Math.abs(zeroSum)))} ✓
+                {formatCurrency(Math.round(Math.abs(zeroSum)), locale)} ✓
               </td>
             </tr>
 
@@ -422,19 +452,19 @@ function OverviewTable({
                   <td key={n} className={`${numCell} ${bankerCol(n)} border-b-0 pt-0`}>
                     {n === bankerName ? (
                       <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-100 text-blue-700">
-                        pokladník
+                        {t('overview.pillBanker')}
                       </span>
                     ) : v === 'settled' ? (
                       <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-gray-200 text-gray-600">
-                        vyrovnáno
+                        {t('overview.pillSettled')}
                       </span>
                     ) : v === 'get' ? (
                       <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-green-100 text-green-700">
-                        dostane
+                        {t('overview.pillGets')}
                       </span>
                     ) : (
                       <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-red-100 text-red-700">
-                        doplatí
+                        {t('overview.pillOwes')}
                       </span>
                     )}
                   </td>
@@ -478,6 +508,8 @@ function ParticipantCard({
   isBanker: boolean
   stats: ChataStats['participants'][string]
 }) {
+  const t = useTranslations('finance')
+  const locale = useLocale() as AppLocale
   const v = verdict(stats.balance)
   const cardBg = isBanker
     ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'
@@ -499,48 +531,48 @@ function ParticipantCard({
           {isBanker && <Crown size={15} className="text-primary flex-none" />}
         </div>
         <div className="ml-auto text-right text-[11px] text-gray-500 flex-none">
-          {v === 'settled' ? 'vyrovnáno' : v === 'get' ? 'dostane' : 'doplatí'}
+          {v === 'settled' ? t('overview.pillSettled') : v === 'get' ? t('overview.pillGets') : t('overview.pillOwes')}
           <strong
             className={`block text-[15px] tabular-nums ${
               v === 'get' ? 'text-green-600' : v === 'owe' ? 'text-red-600' : 'text-gray-500'
             }`}
           >
-            {formatCurrency(Math.round(Math.abs(v === 'settled' ? 0 : stats.balance)))}
+            {formatCurrency(Math.round(Math.abs(v === 'settled' ? 0 : stats.balance)), locale)}
           </strong>
         </div>
       </div>
 
       <div className="space-y-1.5 text-[13px]">
         <div className="flex justify-between gap-3 text-gray-600">
-          <span>💳 Zaplaceno za ostatní:</span>
-          <strong className="text-gray-900 tabular-nums">{formatCurrency(stats.paidExternal)}</strong>
+          <span>💳 {t('overview.cardPaidForOthers')}</span>
+          <strong className="text-gray-900 tabular-nums">{formatCurrency(stats.paidExternal, locale)}</strong>
         </div>
         {stats.plannedPaidExternal > 0 && (
           <div className="flex justify-between gap-3 text-amber-700">
-            <span>🕑 Ještě zaplatí:</span>
-            <strong className="tabular-nums">{formatCurrency(stats.plannedPaidExternal)}</strong>
+            <span>🕑 {t('overview.cardStillToPay')}</span>
+            <strong className="tabular-nums">{formatCurrency(stats.plannedPaidExternal, locale)}</strong>
           </div>
         )}
         {Math.abs(stats.prepaidAdvance) > 0.005 && (
           <div className="flex justify-between gap-3 text-gray-600">
-            <span>📤 {isBanker ? 'Vybráno na zálohách:' : 'Záloha:'}</span>
+            <span>📤 {isBanker ? t('overview.cardCollectedAdvances') : t('overview.cardAdvance')}</span>
             <SignedAmount value={stats.prepaidAdvance} />
           </div>
         )}
         {Math.abs(stats.prepaidSupplement) > 0.005 && (
           <div className="flex justify-between gap-3 text-gray-600">
-            <span>📤 {isBanker ? 'Vybráno na doplatcích:' : 'Doplatek:'}</span>
+            <span>📤 {isBanker ? t('overview.cardCollectedSupplements') : t('overview.cardSupplement')}</span>
             <SignedAmount value={stats.prepaidSupplement} />
           </div>
         )}
         {Math.abs(stats.prepaidRefund) > 0.005 && (
           <div className="flex justify-between gap-3 text-gray-600">
-            <span>📤 {isBanker ? 'Vráceno přeplatky:' : 'Vrácený přeplatek:'}</span>
+            <span>📤 {isBanker ? t('overview.cardRefundedOverpayments') : t('overview.cardRefundedOverpayment')}</span>
             <SignedAmount value={stats.prepaidRefund} />
           </div>
         )}
         <div className="flex justify-between gap-3 bg-white/50 -mx-1.5 px-1.5 py-1.5 rounded-lg text-gray-600">
-          <span>👤 Útrata (Fair Share):</span>
+          <span>👤 {t('overview.cardFairShare')}</span>
           <strong className="text-gray-900 tabular-nums">
             <ShareAmount cost={stats.cost} />
           </strong>
@@ -550,16 +582,16 @@ function ParticipantCard({
             {breakdown.map((item, idx) => (
               <div key={idx} className="flex justify-between gap-2 text-[11.5px] text-gray-600">
                 <span className="min-w-0">
-                  {item.title} <small className="text-gray-400">({podilLabel(item.weight, item.weightIsAmount)})</small>
+                  {item.title} <small className="text-gray-400">({podilLabel(t, locale, item.weight, item.weightIsAmount)})</small>
                   {item.invitedGuest && (
-                    <small className="text-pink-600"> · {item.auto ? `platíš za ${item.invitedGuest}` : `pozvání pro ${item.invitedGuest}`}</small>
+                    <small className="text-pink-600"> · {item.auto ? t('invitation.youPayFor', { name: item.invitedGuest }) : t('invitation.invitationFor', { name: item.invitedGuest })}</small>
                   )}
                   {item.invitedBy && (
-                    <small className="text-green-600"> · {item.auto ? `platí za tebe ${item.invitedBy}` : `pozval/a tě ${item.invitedBy}`}</small>
+                    <small className="text-green-600"> · {item.auto ? t('invitation.paysForYou', { name: item.invitedBy }) : t('invitation.invitedYou', { name: item.invitedBy })}</small>
                   )}
                 </span>
                 <span className={`tabular-nums flex-none ${item.invitedBy ? 'text-green-600' : ''}`}>
-                  {item.invitedBy ? formatCurrency(0) : <ShareAmount cost={item.cost} />}
+                  {item.invitedBy ? formatCurrency(0, locale) : <ShareAmount cost={item.cost} />}
                 </span>
               </div>
             ))}
@@ -567,22 +599,22 @@ function ParticipantCard({
         )}
         {stats.plannedCost > 0 && (
           <div className="flex justify-between gap-3 text-amber-700">
-            <span>🕑 Plánovaná útrata:</span>
-            <strong className="tabular-nums">− {formatCurrency(stats.plannedCost)}</strong>
+            <span>🕑 {t('overview.cardPlannedFairShare')}</span>
+            <strong className="tabular-nums">− {formatCurrency(stats.plannedCost, locale)}</strong>
           </div>
         )}
         <div
           className={`flex justify-between gap-3 items-center border-t border-dashed border-gray-300 mt-2 pt-2 text-gray-600`}
         >
-          <span>Výsledek:</span>
+          <span>{t('overview.cardResult')}</span>
           <strong
             className={`text-[15px] tabular-nums ${
               v === 'get' ? 'text-green-600' : v === 'owe' ? 'text-red-600' : 'text-gray-500'
             }`}
           >
             {v === 'settled'
-              ? formatCurrency(0)
-              : `${stats.balance > 0 ? '+ ' : ''}${formatCurrency(Math.round(stats.balance))}`}
+              ? formatCurrency(0, locale)
+              : `${stats.balance > 0 ? '+ ' : ''}${formatCurrency(Math.round(stats.balance), locale)}`}
           </strong>
         </div>
       </div>

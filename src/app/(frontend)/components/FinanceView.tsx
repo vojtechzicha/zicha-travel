@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { createPortal } from 'react-dom'
 import { Plus } from 'lucide-react'
 import { ParticipantSelector } from './ParticipantSelector'
@@ -67,6 +68,7 @@ export function FinanceView({
   onOpenOverview,
   onDataChanged,
 }: FinanceViewProps) {
+  const t = useTranslations('finance')
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
   // Frontend expense authoring: null = closed, { expense: null } = new,
@@ -263,12 +265,12 @@ export function FinanceView({
   // Subtle escape hatch: the all-participants overview for checking numbers
   const overviewLink = onOpenOverview ? (
     <p className="text-center text-sm text-white/60">
-      Nesedí vám čísla, nebo chcete vidět všechno najednou?{' '}
+      {t('financeView.overviewQuestion')}{' '}
       <button
         onClick={onOpenOverview}
         className="text-white/90 font-semibold underline underline-offset-2 hover:text-white transition-colors"
       >
-        Podrobný přehled všech účastníků →
+        {t('financeView.overviewLink')}
       </button>
     </p>
   ) : null
@@ -285,14 +287,14 @@ export function FinanceView({
         <button
           type="button"
           onClick={() => setComposer({ expense: null })}
-          aria-label="Přidat výdaj"
+          aria-label={t('financeView.addExpense')}
           className="expense-fab fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
                      justify-center gap-2 rounded-full bg-primary hover:bg-primary-dark
                      text-white font-semibold text-[15px] w-14 h-14 lg:w-auto lg:h-auto
                      lg:px-6 lg:py-3.5 shadow-xl shadow-primary/50 transition-colors"
         >
           <Plus size={22} strokeWidth={2.5} />
-          <span className="hidden lg:inline">Přidat výdaj</span>
+          <span className="hidden lg:inline">{t('financeView.addExpense')}</span>
         </button>,
         document.body
       )}

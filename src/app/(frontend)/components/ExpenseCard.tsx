@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { createPortal } from 'react-dom'
 import {
   Receipt,
@@ -15,7 +16,8 @@ import {
 import { formatCurrency, formatShortDateTime } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { getPayerDisplay } from '@/lib/payerRef'
-import { akuzativName } from '@/lib/czechNames'
+import { accusativeName } from '@/lib/czechNames'
+import type { AppLocale } from '@/i18n/config'
 import type { Expense, ExpenseAttachment } from '@/payload-types'
 
 const MAX_VISIBLE_OTHERS = 5
@@ -41,6 +43,8 @@ export function ExpenseCard({
   onEdit,
   onDelete,
 }: ExpenseCardProps) {
+  const t = useTranslations('finance')
+  const locale = useLocale() as AppLocale
   const [expanded, setExpanded] = useState(false)
   const [lightboxAttachment, setLightboxAttachment] = useState<ExpenseAttachment | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -115,7 +119,7 @@ export function ExpenseCard({
         key={participantName}
         className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md"
       >
-        {participantName}: {weightsAreAmounts ? formatCurrency(w.weight) : `${w.weight}x`}
+        {participantName}: {weightsAreAmounts ? formatCurrency(w.weight, locale) : `${w.weight}x`}
       </span>
     )
   }
@@ -155,29 +159,31 @@ export function ExpenseCard({
               isPlanned ? 'text-amber-600' : isRefund ? 'text-green-600' : 'text-gray-900'
             }`}
           >
-            {formatCurrency(expense.amount)}
+            {formatCurrency(expense.amount, locale)}
           </span>
         </div>
 
         <div className="text-sm text-gray-600 mb-2 flex items-center gap-2 flex-wrap">
           <span>
-            {isPlanned
-              ? 'Zaplatí '
-              : isRefund
-                ? payer.kind === 'jointAccount'
-                  ? 'Peníze vrátili '
-                  : 'Peníze vrátil/a '
-                : payer.kind === 'jointAccount'
-                  ? 'Platili '
-                  : 'Platil/a '}
-            <strong>{payerName}</strong>
+            {t.rich(
+              isPlanned
+                ? 'expenseCard.willPay'
+                : isRefund
+                  ? payer.kind === 'jointAccount'
+                    ? 'expenseCard.refundedByJoint'
+                    : 'expenseCard.refundedBy'
+                  : payer.kind === 'jointAccount'
+                    ? 'expenseCard.paidByJoint'
+                    : 'expenseCard.paidBy',
+              { name: payerName, strong: (chunks) => <strong>{chunks}</strong> }
+            )}
             {payer.kind === 'jointAccount' && (
-              <span className="text-gray-400"> (společný účet)</span>
+              <span className="text-gray-400"> {t('expenseCard.jointAccount')}</span>
             )}
           </span>
           {isPlanned && (
             <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
-              Plánovaný
+              {t('expenseCard.plannedBadge')}
             </span>
           )}
         </div>
@@ -185,7 +191,7 @@ export function ExpenseCard({
         <div className="flex flex-wrap gap-1">
           {expense.splitType === 'equal' ? (
             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md">
-              Všichni rovným dílem
+              {t('expenseCard.equalSplit')}
             </span>
           ) : (
             <>
@@ -199,7 +205,7 @@ export function ExpenseCard({
                   onClick={() => setExpanded(true)}
                   className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md hover:bg-gray-300 transition-colors"
                 >
-                  +{hiddenCount} dalších
+                  {t('expenseCard.showMore', { count: hiddenCount })}
                 </button>
               )}
               {expanded && totalOthers > MAX_VISIBLE_OTHERS && (
@@ -207,7 +213,7 @@ export function ExpenseCard({
                   onClick={() => setExpanded(false)}
                   className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md hover:bg-gray-300 transition-colors"
                 >
-                  skrýt
+                  {t('expenseCard.hide')}
                 </button>
               )}
             </>
@@ -220,13 +226,15 @@ export function ExpenseCard({
               const hostName = typeof inv.host === 'object' && inv.host !== null ? inv.host.name : ''
               // Guest is the object of "zve" — accusative ("Vojta zve Katku")
               const guestName =
-                typeof inv.guest === 'object' && inv.guest !== null ? akuzativName(inv.guest) : ''
+                typeof inv.guest === 'object' && inv.guest !== null
+                  ? accusativeName(inv.guest, locale)
+                  : ''
               return (
                 <span
                   key={inv.id ?? i}
                   className="bg-pink-50 text-pink-700 text-xs px-2 py-1 rounded-md flex items-center gap-1"
                 >
-                  <HeartHandshake size={12} /> {hostName} zve {guestName}
+                  <HeartHandshake size={12} /> {t('expenseCard.invites', { host: hostName, guest: guestName })}
                 </span>
               )
             })}
@@ -244,12 +252,12 @@ export function ExpenseCard({
                     setLightboxAttachment(att)
                   }}
                   className="block w-10 h-10 rounded-md overflow-hidden border border-gray-200 hover:border-primary transition-colors"
-                  title={att.alt || att.filename || 'účtenka'}
+                  title={att.alt || att.filename || t('expenseCard.receipt')}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={att.url!}
-                    alt={att.alt || att.filename || 'účtenka'}
+                    alt={att.alt || att.filename || t('expenseCard.receipt')}
                     loading="lazy"
                     className="w-full h-full object-cover"
                   />
@@ -262,7 +270,7 @@ export function ExpenseCard({
                   rel="noopener noreferrer"
                   onClick={() => track('expense_attachment_opened', { kind: 'pdf' })}
                   className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md flex items-center gap-1 hover:bg-gray-200 transition-colors"
-                  title={att.alt || att.filename || 'příloha'}
+                  title={att.alt || att.filename || t('expenseCard.attachment')}
                 >
                   <FileText size={12} /> PDF
                 </a>
@@ -275,16 +283,16 @@ export function ExpenseCard({
         {canManage && !confirmingDelete && (
           <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100">
             <span className="text-xs text-gray-400 min-w-0 truncate">
-              Přidali jste vy
+              {t('expenseCard.addedByYou')}
               {/* timestamp only where the icon buttons leave room (design 1b) */}
-              <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt)}</span>
+              <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt, locale)}</span>
             </span>
             {/* Desktop: compact icon buttons */}
             <div className="hidden lg:flex gap-0.5 flex-shrink-0">
               <button
                 type="button"
-                title="Upravit"
-                aria-label="Upravit výdaj"
+                title={t('expenseCard.edit')}
+                aria-label={t('expenseCard.editExpense')}
                 onClick={() => onEdit?.(expense)}
                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
               >
@@ -292,8 +300,8 @@ export function ExpenseCard({
               </button>
               <button
                 type="button"
-                title="Smazat"
-                aria-label="Smazat výdaj"
+                title={t('expenseCard.delete')}
+                aria-label={t('expenseCard.deleteExpense')}
                 onClick={() => {
                   setDeleteError(null)
                   setConfirmingDelete(true)
@@ -310,7 +318,7 @@ export function ExpenseCard({
                 onClick={() => onEdit?.(expense)}
                 className="flex items-center gap-1.5 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
               >
-                <Pencil size={13} /> Upravit
+                <Pencil size={13} /> {t('expenseCard.edit')}
               </button>
               <button
                 type="button"
@@ -320,7 +328,7 @@ export function ExpenseCard({
                 }}
                 className="flex items-center gap-1.5 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 active:bg-red-100 transition-colors"
               >
-                <Trash2 size={13} /> Smazat
+                <Trash2 size={13} /> {t('expenseCard.delete')}
               </button>
             </div>
           </div>
@@ -330,7 +338,7 @@ export function ExpenseCard({
         {canManage && confirmingDelete && (
           <div className="flex items-center justify-between flex-wrap gap-2 mt-2.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-2">
             <span className="text-[13px] text-red-800 font-medium">
-              {deleteError ?? 'Opravdu smazat?'}
+              {deleteError ?? t('expenseCard.confirmDelete')}
             </span>
             <div className="flex gap-1.5">
               <button
@@ -342,13 +350,13 @@ export function ExpenseCard({
                   try {
                     await onDelete?.(expense)
                   } catch {
-                    setDeleteError('Smazání se nepovedlo. Zkuste to znovu.')
+                    setDeleteError(t('expenseCard.deleteFailed'))
                     setDeleting(false)
                   }
                 }}
                 className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
               >
-                {deleting ? 'Mažu…' : 'Smazat'}
+                {deleting ? t('expenseCard.deleting') : t('expenseCard.delete')}
               </button>
               <button
                 type="button"
@@ -359,7 +367,7 @@ export function ExpenseCard({
                 }}
                 className="text-gray-700 hover:bg-red-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
               >
-                Zpět
+                {t('expenseCard.back')}
               </button>
             </div>
           </div>
@@ -377,14 +385,14 @@ export function ExpenseCard({
               <button
                 onClick={() => setLightboxAttachment(null)}
                 className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
-                aria-label="Zavřít"
+                aria-label={t('expenseCard.close')}
               >
                 <X size={28} />
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={lightboxAttachment.url!}
-                alt={lightboxAttachment.alt || lightboxAttachment.filename || 'účtenka'}
+                alt={lightboxAttachment.alt || lightboxAttachment.filename || t('expenseCard.receipt')}
                 className="max-w-full max-h-full rounded-lg shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               />

@@ -22,7 +22,8 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      `vokativ` ("Katko") name forms. Frontend uses the accusative where
      grammar needs it (invitation texts: "Vojta zve Katku", "platíš za
      Katku") via `src/lib/czechNames.ts`, always falling back to `name`;
-     `vokativ` is stored for future greetings, not rendered yet
+     `vokativ` feeds the homepage greeting. Both are Czech-only: the
+     locale-aware helpers return the plain nominative name in English
    - "Copy from" prefill (`components/CopyFromParticipantButton.tsx`, UI
      field shown only on create): pick any participant across chatas
      (labelled "Name (Chata)") and prefill name, declension forms and
@@ -265,14 +266,17 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   across chata subdomains (also required for OAuth started on a subdomain)
 - Frontend footer (`Footer.tsx` in the frontend layout): site info, version
   from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out, a help
-  link and an admin link
+  link, an admin link and the Čeština/English `LanguageSwitcher`
 - Help (`src/app/(frontend)/napoveda/`): static server components, linked
   from the footer. `/napoveda` is the hub (per-audience overview, math,
   glossary); the detail guides are `orientace`, `finance`, `vydaje`,
   `ucet`, `prehled` and `sprava`, each walking through the real UI with
-  screenshots. Shared pieces in `ui.tsx` (shell, sections, `Steps`,
-  `Screenshot`, page cards) and `shots.ts` (screenshot registry with
-  intrinsic sizes). Single-chata (subdomain) mode would redirect a
+  screenshots. Each page is a thin `page.tsx` (localized metadata) that
+  renders `content.cs.tsx` or `content.en.tsx` by locale. Shared pieces in
+  `ui.tsx` (shell, sections, `Steps`, `Screenshot`, page cards — chrome
+  strings locale-keyed, components resolve `getLocale()` themselves) and
+  `shots.ts` (screenshot registry with intrinsic sizes and per-locale alt
+  texts; the images show the Czech UI and the English pages say so). Single-chata (subdomain) mode would redirect a
   one-segment path to `/`, so `/napoveda` is in the middleware's
   `SITE_PATHS` allowlist next to `/login` (sub-pages have two segments and
   are unaffected). Keep it in sync when the finance/claim/authoring rules
@@ -344,6 +348,58 @@ Collections use `filterOptions` to limit relationship dropdowns:
 - Participants filtered by Chata
 - Expenses show only participants from the same Chata
 - Bedroom occupants filtered by Chata
+
+## Internationalization (i18n)
+
+The frontend and admin are bilingual **Czech + English** (next-intl on the
+frontend, Payload i18n in the admin). Czech is the home language and the
+fallback.
+
+- **No locale URL segment** — the hostname middleware and `/[chataSlug]`
+  own the URL space, so the locale lives in the `NEXT_LOCALE` cookie
+  (`Domain` from `SESSION_COOKIE_DOMAIN`, same reasoning as the session and
+  consent cookies; set via `POST /api/locale`). First visit negotiates from
+  `Accept-Language` (`sk` maps to `cs`; nothing matched = `cs`). Pure logic
+  in `src/i18n/config.ts` (unit-tested in `tests/int/i18n.int.spec.ts`);
+  request wiring in `src/i18n/request.ts` (registered via
+  `createNextIntlPlugin` in next.config.mjs). The footer
+  `LanguageSwitcher` posts the choice and calls `router.refresh()`.
+- **Catalogs**: `messages/{cs,en}/<namespace>.json`, one file per area
+  (common, chata, finance, composer, trip, auth), merged in
+  `src/i18n/request.ts` — a new namespace must be added to its NAMESPACES
+  list and exist for BOTH locales. ICU plurals throughout (`one/few/other`
+  for Czech). Client components use `useTranslations`/`useLocale`, server
+  components `getTranslations`/`getLocale`.
+- **Prose pages** (help `/napoveda/*`, privacy `/soukromi`): NOT in
+  catalogs — each page is a thin `page.tsx` rendering per-locale
+  `content.cs.tsx` / `content.en.tsx` modules. Screenshots stay Czech; the
+  English pages carry a note saying so. `napoveda/ui.tsx` shell strings and
+  `shots.ts` alt texts are locale-keyed.
+- **Czech grammar stays first-class**: `src/lib/czechNames.ts` is
+  locale-aware (`accusativeName`/`vocativeName`/`akuzativByName` return the
+  plain name for `en`); `src/lib/chataSelection.ts` keeps hand-built
+  genitive month/weekday tables for Czech and mirrors them with English
+  tables (Intl can't produce the shared-year/month range elision); ICU
+  handles the 1 / 2–4 / 5+ plural forms.
+- **Currency stays CZK in both languages** — `src/lib/formatCurrency.ts`
+  helpers take an optional trailing `locale` ('cs' → "1 200 Kč",
+  'en' → "CZK 1,200"); the default keeps old call sites Czech.
+- **Admin**: `payload.config.ts` registers `i18n` with en+cs; every
+  collection label/description/option label is an `{ en, cs }` object
+  (labels only — option `value`s and field names NEVER change). Custom
+  admin components use `useTranslation` with the `zicha:` custom resources
+  from `src/i18n/adminTranslations.ts`; user-visible `validate()` strings go
+  through `pickValidationMessage(req, en, cs)` there. Admin Czech uses
+  formal vykání (matches Payload's chrome); the frontend tyká.
+- **Emails**: magic-link emails are bilingual
+  (`src/lib/auth/magicLinkEmails.ts`), using the locale of the request that
+  asked for the link; claim emails (`src/utils/claimRequests.ts`) stay
+  Czech-only by design (their audience is the Czech admin circle).
+- **Editorial rules**: English strings avoid em dashes and follow natural
+  idiomatic phrasing (the /humanizer conventions); "chata" stays
+  untranslated in English (plural "chatas"); domain terms are fixed —
+  banker, Advance (záloha), Top-up (doplatek), Overpayment returned
+  (vratka), fair share, Expense journal.
 
 ## Styling Guidelines
 

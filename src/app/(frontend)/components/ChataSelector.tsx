@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/config'
 import {
   ArrowRight,
   CalendarDays,
@@ -170,6 +172,8 @@ function AvatarStack({ names, max = 4 }: { names: string[]; max?: number }) {
  * own name — so `compact` keeps the dark, and lets colour survive in the text.
  */
 function SettlementChip({ flow, compact = false }: { flow: number | null; compact?: boolean }) {
+  const t = useTranslations('chata.chataSelector')
+  const locale = useLocale() as AppLocale
   if (flow === null) return null
   const settlement = settlementFromBalance(flow)
   const box = compact
@@ -187,20 +191,20 @@ function SettlementChip({ flow, compact = false }: { flow: number | null; compac
           strokeWidth={3}
           className={compact ? 'text-green-400' : undefined}
         />
-        Vyrovnáno
+        {t('settled')}
       </span>
     )
   }
   if (settlement.status === 'debtor') {
     return (
       <span className={`font-bold ${box} ${compact ? 'text-red-300' : 'bg-red-100 text-red-700'}`}>
-        Zaplatíš {formatCurrency(settlement.amount)}
+        {t('youPay', { amount: formatCurrency(settlement.amount, locale) })}
       </span>
     )
   }
   return (
     <span className={`font-bold ${box} ${compact ? 'text-green-300' : 'bg-green-100 text-green-700'}`}>
-      Dostaneš {formatCurrency(settlement.amount)}
+      {t('youReceive', { amount: formatCurrency(settlement.amount, locale) })}
     </span>
   )
 }
@@ -281,6 +285,8 @@ function CoverBackdrop({
 // ─── hero card ────────────────────────────────────────────────────────────
 
 function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer }) {
+  const t = useTranslations('chata.chataSelector')
+  const locale = useLocale() as AppLocale
   const isLive = chata.status === 'live'
   const canQuickAdd = isLive && viewer.authenticated && chata.isOwn
   const settlement = chata.viewerFlow !== null ? settlementFromBalance(chata.viewerFlow) : null
@@ -306,7 +312,7 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
         {isLive ? (
           <div className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center gap-2 bg-green-900/85 border border-green-400/50 backdrop-blur-md rounded-full px-4 py-2 text-white text-sm font-bold">
             <span className="w-2 h-2 rounded-full bg-green-400" />
-            Právě probíhá{chata.untilLabel ? ` • ${chata.untilLabel}` : ''}
+            {t('sectionLive')}{chata.untilLabel ? ` • ${chata.untilLabel}` : ''}
           </div>
         ) : chata.countdown ? (
           <div className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center gap-2 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-4 py-2 text-white text-sm font-bold">
@@ -339,17 +345,12 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
                 {!viewer.authenticated && chata.participantNames.length > 0 && (
                   <span className="flex items-center gap-1.5">
                     <Users size={14} />
-                    {chata.participantNames.length}{' '}
-                    {chata.participantNames.length === 1
-                      ? 'účastník'
-                      : chata.participantNames.length <= 4
-                        ? 'účastníci'
-                        : 'účastníků'}
+                    {t('participantCount', { count: chata.participantNames.length })}
                   </span>
                 )}
                 {isLive && chata.viewerCost !== null && chata.viewerCost > 0 && (
                   <span className="text-amber-300">
-                    Tvá útrata zatím {formatCurrency(chata.viewerCost)}
+                    {t('spentSoFar', { amount: formatCurrency(chata.viewerCost, locale) })}
                   </span>
                 )}
               </div>
@@ -372,7 +373,7 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
                   }}
                 >
                   <Plus size={16} strokeWidth={2.5} />
-                  Přidat výdaj
+                  {t('addExpense')}
                 </span>
               ) : settlement && settlement.status !== 'settled' ? (
                 <span
@@ -381,8 +382,9 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
                   }`}
                 >
                   <Wallet size={15} />
-                  {settlement.status === 'debtor' ? 'Zaplatíš ještě' : 'Dostaneš'}{' '}
-                  {formatCurrency(settlement.amount)}
+                  {t(settlement.status === 'debtor' ? 'youStillPay' : 'youReceive', {
+                    amount: formatCurrency(settlement.amount, locale),
+                  })}
                 </span>
               ) : null}
               <span className="w-11 h-11 rounded-full bg-white/95 text-gray-900 flex items-center justify-center shadow-lg shrink-0">
@@ -478,6 +480,7 @@ function ArchiveCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeView
 }
 
 function ShowAllTile({ count, yearsLabel, onClick }: { count: number; yearsLabel: string | null; onClick: () => void }) {
+  const t = useTranslations('chata.chataSelector')
   return (
     <button
       type="button"
@@ -489,7 +492,7 @@ function ShowAllTile({ count, yearsLabel, onClick }: { count: number; yearsLabel
         <div className="w-6 h-6 rounded-md bg-white/10 border border-white/20 -ml-2.5" />
         <div className="w-6 h-6 rounded-md bg-white/[0.06] border border-white/15 -ml-2.5" />
       </div>
-      <span className="text-[13px] font-bold">Zobrazit všech {count} →</span>
+      <span className="text-[13px] font-bold">{t('showAll', { count })}</span>
       {yearsLabel && <span className="text-[11px] text-white/50">{yearsLabel}</span>}
     </button>
   )
@@ -505,11 +508,12 @@ function normalize(value: string): string {
 }
 
 function PickerStatusChip({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer }) {
+  const t = useTranslations('chata.chataSelector')
   if (chata.status === 'live') {
     return (
       <span className="flex items-center gap-1.5 bg-green-100 text-green-700 text-[11px] font-bold rounded-full px-2.5 py-1 shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-        Právě probíhá
+        {t('sectionLive')}
       </span>
     )
   }
@@ -533,6 +537,7 @@ function ChataPickerModal({
   viewer: HomeViewer
   onClose: () => void
 }) {
+  const t = useTranslations('chata.chataSelector')
   const [query, setQuery] = useState('')
 
   useEffect(() => {
@@ -585,17 +590,17 @@ function ChataPickerModal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Všechny chaty"
+        aria-label={t('allChatas')}
       >
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3.5">
           <div className="flex items-center justify-between">
             <h3 className="font-serif text-xl font-black text-gray-900 m-0">
-              Všechny chaty <span className="text-gray-400 font-normal text-base">({chatas.length})</span>
+              {t('allChatas')} <span className="text-gray-400 font-normal text-base">({chatas.length})</span>
             </h3>
             <button
               type="button"
               onClick={onClose}
-              aria-label="Zavřít"
+              aria-label={t('close')}
               className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
             >
               <X size={16} strokeWidth={2.5} />
@@ -607,7 +612,7 @@ function ChataPickerModal({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Hledat podle názvu nebo místa…"
+              placeholder={t('searchPlaceholder')}
               className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 outline-none"
               autoFocus
             />
@@ -617,7 +622,7 @@ function ChataPickerModal({
           {groups.map(({ year, chatas: list }) => (
             <div key={year ?? 'other'}>
               <div className="pt-3.5 pb-1.5 text-xs font-bold tracking-[0.1em] text-gray-400 uppercase">
-                {year ?? 'Ostatní'}
+                {year ?? t('otherYears')}
               </div>
               {list.map((chata) => (
                 <Link
@@ -646,7 +651,7 @@ function ChataPickerModal({
             </div>
           ))}
           {filtered.length === 0 && (
-            <p className="text-center text-sm text-gray-500 py-8">Nic nenalezeno.</p>
+            <p className="text-center text-sm text-gray-500 py-8">{t('nothingFound')}</p>
           )}
         </div>
       </div>
@@ -658,6 +663,7 @@ function ChataPickerModal({
 // ─── page ─────────────────────────────────────────────────────────────────
 
 export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
+  const t = useTranslations('chata.chataSelector')
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const live = chatas.filter((c) => c.status === 'live')
@@ -671,16 +677,18 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
 
   const years = chatas.map((c) => c.year).filter((y): y is number => y !== null)
   const yearsLabel =
-    years.length > 0 ? `archiv ${Math.min(...years)}–${Math.max(...years)}` : null
+    years.length > 0
+      ? t('archiveYears', { from: String(Math.min(...years)), to: String(Math.max(...years)) })
+      : null
 
   const subtitle =
     live.length > 0
       ? upcoming.length > 0
-        ? 'Právě jsi na chatě — a další výjezdy se plánují.'
-        : 'Právě jsi na chatě.'
+        ? t('subtitleLiveUpcoming')
+        : t('subtitleLive')
       : upcoming.length > 0
-        ? 'Tvoje chaty na jednom místě — nejbližší výjezd už se blíží.'
-        : 'Tvoje chaty na jednom místě.'
+        ? t('subtitleUpcoming')
+        : t('subtitleDefault')
 
   return (
     <div className="min-h-screen relative">
@@ -712,7 +720,9 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
             {/* greeting */}
             <div className="mb-8 sm:mb-9 text-white">
               <h1 className="font-serif text-3xl sm:text-5xl font-black tracking-tight mb-1.5 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]">
-                {viewer.greetingName ? `Ahoj, ${viewer.greetingName}.` : 'Vyberte si chatu.'}
+                {viewer.greetingName
+                  ? t('greeting', { name: viewer.greetingName })
+                  : t('choosePrompt')}
               </h1>
               <p className="text-white/80 text-sm sm:text-[17px] [text-shadow:0_1px_4px_rgba(0,0,0,0.5)]">
                 {subtitle}
@@ -728,9 +738,7 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
             <h1 className="font-serif text-5xl md:text-6xl font-black tracking-tight drop-shadow-lg mb-2">
               zicha.travel
             </h1>
-            <p className="text-white/80 text-lg">
-              Společně na chatu — plánování, informace a finance.
-            </p>
+            <p className="text-white/80 text-lg">{t('anonymousTagline')}</p>
           </header>
         )}
 
@@ -738,7 +746,7 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
         {hero && (
           <section className="mb-8">
             <SectionLabel tone={hero.status === 'live' ? 'live' : 'amber'}>
-              {hero.status === 'live' ? 'Právě probíhá' : 'Nejbližší chata'}
+              {hero.status === 'live' ? t('sectionLive') : t('sectionNearest')}
             </SectionLabel>
             <HeroCard chata={hero} viewer={viewer} />
           </section>
@@ -747,7 +755,7 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
         {/* remaining planned trips */}
         {planned.length > 0 && (
           <section className="mb-8">
-            <SectionLabel tone="amber">Plánujeme</SectionLabel>
+            <SectionLabel tone="amber">{t('sectionPlanned')}</SectionLabel>
             {/* a single planned trip spans the row — half a row of card with
                 dead space beside it reads as a layout that failed to load */}
             <div
@@ -766,7 +774,7 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
         {past.length > 0 && (
           <section>
             <SectionLabel tone="muted">
-              Proběhlo{archiveCapped ? ` (${past.length})` : ''}
+              {t('sectionPast')}{archiveCapped ? ` (${past.length})` : ''}
             </SectionLabel>
             {/* the tray: with every card now a photo, this faint panel is what
                 separates the archive from the hero band above it */}
@@ -792,27 +800,25 @@ export function ChataSelector({ chatas, viewer }: ChataSelectorProps) {
 
         {chatas.length === 0 && (
           <div className="bg-white/95 backdrop-blur-md rounded-glass-lg shadow-2xl p-10 max-w-md mx-auto text-center">
-            <p className="text-gray-600 text-lg">Zatím nejsou k dispozici žádné chaty.</p>
+            <p className="text-gray-600 text-lg">{t('noChatas')}</p>
           </div>
         )}
 
         {/* footers */}
         {viewer.authenticated && viewer.isRestrictedList && chatas.length > 0 && (
           <p className="text-center text-[13px] text-white/55 mt-7">
-            Zobrazují se jen chaty, kde jste účastníkem. Chybí vám některá?{' '}
-            <span className="text-white/85 font-semibold">Ozvěte se pokladníkovi.</span>
+            {t('restrictedNote')}{' '}
+            <span className="text-white/85 font-semibold">{t('restrictedContact')}</span>
           </p>
         )}
         {!viewer.authenticated && chatas.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-8 bg-white/10 border border-white/20 backdrop-blur-md rounded-2xl px-6 py-4">
-            <span className="text-white/85 text-sm text-center">
-              Jste účastník? Po přihlášení uvidíte své finance a vyrovnání.
-            </span>
+            <span className="text-white/85 text-sm text-center">{t('loginPrompt')}</span>
             <Link
               href="/login"
               className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-[10px] px-5 py-2.5 shadow-[0_8px_20px_rgba(217,119,6,0.4)] transition-colors shrink-0"
             >
-              Přihlásit se
+              {t('signIn')}
             </Link>
           </div>
         )}

@@ -10,12 +10,15 @@ import { adminRoleOnly } from '../lib/access'
 export const ExpenseAttachments: CollectionConfig = {
   slug: 'expense-attachments',
   labels: {
-    singular: 'Expense Attachment',
-    plural: 'Expense Attachments',
+    singular: { en: 'Expense Attachment', cs: 'Příloha výdaje' },
+    plural: { en: 'Expense Attachments', cs: 'Přílohy výdajů' },
   },
   admin: {
-    description: 'Účtenky a další přílohy výdajů (fotky, PDF)',
-    group: 'System',
+    description: {
+      en: 'Receipts and other expense attachments (photos, PDF)',
+      cs: 'Účtenky a další přílohy výdajů (fotky, PDF)',
+    },
+    group: { en: 'System', cs: 'Systém' },
   },
   access: {
     // Public read access for API consumption (consistent with all other
@@ -34,7 +37,10 @@ export const ExpenseAttachments: CollectionConfig = {
       name: 'alt',
       type: 'text',
       admin: {
-        description: 'Optional description of the attachment',
+        description: {
+          en: 'Optional description of the attachment',
+          cs: 'Volitelný popis přílohy',
+        },
       },
     },
   ],
