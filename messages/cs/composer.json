@@ -56,7 +56,7 @@
     "notIncluded": "neúčastní se",
     "toSplit": "Rozdělit:",
     "leftToSplit": "Zbývá rozdělit:",
-    "sharesCount": "{count, plural, one {# podíl} few {# podíly} other {# podílů}}",
+    "sharesCount": "{count, plural, one {# podíl} few {# podíly} many {# podílu} other {# podílů}}",
     "perShare": "na podíl."
   },
   "invites": {

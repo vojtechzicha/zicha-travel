@@ -85,7 +85,7 @@ export default function HelpContentCs() {
                 sdílená auta s řidičem, spolujezdci a volnými místy.
               </>,
               <>
-                <strong>Účastníci</strong>: kdo všechno jede a na kolik nocí. Ukáže se, až když je
+                <strong>Účastníci</strong>: kdo všechno jede a na kolik nocí. Ukáže se, až když jsou
                 v chatě víc než dva lidi.
               </>,
               <>
@@ -274,7 +274,7 @@ export default function HelpContentCs() {
                 'Účet',
                 'Přihlášení e-mailem. Jeden účet může držet víc účastníků, klidně i v jedné chatě, třeba rodič a děti.',
               ],
-              ['Podíl', 'Číslo, kterým se dělí výdaj. Dva podíly znamenají dvakrát tolik než jeden.'],
+              ['Podíl', 'Číslo, kterým se dělí výdaj. Dva podíly znamenají dvakrát tolik co jeden.'],
               [
                 'Záloha, doplatek, vrácený přeplatek',
                 'Peníze mezi účastníkem a pokladníkem, které nepatří ke konkrétnímu výdaji.',

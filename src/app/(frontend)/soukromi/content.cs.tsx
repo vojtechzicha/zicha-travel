@@ -51,7 +51,7 @@ export default function PrivacyContentCs() {
                 <strong>žádná čísla účtů ani IBAN,</strong>
               </>,
               <>
-                <strong>žádné částky v korunách</strong> – kdo komu kolik dluží je to
+                <strong>žádné částky v korunách</strong> – kdo komu kolik dluží, je to
                 nejcitlivější, co tu je, a do statistik nepatří,
               </>,
               <>koho konkrétně si v přehledu financí zobrazujete – identifikátory účastníků se
@@ -112,7 +112,7 @@ export default function PrivacyContentCs() {
           <p>
             Jedno rozhodnutí platí pro celý web včetně adres jednotlivých chat (např.{' '}
             <span className="font-mono text-[13px]">lipno.zicha.travel</span>) – neptáme se na
-            každé zvlášť.
+            každou zvlášť.
           </p>
         </Section>
 
@@ -126,7 +126,7 @@ export default function PrivacyContentCs() {
               <>Surové události uchováváme nejdéle 12 měsíců; poté zůstávají jen souhrnná čísla.</>,
               <>
                 Právní základ: anonymní statistiky zpracováváme na základě oprávněného zájmu
-                (čl. 6 odst. 1 písm. f GDPR) – vědět, jestli web funguje. Cookies ukládáme jen
+                (čl. 6 odst. 1 písm. f) GDPR) – vědět, jestli web funguje. Cookies ukládáme jen
                 s vaším souhlasem (§ 89 odst. 3 zákona č. 127/2005 Sb.).
               </>,
               <>Statistiky nikomu neprodáváme ani nepředáváme; slouží jen správci webu.</>,

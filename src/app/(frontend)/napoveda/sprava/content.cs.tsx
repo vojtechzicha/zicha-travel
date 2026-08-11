@@ -42,8 +42,8 @@ export default function SpravaContentCs() {
 
         <Section title="Účastníci" icon={<UserPlus size={20} />}>
           <p>
-            Lidé se mezi akcemi opakují, takže se dají překopírovat i s bankovními údaji. Trvale
-            neplatné věci, jako je pokoj nebo auto, se nikdy nekopírují.
+            Lidé se mezi akcemi opakují, takže se dají překopírovat i s bankovními údaji. Věci,
+            které neplatí trvale, jako je pokoj nebo auto, se nikdy nekopírují.
           </p>
           <Steps
             items={[
@@ -73,7 +73,7 @@ export default function SpravaContentCs() {
         <Section title="Děti a „platí za něj/ni“" icon={<UserCog size={20} />}>
           <Screenshot
             name="admin-ucastnik"
-            caption="U účastníka se nastavuje skloňování jména, kdo za něj platí a jeho bankovní údaje."
+            caption="U účastníka se nastavuje skloňování jména, kdo za něj platí, a jeho bankovní údaje."
           />
           <List
             items={[
@@ -103,7 +103,7 @@ export default function SpravaContentCs() {
             items={[
               <>
                 <strong>Expenses</strong>: co se zaplatilo. Plátcem může být účastník i společný
-                účet, dělení je buď rovným dílem, nebo vahami. Pole s pozvánkami přesouvá podíl na
+                účet, dělení je buď rovným dílem, nebo vahami. Pole s pozváními přesouvá podíl na
                 hostitele.
               </>,
               <>
@@ -146,7 +146,7 @@ export default function SpravaContentCs() {
               </>,
               <>
                 Když se na žádost zapomene, po třech dnech přijde jedna připomínka. Rozhodnout jde i
-                v administraci ve <em>Claim Requests</em>.
+                v administraci v <em>Claim Requests</em>.
               </>,
               <>
                 Lidi, které aplikace zná z jiné chaty, propojí sama a vám nic nepřijde.

@@ -130,7 +130,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
           `Na chatě ${chata.name} se k účastníkovi ${participant.name} hlásí účet ` +
           `${requester.email} (${accountNote}). Žádost z ${requestedAt} • ${othersNote}.\n\n` +
           `Schválit nebo zamítnout: ${decideUrl}\n\n` +
-          `Odkaz platí 7 dní a je určen jen vám. Žádosti najdete i v administraci pod „Claim Requests".`,
+          `Odkaz platí 7 dní a je určen jen vám. Žádosti najdete i v administraci pod „Claim Requests“.`,
         html: `
           <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto;">
             <h2 style="color: #d97706;">zicha.travel</h2>
@@ -150,7 +150,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
               </a>
             </p>
             <p style="color: #78716c; font-size: 13px;">
-              Odkaz platí 7 dní a je určen jen vám. Žádosti najdete i v administraci pod „Claim Requests".
+              Odkaz platí 7 dní a je určen jen vám. Žádosti najdete i v administraci pod „Claim Requests“.
             </p>
           </div>
         `,
@@ -320,7 +320,7 @@ export async function runClaimDecisionSideEffects(
         subject: `Tohle bohužel nevyšlo – propojení s účastníkem ${participant.name}`,
         text:
           `Správce chaty ${chata?.name ?? ''} nepotvrdil propojení s účastníkem ${participant.name}.` +
-          (doc.reason ? ` Napsal k tomu: „${doc.reason}"` : '') +
+          (doc.reason ? ` Napsal k tomu: „${doc.reason}“` : '') +
           `\n\nPokud jde o nedorozumění, ozvěte se správci chaty nebo požádejte znovu.`,
         html: `
           <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
@@ -329,7 +329,7 @@ export async function runClaimDecisionSideEffects(
             <p style="line-height: 1.6;">
               Správce chaty <strong>${escapeHtml(chata?.name ?? '')}</strong> nepotvrdil propojení s účastníkem
               <strong>${escapeHtml(participant.name)}</strong>.
-              ${doc.reason ? `Napsal k tomu: <em>„${escapeHtml(doc.reason)}"</em>` : ''}
+              ${doc.reason ? `Napsal k tomu: <em>„${escapeHtml(doc.reason)}“</em>` : ''}
             </p>
             <p style="color: #78716c; font-size: 13px;">
               Pokud jde o nedorozumění, ozvěte se správci chaty nebo požádejte znovu.

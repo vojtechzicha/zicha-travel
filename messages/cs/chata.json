@@ -1,8 +1,8 @@
 {
   "meta": {
     "selectTitle": "Vyberte chatu",
-    "selectDescription": "Společně na chatu - plánování, informace, finance",
-    "chataDescription": "{name} - {location} - plánování, informace, finance",
+    "selectDescription": "Společně na chatu – plánování, informace, finance",
+    "chataDescription": "{name} – {location} – plánování, informace, finance",
     "ogDescription": "Společně na chatu: {location}",
     "notFoundTitle": "Chata nenalezena"
   },
@@ -45,18 +45,18 @@
     "otherYears": "Ostatní",
     "nothingFound": "Nic nenalezeno.",
     "noChatas": "Zatím nejsou k dispozici žádné chaty.",
-    "restrictedNote": "Zobrazují se jen chaty, kde jste účastníkem. Chybí vám některá?",
-    "restrictedContact": "Ozvěte se pokladníkovi.",
+    "restrictedNote": "Zobrazují se jen chaty, kde jsi účastníkem. Chybí ti některá?",
+    "restrictedContact": "Ozvi se pokladníkovi.",
     "loginPrompt": "Jste účastník? Po přihlášení uvidíte své finance a vyrovnání.",
     "signIn": "Přihlásit se"
   },
   "participantSelector": {
     "title": "Kdo jste?",
     "subtitle": "Vyberte své jméno pro zobrazení vašich financí",
-    "searchPlaceholder": "Hledat účastníka...",
-    "pendingClaimHint": "někdo už požádal – jsi to ty? ozvi se taky",
+    "searchPlaceholder": "Hledat účastníka…",
+    "pendingClaimHint": "někdo už požádal – jste to vy? ozvěte se taky",
     "noAccountHint": "bez účtu",
-    "noMatch": "Žádný účastník neodpovídá hledání „{query}\"",
+    "noMatch": "Žádný účastník neodpovídá hledání „{query}“",
     "allLocked": "Finance všech účastníků jsou přístupné po přihlášení.",
     "lockedDivider": "Přístupné po přihlášení",
     "lockedTitle": "Pro zobrazení se přihlaste e-mailem {email}",
@@ -66,7 +66,7 @@
   },
   "selectedParticipantHeader": {
     "change": "Změnit",
-    "searchPlaceholder": "Hledat účastníka...",
+    "searchPlaceholder": "Hledat účastníka…",
     "noneFound": "Žádný účastník nenalezen"
   }
 }

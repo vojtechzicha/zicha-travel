@@ -25,7 +25,7 @@ export default function UcetContentCs() {
           />
           <p>
             Jeden účet může držet víc jmen, klidně v jedné chatě. Typicky rodič, který má na sobě i
-            děti, a přepíná mezi nimi.
+            děti a přepíná mezi nimi.
           </p>
         </Section>
 

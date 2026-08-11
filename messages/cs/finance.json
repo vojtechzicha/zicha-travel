@@ -1,7 +1,7 @@
 {
   "share": {
     "amount": "podíl {amount}",
-    "count": "{count, plural, one {# podíl} few {# podíly} many {# podílů} other {# podílů}}"
+    "count": "{count, plural, one {# podíl} few {# podíly} many {# podílu} other {# podílů}}"
   },
   "invitation": {
     "youPayFor": "platíš za {name}",
@@ -52,8 +52,8 @@
     "table": "Tabulka",
     "cards": "Karty",
     "chipTotal": "Celkové výdaje: <strong>{amount}</strong>",
-    "chipExpenses": "<strong>{count}</strong> výdajů",
-    "chipParticipants": "<strong>{count}</strong> účastníků",
+    "chipExpenses": "<strong>{count}</strong> {count, plural, one {výdaj} few {výdaje} other {výdajů}}",
+    "chipParticipants": "<strong>{count}</strong> {count, plural, one {účastník} few {účastníci} other {účastníků}}",
     "chipCollected": "Vybráno na zálohách: <strong>{amount}</strong>",
     "chipZeroSum": "Σ výsledků: <strong>{amount} ✓</strong>",
     "item": "Položka",

@@ -39,7 +39,7 @@ export default function PrehledContentCs() {
                 a poznámka, když ho platil někdo jiný.
               </>,
               <>
-                <strong>Σ kontrola</strong> vpravo: součet řádku. U výdajů musí odpovídat jeho ceně,
+                <strong>Σ kontrola</strong> vpravo: součet řádku. U výdajů musí odpovídat jejich ceně,
                 u přesunů k pokladníkovi nule.
               </>,
               <>

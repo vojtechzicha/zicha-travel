@@ -40,11 +40,11 @@ export default function FinanceContentCs() {
         <Section title="Souhrnný box: odkud se bere výsledek" icon={<Wallet size={20} />}>
           <p>
             Barva boxu napovídá dřív než čísla. Zelená znamená, že jste na svém nebo dostáváte
-            zpátky, červená že doplácíte, modrá patří pokladníkovi.
+            zpátky, červená, že doplácíte, modrá patří pokladníkovi.
           </p>
           <Screenshot
             name="finance-souhrn"
-            caption="Míša nakoupil za celou chatu, takže je ve zisku: dostane zpět 3 360 Kč."
+            caption="Míša nakoupil za celou chatu, takže je v zisku: dostane zpět 3 360 Kč."
           />
           <p>Řádky se objevují jen tehdy, když mají co ukázat:</p>
           <List
@@ -187,7 +187,7 @@ export default function FinanceContentCs() {
             ]}
           />
           <p>
-            Pokladník má obrazovku jinou: v jednom sloupci vidí, kdo mu ještě dluží, ve druhém komu
+            Pokladník má obrazovku jinou: v jednom sloupci vidí, kdo mu ještě dluží, ve druhém, komu
             má poslat. U každého věřitele si rozbalí QR kód s jeho číslem účtu. Kdo bankovní údaje
             nevyplnil, objeví se ve žlutém rámečku s poznámkou, že se mu má zaplatit hotově.
           </p>

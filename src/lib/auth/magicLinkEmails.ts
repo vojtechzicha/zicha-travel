@@ -42,7 +42,7 @@ export function superadminNoticeEmail(locale: AppLocale): EmailContent {
             Tento účet je <strong>superadmin</strong> – přihlašovací odkazy jsou pro něj z
             bezpečnostních důvodů vypnuté.
           </p>
-          <p>Přihlaste se prosím tlačítkem „Přihlásit se přes Microsoft".</p>
+          <p>Přihlaste se prosím tlačítkem „Přihlásit se přes Microsoft“.</p>
         </div>
       `,
   }
