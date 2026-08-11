@@ -2,13 +2,17 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
+import { getTranslations } from 'next-intl/server'
 import config from '@/payload.config'
 import { LoginCard } from '../components/LoginCard'
 import '../styles.css'
 
-export const metadata: Metadata = {
-  title: 'Přihlášení',
-  description: 'Přihlášení k zicha.travel',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('auth')
+  return {
+    title: t('login.metaTitle'),
+    description: t('login.metaDescription'),
+  }
 }
 
 export default async function LoginPage() {

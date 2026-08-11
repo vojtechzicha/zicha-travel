@@ -1,0 +1,59 @@
+{
+  "information": {
+    "notAvailable": "Informace o této chatě nejsou k dispozici.",
+    "whenTitle": "Kdy jedeme?",
+    "arrival": "Příjezd",
+    "departure": "Odjezd",
+    "nightsCount": "{count, plural, one {# noc} few {# noci} other {# nocí}}",
+    "whereTitle": "Kam jedeme?",
+    "galleryTitle": "Jak to tam vypadá",
+    "photoAlt": "{name} fotka {number}",
+    "importantInfoTitle": "Důležité informace",
+    "transportTitle": "Doprava",
+    "byCar": "Autem",
+    "parking": "Parkování:",
+    "byPublicTransport": "Veřejnou dopravou",
+    "addToCalendar": "Přidat do kalendáře",
+    "calendar": {
+      "journeyThere": "Cesta na chatu",
+      "journeyBack": "Cesta z chaty",
+      "total": "Celkem {duration}.",
+      "bus": "bus",
+      "train": "vlak"
+    }
+  },
+  "organization": {
+    "notAvailable": "Organizace není k dispozici.",
+    "heroCombined": "🛏️ Kde budeme spát a jak se tam dostaneme? 🚗",
+    "heroCars": "Jak se tam dostaneme?",
+    "heroBedrooms": "Kde budeme spát?",
+    "roomsCountLabel": "{count, plural, one {pokoj} few {pokoje} other {pokojů}}",
+    "occupied": "obsazeno",
+    "nightsCountLabel": "{count, plural, one {noc} few {noci} other {nocí}}",
+    "roomsTitle": "Pokoje a postele",
+    "noRooms": "Zatím nejsou přidány žádné pokoje.",
+    "showBeds": "Zobrazit postele",
+    "hideBeds": "Skrýt postele",
+    "freeSpot": "Volné místo 💤",
+    "sharedCarsTitle": "Sdílená auta",
+    "driver": "Řidič",
+    "notAssigned": "Neurčeno",
+    "frontPassenger": "Spolujezdec",
+    "showPassengers": "Zobrazit cestující ({count})",
+    "hidePassengers": "Skrýt cestující",
+    "equipment": "Náklad",
+    "nightHeader": "Noc {night}",
+    "presentTooltip": "{name} – Noc {night}",
+    "absentTooltip": "{name} není přítomen/a",
+    "wholeStay": "celý pobyt",
+    "onlyNight": "jen noc {night}",
+    "onlyNights": "jen noci {list} a {last}"
+  },
+  "participants": {
+    "title": "Kdo všechno jede?",
+    "participantsCountLabel": "{count, plural, one {účastník} few {účastníci} other {účastníků}}",
+    "nightsCountLabel": "{count, plural, one {noc} few {noci} other {nocí}}",
+    "wholeStay": "celý pobyt",
+    "partialStay": "{nights}/{total} {nights, plural, one {noc} few {noci} other {nocí}}"
+  }
+}

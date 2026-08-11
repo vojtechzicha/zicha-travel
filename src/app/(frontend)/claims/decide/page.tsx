@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
+import { getTranslations } from 'next-intl/server'
 import config from '@/payload.config'
 import { refId, canManageChata } from '@/lib/access'
 import { verifyDecideToken } from '@/lib/claimRequests'
@@ -7,9 +8,12 @@ import { GlassCard } from '../../components/GlassCard'
 import { DecideClaimCard } from '../../components/DecideClaimCard'
 import '../../styles.css'
 
-export const metadata: Metadata = {
-  title: 'Žádost o propojení',
-  description: 'Schválení žádosti o propojení účastníka s účtem',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('auth')
+  return {
+    title: t('decide.metaTitle'),
+    description: t('decide.metaDescription'),
+  }
 }
 
 // The admin lands here from the notification email. The signed token in the
@@ -22,6 +26,7 @@ export default async function DecideClaimPage({
   searchParams: Promise<{ token?: string }>
 }) {
   const { token } = await searchParams
+  const t = await getTranslations('auth')
 
   const shell = (content: React.ReactNode) => (
     <div className="min-h-screen relative">
@@ -41,18 +46,15 @@ export default async function DecideClaimPage({
     )
 
   if (!token) {
-    return message('Neplatný odkaz', 'V odkazu chybí podpis. Použijte prosím odkaz z e-mailu.')
+    return message(t('decide.page.invalidTitle'), t('decide.page.missingSignature'))
   }
 
   const secret = process.env.PAYLOAD_SECRET
   const verified = secret ? verifyDecideToken(token, secret) : ({ ok: false, code: 'invalid' } as const)
   if (!verified.ok) {
     return verified.code === 'expired'
-      ? message(
-          'Odkaz vypršel',
-          'Odkazy z e-mailu platí 7 dní. Žádost najdete v administraci pod „Claim Requests".'
-        )
-      : message('Neplatný odkaz', 'Podpis odkazu nesedí. Použijte prosím odkaz z e-mailu.')
+      ? message(t('decide.page.expiredTitle'), t('decide.page.expiredBody'))
+      : message(t('decide.page.invalidTitle'), t('decide.page.badSignature'))
   }
 
   const payload = await getPayload({ config: await config })
@@ -66,13 +68,10 @@ export default async function DecideClaimPage({
   ])
 
   if (!claim) {
-    return message('Žádost nenalezena', 'Žádost o propojení už neexistuje.')
+    return message(t('decide.page.notFoundTitle'), t('decide.page.notFoundBody'))
   }
   if (!admin || !canManageChata({ ...admin, collection: 'users' }, refId(claim.chata))) {
-    return message(
-      'Nemáte oprávnění',
-      'Tento odkaz patří správci, který už tuto chatu nespravuje. Požádejte jiného správce.'
-    )
+    return message(t('decide.page.forbiddenTitle'), t('decide.page.forbiddenBody'))
   }
 
   const [participant, chata, requester] = await Promise.all([
@@ -99,19 +98,19 @@ export default async function DecideClaimPage({
   ])
 
   if (!participant || !requester) {
-    return message(
-      'Žádost už nejde vyřídit',
-      'Účastník nebo účet z této žádosti mezitím zmizel. Žádost najdete v administraci.'
-    )
+    return message(t('decide.page.goneTitle'), t('decide.page.goneBody'))
   }
 
   if (claim.status !== 'pending') {
     const statusText: Record<string, string> = {
-      approved: 'Žádost už byla schválena.',
-      rejected: 'Žádost už byla zamítnuta.',
-      cancelled: 'Žadatel vzal žádost zpět.',
+      approved: t('decide.page.decidedApproved'),
+      rejected: t('decide.page.decidedRejected'),
+      cancelled: t('decide.page.decidedCancelled'),
     }
-    return message('Už rozhodnuto', statusText[claim.status] || 'Žádost už není otevřená.')
+    return message(
+      t('decide.page.decidedTitle'),
+      statusText[claim.status] || t('decide.page.decidedClosed')
+    )
   }
 
   // Context for a confident decision, mirrored from the notification email

@@ -1,6 +1,8 @@
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import type { Metadata } from 'next'
+import { getLocale, getTranslations } from 'next-intl/server'
+import type { AppLocale } from '@/i18n/config'
 import config from '@/payload.config'
 import { ChataSelector } from './components/ChataSelector'
 import type { HomeChataItem, HomeViewer } from './components/ChataSelector'
@@ -27,24 +29,25 @@ import './styles.css'
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers()
   const matchedSlug = headersList.get('x-matched-chata-slug')
+  const t = await getTranslations('chata.meta')
 
   if (matchedSlug) {
     const chata = await fetchChataBySlug(matchedSlug)
     if (chata) {
       return {
         title: { absolute: chata.name },
-        description: `${chata.name} - ${chata.location} - plánování, informace, finance`,
+        description: t('chataDescription', { name: chata.name, location: chata.location }),
         openGraph: {
           title: chata.name,
-          description: `Společně na chatu: ${chata.location}`,
+          description: t('ogDescription', { location: chata.location }),
         },
       }
     }
   }
 
   return {
-    title: 'Vyberte chatu',
-    description: 'Společně na chatu - plánování, informace, finance',
+    title: t('selectTitle'),
+    description: t('selectDescription'),
   }
 }
 
@@ -61,6 +64,7 @@ export default async function HomePage() {
   }
 
   // MULTI-CHATA MODE: Show selector
+  const locale = (await getLocale()) as AppLocale
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
@@ -158,11 +162,13 @@ export default async function HomePage() {
       coverUrl: identities.get(chata.id)?.coverUrl ?? null,
       status,
       countdown:
-        status === 'upcoming' && rangeStart ? countdownLabel(daysUntil(rangeStart, today)) : null,
-      untilLabel: status === 'live' && to ? untilLabel(to) : null,
-      dateRangeLong: rangeStart ? formatDateRangeLong(rangeStart, rangeEnd) : null,
-      dateRangeShort: rangeStart ? formatDateRangeShort(rangeStart, rangeEnd) : null,
-      monthYear: archiveDate ? formatMonthYear(archiveDate) : null,
+        status === 'upcoming' && rangeStart
+          ? countdownLabel(daysUntil(rangeStart, today), locale)
+          : null,
+      untilLabel: status === 'live' && to ? untilLabel(to, locale) : null,
+      dateRangeLong: rangeStart ? formatDateRangeLong(rangeStart, rangeEnd, locale) : null,
+      dateRangeShort: rangeStart ? formatDateRangeShort(rangeStart, rangeEnd, locale) : null,
+      monthYear: archiveDate ? formatMonthYear(archiveDate, locale) : null,
       year: chataYear(chata),
       participantNames,
       isOwn: ownNames.length > 0,
@@ -175,12 +181,15 @@ export default async function HomePage() {
     ? {
         authenticated: true,
         displayName: user.name?.trim() || user.email,
-        greetingName: greetingName({
-          userVokativ: user.vokativ,
-          userName: user.name,
-          participantVokativs: linkedParticipants.map((p) => p.vokativ),
-          participantNames: linkedParticipants.map((p) => p.name),
-        }),
+        greetingName: greetingName(
+          {
+            userVokativ: user.vokativ,
+            userName: user.name,
+            participantVokativs: linkedParticipants.map((p) => p.vokativ),
+            participantNames: linkedParticipants.map((p) => p.name),
+          },
+          locale
+        ),
         isRestrictedList: user.role !== 'superadmin',
       }
     : {

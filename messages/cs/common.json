@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "description": "Společně na chatu – plánování, informace, finance"
+  },
+  "footer": {
+    "tagline": "– společně na chatu: plánování, informace a finance",
+    "version": "verze {version}",
+    "help": "Nápověda",
+    "privacySettings": "Nastavení soukromí",
+    "admin": "Administrace",
+    "signOut": "Odhlásit se",
+    "signIn": "Přihlásit se"
+  },
+  "error": {
+    "title": "Něco se pokazilo",
+    "message": "Omlouváme se – něco na naší straně nezafungovalo. Zkuste to prosím znovu.",
+    "retry": "Zkusit znovu"
+  },
+  "consent": {
+    "title": "Měření návštěvnosti",
+    "body": "Anonymní statistiky sbíráme vždy – bez cookies a bez toho, abychom věděli, kdo jste. Když povolíte cookies, uvidíme navíc, jestli se něco nedokončí nebo nerozbije, a budeme to umět spravit.",
+    "allow": "Povolit",
+    "essentialOnly": "Jen nezbytné",
+    "morePrivacy": "Více o soukromí"
+  }
+}

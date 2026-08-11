@@ -1,0 +1,59 @@
+{
+  "information": {
+    "notAvailable": "No information is available for this chata.",
+    "whenTitle": "When are we going?",
+    "arrival": "Arrival",
+    "departure": "Departure",
+    "nightsCount": "{count, plural, one {# night} other {# nights}}",
+    "whereTitle": "Where are we going?",
+    "galleryTitle": "What it looks like there",
+    "photoAlt": "{name} photo {number}",
+    "importantInfoTitle": "Important information",
+    "transportTitle": "Transport",
+    "byCar": "By car",
+    "parking": "Parking:",
+    "byPublicTransport": "By public transport",
+    "addToCalendar": "Add to calendar",
+    "calendar": {
+      "journeyThere": "Journey to the chata",
+      "journeyBack": "Journey from the chata",
+      "total": "Total {duration}.",
+      "bus": "bus",
+      "train": "train"
+    }
+  },
+  "organization": {
+    "notAvailable": "Organization details aren't available.",
+    "heroCombined": "🛏️ Where will we sleep and how do we get there? 🚗",
+    "heroCars": "How do we get there?",
+    "heroBedrooms": "Where will we sleep?",
+    "roomsCountLabel": "{count, plural, one {room} other {rooms}}",
+    "occupied": "occupied",
+    "nightsCountLabel": "{count, plural, one {night} other {nights}}",
+    "roomsTitle": "Rooms and beds",
+    "noRooms": "No rooms have been added yet.",
+    "showBeds": "Show beds",
+    "hideBeds": "Hide beds",
+    "freeSpot": "Free spot 💤",
+    "sharedCarsTitle": "Shared cars",
+    "driver": "Driver",
+    "notAssigned": "Not assigned",
+    "frontPassenger": "Front passenger",
+    "showPassengers": "Show passengers ({count})",
+    "hidePassengers": "Hide passengers",
+    "equipment": "Cargo",
+    "nightHeader": "Night {night}",
+    "presentTooltip": "{name} - Night {night}",
+    "absentTooltip": "{name} won't be there",
+    "wholeStay": "whole stay",
+    "onlyNight": "night {night} only",
+    "onlyNights": "nights {list} and {last} only"
+  },
+  "participants": {
+    "title": "Who's coming?",
+    "participantsCountLabel": "{count, plural, one {participant} other {participants}}",
+    "nightsCountLabel": "{count, plural, one {night} other {nights}}",
+    "wholeStay": "whole stay",
+    "partialStay": "{nights}/{total} {nights, plural, one {night} other {nights}}"
+  }
+}

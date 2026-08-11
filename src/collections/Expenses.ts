@@ -8,6 +8,7 @@ import {
   normalizePayer,
   samePayer,
 } from '../lib/expenseAuthoring'
+import { pickValidationMessage } from '../i18n/adminTranslations'
 
 // Write access: superadmin everything, admin their assigned chatas, and a
 // frontend account (role "user") only the expenses it authored itself
@@ -33,6 +34,10 @@ const expenseWriteAccess: Access = ({ req: { user } }) => {
 
 export const Expenses: CollectionConfig = {
   slug: 'expenses',
+  labels: {
+    singular: { en: 'Expense', cs: 'Výdaj' },
+    plural: { en: 'Expenses', cs: 'Výdaje' },
+  },
   hooks: {
     beforeChange: [
       // Frontend authoring guard + authorship stamp. Admin-panel roles only
@@ -125,7 +130,7 @@ export const Expenses: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'amount', 'payer', 'chata'],
-    group: 'Expense Tracking',
+    group: { en: 'Expense Tracking', cs: 'Evidence výdajů' },
   },
   access: {
     // Public read access for API consumption
@@ -144,7 +149,10 @@ export const Expenses: CollectionConfig = {
       relationTo: 'chatas',
       required: true,
       admin: {
-        description: 'The trip/chata this expense belongs to',
+        description: {
+          en: 'The trip/chata this expense belongs to',
+          cs: 'Chata/výlet, kam tento výdaj patří',
+        },
       },
     },
     {
@@ -152,7 +160,10 @@ export const Expenses: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'Description of the expense',
+        description: {
+          en: 'Description of the expense',
+          cs: 'Popis výdaje',
+        },
       },
     },
     {
@@ -160,7 +171,10 @@ export const Expenses: CollectionConfig = {
       type: 'number',
       required: true,
       admin: {
-        description: 'Total amount (use negative values for refunds)',
+        description: {
+          en: 'Total amount (use negative values for refunds)',
+          cs: 'Celková částka (pro vratky použijte záporné hodnoty)',
+        },
       },
     },
     {
@@ -172,7 +186,10 @@ export const Expenses: CollectionConfig = {
       relationTo: ['participants', 'joint-accounts'],
       required: true,
       admin: {
-        description: 'Who paid for this expense (a participant or a joint account)',
+        description: {
+          en: 'Who paid for this expense (a participant or a joint account)',
+          cs: 'Kdo tento výdaj zaplatil (účastník nebo společný účet)',
+        },
         condition: (data) => Boolean(data?.chata),
       },
       filterOptions: ({ siblingData }) => {
@@ -195,23 +212,29 @@ export const Expenses: CollectionConfig = {
       defaultValue: 'equal',
       options: [
         {
-          label: 'Equal Split (ALL)',
+          label: { en: 'Equal Split (ALL)', cs: 'Rovným dílem (všichni)' },
           value: 'equal',
         },
         {
-          label: 'Weighted Split',
+          label: { en: 'Weighted Split', cs: 'Podle podílů' },
           value: 'weighted',
         },
       ],
       admin: {
-        description: 'How to split this expense among participants',
+        description: {
+          en: 'How to split this expense among participants',
+          cs: 'Jak tento výdaj rozdělit mezi účastníky',
+        },
       },
     },
     {
       name: 'weights',
       type: 'array',
       admin: {
-        description: 'Weighted distribution - only used when Split Type is "Weighted"',
+        description: {
+          en: 'Weighted distribution - only used when Split Type is "Weighted"',
+          cs: 'Rozdělení podle podílů – použije se jen při typu rozdělení „Podle podílů“',
+        },
         condition: (data, siblingData) => Boolean(data?.chata) && siblingData?.splitType === 'weighted',
         components: {
           beforeInput: ['@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton'],
@@ -225,7 +248,10 @@ export const Expenses: CollectionConfig = {
           relationTo: 'participants',
           required: true,
           admin: {
-            description: 'Participant sharing this expense',
+            description: {
+              en: 'Participant sharing this expense',
+              cs: 'Účastník, který se na tomto výdaji podílí',
+            },
           },
           filterOptions: ({ data }) => {
             // siblingData is the weights array row - the chata lives on the
@@ -247,21 +273,30 @@ export const Expenses: CollectionConfig = {
           required: true,
           min: 0,
           admin: {
-            description:
-              'Weight multiplier for this participant (e.g., 1, 0.5, 2). If all weights ' +
-              'add up to the total amount (±1 Kč), they are displayed as Kč amounts.',
+            description: {
+              en:
+                'Weight multiplier for this participant (e.g., 1, 0.5, 2). If all weights ' +
+                'add up to the total amount (±1 Kč), they are displayed as Kč amounts.',
+              cs:
+                'Váha podílu tohoto účastníka (např. 1, 0.5, 2). Pokud součet všech vah ' +
+                'odpovídá celkové částce (±1 Kč), zobrazí se jako částky v Kč.',
+            },
             components: {
               afterInput: ['@/collections/Expenses/components/WeightShareHint#WeightShareHint'],
             },
           },
         },
       ],
-      validate: (value, { siblingData }) => {
+      validate: (value, { req, siblingData }) => {
         // Only validate if splitType is weighted
         const data = siblingData as Partial<Expense> | undefined
         if (data?.splitType === 'weighted') {
           if (!value || value.length === 0) {
-            return 'At least one participant weight is required for weighted splits'
+            return pickValidationMessage(
+              req,
+              'At least one participant weight is required for weighted splits',
+              'Rozdělení podle podílů vyžaduje alespoň jeden podíl účastníka',
+            )
           }
         }
         return true
@@ -271,9 +306,14 @@ export const Expenses: CollectionConfig = {
       name: 'invitations',
       type: 'array',
       admin: {
-        description:
-          'The host pays the guest\'s share of this expense. A host can invite ' +
-          'multiple guests; each guest can be invited only once per expense.',
+        description: {
+          en:
+            'The host pays the guest\'s share of this expense. A host can invite ' +
+            'multiple guests; each guest can be invited only once per expense.',
+          cs:
+            'Hostitel platí podíl hosta na tomto výdaji. Hostitel může pozvat víc ' +
+            'hostů; každý host může být na jeden výdaj pozván jen jednou.',
+        },
         condition: (data) => Boolean(data?.chata),
       },
       fields: [
@@ -283,7 +323,10 @@ export const Expenses: CollectionConfig = {
           relationTo: 'participants',
           required: true,
           admin: {
-            description: 'Who covers the share (the inviter)',
+            description: {
+              en: 'Who covers the share (the inviter)',
+              cs: 'Kdo podíl hradí (ten, kdo zve)',
+            },
           },
           filterOptions: ({ data }) => {
             const doc = data as Partial<Expense> | undefined
@@ -303,7 +346,10 @@ export const Expenses: CollectionConfig = {
           relationTo: 'participants',
           required: true,
           admin: {
-            description: 'Whose share is covered (the invited one)',
+            description: {
+              en: 'Whose share is covered (the invited one)',
+              cs: 'Čí podíl je hrazen (pozvaný)',
+            },
           },
           filterOptions: ({ data }) => {
             const doc = data as Partial<Expense> | undefined
@@ -322,14 +368,20 @@ export const Expenses: CollectionConfig = {
           type: 'checkbox',
           defaultValue: false,
           admin: {
-            description:
-              'Standing arrangement (e.g. a parent paying for a child) - managed ' +
-              'automatically from the participant\'s "Paid By" field and hidden on ' +
-              'the expense card. Leave unchecked for one-off invitations, which are shown.',
+            description: {
+              en:
+                'Standing arrangement (e.g. a parent paying for a child) - managed ' +
+                'automatically from the participant\'s "Paid By" field and hidden on ' +
+                'the expense card. Leave unchecked for one-off invitations, which are shown.',
+              cs:
+                'Trvalé ujednání (např. rodič platící za dítě) – spravuje se automaticky ' +
+                'z pole „Platí za něj/ni“ účastníka a na kartě výdaje se nezobrazuje. ' +
+                'U jednorázových pozvání, která se zobrazují, nechte pole nezaškrtnuté.',
+            },
           },
         },
       ],
-      validate: (value) => {
+      validate: (value, { req }) => {
         const rows = (value || []) as Array<{ host?: unknown; guest?: unknown }>
         const refId = (ref: unknown): string | null => {
           if (ref === null || ref === undefined) return null
@@ -341,11 +393,19 @@ export const Expenses: CollectionConfig = {
           const host = refId(row.host)
           const guest = refId(row.guest)
           if (host && guest && host === guest) {
-            return 'A participant cannot invite themselves'
+            return pickValidationMessage(
+              req,
+              'A participant cannot invite themselves',
+              'Účastník nemůže pozvat sám sebe',
+            )
           }
           if (guest) {
             if (seenGuests.has(guest)) {
-              return 'Each guest can be invited only once per expense'
+              return pickValidationMessage(
+                req,
+                'Each guest can be invited only once per expense',
+                'Každý host může být na jeden výdaj pozván jen jednou',
+              )
             }
             seenGuests.add(guest)
           }
@@ -376,7 +436,10 @@ export const Expenses: CollectionConfig = {
       name: 'note',
       type: 'textarea',
       admin: {
-        description: 'Optional notes about this expense',
+        description: {
+          en: 'Optional notes about this expense',
+          cs: 'Volitelné poznámky k tomuto výdaji',
+        },
       },
     },
     {
@@ -385,8 +448,10 @@ export const Expenses: CollectionConfig = {
       relationTo: 'expense-attachments',
       hasMany: true,
       admin: {
-        description:
-          'Účtenky a další přílohy (fotky, PDF) - on mobile the file picker offers taking a photo directly',
+        description: {
+          en: 'Receipts and other attachments (photos, PDF) - on mobile the file picker offers taking a photo directly',
+          cs: 'Účtenky a další přílohy (fotky, PDF) – výběr souboru na mobilu nabízí i přímé vyfocení',
+        },
       },
     },
     {
@@ -402,8 +467,10 @@ export const Expenses: CollectionConfig = {
       admin: {
         position: 'sidebar',
         readOnly: true,
-        description:
-          'Account that created this expense (set automatically). Frontend users may edit/delete only their own expenses.',
+        description: {
+          en: 'Account that created this expense (set automatically). Frontend users may edit/delete only their own expenses.',
+          cs: 'Účet, který tento výdaj vytvořil (nastavuje se automaticky). Uživatelé webu mohou upravovat/mazat jen své vlastní výdaje.',
+        },
       },
     },
     {
@@ -412,7 +479,10 @@ export const Expenses: CollectionConfig = {
       defaultValue: false,
       admin: {
         position: 'sidebar',
-        description: 'Planned expense (not yet paid) - uncheck when actually paid',
+        description: {
+          en: 'Planned expense (not yet paid) - uncheck when actually paid',
+          cs: 'Plánovaný výdaj (zatím nezaplacený) – po skutečném zaplacení zrušte zaškrtnutí',
+        },
       },
     },
   ],

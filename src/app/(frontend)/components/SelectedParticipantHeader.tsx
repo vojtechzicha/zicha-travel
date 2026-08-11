@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { ChevronDown, Search, Crown, Check } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import type { Participant } from '@/payload-types'
@@ -28,6 +29,7 @@ export function SelectedParticipantHeader({
   canChange = true,
   onClearSelection,
 }: SelectedParticipantHeaderProps) {
+  const t = useTranslations('chata.selectedParticipantHeader')
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -105,7 +107,7 @@ export function SelectedParticipantHeader({
                        text-gray-600 hover:text-gray-900 hover:bg-white/80
                        transition-all font-medium"
           >
-            Změnit
+            {t('change')}
             <ChevronDown
               size={18}
               className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -129,7 +131,7 @@ export function SelectedParticipantHeader({
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Hledat účastníka..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200
@@ -173,9 +175,7 @@ export function SelectedParticipantHeader({
             })}
 
             {filteredParticipants.length === 0 && (
-              <p className="text-center text-gray-500 py-4 text-sm">
-                Žádný účastník nenalezen
-              </p>
+              <p className="text-center text-gray-500 py-4 text-sm">{t('noneFound')}</p>
             )}
           </div>
         </div>

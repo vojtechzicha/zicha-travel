@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { Check, X } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
+import type { AppLocale } from '@/i18n/config'
 
 interface DecideClaimCardProps {
   token: string
@@ -17,17 +19,17 @@ interface DecideClaimCardProps {
   replacesInactiveAccount: boolean
 }
 
-const ERROR_MESSAGES: Record<string, string> = {
-  expired: 'Odkaz vypršel — platí 7 dní. Žádost najdete v administraci.',
-  invalid: 'Odkaz je neplatný. Použijte prosím odkaz z e-mailu.',
-  forbidden: 'Tuto chatu už nespravujete — požádejte jiného správce.',
-  'already-decided': 'Žádost už mezitím někdo vyřídil.',
-  conflict:
-    'Účastník už je propojený s jiným aktivním účtem — žádost nejde schválit. ' +
-    'Případný omyl vyřešte v administraci.',
-  'reason-required': 'Napište prosím důvod zamítnutí — pošleme ho žadateli.',
-  'not-found': 'Žádost už neexistuje.',
-}
+// API error codes with a dedicated message in messages/{cs,en}/auth.json
+// under `decide.card.errors.*` — anything else falls back to a generic one.
+const KNOWN_ERROR_CODES = [
+  'expired',
+  'invalid',
+  'forbidden',
+  'already-decided',
+  'conflict',
+  'reason-required',
+  'not-found',
+] as const
 
 /**
  * "Někdo říká, že je Katka" — the admin decision card. Approve is one
@@ -44,16 +46,31 @@ export function DecideClaimCard({
   requesterLinkedCount,
   replacesInactiveAccount,
 }: DecideClaimCardProps) {
+  const t = useTranslations('auth')
+  const locale = useLocale() as AppLocale
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<'approve' | 'reject' | null>(null)
 
-  const requestedAtText = new Date(requestedAt).toLocaleString('cs-CZ', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-  })
+  // Translate a known API error code; unknown codes get a generic localized
+  // message (the raw code is only logged — never rendered to the user).
+  const errorText = (code: string | undefined): string => {
+    if (code && (KNOWN_ERROR_CODES as readonly string[]).includes(code)) {
+      return t(`decide.card.errors.${code}`)
+    }
+    if (code) console.warn('[auth] unmapped decide error code:', code)
+    return t('decide.card.errors.generic')
+  }
+
+  const requestedAtText = new Date(requestedAt).toLocaleString(
+    locale === 'cs' ? 'cs-CZ' : 'en-GB',
+    {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    }
+  )
 
   const decide = async (action: 'approve' | 'reject') => {
     setBusy(true)
@@ -66,12 +83,12 @@ export function DecideClaimCard({
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(ERROR_MESSAGES[data?.error] || 'Akce se nezdařila. Zkuste to prosím znovu.')
+        setError(errorText(data?.error))
         return
       }
       setDone(action)
     } catch {
-      setError('Akce se nezdařila. Zkuste to prosím znovu.')
+      setError(t('decide.card.errors.generic'))
     } finally {
       setBusy(false)
     }
@@ -88,12 +105,12 @@ export function DecideClaimCard({
           {done === 'approve' ? <Check size={28} /> : <X size={28} />}
         </div>
         <h1 className="font-serif text-2xl font-bold text-gray-900 mb-2">
-          {done === 'approve' ? 'Schváleno' : 'Zamítnuto'}
+          {done === 'approve' ? t('decide.card.approvedTitle') : t('decide.card.rejectedTitle')}
         </h1>
         <p className="text-gray-600">
           {done === 'approve'
-            ? `${participantName} je teď propojený s účtem ${requesterEmail}. Žadateli jsme dali vědět e-mailem.`
-            : 'Žadateli jsme poslali e-mail s vaším zdůvodněním.'}
+            ? t('decide.card.approvedBody', { name: participantName, email: requesterEmail })
+            : t('decide.card.rejectedBody')}
         </p>
       </GlassCard>
     )
@@ -102,15 +119,15 @@ export function DecideClaimCard({
   return (
     <GlassCard padding="large" className="w-full max-w-md">
       <h1 className="font-serif text-2xl font-bold text-gray-900 mb-1">
-        Někdo říká, že je {participantName}
+        {t('decide.card.title', { name: participantName })}
       </h1>
       <p className="text-gray-600 text-sm mb-4">
-        Na chatě <strong>{chataName}</strong> se k účastníkovi hlásí účet{' '}
-        <strong>{requesterEmail}</strong> (e-mail ověřený,{' '}
-        {requesterLinkedCount > 0
-          ? 'účet už má propojené účastníky'
-          : 'účet nový — zatím bez propojených účastníků'}
-        ). Sedí to?
+        {t.rich('decide.card.intro', {
+          chataName,
+          email: requesterEmail,
+          linkedCount: requesterLinkedCount,
+          strong: (chunks) => <strong>{chunks}</strong>,
+        })}
       </p>
 
       <div className="flex items-center gap-3 bg-white/70 border border-gray-200 rounded-xl px-4 py-3 mb-3">
@@ -124,18 +141,15 @@ export function DecideClaimCard({
             {participantName} → {requesterEmail}
           </div>
           <div className="text-xs text-gray-500">
-            žádost z {requestedAtText} •{' '}
-            {otherPendingCount > 0
-              ? `pozor: čeká ještě ${otherPendingCount} další žádost(i)`
-              : 'žádná další žádost nečeká'}
+            {t('decide.card.requestMeta', { date: requestedAtText })} •{' '}
+            {t('decide.card.otherPending', { count: otherPendingCount })}
           </div>
         </div>
       </div>
 
       {replacesInactiveAccount && (
         <div className="mb-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-          Účastník má připravený účet, který se nikdy nepřihlásil — schválením ho nahradíte tímto
-          novým propojením.
+          {t('decide.card.replacesInactive')}
         </div>
       )}
 
@@ -151,7 +165,7 @@ export function DecideClaimCard({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            placeholder="Důvod zamítnutí — pošleme ho žadateli (např. „Katka už mi psala z jiné adresy — ozvi se mi, jestli jde o omyl.“)"
+            placeholder={t('decide.card.reasonPlaceholder')}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/80
                        focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
                        text-gray-900 placeholder-gray-400 text-sm"
@@ -164,7 +178,7 @@ export function DecideClaimCard({
               className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-3
                          rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {busy ? 'Odesílám...' : 'Zamítnout s tímto důvodem'}
+              {busy ? t('decide.card.sending') : t('decide.card.rejectWithReason')}
             </button>
             <button
               type="button"
@@ -173,7 +187,7 @@ export function DecideClaimCard({
               className="px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold
                          hover:bg-white/60 transition-colors"
             >
-              Zpět
+              {t('decide.card.back')}
             </button>
           </div>
         </div>
@@ -186,7 +200,7 @@ export function DecideClaimCard({
             className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-3
                        rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {busy ? 'Pracuji...' : 'Ano, schválit'}
+            {busy ? t('decide.card.working') : t('decide.card.approve')}
           </button>
           <button
             type="button"
@@ -195,15 +209,12 @@ export function DecideClaimCard({
             className="flex-1 bg-white border-2 border-red-200 text-red-700 font-semibold px-4 py-3
                        rounded-xl hover:bg-red-50 transition-colors"
           >
-            Zamítnout…
+            {t('decide.card.reject')}
           </button>
         </div>
       )}
 
-      <p className="text-center text-gray-500 text-xs mt-5">
-        Schválení propojí účastníka s účtem a automaticky zamítne případné další žádosti. Frontu
-        žádostí najdete i v administraci pod „Claim Requests".
-      </p>
+      <p className="text-center text-gray-500 text-xs mt-5">{t('decide.card.footnote')}</p>
     </GlassCard>
   )
 }

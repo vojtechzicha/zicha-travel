@@ -78,8 +78,20 @@ export function daysUntil(date: string | Date, today: Date): number {
   return dayNumber(date) - czechDayNumber(today)
 }
 
-/** "Za 43 dní" — Czech plural forms; "Dnes"/"Zítra" for the closest ones. */
-export function countdownLabel(days: number): string {
+// Date-grammar labels live here, not in the message catalogs: Czech needs
+// genitive month/weekday forms that Intl cannot produce ("5. srpna", "do
+// čtvrtka"), so the Czech path keeps its hand-built tables while English
+// goes through Intl. Every label function takes the app locale, defaulting
+// to Czech so existing call sites and tests read unchanged.
+import type { AppLocale } from '@/i18n/config'
+
+/** "Za 43 dní" / "In 43 days" — with "Dnes"/"Zítra" ("Today"/"Tomorrow"). */
+export function countdownLabel(days: number, locale: AppLocale = 'cs'): string {
+  if (locale === 'en') {
+    if (days <= 0) return 'Today'
+    if (days === 1) return 'Tomorrow'
+    return `In ${days} days`
+  }
   if (days <= 0) return 'Dnes'
   if (days === 1) return 'Zítra'
   if (days <= 4) return `Za ${days} dny`
@@ -89,9 +101,16 @@ export function countdownLabel(days: number): string {
 // "do <weekday>" needs the genitive: "do čtvrtka", not "do čtvrtek"
 const WEEKDAY_UNTIL = ['neděle', 'pondělí', 'úterý', 'středy', 'čtvrtka', 'pátku', 'soboty']
 
-/** "do neděle" — for the live badge "Právě probíhá • do neděle". */
-export function untilLabel(to: string | Date): string {
+/** "do neděle" / "until Sunday" — for the live badge. */
+export function untilLabel(to: string | Date, locale: AppLocale = 'cs'): string {
   const d = typeof to === 'string' ? new Date(to) : to
+  if (locale === 'en') {
+    const weekday = new Intl.DateTimeFormat('en-GB', {
+      weekday: 'long',
+      timeZone: 'UTC',
+    }).format(d)
+    return `until ${weekday}`
+  }
   return `do ${WEEKDAY_UNTIL[d.getUTCDay()]}`
 }
 
@@ -116,9 +135,38 @@ function parts(value: string | Date): DateParts {
   return { day: d.getUTCDate(), month: d.getUTCMonth(), year: d.getUTCFullYear() }
 }
 
-/** "5.–9. srpna 2026", "18. září – 20. října 2026", cross-year with both years. */
-export function formatDateRangeLong(from: string | Date, to?: string | Date | null): string {
+// English month names for range building — Intl can't format a RANGE with
+// our shared-year/month elision rules, so English mirrors the Czech
+// assembly with its own month tables.
+const MONTHS_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+const MONTHS_EN_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+/** "5.–9. srpna 2026" / "5–9 August 2026", cross-year with both years. */
+export function formatDateRangeLong(
+  from: string | Date,
+  to?: string | Date | null,
+  locale: AppLocale = 'cs',
+): string {
   const f = parts(from)
+  if (locale === 'en') {
+    const single = (p: DateParts) => `${p.day} ${MONTHS_EN[p.month]} ${p.year}`
+    if (!to) return single(f)
+    const t = parts(to)
+    if (f.year === t.year && f.month === t.month) {
+      if (f.day === t.day) return single(f)
+      return `${f.day}–${t.day} ${MONTHS_EN[f.month]} ${f.year}`
+    }
+    if (f.year === t.year) {
+      return `${f.day} ${MONTHS_EN[f.month]} – ${t.day} ${MONTHS_EN[t.month]} ${f.year}`
+    }
+    return `${single(f)} – ${single(t)}`
+  }
   if (!to) return `${f.day}. ${MONTHS_GENITIVE[f.month]} ${f.year}`
   const t = parts(to)
   if (f.year === t.year && f.month === t.month) {
@@ -131,9 +179,22 @@ export function formatDateRangeLong(from: string | Date, to?: string | Date | nu
   return `${f.day}. ${MONTHS_GENITIVE[f.month]} ${f.year} – ${t.day}. ${MONTHS_GENITIVE[t.month]} ${t.year}`
 }
 
-/** "18.–20. 9." / cross-month "30. 12. – 2. 1." — compact picker rows. */
-export function formatDateRangeShort(from: string | Date, to?: string | Date | null): string {
+/** "18.–20. 9." / "18–20 Sep"; cross-month "30. 12. – 2. 1." / "30 Dec – 2 Jan". */
+export function formatDateRangeShort(
+  from: string | Date,
+  to?: string | Date | null,
+  locale: AppLocale = 'cs',
+): string {
   const f = parts(from)
+  if (locale === 'en') {
+    if (!to) return `${f.day} ${MONTHS_EN_SHORT[f.month]}`
+    const t = parts(to)
+    if (f.year === t.year && f.month === t.month) {
+      if (f.day === t.day) return `${f.day} ${MONTHS_EN_SHORT[f.month]}`
+      return `${f.day}–${t.day} ${MONTHS_EN_SHORT[f.month]}`
+    }
+    return `${f.day} ${MONTHS_EN_SHORT[f.month]} – ${t.day} ${MONTHS_EN_SHORT[t.month]}`
+  }
   if (!to) return `${f.day}. ${f.month + 1}.`
   const t = parts(to)
   if (f.year === t.year && f.month === t.month) {
@@ -143,10 +204,10 @@ export function formatDateRangeShort(from: string | Date, to?: string | Date | n
   return `${f.day}. ${f.month + 1}. – ${t.day}. ${t.month + 1}.`
 }
 
-/** "srpen 2026" — archive cards. */
-export function formatMonthYear(date: string | Date): string {
+/** "srpen 2026" / "August 2026" — archive cards. */
+export function formatMonthYear(date: string | Date, locale: AppLocale = 'cs'): string {
   const p = parts(date)
-  return `${MONTHS_NOMINATIVE[p.month]} ${p.year}`
+  return `${locale === 'en' ? MONTHS_EN[p.month] : MONTHS_NOMINATIVE[p.month]} ${p.year}`
 }
 
 /** Year used for grouping in the "all chatas" picker. */
@@ -251,15 +312,19 @@ interface GreetingSource {
 /**
  * Name for the personal greeting ("Ahoj, Katko."): account vokativ →
  * any linked participant's vokativ → account first name → participant name.
- * Null = no usable name (fall back to a generic greeting).
+ * English skips the vocative forms — "Hi, Katko" would be wrong — and goes
+ * straight to the plain first name. Null = no usable name (fall back to a
+ * generic greeting).
  */
-export function greetingName(source: GreetingSource): string | null {
+export function greetingName(source: GreetingSource, locale: AppLocale = 'cs'): string | null {
   const trimmed = (v: string | null | undefined) => (v && v.trim() ? v.trim() : null)
-  const fromUserVokativ = trimmed(source.userVokativ)
-  if (fromUserVokativ) return fromUserVokativ
-  for (const v of source.participantVokativs ?? []) {
-    const value = trimmed(v)
-    if (value) return value
+  if (locale === 'cs') {
+    const fromUserVokativ = trimmed(source.userVokativ)
+    if (fromUserVokativ) return fromUserVokativ
+    for (const v of source.participantVokativs ?? []) {
+      const value = trimmed(v)
+      if (value) return value
+    }
   }
   const firstName = trimmed(source.userName)?.split(/\s+/)[0]
   if (firstName) return firstName

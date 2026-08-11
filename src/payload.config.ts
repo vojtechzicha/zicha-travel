@@ -6,6 +6,10 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
+import { en } from '@payloadcms/translations/languages/en'
+import { cs } from '@payloadcms/translations/languages/cs'
+
+import { adminTranslations } from './i18n/adminTranslations'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -43,6 +47,15 @@ export default buildConfig({
       },
       beforeDashboard: ['./components/admin/BeforeDashboard'],
     },
+  },
+  // Bilingual admin panel: users pick English or Czech in their account
+  // settings; unset accounts follow the browser language, falling back to
+  // English. Collection/field labels carry { en, cs } records; the custom
+  // admin components read the `zicha` namespace merged in here.
+  i18n: {
+    fallbackLanguage: 'en',
+    supportedLanguages: { en, cs },
+    translations: adminTranslations,
   },
   // Order matters for the admin UI: nav/dashboard groups appear in the order
   // of their first collection here (Chata → Expense Tracking → Appearance →

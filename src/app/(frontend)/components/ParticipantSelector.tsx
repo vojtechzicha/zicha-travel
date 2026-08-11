@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Search, Crown, Lock } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
@@ -26,6 +27,7 @@ export function ParticipantSelector({
   showClaimHints = false,
   pendingClaimIds = [],
 }: ParticipantSelectorProps) {
+  const t = useTranslations('chata.participantSelector')
   const [searchQuery, setSearchQuery] = useState('')
   // Locked tile the visitor tapped — reveals the full login hint below the
   // grid (the in-tile masked email is necessarily tiny)
@@ -65,11 +67,9 @@ export function ParticipantSelector({
     <GlassCard padding="large" className="w-full">
       <div className="text-center mb-6">
         <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2">
-          Kdo jste?
+          {t('title')}
         </h2>
-        <p className="text-gray-600">
-          Vyberte své jméno pro zobrazení vašich financí
-        </p>
+        <p className="text-gray-600">{t('subtitle')}</p>
       </div>
 
       {/* Search input */}
@@ -80,7 +80,7 @@ export function ParticipantSelector({
         />
         <input
           type="text"
-          placeholder="Hledat účastníka..."
+          placeholder={t('searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white/80
@@ -99,9 +99,9 @@ export function ParticipantSelector({
           // already asked for this one
           const hasPendingClaim = showClaimHints && pendingClaimIds.includes(participant.id)
           const claimHint = hasPendingClaim
-            ? 'někdo už požádal — jsi to ty? ozvi se taky'
+            ? t('pendingClaimHint')
             : showClaimHints && participant.account == null
-              ? 'bez účtu'
+              ? t('noAccountHint')
               : null
 
           return (
@@ -139,15 +139,13 @@ export function ParticipantSelector({
       {/* No results message */}
       {filteredParticipants.length === 0 && participants.length > 0 && (
         <p className="text-center text-gray-500 py-8">
-          Žádný účastník neodpovídá hledání „{searchQuery}"
+          {t('noMatch', { query: searchQuery })}
         </p>
       )}
 
       {/* Everyone selectable has an account — point to login */}
       {participants.length === 0 && lockedParticipants.length > 0 && (
-        <p className="text-center text-gray-500 py-8">
-          Finance všech účastníků jsou přístupné po přihlášení.
-        </p>
+        <p className="text-center text-gray-500 py-8">{t('allLocked')}</p>
       )}
 
       {/* Participants locked behind login (their account is active) */}
@@ -156,7 +154,7 @@ export function ParticipantSelector({
           <div className="flex items-center gap-3 mb-4 text-gray-400 text-sm">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="flex items-center gap-1.5">
-              <Lock size={13} /> Přístupné po přihlášení
+              <Lock size={13} /> {t('lockedDivider')}
             </span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
@@ -170,7 +168,7 @@ export function ParticipantSelector({
                   onClick={() =>
                     setRevealedLockedId(isRevealed ? null : participant.id)
                   }
-                  title={`Pro zobrazení se přihlaste e-mailem ${maskedEmail}`}
+                  title={t('lockedTitle', { email: maskedEmail })}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold
                              text-left w-full bg-white/40 text-gray-400 shadow-sm
                              transition-all ${
@@ -201,24 +199,27 @@ export function ParticipantSelector({
             )
             if (!revealed) {
               return (
-                <p className="text-center text-gray-500 text-sm mt-4">
-                  Klepnutím na zamčeného účastníka zobrazíte, jakým e-mailem se přihlásit.
-                </p>
+                <p className="text-center text-gray-500 text-sm mt-4">{t('lockedTapHint')}</p>
               )
             }
             return (
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 bg-primary/10 border border-primary/25 rounded-xl px-5 py-4">
                 <p className="text-sm text-gray-700 text-center sm:text-left">
-                  Finance účastníka <strong>{revealed.participant.name}</strong> uvidíte po
-                  přihlášení e-mailem{' '}
-                  <strong className="whitespace-nowrap text-base">{revealed.maskedEmail}</strong>.
+                  {t.rich('lockedDetail', {
+                    name: revealed.participant.name,
+                    email: revealed.maskedEmail,
+                    n: (chunks) => <strong>{chunks}</strong>,
+                    e: (chunks) => (
+                      <strong className="whitespace-nowrap text-base">{chunks}</strong>
+                    ),
+                  })}
                 </p>
                 <a
                   href={loginHref}
                   className="flex-none bg-primary hover:bg-primary-dark text-white font-semibold
                              px-5 py-2.5 rounded-xl transition-colors text-sm"
                 >
-                  Přihlásit se
+                  {t('signIn')}
                 </a>
               </div>
             )

@@ -7,6 +7,7 @@ import {
   sendSuperadminNotice,
 } from '@/lib/auth/magicLink'
 import { clientIp, verifyTurnstileToken } from '@/lib/turnstile'
+import { LOCALE_COOKIE, pickLocale } from '@/i18n/config'
 
 /**
  * POST /api/auth/magic-link/request { email, returnTo? }
@@ -55,8 +56,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const user = users.docs[0]
 
+  // The requester IS the recipient, so their UI locale picks the email copy.
+  const locale = pickLocale(
+    request.cookies.get(LOCALE_COOKIE)?.value,
+    request.headers.get('accept-language'),
+  )
+
   if (user.role === 'superadmin') {
-    await sendSuperadminNotice(payload, user)
+    await sendSuperadminNotice(payload, user, locale)
     return NextResponse.json({ ok: true })
   }
 
@@ -64,6 +71,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await sendMagicLink(payload, user, {
       origin: requestOrigin(request.headers),
       returnTo: typeof returnTo === 'string' ? returnTo : null,
+      locale,
     })
   } catch (err) {
     payload.logger.error({ err }, 'Failed to send magic link email')

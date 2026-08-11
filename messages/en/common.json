@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "description": "Chata trips together – planning, info and expenses"
+  },
+  "footer": {
+    "tagline": "– chata trips together: planning, info and expenses",
+    "version": "version {version}",
+    "help": "Help",
+    "privacySettings": "Privacy settings",
+    "admin": "Admin",
+    "signOut": "Sign out",
+    "signIn": "Sign in"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "message": "Sorry, something failed on our side. Please try again.",
+    "retry": "Try again"
+  },
+  "consent": {
+    "title": "Visitor analytics",
+    "body": "We always collect anonymous statistics, with no cookies and no way of telling who you are. If you allow cookies, we can also see when something breaks or goes unfinished, and fix it.",
+    "allow": "Allow",
+    "essentialOnly": "Essential only",
+    "morePrivacy": "More about privacy"
+  }
+}

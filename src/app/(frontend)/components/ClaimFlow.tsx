@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslations, useLocale } from 'next-intl'
 import { Check, Clock, Mail, UserRound, X } from 'lucide-react'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
-import { akuzativName } from '@/lib/czechNames'
+import { accusativeName } from '@/lib/czechNames'
 import { claimReturnTo } from '@/lib/claimRequests'
 import { track } from '@/lib/analytics'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
+import type { AppLocale } from '@/i18n/config'
 import type { Participant } from '@/payload-types'
 
 // UI of the participant-claim flow ("Jsi to ty?") — see docs/PRD-claim.md:
@@ -26,7 +28,9 @@ export type ClaimSubmitOutcome =
   | { kind: 'approved' }
   | { kind: 'pending' }
   | { kind: 'already-linked' }
-  | { kind: 'error'; message: string }
+  // Error CODES, not messages — submitClaim runs outside React, so the
+  // localized text is resolved in ClaimResultModal (claim.result.errors.*)
+  | { kind: 'error'; code: 'participant-locked' | 'account-has-participant' | 'generic' }
 
 /** POST /api/claim-requests/submit for a signed-in viewer. */
 export async function submitClaim(participantId: number): Promise<ClaimSubmitOutcome> {
@@ -51,21 +55,14 @@ export async function submitClaim(participantId: number): Promise<ClaimSubmitOut
     }
     track('save_failed', { operation: 'claim_submit', status: res.status, code: data?.error })
     if (data?.error === 'participant-locked') {
-      return {
-        kind: 'error',
-        message: 'Účastník už je propojený s jiným aktivním účtem — ozvěte se správci chaty.',
-      }
+      return { kind: 'error', code: 'participant-locked' }
     }
     if (data?.error === 'account-has-participant') {
-      return {
-        kind: 'error',
-        message:
-          'Váš účet už má v této chatě propojeného účastníka. Další (dítě, partnera) propojí správce chaty.',
-      }
+      return { kind: 'error', code: 'account-has-participant' }
     }
-    return { kind: 'error', message: 'Odeslání žádosti se nezdařilo. Zkuste to prosím znovu.' }
+    return { kind: 'error', code: 'generic' }
   } catch {
-    return { kind: 'error', message: 'Odeslání žádosti se nezdařilo. Zkuste to prosím znovu.' }
+    return { kind: 'error', code: 'generic' }
   }
 }
 
@@ -95,20 +92,26 @@ export function ClaimBanner({
   onClaim,
   onWithdraw,
 }: ClaimBannerProps) {
+  const t = useTranslations('auth')
+  const locale = useLocale() as AppLocale
+
   if (ownPendingCreatedAt) {
-    const sentAt = new Date(ownPendingCreatedAt).toLocaleDateString('cs-CZ', {
-      day: 'numeric',
-      month: 'long',
-    })
+    const sentAt = new Date(ownPendingCreatedAt).toLocaleDateString(
+      locale === 'cs' ? 'cs-CZ' : 'en-GB',
+      {
+        day: 'numeric',
+        month: 'long',
+      }
+    )
     return (
       <div className="flex items-center gap-4 bg-primary/15 border border-primary/30 backdrop-blur-sm rounded-2xl px-5 py-4 text-white">
         <Clock size={22} className="text-primary-light flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="font-bold text-[15px]">
-            Tvoje žádost o {akuzativName(participant)} čeká na správce
+            {t('claim.banner.waitingTitle', { name: accusativeName(participant, locale) })}
           </div>
           <div className="text-white/75 text-[13px]">
-            Poslali jsme mu ji {sentAt}. Jakmile rozhodne, přijde ti e-mail.
+            {t('claim.banner.waitingBody', { date: sentAt })}
           </div>
         </div>
         {onWithdraw && (
@@ -119,7 +122,7 @@ export function ClaimBanner({
             className="text-white/70 hover:text-white text-[13px] font-semibold flex-shrink-0
                        transition-colors disabled:opacity-60"
           >
-            Vzít zpět
+            {t('claim.banner.withdraw')}
           </button>
         )}
       </div>
@@ -131,12 +134,10 @@ export function ClaimBanner({
       <UserRound size={22} className="text-primary-light flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="font-bold text-[15px]">
-          Díváš se jako {participant.name.split(' ')[0]}. Jsi to ty?
+          {t('claim.banner.title', { name: participant.name.split(' ')[0] })}
         </div>
         <div className="text-white/75 text-[13px]">
-          {pendingByOther
-            ? 'Někdo už o toto propojení požádal — pokud jsi to ty, ozvi se taky.'
-            : 'Propoj si účet — příště se přihlásíš a rovnou uvidíš jen to svoje.'}
+          {pendingByOther ? t('claim.banner.bodyPendingByOther') : t('claim.banner.body')}
         </div>
       </div>
       <button
@@ -147,7 +148,7 @@ export function ClaimBanner({
                    rounded-full flex-shrink-0 shadow-lg shadow-primary/40 transition-colors
                    disabled:opacity-60"
       >
-        {busy ? 'Odesílám...' : 'Tohle jsem já'}
+        {busy ? t('claim.banner.sending') : t('claim.banner.cta')}
       </button>
     </div>
   )
@@ -181,10 +182,11 @@ function ModalShell({
 }
 
 function CloseButton({ onClose }: { onClose: () => void }) {
+  const t = useTranslations('auth')
   return (
     <button
       type="button"
-      aria-label="Zavřít"
+      aria-label={t('claim.close')}
       onClick={onClose}
       className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200
                  flex items-center justify-center text-gray-500 transition-colors"
@@ -208,6 +210,9 @@ interface ClaimDialogProps {
  * finishes automatically after login thanks to ?claim= in the returnTo.
  */
 export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProps) {
+  const t = useTranslations('auth')
+  const locale = useLocale() as AppLocale
+
   // anonymous entry into the claim funnel (signed-in path fires in submitClaim)
   useEffect(() => {
     track('claim_started', {})
@@ -231,9 +236,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       : '/'
 
   const failureMessage = (code: string | undefined): string =>
-    code === 'captcha'
-      ? 'Nepodařilo se ověřit, že nejste robot. Zkuste to prosím znovu.'
-      : 'Odeslání se nezdařilo. Zkuste to prosím znovu.'
+    code === 'captcha' ? t('claim.dialog.errors.captcha') : t('claim.dialog.errors.generic')
 
   const requestLoginLink = async () => {
     if (!loginEmail.trim() || captchaPending) return
@@ -256,7 +259,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       }
       setSentTo(loginEmail.trim())
     } catch {
-      setError('Odeslání se nezdařilo. Zkuste to prosím znovu.')
+      setError(t('claim.dialog.errors.generic'))
     } finally {
       setCaptchaReset((n) => n + 1)
       setBusy(null)
@@ -292,7 +295,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       track('claim_submitted', {})
       setSentTo(registerEmail.trim())
     } catch {
-      setError('Odeslání se nezdařilo. Zkuste to prosím znovu.')
+      setError(t('claim.dialog.errors.generic'))
     } finally {
       setCaptchaReset((n) => n + 1)
       setBusy(null)
@@ -301,23 +304,27 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
 
   if (sentTo) {
     return (
-      <ModalShell label="Mrkni do e-mailu" onClose={onClose}>
+      <ModalShell label={t('claim.dialog.sentTitle')} onClose={onClose}>
         <CloseButton onClose={onClose} />
         <div className="p-7 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200 text-primary mb-4">
             <Mail size={26} />
           </div>
-          <h2 className="font-serif text-xl font-bold text-gray-900 mb-2">Mrkni do e-mailu</h2>
+          <h2 className="font-serif text-xl font-bold text-gray-900 mb-2">
+            {t('claim.dialog.sentTitle')}
+          </h2>
           <p className="text-gray-600 text-sm leading-relaxed">
-            Na <strong>{sentTo}</strong> letí odkaz. Klikni na něj a jsi vevnitř — platí 15 minut.
-            Hned potom se žádost o propojení odešle správci chaty.
+            {t.rich('claim.dialog.sentBody', {
+              email: sentTo,
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <button
             type="button"
             onClick={() => setSentTo(null)}
             className="mt-4 text-gray-400 hover:text-gray-600 text-xs transition-colors"
           >
-            Nepřišel? Poslat znovu
+            {t('claim.dialog.resend')}
           </button>
         </div>
       </ModalShell>
@@ -325,7 +332,10 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
   }
 
   return (
-    <ModalShell label={`Propojit ${akuzativName(participant)}`} onClose={onClose}>
+    <ModalShell
+      label={t('claim.dialog.title', { name: accusativeName(participant, locale) })}
+      onClose={onClose}
+    >
       <CloseButton onClose={onClose} />
       <div className="p-7">
         <div className="flex items-center gap-3 mb-2 pr-10">
@@ -336,15 +346,12 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
           </div>
           <div className="min-w-0">
             <h2 className="font-serif text-xl font-bold text-gray-900 truncate">
-              Propojit {akuzativName(participant)}
+              {t('claim.dialog.title', { name: accusativeName(participant, locale) })}
             </h2>
             <div className="text-[13px] text-gray-500 truncate">{chataName}</div>
           </div>
         </div>
-        <p className="text-[13px] text-gray-600 leading-relaxed mb-5">
-          Propojení znamená, že výdaje a vyrovnání účastníka budou tvoje. Ještě ho potvrdí správce
-          chaty.
-        </p>
+        <p className="text-[13px] text-gray-600 leading-relaxed mb-5">{t('claim.dialog.intro')}</p>
 
         {error && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
@@ -354,7 +361,9 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
 
         {/* Path 1: existing account */}
         <div className="border border-gray-200 rounded-2xl p-4 mb-3">
-          <div className="font-bold text-gray-900 text-sm mb-2.5">Už tu účet mám</div>
+          <div className="font-bold text-gray-900 text-sm mb-2.5">
+            {t('claim.dialog.existingAccount')}
+          </div>
           {microsoftEnabled && (
             <a
               href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
@@ -363,13 +372,13 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
                          transition-colors mb-2"
             >
               <MicrosoftIcon />
-              Přihlásit přes Microsoft
+              {t('claim.dialog.microsoft')}
             </a>
           )}
           <div className="flex gap-2">
             <input
               type="email"
-              placeholder="tvůj@email.cz"
+              placeholder={t('claim.dialog.emailPlaceholder')}
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
               className="flex-1 min-w-0 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm
@@ -383,21 +392,19 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
               className="bg-gray-900 hover:bg-gray-700 text-white text-[13px] font-bold px-3.5
                          py-2.5 rounded-xl transition-colors disabled:opacity-60 flex-shrink-0"
             >
-              {busy === 'login' ? 'Odesílám...' : 'Poslat odkaz'}
+              {busy === 'login' ? t('claim.dialog.sending') : t('claim.dialog.sendLink')}
             </button>
           </div>
         </div>
 
         {/* Path 2: first-timer registration */}
         <div className="border border-amber-200 bg-amber-50 rounded-2xl p-4">
-          <div className="font-bold text-gray-900 text-sm mb-1">Jsem tu poprvé</div>
-          <div className="text-[13px] text-gray-600 mb-2.5">
-            Stačí e-mail — heslo nepotřebuješ, pošleme ti ověřovací odkaz.
-          </div>
+          <div className="font-bold text-gray-900 text-sm mb-1">{t('claim.dialog.firstTime')}</div>
+          <div className="text-[13px] text-gray-600 mb-2.5">{t('claim.dialog.firstTimeBody')}</div>
           <div className="flex gap-2">
             <input
               type="email"
-              placeholder="tvůj@email.cz"
+              placeholder={t('claim.dialog.emailPlaceholder')}
               value={registerEmail}
               onChange={(e) => setRegisterEmail(e.target.value)}
               className="flex-1 min-w-0 border border-amber-300 bg-white rounded-xl px-3.5 py-2.5
@@ -412,7 +419,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
                          py-2.5 rounded-xl shadow-md shadow-primary/30 transition-colors
                          disabled:opacity-60 flex-shrink-0"
             >
-              {busy === 'register' ? 'Odesílám...' : 'Založit účet'}
+              {busy === 'register' ? t('claim.dialog.sending') : t('claim.dialog.register')}
             </button>
           </div>
         </div>
@@ -425,7 +432,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
           onClick={onClose}
           className="block mx-auto mt-4 text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
         >
-          Nejsem to já — zpátky
+          {t('claim.dialog.notMe')}
         </button>
       </div>
     </ModalShell>
@@ -441,25 +448,31 @@ interface ClaimResultModalProps {
 }
 
 export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultModalProps) {
-  const name = participant ? akuzativName(participant) : 'účastníka'
+  const t = useTranslations('auth')
+  const locale = useLocale() as AppLocale
+
+  const name = participant
+    ? accusativeName(participant, locale)
+    : t('claim.result.fallbackNameAccusative')
+  const plainName = participant?.name ?? t('claim.result.fallbackName')
   let icon = <Check size={26} />
   let iconClass = 'bg-green-50 border border-green-200 text-green-600'
-  let title = 'Propojeno!'
-  let body: string = `${participant?.name ?? 'Účastník'} je teď tvoje. Účet už znáš z jiné chaty, takže to nemusel nikdo potvrzovat.`
+  let title = t('claim.result.approvedTitle')
+  let body: string = t('claim.result.approvedBody', { name: plainName })
 
   if (outcome.kind === 'pending') {
     icon = <Clock size={26} />
     iconClass = 'bg-amber-50 border border-amber-200 text-primary'
-    title = 'Žádost odeslána'
-    body = `Dáme vědět správci chaty. Jakmile potvrdí, že jsi to ty, přijde ti e-mail a ${name} bude tvoje.`
+    title = t('claim.result.pendingTitle')
+    body = t('claim.result.pendingBody', { name })
   } else if (outcome.kind === 'already-linked') {
-    title = 'Už je to tvoje'
-    body = `${participant?.name ?? 'Účastník'} už je s tvým účtem propojený.`
+    title = t('claim.result.alreadyLinkedTitle')
+    body = t('claim.result.alreadyLinkedBody', { name: plainName })
   } else if (outcome.kind === 'error') {
     icon = <X size={26} />
     iconClass = 'bg-red-50 border border-red-200 text-red-500'
-    title = 'To se nepovedlo'
-    body = outcome.message
+    title = t('claim.result.errorTitle')
+    body = t(`claim.result.errors.${outcome.code}`)
   }
 
   return (
@@ -479,7 +492,9 @@ export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultM
           className="mt-5 bg-primary hover:bg-primary-dark text-white text-sm font-bold px-6 py-2.5
                      rounded-full shadow-md shadow-primary/30 transition-colors"
         >
-          {outcome.kind === 'approved' ? 'Otevřít moje finance' : 'Rozumím'}
+          {outcome.kind === 'approved'
+            ? t('claim.result.openMyFinance')
+            : t('claim.result.understood')}
         </button>
       </div>
     </ModalShell>

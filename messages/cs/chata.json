@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "selectTitle": "Vyberte chatu",
+    "selectDescription": "Společně na chatu – plánování, informace, finance",
+    "chataDescription": "{name} – {location} – plánování, informace, finance",
+    "ogDescription": "Společně na chatu: {location}",
+    "notFoundTitle": "Chata nenalezena"
+  },
+  "header": {
+    "banker": "Pokladník:",
+    "switchChata": "Změnit chatu",
+    "tabInformation": "Informace",
+    "tabOrganization": "Organizace",
+    "tabParticipants": "Účastníci",
+    "tabFinance": "Finance"
+  },
+  "chataView": {
+    "notFound": "Chata nenalezena",
+    "backToSelection": "Zpět na výběr chaty"
+  },
+  "chataSelector": {
+    "greeting": "Ahoj, {name}.",
+    "choosePrompt": "Vyberte si chatu.",
+    "subtitleLiveUpcoming": "Právě jsi na chatě – a další výjezdy se plánují.",
+    "subtitleLive": "Právě jsi na chatě.",
+    "subtitleUpcoming": "Tvoje chaty na jednom místě – nejbližší výjezd už se blíží.",
+    "subtitleDefault": "Tvoje chaty na jednom místě.",
+    "anonymousTagline": "Společně na chatu – plánování, informace a finance.",
+    "sectionLive": "Právě probíhá",
+    "sectionNearest": "Nejbližší chata",
+    "sectionPlanned": "Plánujeme",
+    "sectionPast": "Proběhlo",
+    "participantCount": "{count, plural, one {# účastník} few {# účastníci} other {# účastníků}}",
+    "spentSoFar": "Tvá útrata zatím {amount}",
+    "addExpense": "Přidat výdaj",
+    "youStillPay": "Zaplatíš ještě {amount}",
+    "youReceive": "Dostaneš {amount}",
+    "youPay": "Zaplatíš {amount}",
+    "settled": "Vyrovnáno",
+    "showAll": "Zobrazit všech {count} →",
+    "archiveYears": "archiv {from}–{to}",
+    "allChatas": "Všechny chaty",
+    "close": "Zavřít",
+    "searchPlaceholder": "Hledat podle názvu nebo místa…",
+    "otherYears": "Ostatní",
+    "nothingFound": "Nic nenalezeno.",
+    "noChatas": "Zatím nejsou k dispozici žádné chaty.",
+    "restrictedNote": "Zobrazují se jen chaty, kde jsi účastníkem. Chybí ti některá?",
+    "restrictedContact": "Ozvi se pokladníkovi.",
+    "loginPrompt": "Jste účastník? Po přihlášení uvidíte své finance a vyrovnání.",
+    "signIn": "Přihlásit se"
+  },
+  "participantSelector": {
+    "title": "Kdo jste?",
+    "subtitle": "Vyberte své jméno pro zobrazení vašich financí",
+    "searchPlaceholder": "Hledat účastníka…",
+    "pendingClaimHint": "někdo už požádal – jste to vy? ozvěte se taky",
+    "noAccountHint": "bez účtu",
+    "noMatch": "Žádný účastník neodpovídá hledání „{query}“",
+    "allLocked": "Finance všech účastníků jsou přístupné po přihlášení.",
+    "lockedDivider": "Přístupné po přihlášení",
+    "lockedTitle": "Pro zobrazení se přihlaste e-mailem {email}",
+    "lockedTapHint": "Klepnutím na zamčeného účastníka zobrazíte, jakým e-mailem se přihlásit.",
+    "lockedDetail": "Finance účastníka <n>{name}</n> uvidíte po přihlášení e-mailem <e>{email}</e>.",
+    "signIn": "Přihlásit se"
+  },
+  "selectedParticipantHeader": {
+    "change": "Změnit",
+    "searchPlaceholder": "Hledat účastníka…",
+    "noneFound": "Žádný účastník nenalezen"
+  }
+}

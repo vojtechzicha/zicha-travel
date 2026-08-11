@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { ArrowUp, ArrowDown, QrCode, Copy, Check } from 'lucide-react'
 import { QRPayment } from './QRPayment'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
+import type { AppLocale } from '@/i18n/config'
 import type { Participant, Chata } from '@/payload-types'
 
 interface Creditor {
@@ -33,6 +35,7 @@ interface SettlementActionsProps {
 }
 
 function CopyableRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
+  const t = useTranslations('finance')
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -49,7 +52,7 @@ function CopyableRow({ label, value, copyValue }: { label: string; value: string
         <button
           onClick={handleCopy}
           className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-          title="Kopírovat"
+          title={t('settlement.copy')}
         >
           {copied ? (
             <Check size={16} className="text-green-500" />
@@ -72,6 +75,8 @@ export function SettlementActions({
   debtors,
   participants,
 }: SettlementActionsProps) {
+  const t = useTranslations('finance')
+  const locale = useLocale() as AppLocale
   const [showQr, setShowQr] = useState<string | null>(null)
 
   // Use 1 Kč threshold to match backend - avoids showing small rounding differences
@@ -97,7 +102,7 @@ export function SettlementActions({
           <div>
             <h4 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
               <ArrowDown className="text-red-600" size={20} />
-              Dluží ({activeDebtors.length})
+              {t('settlement.owes', { count: activeDebtors.length })}
             </h4>
             <div className="space-y-2">
               {activeDebtors.length > 0 ? (
@@ -108,13 +113,13 @@ export function SettlementActions({
                   >
                     <span className="font-medium">{debtor.name}</span>
                     <span className="font-bold text-red-600">
-                      {formatCurrency(debtor.amount)}
+                      {formatCurrency(debtor.amount, locale)}
                     </span>
                   </div>
                 ))
               ) : (
                 <p className="text-gray-500 text-center py-4">
-                  Nikdo nedluží
+                  {t('settlement.nobodyOwes')}
                 </p>
               )}
             </div>
@@ -124,7 +129,7 @@ export function SettlementActions({
           <div>
             <h4 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
               <ArrowUp className="text-green-600" size={20} />
-              Zaplatit ({activeCreditors.length})
+              {t('settlement.pay', { count: activeCreditors.length })}
             </h4>
             <div className="space-y-4">
               {activeCreditors.length > 0 ? (
@@ -152,14 +157,14 @@ export function SettlementActions({
                             <ArrowUp className="text-white" size={20} />
                           </div>
                           <div>
-                            <p className="text-sm text-yellow-700">Zaplatit hotově</p>
+                            <p className="text-sm text-yellow-700">{t('settlement.payCash')}</p>
                             <p className="font-semibold text-lg text-gray-900">
-                              {creditor.name} – <span className="text-green-600">{formatCurrency(creditor.amount)}</span>
+                              {creditor.name} – <span className="text-green-600">{formatCurrency(creditor.amount, locale)}</span>
                             </p>
                           </div>
                         </div>
                         <p className="mt-2 text-xs text-yellow-600">
-                          Účastník nemá vyplněné bankovní údaje
+                          {t('settlement.noBankDetails')}
                         </p>
                       </div>
                     )
@@ -179,7 +184,7 @@ export function SettlementActions({
                         <span className="font-medium">{creditor.name}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-green-600">
-                            {formatCurrency(creditor.amount)}
+                            {formatCurrency(creditor.amount, locale)}
                           </span>
                           <QrCode size={16} className={`text-gray-400`} />
                         </div>
@@ -193,22 +198,22 @@ export function SettlementActions({
                               <QRPayment
                                 amount={creditor.amount}
                                 accountNumber={creditorBank.accountNumber}
-                                message={`Vyrovnani - ${chataShortName}`}
+                                message={t('settlement.qrMessage', { name: chataShortName })}
                               />
                             </div>
 
                             {/* Payment details table */}
                             <div className="w-full">
                               <div className="bg-white rounded-xl p-4 shadow-sm">
-                                <h5 className="text-sm font-medium text-gray-500 mb-3">Pro ruční zadání</h5>
+                                <h5 className="text-sm font-medium text-gray-500 mb-3">{t('settlement.manualEntry')}</h5>
                                 <div>
-                                  <CopyableRow label="Číslo účtu" value={creditorBank.accountNumber} />
+                                  <CopyableRow label={t('settlement.accountNumber')} value={creditorBank.accountNumber} />
                                   {creditorBank.iban && (
-                                    <CopyableRow label="IBAN" value={creditorBank.iban} />
+                                    <CopyableRow label={t('settlement.iban')} value={creditorBank.iban} />
                                   )}
                                   <CopyableRow
-                                    label="Částka"
-                                    value={formatCurrency(Math.round(creditor.amount))}
+                                    label={t('settlement.amount')}
+                                    value={formatCurrency(Math.round(creditor.amount), locale)}
                                     copyValue={Math.round(creditor.amount).toString()}
                                   />
                                 </div>
@@ -222,7 +227,7 @@ export function SettlementActions({
                 })
               ) : (
                 <p className="text-gray-500 text-center py-4">
-                  Nikomu nezaplatit
+                  {t('settlement.nobodyToPay')}
                 </p>
               )}
             </div>
@@ -241,7 +246,7 @@ export function SettlementActions({
               <ArrowDown className="text-white" size={24} />
             </div>
             <h4 className="font-semibold text-lg text-red-800">
-              Zaplatit pokladníkovi
+              {t('settlement.payBanker')}
             </h4>
           </div>
 
@@ -252,7 +257,7 @@ export function SettlementActions({
                 <QRPayment
                   amount={Math.abs(balance)}
                   accountNumber={bankerAccount.number}
-                  message={`Vyrovnani - ${chataShortName}`}
+                  message={t('settlement.qrMessage', { name: chataShortName })}
                 />
               </div>
             </div>
@@ -260,13 +265,13 @@ export function SettlementActions({
             {/* Payment details table — wraps below the QR when too narrow to show the IBAN */}
             <div className="flex-1 basis-[21rem] min-w-0">
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <h5 className="text-sm font-medium text-gray-500 mb-3">Pro ruční zadání</h5>
+                <h5 className="text-sm font-medium text-gray-500 mb-3">{t('settlement.manualEntry')}</h5>
                 <div>
-                  <CopyableRow label="Číslo účtu" value={bankerAccount.number} />
-                  {bankerAccount.iban && <CopyableRow label="IBAN" value={bankerAccount.iban} />}
+                  <CopyableRow label={t('settlement.accountNumber')} value={bankerAccount.number} />
+                  {bankerAccount.iban && <CopyableRow label={t('settlement.iban')} value={bankerAccount.iban} />}
                   <CopyableRow
-                    label="Částka"
-                    value={formatCurrency(Math.round(Math.abs(balance)))}
+                    label={t('settlement.amount')}
+                    value={formatCurrency(Math.round(Math.abs(balance)), locale)}
                     copyValue={Math.round(Math.abs(balance)).toString()}
                   />
                 </div>
@@ -284,15 +289,15 @@ export function SettlementActions({
             </div>
             <div>
               <h4 className="font-semibold text-lg text-green-800 mb-1">
-                Máte dostat od pokladníka
+                {t('settlement.receiveFromBanker')}
               </h4>
               <p className="text-3xl font-bold text-green-600">
-                {formatCurrency(balance)}
+                {formatCurrency(balance, locale)}
               </p>
             </div>
           </div>
           <p className="mt-4 text-sm text-gray-600">
-            Pokladník vám pošle peníze po vyrovnání všech dluhů.
+            {t('settlement.bankerWillSend')}
           </p>
         </div>
       )}

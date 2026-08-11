@@ -1,11 +1,22 @@
 // Building blocks shared by /napoveda and its sub-pages. Server components
-// only: the help is static text, screenshots and links.
+// only: the help is static text, screenshots and links. The chrome strings
+// (back links, page cards, screenshot alts) are locale-aware — each
+// component resolves the request locale itself via getLocale(), so the
+// page-facing API is unchanged.
 
 import type { ReactNode } from 'react'
+import { getLocale } from 'next-intl/server'
 import { ArrowLeft, ArrowRight, HelpCircle } from 'lucide-react'
+import type { AppLocale } from '@/i18n/config'
 import { SHOTS, type Shot, type ShotName } from './shots'
 
-export const HELP_PAGES = [
+export interface HelpPageEntry {
+  href: string
+  title: string
+  lead: string
+}
+
+const HELP_PAGES_CS: HelpPageEntry[] = [
   {
     href: '/napoveda/orientace',
     title: 'Kde co najdete',
@@ -36,7 +47,58 @@ export const HELP_PAGES = [
     title: 'Pro správce chaty',
     lead: 'Administrace, účastníci, zálohy, žádosti o propojení.',
   },
-] as const
+]
+
+const HELP_PAGES_EN: HelpPageEntry[] = [
+  {
+    href: '/napoveda/orientace',
+    title: 'Finding your way around',
+    lead: 'Choosing a chata, the tabs, trip information, rooms and cars.',
+  },
+  {
+    href: '/napoveda/finance',
+    title: 'Finances line by line',
+    lead: 'What every number in your summary means and how to settle up.',
+  },
+  {
+    href: '/napoveda/vydaje',
+    title: 'Adding and editing expenses',
+    lead: 'The mobile wizard, the desktop form, receipts, invitations.',
+  },
+  {
+    href: '/napoveda/ucet',
+    title: 'Account and signing in',
+    lead: 'A link in your email, Microsoft, and linking via "Is that you?".',
+  },
+  {
+    href: '/napoveda/prehled',
+    title: 'Detailed overview and the math',
+    lead: 'A table of all participants and the math behind it.',
+  },
+  {
+    href: '/napoveda/sprava',
+    title: 'For chata admins',
+    lead: 'The admin panel, participants, advances, link requests.',
+  },
+]
+
+/** The six detail pages (title + lead) in the given locale. */
+export function helpPages(locale: AppLocale): HelpPageEntry[] {
+  return locale === 'en' ? HELP_PAGES_EN : HELP_PAGES_CS
+}
+
+const CHROME = {
+  cs: {
+    backHome: 'Zpět na chatu',
+    backToHub: 'Zpět na rozcestník nápovědy',
+    continueLabel: 'Pokračovat',
+  },
+  en: {
+    backHome: 'Back to the chata',
+    backToHub: 'Back to the help overview',
+    continueLabel: 'Continue',
+  },
+} satisfies Record<AppLocale, Record<string, string>>
 
 interface HelpShellProps {
   title: string
@@ -48,13 +110,15 @@ interface HelpShellProps {
   icon?: ReactNode
 }
 
-export function HelpShell({
+export async function HelpShell({
   title,
   lead,
   children,
   isHub = false,
   icon = <HelpCircle size={44} className="text-primary-light" />,
 }: HelpShellProps) {
+  const locale = (await getLocale()) as AppLocale
+  const chrome = CHROME[locale] ?? CHROME.cs
   return (
     <div className="min-h-screen relative">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
@@ -67,7 +131,7 @@ export function HelpShell({
                      hover:bg-white/30 transition-colors"
         >
           <ArrowLeft size={16} />
-          {isHub ? 'Zpět na chatu' : 'Zpět na rozcestník nápovědy'}
+          {isHub ? chrome.backHome : chrome.backToHub}
         </a>
 
         <header className="text-center text-white mb-8">
@@ -162,7 +226,7 @@ const VARIANT_WIDTH = {
 } as const
 
 /** One screenshot with its caption. `className` overrides the default width. */
-export function Screenshot({
+export async function Screenshot({
   name,
   caption,
   className,
@@ -171,6 +235,7 @@ export function Screenshot({
   caption?: ReactNode
   className?: string
 }) {
+  const locale = (await getLocale()) as AppLocale
   const shot: Shot = SHOTS[name]
   const width = className ?? VARIANT_WIDTH[shot.variant ?? 'default']
   return (
@@ -179,7 +244,7 @@ export function Screenshot({
         src={`/napoveda/${name}.webp`}
         width={shot.width}
         height={shot.height}
-        alt={shot.alt}
+        alt={shot.alt[locale] ?? shot.alt.cs}
         loading="lazy"
         decoding="async"
         className="w-full h-auto rounded-xl border border-gray-200 shadow-lg bg-white"
@@ -197,33 +262,38 @@ export function ScreenshotRow({ children }: { children: ReactNode }) {
 }
 
 /** Cards linking to the detailed pages. */
-export function PageCards({ exclude }: { exclude?: string }) {
+export async function PageCards({ exclude }: { exclude?: string }) {
+  const locale = (await getLocale()) as AppLocale
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {HELP_PAGES.filter((page) => page.href !== exclude).map((page) => (
-        <a
-          key={page.href}
-          href={page.href}
-          className="group flex flex-col gap-1 rounded-xl border border-gray-200 bg-white px-5 py-4
+      {helpPages(locale)
+        .filter((page) => page.href !== exclude)
+        .map((page) => (
+          <a
+            key={page.href}
+            href={page.href}
+            className="group flex flex-col gap-1 rounded-xl border border-gray-200 bg-white px-5 py-4
                      hover:border-primary hover:shadow-md transition-all"
-        >
-          <span className="flex items-center gap-2 font-semibold text-gray-900">
-            {page.title}
-            <ArrowRight
-              size={16}
-              className="text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-          </span>
-          <span className="text-[14px] text-gray-600 leading-snug">{page.lead}</span>
-        </a>
-      ))}
+          >
+            <span className="flex items-center gap-2 font-semibold text-gray-900">
+              {page.title}
+              <ArrowRight
+                size={16}
+                className="text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+              />
+            </span>
+            <span className="text-[14px] text-gray-600 leading-snug">{page.lead}</span>
+          </a>
+        ))}
     </div>
   )
 }
 
 /** Bottom navigation of a detail page. */
-export function NextPage({ href }: { href: string }) {
-  const page = HELP_PAGES.find((p) => p.href === href)
+export async function NextPage({ href }: { href: string }) {
+  const locale = (await getLocale()) as AppLocale
+  const chrome = CHROME[locale] ?? CHROME.cs
+  const page = helpPages(locale).find((p) => p.href === href)
   if (!page) return null
   return (
     <a
@@ -233,7 +303,7 @@ export function NextPage({ href }: { href: string }) {
     >
       <span>
         <span className="block text-[13px] uppercase tracking-wide text-gray-500 mb-0.5">
-          Pokračovat
+          {chrome.continueLabel}
         </span>
         <span className="font-serif text-xl font-bold text-gray-900">{page.title}</span>
       </span>

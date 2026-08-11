@@ -7,9 +7,13 @@ const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIEN
 
 export const Users: CollectionConfig = {
   slug: 'users',
+  labels: {
+    singular: { en: 'User', cs: 'Uživatel' },
+    plural: { en: 'Users', cs: 'Uživatelé' },
+  },
   admin: {
     useAsTitle: 'email',
-    group: 'System',
+    group: { en: 'System', cs: 'Systém' },
     defaultColumns: ['email', 'name', 'role'],
   },
   auth: {
@@ -100,17 +104,25 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
       admin: {
-        description: 'Full display name shown on the frontend (e.g. "Kateřina Rechová")',
+        description: {
+          en: 'Full display name shown on the frontend (e.g. "Kateřina Rechová")',
+          cs: 'Celé zobrazované jméno na webu (např. „Kateřina Rechová“)',
+        },
       },
     },
     {
       name: 'vokativ',
       type: 'text',
-      label: 'Vokativ (5. pád)',
+      label: { en: 'Vocative (Czech "vokativ")', cs: 'Vokativ (5. pád)' },
       admin: {
-        description:
-          'First name in the vocative case, e.g. "Katko" — used for the personal ' +
-          'greeting ("Ahoj, Katko."). Falls back to the participant/account name.',
+        description: {
+          en:
+            'First name in the vocative case, e.g. "Katko" — used for the personal ' +
+            'greeting ("Ahoj, Katko."). Falls back to the participant/account name.',
+          cs:
+            'Křestní jméno v 5. pádě, např. „Katko“ – používá se pro osobní ' +
+            'pozdrav („Ahoj, Katko.“). Když chybí, použije se jméno účastníka/účtu.',
+        },
       },
     },
     {
@@ -120,22 +132,27 @@ export const Users: CollectionConfig = {
       defaultValue: 'user',
       options: [
         {
-          label: 'Superadmin (all chatas)',
+          label: { en: 'Superadmin (all chatas)', cs: 'Superadmin (všechny chaty)' },
           value: 'superadmin',
         },
         {
-          label: 'Admin (assigned chatas)',
+          label: { en: 'Admin (assigned chatas)', cs: 'Správce (přiřazené chaty)' },
           value: 'admin',
         },
         {
-          label: 'User (frontend only)',
+          label: { en: 'User (frontend only)', cs: 'Uživatel (jen web)' },
           value: 'user',
         },
       ],
       admin: {
-        description:
-          'Superadmins manage everything; admins manage only their assigned chatas; ' +
-          'users sign in on the frontend and see their own participant finances.',
+        description: {
+          en:
+            'Superadmins manage everything; admins manage only their assigned chatas; ' +
+            'users sign in on the frontend and see their own participant finances.',
+          cs:
+            'Superadmini spravují vše; správci jen své přiřazené chaty; uživatelé ' +
+            'se přihlašují na webu a vidí finance svých účastníků.',
+        },
       },
       access: {
         // Only superadmins may grant/change roles
@@ -148,7 +165,10 @@ export const Users: CollectionConfig = {
       relationTo: 'chatas',
       hasMany: true,
       admin: {
-        description: 'Chatas this admin can manage (only applies to the admin role)',
+        description: {
+          en: 'Chatas this admin can manage (only applies to the admin role)',
+          cs: 'Chaty, které tento správce může spravovat (platí jen pro roli správce)',
+        },
         condition: (data) => data.role === 'admin',
       },
     },
@@ -160,7 +180,10 @@ export const Users: CollectionConfig = {
       collection: 'participants',
       on: 'account',
       admin: {
-        description: 'Participants this account is linked to (one per chata)',
+        description: {
+          en: 'Participants this account is linked to (one per chata)',
+          cs: 'Účastníci propojení s tímto účtem (jeden na chatu)',
+        },
       },
     },
     {
@@ -172,9 +195,14 @@ export const Users: CollectionConfig = {
       type: 'date',
       admin: {
         readOnly: true,
-        description:
-          'Set on every successful login. Participants linked to this account are ' +
-          'hidden from anonymous visitors only after the first login.',
+        description: {
+          en:
+            'Set on every successful login. Participants linked to this account are ' +
+            'hidden from anonymous visitors only after the first login.',
+          cs:
+            'Nastavuje se při každém úspěšném přihlášení. Účastníci propojení s tímto ' +
+            'účtem se anonymním návštěvníkům skryjí až po prvním přihlášení.',
+        },
         date: { displayFormat: 'yyyy-MM-dd HH:mm' },
       },
     },

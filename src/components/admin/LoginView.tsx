@@ -1,8 +1,16 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const isOAuthEnabled = process.env.NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED === 'true'
+
+const useT = () =>
+  useTranslation<AdminTranslationsObject, AdminTranslationKeys>().t
 
 const LoginView: React.FC = () => {
   const errorParam =
@@ -16,6 +24,7 @@ const LoginView: React.FC = () => {
 }
 
 function OAuthLogin({ error }: { error: string | null }) {
+  const t = useT()
   return (
     <div
       style={{
@@ -55,7 +64,7 @@ function OAuthLogin({ error }: { error: string | null }) {
           onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
         >
           <MicrosoftIcon />
-          Sign in with Microsoft
+          {t('zicha:signInWithMicrosoft')}
         </a>
       </div>
     </div>
@@ -63,6 +72,7 @@ function OAuthLogin({ error }: { error: string | null }) {
 }
 
 function LocalLogin({ error }: { error: string | null }) {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -82,10 +92,10 @@ function LocalLogin({ error }: { error: string | null }) {
       if (res.ok) {
         window.location.href = '/admin'
       } else {
-        setLoginError('Invalid email or password')
+        setLoginError(t('zicha:invalidCredentials'))
       }
     } catch {
-      setLoginError('Login failed. Please try again.')
+      setLoginError(t('zicha:loginFailed'))
     } finally {
       setLoading(false)
     }
@@ -118,7 +128,7 @@ function LocalLogin({ error }: { error: string | null }) {
                 fontFamily: "'Inter', sans-serif",
               }}
             >
-              Email
+              {t('zicha:email')}
             </label>
             <input
               id="email"
@@ -161,7 +171,7 @@ function LocalLogin({ error }: { error: string | null }) {
                 fontFamily: "'Inter', sans-serif",
               }}
             >
-              Password
+              {t('zicha:password')}
             </label>
             <input
               id="password"
@@ -211,7 +221,7 @@ function LocalLogin({ error }: { error: string | null }) {
               boxShadow: '0 2px 8px rgba(180, 83, 9, 0.3)',
             }}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? t('zicha:signingIn') : t('zicha:signIn')}
           </button>
         </form>
       </div>
@@ -220,6 +230,7 @@ function LocalLogin({ error }: { error: string | null }) {
 }
 
 function WelcomeHeader() {
+  const t = useT()
   return (
     <div
       style={{
@@ -265,20 +276,21 @@ function WelcomeHeader() {
           lineHeight: 1.5,
         }}
       >
-        Group trips & shared expenses
+        {t('zicha:tagline')}
       </p>
     </div>
   )
 }
 
 function ErrorMessage({ error }: { error: string }) {
+  const t = useT()
   const messages: Record<string, string> = {
-    oauth: 'Microsoft sign-in was cancelled or failed. Please try again.',
-    unauthorized: 'Your Microsoft account is not authorized. Contact the administrator.',
-    missing_params: 'Invalid OAuth response. Please try again.',
-    invalid_state: 'Session expired. Please try again.',
-    no_email: 'Could not retrieve email from Microsoft. Please try again.',
-    callback_failed: 'Sign-in failed. Please try again.',
+    oauth: t('zicha:errOauth'),
+    unauthorized: t('zicha:errUnauthorized'),
+    missing_params: t('zicha:errMissingParams'),
+    invalid_state: t('zicha:errInvalidState'),
+    no_email: t('zicha:errNoEmail'),
+    callback_failed: t('zicha:errCallbackFailed'),
   }
 
   return (

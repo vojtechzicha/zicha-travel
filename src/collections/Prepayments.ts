@@ -4,10 +4,14 @@ import { adminRoleOnly, chataScopedAccess } from '../lib/access'
 
 export const Prepayments: CollectionConfig = {
   slug: 'prepayments',
+  labels: {
+    singular: { en: 'Prepayment', cs: 'Záloha' },
+    plural: { en: 'Prepayments', cs: 'Zálohy' },
+  },
   admin: {
     useAsTitle: 'note',
     defaultColumns: ['from', 'amount', 'type', 'chata'],
-    group: 'Expense Tracking',
+    group: { en: 'Expense Tracking', cs: 'Evidence výdajů' },
   },
   access: {
     // Public read access for API consumption
@@ -24,7 +28,10 @@ export const Prepayments: CollectionConfig = {
       relationTo: 'chatas',
       required: true,
       admin: {
-        description: 'The trip/chata this prepayment belongs to',
+        description: {
+          en: 'The trip/chata this prepayment belongs to',
+          cs: 'Chata/výlet, kam tato záloha patří',
+        },
       },
     },
     {
@@ -35,7 +42,10 @@ export const Prepayments: CollectionConfig = {
       relationTo: ['participants', 'joint-accounts'],
       required: true,
       admin: {
-        description: 'Who sent the payment (or who received it if negative) — a participant or a joint account',
+        description: {
+          en: 'Who sent the payment (or who received it if negative) — a participant or a joint account',
+          cs: 'Kdo platbu poslal (nebo přijal, pokud je záporná) – účastník nebo společný účet',
+        },
         condition: (data) => Boolean(data?.chata),
       },
       filterOptions: ({ siblingData }) => {
@@ -56,14 +66,20 @@ export const Prepayments: CollectionConfig = {
       type: 'number',
       required: true,
       admin: {
-        description: 'Amount (positive = to banker, negative = from banker/refund)',
+        description: {
+          en: 'Amount (positive = to banker, negative = from banker/refund)',
+          cs: 'Částka (kladná = pokladníkovi, záporná = od pokladníka / vratka)',
+        },
       },
     },
     {
       name: 'note',
       type: 'text',
       admin: {
-        description: 'Description (e.g., "Záloha", "Doplatek", "Distribuce")',
+        description: {
+          en: 'Description (e.g., "Záloha", "Doplatek", "Distribuce")',
+          cs: 'Popis (např. „Záloha“, „Doplatek“, „Distribuce“)',
+        },
       },
     },
     {
@@ -72,24 +88,27 @@ export const Prepayments: CollectionConfig = {
       required: true,
       options: [
         {
-          label: 'Advance (Záloha)',
+          label: { en: 'Advance', cs: 'Záloha' },
           value: 'advance',
         },
         {
-          label: 'Supplement (Doplatek)',
+          label: { en: 'Supplement', cs: 'Doplatek' },
           value: 'supplement',
         },
         {
-          label: 'Refund',
+          label: { en: 'Refund', cs: 'Vratka' },
           value: 'refund',
         },
         {
-          label: 'Distribution',
+          label: { en: 'Distribution', cs: 'Distribuce' },
           value: 'distribution',
         },
       ],
       admin: {
-        description: 'Type of prepayment',
+        description: {
+          en: 'Type of prepayment',
+          cs: 'Typ zálohy',
+        },
       },
       hooks: {
         beforeValidate: [

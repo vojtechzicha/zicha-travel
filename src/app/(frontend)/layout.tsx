@@ -1,10 +1,13 @@
 import React from 'react'
 import type { Metadata } from 'next'
 import { Inter, Merriweather } from 'next/font/google'
+import { cookies } from 'next/headers'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getTranslations } from 'next-intl/server'
 import { Footer } from './components/Footer'
 import { ConsentBanner } from './components/ConsentBanner'
 import { AnalyticsProvider } from './components/AnalyticsProvider'
-import { analyticsEnabled } from '@/lib/consent'
+import { analyticsEnabled, CONSENT_COOKIE, resolveConsent } from '@/lib/consent'
 import './styles.css'
 
 // Self-hosted through next/font instead of an `@import` at the top of the CSS
@@ -25,39 +28,53 @@ const merriweather = Merriweather({
   variable: '--font-merriweather',
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'zicha.travel',
-    template: '%s | zicha.travel',
-  },
-  description: 'Společně na chatu - plánování, informace, finance',
-  icons: {
-    icon: '/favicon.svg',
-  },
-  openGraph: {
-    type: 'website',
-    siteName: 'zicha.travel',
-    description: 'Společně na chatu - plánování, informace, finance',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('common.meta')
+  return {
+    title: {
+      default: 'zicha.travel',
+      template: '%s | zicha.travel',
+    },
+    description: t('description'),
+    icons: {
+      icon: '/favicon.svg',
+    },
+    openGraph: {
+      type: 'website',
+      siteName: 'zicha.travel',
+      description: t('description'),
+    },
+  }
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
+  const locale = await getLocale()
+  // Resolved server-side so the banner is part of the FIRST paint — mounted
+  // client-only it pops in seconds late on cold loads (hydration), which
+  // reads as "the banner appeared out of nowhere".
+  const cookieStore = await cookies()
+  const consentDecision = resolveConsent(cookieStore.get(CONSENT_COOKIE)?.value, new Date())
 
   return (
-    <html lang="cs" className={`${inter.variable} ${merriweather.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${merriweather.variable}`}>
       <body className="flex flex-col min-h-screen">
-        <main className="flex-1">{children}</main>
-        <Footer />
-        {/* Frontend route group only — /admin (its own route group) never
-            sees the banner or the provider by construction. Both off
-            without the PostHog key. */}
-        {analyticsEnabled() && (
-          <>
-            <AnalyticsProvider />
-            <ConsentBanner cookieDomain={process.env.SESSION_COOKIE_DOMAIN} />
-          </>
-        )}
+        <NextIntlClientProvider>
+          <main className="flex-1">{children}</main>
+          <Footer />
+          {/* Frontend route group only — /admin (its own route group) never
+              sees the banner or the provider by construction. Both off
+              without the PostHog key. */}
+          {analyticsEnabled() && (
+            <>
+              <AnalyticsProvider />
+              <ConsentBanner
+                cookieDomain={process.env.SESSION_COOKIE_DOMAIN}
+                initialDecision={consentDecision}
+              />
+            </>
+          )}
+        </NextIntlClientProvider>
       </body>
     </html>
   )

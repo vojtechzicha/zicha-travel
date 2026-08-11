@@ -1,8 +1,12 @@
 'use client'
 
 import { HexColorPicker, HexColorInput } from 'react-colorful'
-import { useField } from '@payloadcms/ui'
+import { useField, useTranslation } from '@payloadcms/ui'
 import { useState, useCallback } from 'react'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 interface ColorPickerFieldProps {
   path: string
@@ -11,6 +15,7 @@ interface ColorPickerFieldProps {
 }
 
 export function ColorPickerField({ path, label, required }: ColorPickerFieldProps) {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const { value, setValue } = useField<string>({ path })
   const [showPicker, setShowPicker] = useState(false)
 
@@ -42,7 +47,7 @@ export function ColorPickerField({ path, label, required }: ColorPickerFieldProp
             backgroundColor: currentColor,
             border: '2px solid var(--theme-elevation-150)',
           }}
-          title="Click to open color picker"
+          title={t('zicha:openColorPicker')}
         />
 
         {/* Hex input */}
@@ -114,7 +119,7 @@ export function ColorPickerField({ path, label, required }: ColorPickerFieldProp
                 border: '1px solid var(--theme-elevation-200)',
               }}
             >
-              Close
+              {t('zicha:close')}
             </button>
           </div>
         </div>

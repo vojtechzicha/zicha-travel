@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { Button, useForm } from '@payloadcms/ui'
+import { Button, useForm, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 type SourceParticipant = {
   id: number
@@ -29,6 +33,7 @@ const chataName = (p: SourceParticipant): string => {
  * fields never clear what is already typed in.
  */
 export const CopyFromParticipantButton: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [options, setOptions] = useState<SourceParticipant[] | null>(null)
@@ -82,7 +87,7 @@ export const CopyFromParticipantButton: React.FC = () => {
   return (
     <div style={{ marginBottom: '1.5rem' }}>
       <Button buttonStyle="secondary" size="small" onClick={handleToggle}>
-        {open ? 'Hide "Copy from"' : 'Copy from existing participant…'}
+        {open ? t('zicha:copyFromHide') : t('zicha:copyFromShow')}
       </Button>
       {open && (
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
@@ -100,10 +105,10 @@ export const CopyFromParticipantButton: React.FC = () => {
           >
             <option value="">
               {loading
-                ? 'Loading participants…'
+                ? t('zicha:copyFromLoading')
                 : sorted.length === 0 && options !== null
-                  ? 'No participants found'
-                  : 'Select participant (chata)…'}
+                  ? t('zicha:copyFromNone')
+                  : t('zicha:copyFromSelect')}
             </option>
             {sorted.map((p) => (
               <option key={p.id} value={String(p.id)}>
@@ -112,12 +117,12 @@ export const CopyFromParticipantButton: React.FC = () => {
             ))}
           </select>
           <Button size="small" onClick={handleApply} disabled={!selectedId || loading}>
-            Prefill
+            {t('zicha:copyFromApply')}
           </Button>
         </div>
       )}
       <div style={{ fontSize: '0.75rem', color: 'var(--theme-elevation-500)' }}>
-        Prefills name, declension forms and banking info from a participant of a previous chata.
+        {t('zicha:copyFromFooter')}
       </div>
     </div>
   )

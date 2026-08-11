@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { track } from '@/lib/analytics'
 
 interface QRPaymentProps {
@@ -10,6 +11,7 @@ interface QRPaymentProps {
 }
 
 export function QRPayment({ amount, accountNumber, message }: QRPaymentProps) {
+  const t = useTranslations('finance')
   // rendered = someone actually reached the "pay this" moment
   useEffect(() => {
     track('qr_payment_shown', {})
@@ -32,7 +34,7 @@ export function QRPayment({ amount, accountNumber, message }: QRPaymentProps) {
   return (
     <div className="text-center inline-block">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="QR platba" className="w-full max-w-[220px]" />
+      <img src={url} alt={t('qrPayment.alt')} className="w-full max-w-[220px]" />
     </div>
   )
 }

@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "selectTitle": "Pick a chata",
+    "selectDescription": "Chata trips together - planning, info and expenses",
+    "chataDescription": "{name} - {location} - planning, info and expenses",
+    "ogDescription": "Off to the chata together: {location}",
+    "notFoundTitle": "Chata not found"
+  },
+  "header": {
+    "banker": "Banker:",
+    "switchChata": "Switch chata",
+    "tabInformation": "Information",
+    "tabOrganization": "Organization",
+    "tabParticipants": "Participants",
+    "tabFinance": "Finances"
+  },
+  "chataView": {
+    "notFound": "Chata not found",
+    "backToSelection": "Back to chata selection"
+  },
+  "chataSelector": {
+    "greeting": "Hi, {name}.",
+    "choosePrompt": "Pick a chata.",
+    "subtitleLiveUpcoming": "You're at the chata right now, and more trips are in the making.",
+    "subtitleLive": "You're at the chata right now.",
+    "subtitleUpcoming": "Your chatas in one place. The next trip is coming up.",
+    "subtitleDefault": "Your chatas in one place.",
+    "anonymousTagline": "Chata trips together: planning, info and expenses.",
+    "sectionLive": "Happening now",
+    "sectionNearest": "Next trip",
+    "sectionPlanned": "Coming up",
+    "sectionPast": "Past trips",
+    "participantCount": "{count, plural, one {# participant} other {# participants}}",
+    "spentSoFar": "You've spent {amount} so far",
+    "addExpense": "Add expense",
+    "youStillPay": "You still owe {amount}",
+    "youReceive": "You'll get {amount}",
+    "youPay": "You'll pay {amount}",
+    "settled": "Settled",
+    "showAll": "Show all {count} →",
+    "archiveYears": "archive {from}–{to}",
+    "allChatas": "All chatas",
+    "close": "Close",
+    "searchPlaceholder": "Search by name or place…",
+    "otherYears": "Other",
+    "nothingFound": "Nothing found.",
+    "noChatas": "No chatas here yet.",
+    "restrictedNote": "You only see chatas you take part in. Missing one?",
+    "restrictedContact": "Ask the banker.",
+    "loginPrompt": "Are you a participant? Sign in to see your finances and settlement.",
+    "signIn": "Sign in"
+  },
+  "participantSelector": {
+    "title": "Who are you?",
+    "subtitle": "Pick your name to see your finances",
+    "searchPlaceholder": "Search participants…",
+    "pendingClaimHint": "someone already asked; is that you? get in touch too",
+    "noAccountHint": "no account",
+    "noMatch": "No participant matches \"{query}\"",
+    "allLocked": "Everyone's finances are available after signing in.",
+    "lockedDivider": "Available after sign-in",
+    "lockedTitle": "Sign in with {email} to view",
+    "lockedTapHint": "Tap a locked participant to see which email to sign in with.",
+    "lockedDetail": "Sign in with <e>{email}</e> to see <n>{name}</n>'s finances.",
+    "signIn": "Sign in"
+  },
+  "selectedParticipantHeader": {
+    "change": "Change",
+    "searchPlaceholder": "Search participants…",
+    "noneFound": "No participant found"
+  }
+}

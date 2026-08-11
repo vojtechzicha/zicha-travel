@@ -1,9 +1,14 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Button, useForm, useAllFormFields } from '@payloadcms/ui'
+import { Button, useForm, useAllFormFields, useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 export const PrefillWeightsButton: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const [loading, setLoading] = useState(false)
   const { dispatchFields } = useForm()
   const [fields] = useAllFormFields()
@@ -13,7 +18,7 @@ export const PrefillWeightsButton: React.FC = () => {
 
   const handlePrefill = useCallback(async () => {
     if (!chataId) {
-      alert('Select a chata first')
+      alert(t('zicha:weightsSelectChataFirst'))
       return
     }
 
@@ -36,15 +41,15 @@ export const PrefillWeightsButton: React.FC = () => {
           value: weights,
         })
       } else {
-        alert('No participants found for this chata')
+        alert(t('zicha:weightsNoParticipants'))
       }
     } catch (error) {
       console.error('Error fetching participants:', error)
-      alert('Error loading participants')
+      alert(t('zicha:weightsLoadError'))
     } finally {
       setLoading(false)
     }
-  }, [chataId, dispatchFields])
+  }, [chataId, dispatchFields, t])
 
   return (
     <div style={{ marginBottom: '1rem' }}>
@@ -54,7 +59,7 @@ export const PrefillWeightsButton: React.FC = () => {
         onClick={handlePrefill}
         disabled={loading || !chataId}
       >
-        {loading ? 'Loading...' : 'Prefill all participants'}
+        {loading ? t('zicha:loading') : t('zicha:weightsPrefillAll')}
       </Button>
     </div>
   )

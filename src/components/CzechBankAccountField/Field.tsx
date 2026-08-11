@@ -1,9 +1,14 @@
 'use client'
 
-import { useField } from '@payloadcms/ui'
+import { useField, useTranslation } from '@payloadcms/ui'
+import { getTranslation } from '@payloadcms/translations'
 import { useCallback, useMemo } from 'react'
 import type { TextFieldClientComponent } from 'payload'
 import { accountToIban, ibanToAccount } from '@/utils/czechBankAccount'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 function getSiblingPath(path: string): string {
   if (path === 'accountNumber') return 'iban'
@@ -17,6 +22,7 @@ function getDirection(path: string): 'toIban' | 'toAccount' {
 }
 
 export const CzechBankAccountField: TextFieldClientComponent = ({ field, path, readOnly }) => {
+  const { i18n, t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   const { value, setValue, showError, errorMessage } = useField<string>({ path })
 
   const siblingPath =
@@ -46,7 +52,7 @@ export const CzechBankAccountField: TextFieldClientComponent = ({ field, path, r
     }
   }, [converted, siblingPath, setSiblingValue])
 
-  const label = typeof field.label === 'string' ? field.label : field.name
+  const label = field.label ? getTranslation(field.label, i18n) : field.name
 
   return (
     <div className="field-type text" style={{ marginBottom: 'var(--spacing-field)' }}>
@@ -101,8 +107,8 @@ export const CzechBankAccountField: TextFieldClientComponent = ({ field, path, r
           }}
         >
           {direction === 'toIban'
-            ? `Fill IBAN \u2192 ${converted}`
-            : `Fill account number \u2192 ${converted}`}
+            ? t('zicha:fillIban', { value: converted })
+            : t('zicha:fillAccountNumber', { value: converted })}
         </button>
       )}
 
@@ -114,7 +120,7 @@ export const CzechBankAccountField: TextFieldClientComponent = ({ field, path, r
             color: 'var(--theme-elevation-400)',
           }}
         >
-          {field.admin.description as string}
+          {getTranslation(field.admin.description as Record<string, string> | string, i18n)}
         </div>
       )}
 

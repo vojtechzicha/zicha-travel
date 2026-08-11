@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { BedDouble, Car, ChevronDown, ChevronUp, Moon } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
+import type { AppLocale } from '@/i18n/config'
 import type { Chata, Media, Participant } from '@/payload-types'
 import { getAvatarColor } from '@/lib/formatCurrency'
 import {
@@ -31,11 +33,16 @@ function getNightDate(chata: Chata, nightNumber: number): Date | null {
   return from
 }
 
-// Format date as short Czech format (e.g., "pá 15.3.")
-function formatShortDate(date: Date): string {
-  const days = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so']
+// Format date as short format (Czech e.g. "pá 15.3.", English e.g. "Fri 15/3")
+function formatShortDate(date: Date, locale: AppLocale): string {
+  if (locale === 'cs') {
+    const days = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so']
+    const dayName = days[date.getDay()]
+    return `${dayName} ${date.getDate()}.${date.getMonth() + 1}.`
+  }
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const dayName = days[date.getDay()]
-  return `${dayName} ${date.getDate()}.${date.getMonth() + 1}.`
+  return `${dayName} ${date.getDate()}/${date.getMonth() + 1}`
 }
 
 // Calculate room occupancy
@@ -70,27 +77,6 @@ function getOccupancyEmoji(percentage: number): string {
   return '✨'
 }
 
-// Get Czech room count text
-function getRoomCountText(count: number): string {
-  if (count === 1) return 'pokoj'
-  if (count >= 2 && count <= 4) return 'pokoje'
-  return 'pokojů'
-}
-
-// Get Czech car count text
-function getCarCountText(count: number): string {
-  if (count === 1) return 'auto'
-  if (count >= 2 && count <= 4) return 'auta'
-  return 'aut'
-}
-
-// Get Czech passenger count text
-function getPassengerCountText(count: number): string {
-  if (count === 1) return 'cestující'
-  if (count >= 2 && count <= 4) return 'cestující'
-  return 'cestujících'
-}
-
 // Helper to get participant from relationship
 function getParticipantFromRelation(
   relation: number | Participant | null | undefined
@@ -120,6 +106,7 @@ function getInitials(name: string): string {
 }
 
 export function OrganizationView({ chata }: OrganizationViewProps) {
+  const t = useTranslations('trip')
   const [expandedRooms, setExpandedRooms] = useState<string[]>([])
   const [expandedCars, setExpandedCars] = useState<string[]>([])
 
@@ -145,7 +132,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
       <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 max-w-4xl mx-auto animate-in fade-in duration-300">
         <div className="text-center py-8">
           <BedDouble className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600 text-lg">Organizace není k dispozici.</p>
+          <p className="text-gray-600 text-lg">{t('organization.notAvailable')}</p>
         </div>
       </div>
     )
@@ -177,19 +164,19 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
       // Combined: mention both in title, but no icon (emojis in title are enough)
       return {
         icon: null,
-        title: '🛏️ Kde budeme spát a jak se tam dostaneme? 🚗',
+        title: t('organization.heroCombined'),
         emoji: '',
       }
     } else if (hasCars) {
       return {
         icon: <Car size={48} className="mx-auto text-primary mb-4" />,
-        title: 'Jak se tam dostaneme?',
+        title: t('organization.heroCars'),
         emoji: '🚗',
       }
     } else {
       return {
         icon: <Moon size={48} className="mx-auto text-primary mb-4" />,
-        title: 'Kde budeme spát?',
+        title: t('organization.heroBedrooms'),
         emoji: '🛏️',
       }
     }
@@ -213,7 +200,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                 <span className="text-3xl block mb-1">🏠</span>
                 <span className="text-2xl font-bold text-primary font-serif">{rooms.length}</span>
                 <span className="block text-sm text-gray-600 font-medium">
-                  {getRoomCountText(rooms.length)}
+                  {t('organization.roomsCountLabel', { count: rooms.length })}
                 </span>
               </div>
               <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
@@ -221,7 +208,9 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                 <span className="text-2xl font-bold text-primary font-serif">
                   {totalStats.occupied}/{totalStats.totalSpaces}
                 </span>
-                <span className="block text-sm text-gray-600 font-medium">obsazeno</span>
+                <span className="block text-sm text-gray-600 font-medium">
+                  {t('organization.occupied')}
+                </span>
               </div>
             </>
           )}
@@ -230,7 +219,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
               <span className="text-3xl block mb-1">🌙</span>
               <span className="text-2xl font-bold text-primary font-serif">{totalNights}</span>
               <span className="block text-sm text-gray-600 font-medium">
-                {totalNights === 1 ? 'noc' : totalNights >= 2 && totalNights <= 4 ? 'noci' : 'nocí'}
+                {t('organization.nightsCountLabel', { count: totalNights })}
               </span>
             </div>
           )}
@@ -243,13 +232,13 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
         <div className="flex items-center gap-3 mb-6 pb-3 border-b-4 border-gray-100">
           <BedDouble size={24} className="text-primary" />
           <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900">
-            Pokoje a postele
+            {t('organization.roomsTitle')}
           </h3>
         </div>
 
         {rooms.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>Zatím nejsou přidány žádné pokoje.</p>
+            <p>{t('organization.noRooms')}</p>
           </div>
         ) : (
           <div className="rooms-grid">
@@ -302,7 +291,9 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                           onClick={() => toggleRoom(roomId)}
                           className="w-full flex justify-between items-center px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer font-semibold text-gray-600 hover:bg-gray-100 hover:text-primary transition-colors"
                         >
-                          <span>{isExpanded ? 'Skrýt postele' : 'Zobrazit postele'}</span>
+                          <span>
+                            {isExpanded ? t('organization.hideBeds') : t('organization.showBeds')}
+                          </span>
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </button>
 
@@ -347,7 +338,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                                         })
                                       ) : (
                                         <span className="bg-gray-200 text-gray-500 px-3 py-1.5 rounded-full text-sm font-semibold">
-                                          Volné místo 💤
+                                          {t('organization.freeSpot')}
                                         </span>
                                       )}
                                     </div>
@@ -374,7 +365,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
           <div className="flex items-center gap-3 mb-6 pb-3 border-b-4 border-gray-100">
             <Car size={24} className="text-primary" />
             <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900">
-              Sdílená auta
+              {t('organization.sharedCarsTitle')}
             </h3>
           </div>
 
@@ -411,9 +402,11 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                         {driver ? getInitials(driver.name) : '?'}
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500 uppercase font-semibold">Řidič</span>
+                        <span className="text-xs text-gray-500 uppercase font-semibold">
+                          {t('organization.driver')}
+                        </span>
                         <p className="font-semibold text-gray-900">
-                          {driver?.name || 'Neurčeno'}
+                          {driver?.name || t('organization.notAssigned')}
                           {participantHasPet(driver) && ' + 🐕'}
                         </p>
                       </div>
@@ -429,7 +422,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                         </div>
                         <div>
                           <span className="text-xs text-gray-500 uppercase font-semibold">
-                            Spolujezdec
+                            {t('organization.frontPassenger')}
                           </span>
                           <p className="font-semibold text-gray-900">
                             {frontPassenger.name}
@@ -448,8 +441,10 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                         >
                           <span>
                             {isExpanded
-                              ? 'Skrýt cestující'
-                              : `Zobrazit cestující (${car.passengers.length})`}
+                              ? t('organization.hidePassengers')
+                              : t('organization.showPassengers', {
+                                  count: car.passengers.length,
+                                })}
                           </span>
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </button>
@@ -485,7 +480,7 @@ export function OrganizationView({ chata }: OrganizationViewProps) {
                     {car.equipment && car.equipment.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <span className="text-xs text-gray-500 uppercase font-semibold block mb-2">
-                          Náklad
+                          {t('organization.equipment')}
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {car.equipment.map((item, eIdx) => (
@@ -518,6 +513,8 @@ interface AdvancedBedsViewProps {
 }
 
 function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
+  const t = useTranslations('trip')
+  const locale = useLocale() as AppLocale
   const nights = Array.from({ length: totalNights }, (_, i) => i + 1)
 
   return (
@@ -534,7 +531,7 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
 
             {occupants.length === 0 ? (
               <span className="bg-gray-200 text-gray-500 px-3 py-1.5 rounded-full text-sm font-semibold inline-block">
-                Volné místo 💤
+                {t('organization.freeSpot')}
               </span>
             ) : (
               <div className="space-y-3">
@@ -548,9 +545,11 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                         key={night}
                         className="flex-1 text-center text-xs text-gray-500 min-w-[40px]"
                       >
-                        <div className="font-semibold">Noc {night}</div>
+                        <div className="font-semibold">
+                          {t('organization.nightHeader', { night })}
+                        </div>
                         {nightDate && (
-                          <div className="text-gray-400">{formatShortDate(nightDate)}</div>
+                          <div className="text-gray-400">{formatShortDate(nightDate, locale)}</div>
                         )}
                       </div>
                     )
@@ -587,8 +586,8 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                               }`}
                               title={
                                 isPresent
-                                  ? `${name} - Noc ${night}`
-                                  : `${name} není přítomen/a`
+                                  ? t('organization.presentTooltip', { name, night })
+                                  : t('organization.absentTooltip', { name })
                               }
                             />
                           )
@@ -607,10 +606,13 @@ function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
                     const occupantNights = getOccupantNights(occupant)
                     const nightsText =
                       occupantNights === null
-                        ? 'celý pobyt'
+                        ? t('organization.wholeStay')
                         : occupantNights.length === 1
-                          ? `jen noc ${occupantNights[0]}`
-                          : `jen noci ${occupantNights.slice(0, -1).join(', ')} a ${occupantNights[occupantNights.length - 1]}`
+                          ? t('organization.onlyNight', { night: occupantNights[0] })
+                          : t('organization.onlyNights', {
+                              list: occupantNights.slice(0, -1).join(', '),
+                              last: occupantNights[occupantNights.length - 1],
+                            })
                     return (
                       <span key={occupant.id || occIdx} className="mr-3">
                         <span className="font-medium">{name}{hasPet && ' + 🐕'}</span>: {nightsText}

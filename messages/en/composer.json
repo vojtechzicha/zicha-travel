@@ -1,0 +1,100 @@
+{
+  "headingNew": "New expense",
+  "headingEdit": "Edit expense",
+  "cancel": "Cancel",
+  "save": "Save expense",
+  "saving": "Saving…",
+  "continue": "Continue",
+  "back": "Back",
+  "close": "Close",
+  "currencySuffix": "CZK",
+  "entry": {
+    "prompt": "How would you like to add it?",
+    "photo": "Snap the receipt",
+    "photoHint": "Fill in the amount and description in the next step",
+    "manual": "Enter it manually",
+    "manualHint": "You can attach the receipt any time later"
+  },
+  "wizard": {
+    "stepWhat": "What and how much",
+    "stepWho": "Who shares it",
+    "stepReview": "Review and save",
+    "progress": "Step {step} of 3 · {label}"
+  },
+  "stepWhat": {
+    "receiptAttached": "receipt attached",
+    "titleLabel": "What did you pay for?",
+    "titlePlaceholder": "e.g. Big grocery run",
+    "amountLabelMobile": "How much was it?",
+    "amountLabel": "Amount",
+    "dateLabelMobile": "When?",
+    "dateLabel": "Date",
+    "payerLabel": "Who paid?",
+    "refundToggle": "You got money back (a refund)"
+  },
+  "payer": {
+    "you": "You",
+    "nameYou": "{name} (you)"
+  },
+  "stepWho": {
+    "sectionTitle": "Split",
+    "modeEqual": "Everyone splits equally",
+    "modeShares": "Shares",
+    "modeAmounts": "Exact amounts",
+    "selectShares": "Choose shares",
+    "refundSharesOnly": "Use shares for a refund",
+    "switchToAmounts": "Enter exact amounts instead",
+    "switchToShares": "Split by shares instead",
+    "headline": "{count, plural, one {Just one participant} other {All # participants}}",
+    "perPerson": "per person",
+    "equalNudge": "Only some people are in, or the split isn't even? Switch to \"{label}\".",
+    "ariaIncluded": "Included: {name}",
+    "ariaFewerShares": "Fewer shares",
+    "ariaMoreShares": "More shares",
+    "computed": "auto-filled",
+    "ariaAmountFor": "Amount for {name}",
+    "notIncluded": "not included",
+    "toSplit": "To split:",
+    "leftToSplit": "Left to split:",
+    "sharesCount": "{count, plural, one {# share} other {# shares}}",
+    "perShare": "per share."
+  },
+  "invites": {
+    "title": "Invitations",
+    "subtitle": "the host covers the guest's share",
+    "autoPrefix": "Automatic:",
+    "autoSuffixEdit": "(standing arrangement).",
+    "autoSuffixCreate": "(added automatically).",
+    "youPayFor": "you pay for {guest}",
+    "hostPaysFor": "{host} pays for {guest}",
+    "youInvite": "You're inviting {guest}",
+    "hostInvites": "{host} invites {guest}",
+    "ariaRemove": "Remove invitation",
+    "ariaHost": "Invitation host",
+    "hostPlaceholder": "Who's inviting…",
+    "between": "invites",
+    "ariaGuest": "Guest",
+    "guestPlaceholder": "Choose…"
+  },
+  "attachments": {
+    "title": "Receipts",
+    "ariaRemove": "Remove attachment",
+    "ariaAdd": "Attach a receipt",
+    "receiptAlt": "receipt",
+    "dropHere": "Drop photos or PDFs here",
+    "orPrefix": "…or",
+    "chooseFile": "choose a file",
+    "mobileHint": "· on a phone you can snap it right away"
+  },
+  "summary": {
+    "paidBy": "Paid by",
+    "editHint": "You can edit or delete the expense at any time."
+  },
+  "errors": {
+    "fileTooLarge": "The file \"{name}\" is too large (max 4 MB).",
+    "uploadFailedRetry": "Uploading the receipt failed. Please try again.",
+    "uploadFailed": "Uploading the receipt failed.",
+    "saveFailedRetry": "Saving the expense failed. Please try again.",
+    "saveFailed": "Saving the expense failed."
+  }
+}

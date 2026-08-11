@@ -1,8 +1,23 @@
+import type { AppLocale } from '@/i18n/config'
+
+// Amounts stay in CZK for every language — the trips are Czech, the bank
+// accounts are Czech. Only the formatting locale changes: "1 200 Kč" in
+// Czech, "CZK 1,200" in English. Components pass useLocale() / getLocale();
+// the default keeps untouched call sites rendering exactly as before.
+const INTL_TAG: Record<AppLocale, string> = {
+  cs: 'cs-CZ',
+  en: 'en-GB',
+}
+
+function intlTag(locale?: AppLocale): string {
+  return INTL_TAG[locale ?? 'cs']
+}
+
 /**
- * Format a number as Czech currency (CZK)
+ * Format a number as CZK in the given app locale.
  */
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('cs-CZ', {
+export function formatCurrency(amount: number, locale?: AppLocale): string {
+  return new Intl.NumberFormat(intlTag(locale), {
     style: 'currency',
     currency: 'CZK',
     minimumFractionDigits: 0,
@@ -11,11 +26,11 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
- * Format a date in Czech locale
+ * Format a date, e.g. "5. srpna 2026" / "5 August 2026".
  */
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date, locale?: AppLocale): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  return new Intl.DateTimeFormat('cs-CZ', {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -23,11 +38,11 @@ export function formatDate(date: string | Date): string {
 }
 
 /**
- * Format a date with day of week in Czech locale
+ * Format a date with day of week.
  */
-export function formatDateWithDay(date: string | Date): string {
+export function formatDateWithDay(date: string | Date, locale?: AppLocale): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  return new Intl.DateTimeFormat('cs-CZ', {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -36,24 +51,24 @@ export function formatDateWithDay(date: string | Date): string {
 }
 
 /**
- * Compact date + time, e.g. "5. 8. 14:32" — used in the expense card's
- * "Přidali jste vy" footer
+ * Compact date + time, e.g. "5. 8. 14:32" / "05/08 14:32" — used in the
+ * expense card's "added by you" footer
  */
-export function formatShortDateTime(date: string | Date): string {
+export function formatShortDateTime(date: string | Date, locale?: AppLocale): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  const day = new Intl.DateTimeFormat('cs-CZ', {
+  const day = new Intl.DateTimeFormat(intlTag(locale), {
     day: 'numeric',
     month: 'numeric',
   }).format(d)
-  return `${day} ${formatTime(d)}`
+  return `${day} ${formatTime(d, locale)}`
 }
 
 /**
- * Format time in Czech locale (HH:MM)
+ * Format time (HH:MM).
  */
-export function formatTime(date: string | Date): string {
+export function formatTime(date: string | Date, locale?: AppLocale): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  return new Intl.DateTimeFormat('cs-CZ', {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     hour: '2-digit',
     minute: '2-digit',
   }).format(d)

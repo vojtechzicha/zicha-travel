@@ -1,8 +1,22 @@
 'use client'
 
 import React from 'react'
+import { useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const BeforeLogin: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
+  const guideItems: Array<{ label: string; text: string }> = [
+    { label: t('zicha:guideChatasLabel'), text: t('zicha:guideChatasText') },
+    { label: t('zicha:guideParticipantsLabel'), text: t('zicha:guideParticipantsText') },
+    { label: t('zicha:guideExpensesLabel'), text: t('zicha:guideExpensesText') },
+    { label: t('zicha:guidePrepaymentsLabel'), text: t('zicha:guidePrepaymentsText') },
+    { label: t('zicha:guideUsersLabel'), text: t('zicha:guideUsersText') },
+  ]
+
   return (
     <div
       style={{
@@ -24,7 +38,7 @@ const BeforeLogin: React.FC = () => {
           fontFamily: "'Merriweather', Georgia, serif",
         }}
       >
-        Welcome to zicha.travel
+        {t('zicha:welcomeTitle')}
       </h3>
       <p
         style={{
@@ -35,7 +49,7 @@ const BeforeLogin: React.FC = () => {
           lineHeight: 1.6,
         }}
       >
-        Manage your group trips and shared expenses with ease.
+        {t('zicha:welcomeText')}
       </p>
       <div
         style={{
@@ -52,29 +66,15 @@ const BeforeLogin: React.FC = () => {
             opacity: 1,
           }}
         >
-          Quick Guide:
+          {t('zicha:quickGuide')}
         </p>
         <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-          <li>
-            <strong style={{ color: 'var(--admin-brand, #d97706)' }}>Chatas</strong> - Create and
-            manage trips/events
-          </li>
-          <li>
-            <strong style={{ color: 'var(--admin-brand, #d97706)' }}>Participants</strong> - Add
-            people to each trip
-          </li>
-          <li>
-            <strong style={{ color: 'var(--admin-brand, #d97706)' }}>Expenses</strong> - Track
-            shared costs
-          </li>
-          <li>
-            <strong style={{ color: 'var(--admin-brand, #d97706)' }}>Prepayments</strong> - Record
-            advances and refunds
-          </li>
-          <li>
-            <strong style={{ color: 'var(--admin-brand, #d97706)' }}>Users</strong> - Manage admin
-            accounts
-          </li>
+          {guideItems.map((item) => (
+            <li key={item.label}>
+              <strong style={{ color: 'var(--admin-brand, #d97706)' }}>{item.label}</strong> -{' '}
+              {item.text}
+            </li>
+          ))}
         </ul>
       </div>
     </div>

@@ -1,8 +1,14 @@
 'use client'
 
 import React from 'react'
+import { useTranslation } from '@payloadcms/ui'
+import type {
+  AdminTranslationKeys,
+  AdminTranslationsObject,
+} from '@/i18n/adminTranslations'
 
 const BeforeDashboard: React.FC = () => {
+  const { t } = useTranslation<AdminTranslationsObject, AdminTranslationKeys>()
   return (
     <div
       style={{
@@ -41,8 +47,7 @@ const BeforeDashboard: React.FC = () => {
         </h1>
       </div>
       <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem', lineHeight: 1.6, maxWidth: 600 }}>
-        Manage group trips and shared expenses. Track who paid what, calculate fair splits, and
-        settle up with automatic balance calculations.
+        {t('zicha:dashboardTagline')}
       </p>
     </div>
   )
