@@ -1,0 +1,30 @@
+# Points preview.zicha.travel at the newest successful PREVIEW deployment,
+# whatever branch it came from ("last preview wins"). Vercel's GitHub
+# integration creates a deployment_status event for every deployment; this
+# reacts to the successful Preview ones and re-aliases the domain.
+#
+# The fixed *.zicha.travel host matters because SESSION_COOKIE_DOMAIN
+# cookies (session, consent, language) only behave realistically there.
+# Production deployments are ignored. Needs the VERCEL_TOKEN repo secret.
+name: Alias preview domain
+
+on:
+  deployment_status:
+
+permissions: {}
+
+jobs:
+  alias:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      startsWith(github.event.deployment.environment, 'Preview')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Alias preview.zicha.travel to this deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+        run: |
+          echo "Aliasing $URL → preview.zicha.travel"
+          npx --yes vercel@latest alias set "$URL" preview.zicha.travel \
+            --token "$VERCEL_TOKEN" --scope zicha-dev
