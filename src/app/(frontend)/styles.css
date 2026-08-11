@@ -262,6 +262,8 @@
   line-height: 1.7;
   color: #1f2937;
   margin-bottom: 20px;
+  /* Descriptions are stored as plain text with blank lines between paragraphs */
+  white-space: pre-line;
 }
 
 /* Photo Gallery */
