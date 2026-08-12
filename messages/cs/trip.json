@@ -90,7 +90,11 @@
     "whoWasTitle": "Kdo byl",
     "wayBackTitle": "Cesta zpět",
     "fromPrefix": "{from}",
-    "nightsRange": "{from} až {to}"
+    "nightsRange": "{from} až {to}",
+    "photoOpen": "Zvětšit fotku",
+    "photoClose": "Zavřít",
+    "photoPrev": "Předchozí fotka",
+    "photoNext": "Další fotka"
   },
   "organization": {
     "notAvailable": "Organizace není k dispozici.",

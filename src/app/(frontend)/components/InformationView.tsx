@@ -75,6 +75,7 @@ import {
   StatusBadge,
 } from './SheetUi'
 import { TripWeather, weatherRange } from './TripWeather'
+import { PhotoLightbox } from './PhotoLightbox'
 
 interface InformationViewProps {
   chata: Chata
@@ -168,6 +169,8 @@ export function InformationView({
   const t = useTranslations('trip')
   const locale = useLocale() as AppLocale
   const [expandedTransport, setExpandedTransport] = useState<number[]>([])
+  // index into `photos` — click-to-enlarge for the gallery + destination photo
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
 
   const phase: TripPhase | null = getTripPhase(chata)
   const nights = getTripNights(chata)
@@ -779,13 +782,20 @@ export function InformationView({
         </div>
         {photos.length > 0 && phase !== 'after' && (
           <div className="flex flex-col gap-3 mt-4 md:mt-0">
-            <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/[0.07] relative">
-              <img
-                src={photos[0].url as string}
-                alt={photos[0].alt || chata.destinationName || chataName}
-                loading="lazy"
-                className="w-full h-44 object-cover"
-              />
+            <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/[0.07] relative group">
+              <button
+                type="button"
+                onClick={() => setLightboxIdx(0)}
+                className="block w-full cursor-zoom-in"
+                aria-label={t('information.photoOpen')}
+              >
+                <img
+                  src={photos[0].url as string}
+                  alt={photos[0].alt || chata.destinationName || chataName}
+                  loading="lazy"
+                  className="w-full h-44 object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </button>
               {navUrl && (
                 <a
                   href={navUrl}
@@ -1093,19 +1103,25 @@ export function InformationView({
         <div
           className={`grid gap-3 grid-cols-2 ${phase === 'after' ? 'md:grid-cols-4' : ''}`}
         >
-          {(phase === 'after' ? photos : photos.slice(1)).map((photo, idx) => (
-            <div
-              key={idx}
-              className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/[0.07]"
-            >
-              <img
-                src={photo.url as string}
-                alt={photo.alt || t('information.photoAlt', { name: chataName, number: idx + 1 })}
-                loading="lazy"
-                className="w-full h-32 object-cover"
-              />
-            </div>
-          ))}
+          {(phase === 'after' ? photos : photos.slice(1)).map((photo, idx) => {
+            const photoIdx = phase === 'after' ? idx : idx + 1
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setLightboxIdx(photoIdx)}
+                className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/[0.07] group cursor-zoom-in hover:shadow-lg dark:hover:border-white/[0.15] transition-shadow"
+                aria-label={t('information.photoOpen')}
+              >
+                <img
+                  src={photo.url as string}
+                  alt={photo.alt || t('information.photoAlt', { name: chataName, number: idx + 1 })}
+                  loading="lazy"
+                  className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </button>
+            )
+          })}
         </div>
       </div>
     ) : null
@@ -1325,6 +1341,14 @@ export function InformationView({
       {body.map((section, idx) => (
         <div key={idx}>{section}</div>
       ))}
+      {lightboxIdx !== null && (
+        <PhotoLightbox
+          photos={photos}
+          index={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+          onNavigate={setLightboxIdx}
+        />
+      )}
     </Sheet>
   )
 }

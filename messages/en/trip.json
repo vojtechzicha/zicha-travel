@@ -90,7 +90,11 @@
     "whoWasTitle": "Who was there",
     "wayBackTitle": "The way back",
     "fromPrefix": "{from}",
-    "nightsRange": "{from} to {to}"
+    "nightsRange": "{from} to {to}",
+    "photoOpen": "Enlarge photo",
+    "photoClose": "Close",
+    "photoPrev": "Previous photo",
+    "photoNext": "Next photo"
   },
   "organization": {
     "notAvailable": "Organization details aren't available.",
