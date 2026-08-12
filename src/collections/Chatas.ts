@@ -331,6 +331,33 @@ export const Chatas: CollectionConfig = {
             condition: (data) => data.informationEnabled === true,
           },
         },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'checkInTime',
+              type: 'text',
+              admin: {
+                description: {
+                  en: 'Check-in time (e.g., "od 15:00")',
+                  cs: 'Čas příjezdu / check-in (např. „od 15:00“)',
+                },
+                condition: (data) => data.informationEnabled === true,
+              },
+            },
+            {
+              name: 'checkOutTime',
+              type: 'text',
+              admin: {
+                description: {
+                  en: 'Check-out time (e.g., "do 10:00")',
+                  cs: 'Čas odjezdu / check-out (např. „do 10:00“)',
+                },
+                condition: (data) => data.informationEnabled === true,
+              },
+            },
+          ],
+        },
       ],
     },
 
@@ -372,6 +399,35 @@ export const Chatas: CollectionConfig = {
               cs: 'Popis cíle cesty',
             },
           },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'destinationLat',
+              type: 'number',
+              min: -90,
+              max: 90,
+              admin: {
+                description: {
+                  en: 'Latitude — enables the weather forecast and the navigation button',
+                  cs: 'Zeměpisná šířka — zapne předpověď počasí a tlačítko Navigovat',
+                },
+              },
+            },
+            {
+              name: 'destinationLng',
+              type: 'number',
+              min: -180,
+              max: 180,
+              admin: {
+                description: {
+                  en: 'Longitude',
+                  cs: 'Zeměpisná délka',
+                },
+              },
+            },
+          ],
         },
         {
           name: 'destinationLinks',
@@ -429,6 +485,191 @@ export const Chatas: CollectionConfig = {
               required: true,
             },
           ],
+        },
+        {
+          name: 'amenities',
+          type: 'array',
+          labels: {
+            singular: { en: 'Amenity', cs: 'Vybavení' },
+            plural: { en: 'Amenities', cs: 'Vybavení chaty' },
+          },
+          admin: {
+            description: {
+              en: 'What the place has (or is missing) — shown as ✓/✗ chips ("Na chatě je")',
+              cs: 'Co na chatě je (nebo chybí) — zobrazí se jako ✓/✗ štítky („Na chatě je“)',
+            },
+          },
+          fields: [
+            {
+              name: 'name',
+              type: 'text',
+              required: true,
+              admin: {
+                description: {
+                  en: 'e.g., "Sauna", "Wi-Fi", "Povlečení"',
+                  cs: 'např. „Sauna“, „Wi-Fi“, „Povlečení“',
+                },
+              },
+            },
+            {
+              name: 'available',
+              type: 'checkbox',
+              defaultValue: true,
+              label: { en: 'Available on site', cs: 'Na chatě je' },
+            },
+          ],
+        },
+      ],
+    },
+
+    // Trip guide — packing list, day-by-day program, surroundings, contacts
+    {
+      type: 'collapsible',
+      label: { en: 'Trip Guide', cs: 'Průvodce výletem' },
+      admin: {
+        initCollapsed: true,
+        condition: (data) => data.informationEnabled === true,
+      },
+      fields: [
+        {
+          name: 'packingItems',
+          type: 'array',
+          labels: {
+            singular: { en: 'Packing item', cs: 'Věc s sebou' },
+            plural: { en: 'Packing list', cs: 'Co s sebou' },
+          },
+          admin: {
+            description: {
+              en: 'What to bring ("Co s sebou") — one bullet per item',
+              cs: '„Co s sebou“ — jedna odrážka na položku',
+            },
+          },
+          fields: [
+            {
+              name: 'item',
+              type: 'text',
+              required: true,
+            },
+          ],
+        },
+        {
+          name: 'program',
+          type: 'array',
+          labels: {
+            singular: { en: 'Program day', cs: 'Den programu' },
+            plural: { en: 'Program', cs: 'Program' },
+          },
+          admin: {
+            description: {
+              en: 'Day-by-day plan; during the trip the current day is highlighted as "Today"',
+              cs: 'Plán po dnech; během výletu se aktuální den zvýrazní jako „Dnes“',
+            },
+          },
+          fields: [
+            {
+              name: 'date',
+              type: 'date',
+              required: true,
+              admin: {
+                date: {
+                  pickerAppearance: 'dayOnly',
+                },
+              },
+            },
+            {
+              name: 'description',
+              type: 'text',
+              required: true,
+              admin: {
+                description: {
+                  en: 'e.g., "Túra na Praděd (celý den, 18 km)"',
+                  cs: 'např. „Túra na Praděd (celý den, 18 km)“',
+                },
+              },
+            },
+          ],
+        },
+        {
+          name: 'surroundings',
+          type: 'array',
+          labels: {
+            singular: { en: 'Nearby place', cs: 'Místo v okolí' },
+            plural: { en: 'Surroundings', cs: 'Okolí' },
+          },
+          admin: {
+            description: {
+              en: 'Shops, pubs and trip tips around the place ("Okolí")',
+              cs: 'Obchody, hospody a tipy na výlety v okolí („Okolí“)',
+            },
+          },
+          fields: [
+            {
+              name: 'name',
+              type: 'text',
+              required: true,
+              admin: {
+                description: {
+                  en: 'e.g., "Potraviny Hruška — poslední obchod"',
+                  cs: 'např. „Potraviny Hruška — poslední obchod“',
+                },
+              },
+            },
+            {
+              name: 'note',
+              type: 'text',
+              admin: {
+                description: {
+                  en: 'Distance/opening hours (e.g., "400 m · po–so 7–17")',
+                  cs: 'Vzdálenost/otvírací doba (např. „400 m · po–so 7–17“)',
+                },
+              },
+            },
+            {
+              name: 'category',
+              type: 'select',
+              defaultValue: 'place',
+              options: [
+                { label: { en: 'Nearby place', cs: 'Místo v okolí' }, value: 'place' },
+                { label: { en: 'Trip tip', cs: 'Výlet' }, value: 'trip' },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'contactRules',
+          type: 'array',
+          labels: {
+            singular: { en: 'Contact / rule', cs: 'Kontakt / pravidlo' },
+            plural: { en: 'Contacts & rules', cs: 'Kontakt a pravidla' },
+          },
+          admin: {
+            description: {
+              en: 'Label + value rows ("Majitel — p. Novák · 605 112 233", "Noční klid — po 22:00")',
+              cs: 'Řádky štítek + hodnota („Majitel — p. Novák · 605 112 233“, „Noční klid — po 22:00“)',
+            },
+          },
+          fields: [
+            {
+              name: 'label',
+              type: 'text',
+              required: true,
+            },
+            {
+              name: 'value',
+              type: 'text',
+              required: true,
+            },
+          ],
+        },
+        {
+          name: 'sharedAlbumUrl',
+          type: 'text',
+          admin: {
+            description: {
+              en: 'Link to the shared photo album — shown after the trip',
+              cs: 'Odkaz na sdílené album fotek — zobrazí se po výletu',
+            },
+          },
         },
       ],
     },
@@ -822,8 +1063,20 @@ export const Chatas: CollectionConfig = {
               type: 'textarea',
               admin: {
                 description: {
-                  en: 'Additional details about this ride',
-                  cs: 'Další podrobnosti o této jízdě',
+                  en: 'Additional details about this ride (e.g., "Odjezd st 8:15 z Prahy-Chodova")',
+                  cs: 'Další podrobnosti o této jízdě (např. „Odjezd st 8:15 z Prahy-Chodova“)',
+                },
+              },
+            },
+            {
+              name: 'seats',
+              type: 'number',
+              min: 1,
+              max: 9,
+              admin: {
+                description: {
+                  en: 'Total seats including the driver — enables the "4/5" occupancy badge and free-seat hints',
+                  cs: 'Počet míst včetně řidiče — zapne štítek obsazenosti („4/5“) a údaj o volných sedačkách',
                 },
               },
             },

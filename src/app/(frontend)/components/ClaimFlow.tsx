@@ -9,6 +9,7 @@ import { accusativeName } from '@/lib/czechNames'
 import { claimReturnTo } from '@/lib/claimRequests'
 import { track } from '@/lib/analytics'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
+import { useAppTheme } from '../utils/useAppTheme'
 import type { AppLocale } from '@/i18n/config'
 import type { Participant } from '@/payload-types'
 
@@ -165,15 +166,19 @@ function ModalShell({
   onClose: () => void
   children: React.ReactNode
 }) {
+  // Portaled to <body>, i.e. outside the ChataView wrapper that carries
+  // data-app-theme — the overlay root must set it itself for dark: to work
+  const { theme } = useAppTheme()
   return createPortal(
     <div
+      data-app-theme={theme}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={label}
     >
       <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-[#1b212c] dark:border dark:border-white/[0.06] rounded-3xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
         {children}
       </div>
     </div>,
@@ -189,7 +194,8 @@ function CloseButton({ onClose }: { onClose: () => void }) {
       aria-label={t('claim.close')}
       onClick={onClose}
       className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200
-                 flex items-center justify-center text-gray-500 transition-colors"
+                 dark:bg-white/[0.07] dark:hover:bg-white/[0.12]
+                 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-colors"
     >
       <X size={18} />
     </button>
@@ -307,13 +313,13 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       <ModalShell label={t('claim.dialog.sentTitle')} onClose={onClose}>
         <CloseButton onClose={onClose} />
         <div className="p-7 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200 text-primary mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-50 border border-amber-200 text-primary dark:bg-amber-400/15 dark:border-amber-400/30 dark:text-primary-light mb-4">
             <Mail size={26} />
           </div>
-          <h2 className="font-serif text-xl font-bold text-gray-900 mb-2">
+          <h2 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             {t('claim.dialog.sentTitle')}
           </h2>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-600 dark:text-slate-300 text-sm leading-relaxed">
             {t.rich('claim.dialog.sentBody', {
               email: sentTo,
               strong: (chunks) => <strong>{chunks}</strong>,
@@ -322,7 +328,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
           <button
             type="button"
             onClick={() => setSentTo(null)}
-            className="mt-4 text-gray-400 hover:text-gray-600 text-xs transition-colors"
+            className="mt-4 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 text-xs transition-colors"
           >
             {t('claim.dialog.resend')}
           </button>
@@ -345,31 +351,31 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
             {getInitials(participant.name)}
           </div>
           <div className="min-w-0">
-            <h2 className="font-serif text-xl font-bold text-gray-900 truncate">
+            <h2 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
               {t('claim.dialog.title', { name: accusativeName(participant, locale) })}
             </h2>
-            <div className="text-[13px] text-gray-500 truncate">{chataName}</div>
+            <div className="text-[13px] text-gray-500 dark:text-slate-400 truncate">{chataName}</div>
           </div>
         </div>
-        <p className="text-[13px] text-gray-600 leading-relaxed mb-5">{t('claim.dialog.intro')}</p>
+        <p className="text-[13px] text-gray-600 dark:text-slate-300 leading-relaxed mb-5">{t('claim.dialog.intro')}</p>
 
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
 
         {/* Path 1: existing account */}
-        <div className="border border-gray-200 rounded-2xl p-4 mb-3">
-          <div className="font-bold text-gray-900 text-sm mb-2.5">
+        <div className="border border-gray-200 dark:border-white/[0.12] rounded-2xl p-4 mb-3">
+          <div className="font-bold text-gray-900 dark:text-gray-100 text-sm mb-2.5">
             {t('claim.dialog.existingAccount')}
           </div>
           {microsoftEnabled && (
             <a
               href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
-              className="flex items-center justify-center gap-2.5 border border-gray-300 rounded-xl
-                         px-4 py-2.5 font-semibold text-sm text-gray-700 hover:bg-gray-50
-                         transition-colors mb-2"
+              className="flex items-center justify-center gap-2.5 border border-gray-300 dark:border-white/[0.15] rounded-xl
+                         px-4 py-2.5 font-semibold text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50
+                         dark:hover:bg-white/[0.06] transition-colors mb-2"
             >
               <MicrosoftIcon />
               {t('claim.dialog.microsoft')}
@@ -382,14 +388,16 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
               className="flex-1 min-w-0 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm
-                         text-gray-900 placeholder-gray-400 focus:outline-none
+                         text-gray-900 placeholder-gray-400 dark:bg-white/[0.06] dark:border-white/[0.15]
+                         dark:text-gray-100 dark:placeholder-slate-500 focus:outline-none
                          focus:ring-2 focus:ring-primary/50 focus:border-primary"
             />
             <button
               type="button"
               onClick={requestLoginLink}
               disabled={busy !== null || !loginEmail.trim() || captchaPending}
-              className="bg-gray-900 hover:bg-gray-700 text-white text-[13px] font-bold px-3.5
+              className="bg-gray-900 hover:bg-gray-700 dark:bg-white/[0.1] dark:hover:bg-white/[0.18]
+                         text-white text-[13px] font-bold px-3.5
                          py-2.5 rounded-xl transition-colors disabled:opacity-60 flex-shrink-0"
             >
               {busy === 'login' ? t('claim.dialog.sending') : t('claim.dialog.sendLink')}
@@ -398,9 +406,9 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
         </div>
 
         {/* Path 2: first-timer registration */}
-        <div className="border border-amber-200 bg-amber-50 rounded-2xl p-4">
-          <div className="font-bold text-gray-900 text-sm mb-1">{t('claim.dialog.firstTime')}</div>
-          <div className="text-[13px] text-gray-600 mb-2.5">{t('claim.dialog.firstTimeBody')}</div>
+        <div className="border border-amber-200 bg-amber-50 dark:bg-amber-400/10 dark:border-amber-400/25 rounded-2xl p-4">
+          <div className="font-bold text-gray-900 dark:text-gray-100 text-sm mb-1">{t('claim.dialog.firstTime')}</div>
+          <div className="text-[13px] text-gray-600 dark:text-slate-300 mb-2.5">{t('claim.dialog.firstTimeBody')}</div>
           <div className="flex gap-2">
             <input
               type="email"
@@ -408,8 +416,9 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
               value={registerEmail}
               onChange={(e) => setRegisterEmail(e.target.value)}
               className="flex-1 min-w-0 border border-amber-300 bg-white rounded-xl px-3.5 py-2.5
-                         text-sm text-gray-900 placeholder-gray-400 focus:outline-none
-                         focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                         text-sm text-gray-900 placeholder-gray-400 dark:bg-white/[0.06]
+                         dark:border-amber-400/30 dark:text-gray-100 dark:placeholder-slate-500
+                         focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
             />
             <button
               type="button"
@@ -430,7 +439,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
         <button
           type="button"
           onClick={onClose}
-          className="block mx-auto mt-4 text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+          className="block mx-auto mt-4 text-[13px] text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
         >
           {t('claim.dialog.notMe')}
         </button>
@@ -456,13 +465,15 @@ export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultM
     : t('claim.result.fallbackNameAccusative')
   const plainName = participant?.name ?? t('claim.result.fallbackName')
   let icon = <Check size={26} />
-  let iconClass = 'bg-green-50 border border-green-200 text-green-600'
+  let iconClass =
+    'bg-green-50 border border-green-200 text-green-600 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300'
   let title = t('claim.result.approvedTitle')
   let body: string = t('claim.result.approvedBody', { name: plainName })
 
   if (outcome.kind === 'pending') {
     icon = <Clock size={26} />
-    iconClass = 'bg-amber-50 border border-amber-200 text-primary'
+    iconClass =
+      'bg-amber-50 border border-amber-200 text-primary dark:bg-amber-400/15 dark:border-amber-400/30 dark:text-primary-light'
     title = t('claim.result.pendingTitle')
     body = t('claim.result.pendingBody', { name })
   } else if (outcome.kind === 'already-linked') {
@@ -470,7 +481,8 @@ export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultM
     body = t('claim.result.alreadyLinkedBody', { name: plainName })
   } else if (outcome.kind === 'error') {
     icon = <X size={26} />
-    iconClass = 'bg-red-50 border border-red-200 text-red-500'
+    iconClass =
+      'bg-red-50 border border-red-200 text-red-500 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400'
     title = t('claim.result.errorTitle')
     body = t(`claim.result.errors.${outcome.code}`)
   }
@@ -484,8 +496,8 @@ export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultM
         >
           {icon}
         </div>
-        <h2 className="font-serif text-xl font-bold text-gray-900 mb-2">{title}</h2>
-        <p className="text-gray-600 text-sm leading-relaxed">{body}</p>
+        <h2 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{title}</h2>
+        <p className="text-gray-600 dark:text-slate-300 text-sm leading-relaxed">{body}</p>
         <button
           type="button"
           onClick={onClose}

@@ -70,20 +70,20 @@ export function ExpensesFeed({
   return (
     <GlassCard padding="medium">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-serif text-xl font-bold text-gray-900 flex items-center gap-2">
+        <h3 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <span className="text-primary">📋</span> {t('expensesFeed.title')}
         </h3>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-slate-400">
           <button
             onClick={() => setShowAll(false)}
-            className={`px-1 ${!showAll ? 'font-semibold text-gray-700' : 'hover:text-gray-700'}`}
+            className={`px-1 ${!showAll ? 'font-semibold text-gray-700 dark:text-slate-300' : 'hover:text-gray-700 dark:hover:text-slate-300'}`}
           >
             {t('expensesFeed.mine')}
           </button>
           <span className="mx-1">|</span>
           <button
             onClick={() => setShowAll(true)}
-            className={`px-1 ${showAll ? 'font-semibold text-gray-700' : 'hover:text-gray-700'}`}
+            className={`px-1 ${showAll ? 'font-semibold text-gray-700 dark:text-slate-300' : 'hover:text-gray-700 dark:hover:text-slate-300'}`}
           >
             {t('expensesFeed.all')}
           </button>
@@ -116,7 +116,7 @@ export function ExpensesFeed({
             )
           })
         ) : (
-          <p className="text-gray-500 text-center py-8">
+          <p className="text-gray-500 dark:text-slate-400 text-center py-8">
             {t('expensesFeed.empty')}
           </p>
         )}
@@ -124,13 +124,13 @@ export function ExpensesFeed({
       {/* Anonymous visitors (design 1e): the journal is read-only — a quiet
           bar instead of the FAB says signing in unlocks authoring */}
       {showLoginHint && (
-        <div className="flex items-center gap-2.5 mt-4 px-3.5 py-2.5 border border-dashed border-gray-200 rounded-xl bg-gray-50">
-          <Lock size={15} className="text-gray-400 flex-shrink-0" />
-          <span className="text-[13px] text-gray-500">
+        <div className="flex items-center gap-2.5 mt-4 px-3.5 py-2.5 border border-dashed border-gray-200 dark:border-white/[0.12] rounded-xl bg-gray-50 dark:bg-white/[0.04]">
+          <Lock size={15} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
+          <span className="text-[13px] text-gray-500 dark:text-slate-400">
             {t('expensesFeed.loginHint')}{' '}
             <a
               href="/login"
-              className="text-primary-dark font-semibold underline underline-offset-2 hover:text-primary"
+              className="text-primary-dark dark:text-primary-light font-semibold underline underline-offset-2 hover:text-primary dark:hover:text-primary-light"
             >
               {t('expensesFeed.signIn')}
             </a>

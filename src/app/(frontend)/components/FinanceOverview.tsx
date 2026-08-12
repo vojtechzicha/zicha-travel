@@ -47,8 +47,8 @@ const podilLabel = (
 /** "+ 2 500 Kč" green / "− 2 500 Kč" plain, matching PersonView's rows. */
 function SignedAmount({ value }: { value: number }) {
   const locale = useLocale() as AppLocale
-  if (value > 0) return <strong className="text-green-600">+ {formatCurrency(value, locale)}</strong>
-  return <strong className="text-gray-900">− {formatCurrency(Math.abs(value), locale)}</strong>
+  if (value > 0) return <strong className="text-green-600 dark:text-green-400">+ {formatCurrency(value, locale)}</strong>
+  return <strong className="text-gray-900 dark:text-gray-100">− {formatCurrency(Math.abs(value), locale)}</strong>
 }
 
 /**
@@ -57,7 +57,7 @@ function SignedAmount({ value }: { value: number }) {
  */
 function ShareAmount({ cost }: { cost: number }) {
   const locale = useLocale() as AppLocale
-  if (cost < 0) return <span className="text-green-600">+ {formatCurrency(Math.abs(cost), locale)}</span>
+  if (cost < 0) return <span className="text-green-600 dark:text-green-400">+ {formatCurrency(Math.abs(cost), locale)}</span>
   return <>− {formatCurrency(cost, locale)}</>
 }
 
@@ -245,12 +245,12 @@ function OverviewTable({
   const t = useTranslations('finance')
   const locale = useLocale() as AppLocale
   const p = (name: string) => stats.participants[name]
-  const bankerCol = (n: string) => (n === bankerName ? 'bg-blue-50/70' : '')
+  const bankerCol = (n: string) => (n === bankerName ? 'bg-blue-50/70 dark:bg-sky-400/10' : '')
   const labelCell =
-    'sticky left-0 z-[2] bg-[#faf7f2] text-left font-semibold text-gray-800 px-3 py-2 max-w-[280px] border-b border-gray-200'
-  const numCell = 'px-3 py-2 text-right whitespace-nowrap tabular-nums border-b border-gray-100'
+    'sticky left-0 z-[2] bg-[#faf7f2] dark:bg-[#212734] text-left font-semibold text-gray-800 dark:text-slate-200 px-3 py-2 max-w-[280px] border-b border-gray-200 dark:border-white/[0.12]'
+  const numCell = 'px-3 py-2 text-right whitespace-nowrap tabular-nums border-b border-gray-100 dark:border-white/[0.07]'
   const totCell =
-    'px-3 py-2 text-right whitespace-nowrap tabular-nums font-bold border-b border-gray-100 bg-amber-50/80 border-l-2 border-l-amber-300'
+    'px-3 py-2 text-right whitespace-nowrap tabular-nums font-bold border-b border-gray-100 dark:border-white/[0.07] bg-amber-50/80 dark:bg-amber-400/10 border-l-2 border-l-amber-300 dark:border-l-amber-300/40'
 
   return (
     <GlassCard padding="small" className="w-full">
@@ -258,23 +258,23 @@ function OverviewTable({
         <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13px]">
           <thead>
             <tr>
-              <th className={`${labelCell} z-[3] align-bottom text-gray-500 text-xs font-semibold`}>{t('overview.item')}</th>
+              <th className={`${labelCell} z-[3] align-bottom text-gray-500 dark:text-slate-400 text-xs font-semibold`}>{t('overview.item')}</th>
               {names.map((n) => (
-                <th key={n} className={`${numCell} ${bankerCol(n)} align-bottom border-b-2 border-gray-300`}>
+                <th key={n} className={`${numCell} ${bankerCol(n)} align-bottom border-b-2 border-gray-300 dark:border-white/[0.15]`}>
                   <span className="inline-flex flex-col items-end gap-1">
                     <span
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-extrabold ${getAvatarColor(n)}`}
                     >
                       {getInitials(n)}
                     </span>
-                    <span className="font-serif font-extrabold text-sm text-gray-900 flex items-center gap-1">
+                    <span className="font-serif font-extrabold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1">
                       {n}
-                      {n === bankerName && <Crown size={12} className="text-primary" />}
+                      {n === bankerName && <Crown size={12} className="text-primary dark:text-primary-light" />}
                     </span>
                   </span>
                 </th>
               ))}
-              <th className={`${totCell} align-bottom text-amber-800 border-b-2 border-gray-300`}>{t('overview.sumCheck')}</th>
+              <th className={`${totCell} align-bottom text-amber-800 dark:text-amber-300 border-b-2 border-gray-300 dark:border-white/[0.15]`}>{t('overview.sumCheck')}</th>
             </tr>
           </thead>
           <tbody>
@@ -283,7 +283,7 @@ function OverviewTable({
               <td className={labelCell}>💳 {t('overview.paidForOthers')}</td>
               {names.map((n) => (
                 <td key={n} className={`${numCell} ${bankerCol(n)}`}>
-                  {paidRow[n] ? formatCurrency(paidRow[n], locale) : <span className="text-gray-300">—</span>}
+                  {paidRow[n] ? formatCurrency(paidRow[n], locale) : <span className="text-gray-300 dark:text-slate-600">—</span>}
                 </td>
               ))}
               <td className={totCell}>{formatCurrency(rowSum(paidRow), locale)}</td>
@@ -294,7 +294,7 @@ function OverviewTable({
               <tr key={kind}>
                 <td className={labelCell}>
                   📤 {label}
-                  <small className="block font-normal text-gray-400 text-[11px]">
+                  <small className="block font-normal text-gray-400 dark:text-slate-500 text-[11px]">
                     {t('overview.prepaymentNote')}
                   </small>
                 </td>
@@ -303,7 +303,7 @@ function OverviewTable({
                     {values[n] !== undefined ? (
                       <SignedAmount value={values[n]} />
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-gray-300 dark:text-slate-600">—</span>
                     )}
                   </td>
                 ))}
@@ -313,22 +313,22 @@ function OverviewTable({
 
             {/* Útrata — one row per expense */}
             <tr>
-              <td className={`${labelCell} bg-[#f3efe7] uppercase tracking-wider text-[11px] text-gray-500`}>
+              <td className={`${labelCell} bg-[#f3efe7] dark:bg-[#2a3140] uppercase tracking-wider text-[11px] text-gray-500 dark:text-slate-400`}>
                 👤 {t('overview.fairShareHeader')}
               </td>
               <td
                 colSpan={names.length}
-                className={`${numCell} bg-gray-50/80 text-left uppercase tracking-wider text-[11px] text-gray-500`}
+                className={`${numCell} bg-gray-50/80 dark:bg-white/[0.04] text-left uppercase tracking-wider text-[11px] text-gray-500 dark:text-slate-400`}
               >
                 {t('overview.fairShareNote')}
               </td>
-              <td className={`${totCell} uppercase tracking-wider text-[11px] text-amber-800`}>{t('overview.expensePrice')}</td>
+              <td className={`${totCell} uppercase tracking-wider text-[11px] text-amber-800 dark:text-amber-300`}>{t('overview.expensePrice')}</td>
             </tr>
             {expenseRows.map((row) => (
               <tr key={row.id}>
                 <td className={labelCell}>
                   <span className="font-medium">{row.title}</span>
-                  <small className="block font-normal text-gray-400 text-[11px] whitespace-normal">
+                  <small className="block font-normal text-gray-400 dark:text-slate-500 text-[11px] whitespace-normal">
                     {t('overview.paidBy', { name: row.payerLabel || '—' })}
                   </small>
                 </td>
@@ -337,14 +337,14 @@ function OverviewTable({
                   if (!cell)
                     return (
                       <td key={n} className={`${numCell} ${bankerCol(n)}`}>
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300 dark:text-slate-600">—</span>
                       </td>
                     )
                   if (cell.invitedBy)
                     return (
-                      <td key={n} className={`${numCell} ${bankerCol(n)} text-green-600`}>
+                      <td key={n} className={`${numCell} ${bankerCol(n)} text-green-600 dark:text-green-400`}>
                         {formatCurrency(0, locale)}
-                        <span className="block text-[10.5px] text-green-600 font-normal">
+                        <span className="block text-[10.5px] text-green-600 dark:text-green-400 font-normal">
                           {cell.auto
                             ? t('invitation.paysForYou', { name: cell.invitedBy })
                             : t('overview.pays', { name: cell.invitedBy })}
@@ -355,12 +355,12 @@ function OverviewTable({
                     <td key={n} className={`${numCell} ${bankerCol(n)}`}>
                       <ShareAmount cost={cell.cost} />
                       {(cell.weightIsAmount || cell.weight !== 1) && (
-                        <span className="block text-[10.5px] text-gray-400 font-normal">
+                        <span className="block text-[10.5px] text-gray-400 dark:text-slate-500 font-normal">
                           {podilLabel(t, locale, cell.weight, cell.weightIsAmount)}
                         </span>
                       )}
                       {cell.invitedGuests.length > 0 && (
-                        <span className="block text-[10.5px] text-pink-600 font-normal">
+                        <span className="block text-[10.5px] text-pink-600 dark:text-pink-400 font-normal">
                           {t('overview.plusFor', { names: cell.invitedGuests.join(', ') })}
                         </span>
                       )}
@@ -373,13 +373,13 @@ function OverviewTable({
 
             {/* Útrata celkem */}
             <tr>
-              <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-300`}>{t('overview.totalFairShare')}</td>
+              <td className={`${labelCell} bg-[#f7f3ec] dark:bg-[#262d3b] border-t-2 border-gray-300 dark:border-white/[0.15]`}>{t('overview.totalFairShare')}</td>
               {names.map((n) => (
-                <td key={n} className={`${numCell} ${bankerCol(n)} font-bold border-t-2 border-gray-300`}>
+                <td key={n} className={`${numCell} ${bankerCol(n)} font-bold border-t-2 border-gray-300 dark:border-white/[0.15]`}>
                   <ShareAmount cost={p(n).cost} />
                 </td>
               ))}
-              <td className={`${totCell} border-t-2 border-gray-300`}>{formatCurrency(totalActual, locale)}</td>
+              <td className={`${totCell} border-t-2 border-gray-300 dark:border-white/[0.15]`}>{formatCurrency(totalActual, locale)}</td>
             </tr>
 
             {/* Aggregated planned rows — only when planned data exists, so the
@@ -389,14 +389,14 @@ function OverviewTable({
                 <tr>
                   <td className={labelCell}>
                     🕑 {t('overview.plannedExpenses')}
-                    <small className="block font-normal text-gray-400 text-[11px]">{t('overview.plannedNote')}</small>
+                    <small className="block font-normal text-gray-400 dark:text-slate-500 text-[11px]">{t('overview.plannedNote')}</small>
                   </td>
                   {names.map((n) => (
-                    <td key={n} className={`${numCell} ${bankerCol(n)} text-amber-700`}>
+                    <td key={n} className={`${numCell} ${bankerCol(n)} text-amber-700 dark:text-amber-300`}>
                       {p(n).plannedPaidExternal > 0 ? (
                         formatCurrency(p(n).plannedPaidExternal, locale)
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                   ))}
@@ -407,11 +407,11 @@ function OverviewTable({
                 <tr>
                   <td className={labelCell}>🕑 {t('overview.plannedFairShare')}</td>
                   {names.map((n) => (
-                    <td key={n} className={`${numCell} ${bankerCol(n)} text-amber-700`}>
+                    <td key={n} className={`${numCell} ${bankerCol(n)} text-amber-700 dark:text-amber-300`}>
                       {p(n).plannedCost > 0 ? (
                         <>− {formatCurrency(p(n).plannedCost, locale)}</>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300 dark:text-slate-600">—</span>
                       )}
                     </td>
                   ))}
@@ -422,14 +422,14 @@ function OverviewTable({
 
             {/* Výsledek */}
             <tr>
-              <td className={`${labelCell} bg-[#f7f3ec] border-t-2 border-gray-400 text-sm`}>{t('overview.result')}</td>
+              <td className={`${labelCell} bg-[#f7f3ec] dark:bg-[#262d3b] border-t-2 border-gray-400 text-sm`}>{t('overview.result')}</td>
               {names.map((n) => {
                 const v = verdict(p(n).balance)
                 return (
                   <td
                     key={n}
                     className={`${numCell} ${bankerCol(n)} border-t-2 border-gray-400 font-extrabold text-sm ${
-                      v === 'get' ? 'text-green-600' : v === 'owe' ? 'text-red-600' : 'text-gray-500'
+                      v === 'get' ? 'text-green-600 dark:text-green-400' : v === 'owe' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-slate-400'
                     }`}
                   >
                     {v === 'settled'
@@ -451,19 +451,19 @@ function OverviewTable({
                 return (
                   <td key={n} className={`${numCell} ${bankerCol(n)} border-b-0 pt-0`}>
                     {n === bankerName ? (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-100 text-blue-700">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-100 text-blue-700 dark:bg-sky-400/10 dark:text-sky-300">
                         {t('overview.pillBanker')}
                       </span>
                     ) : v === 'settled' ? (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-gray-200 text-gray-600">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-gray-200 text-gray-600 dark:bg-white/[0.07] dark:text-slate-300">
                         {t('overview.pillSettled')}
                       </span>
                     ) : v === 'get' ? (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-green-100 text-green-700">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-green-100 text-green-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                         {t('overview.pillGets')}
                       </span>
                     ) : (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-red-100 text-red-700">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400">
                         {t('overview.pillOwes')}
                       </span>
                     )}
@@ -512,29 +512,29 @@ function ParticipantCard({
   const locale = useLocale() as AppLocale
   const v = verdict(stats.balance)
   const cardBg = isBanker
-    ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'
+    ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-sky-400/15 dark:to-sky-400/5 dark:border-sky-400/25'
     : v === 'owe'
-      ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
-      : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
+      ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200 dark:from-red-500/15 dark:to-red-500/5 dark:border-red-500/25'
+      : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:from-green-500/15 dark:to-green-500/5 dark:border-green-500/25'
   const breakdown = stats.costBreakdown.filter((i) => !i.isPlanned)
 
   return (
-    <div className={`rounded-2xl p-4 border shadow-lg ${cardBg}`}>
+    <div className={`rounded-2xl p-4 border shadow-lg dark:bg-[#1b212c] ${cardBg}`}>
       <div className="flex items-center gap-3 mb-3">
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-extrabold flex-none ${getAvatarColor(name)}`}
         >
           {getInitials(name)}
         </div>
-        <div className="font-serif text-lg font-extrabold text-gray-900 flex items-center gap-1.5 min-w-0">
+        <div className="font-serif text-lg font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 min-w-0">
           <span className="truncate">{name}</span>
-          {isBanker && <Crown size={15} className="text-primary flex-none" />}
+          {isBanker && <Crown size={15} className="text-primary dark:text-primary-light flex-none" />}
         </div>
-        <div className="ml-auto text-right text-[11px] text-gray-500 flex-none">
+        <div className="ml-auto text-right text-[11px] text-gray-500 dark:text-slate-400 flex-none">
           {v === 'settled' ? t('overview.pillSettled') : v === 'get' ? t('overview.pillGets') : t('overview.pillOwes')}
           <strong
             className={`block text-[15px] tabular-nums ${
-              v === 'get' ? 'text-green-600' : v === 'owe' ? 'text-red-600' : 'text-gray-500'
+              v === 'get' ? 'text-green-600 dark:text-green-400' : v === 'owe' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-slate-400'
             }`}
           >
             {formatCurrency(Math.round(Math.abs(v === 'settled' ? 0 : stats.balance)), locale)}
@@ -543,54 +543,54 @@ function ParticipantCard({
       </div>
 
       <div className="space-y-1.5 text-[13px]">
-        <div className="flex justify-between gap-3 text-gray-600">
+        <div className="flex justify-between gap-3 text-gray-600 dark:text-slate-300">
           <span>💳 {t('overview.cardPaidForOthers')}</span>
-          <strong className="text-gray-900 tabular-nums">{formatCurrency(stats.paidExternal, locale)}</strong>
+          <strong className="text-gray-900 dark:text-gray-100 tabular-nums">{formatCurrency(stats.paidExternal, locale)}</strong>
         </div>
         {stats.plannedPaidExternal > 0 && (
-          <div className="flex justify-between gap-3 text-amber-700">
+          <div className="flex justify-between gap-3 text-amber-700 dark:text-amber-300">
             <span>🕑 {t('overview.cardStillToPay')}</span>
             <strong className="tabular-nums">{formatCurrency(stats.plannedPaidExternal, locale)}</strong>
           </div>
         )}
         {Math.abs(stats.prepaidAdvance) > 0.005 && (
-          <div className="flex justify-between gap-3 text-gray-600">
+          <div className="flex justify-between gap-3 text-gray-600 dark:text-slate-300">
             <span>📤 {isBanker ? t('overview.cardCollectedAdvances') : t('overview.cardAdvance')}</span>
             <SignedAmount value={stats.prepaidAdvance} />
           </div>
         )}
         {Math.abs(stats.prepaidSupplement) > 0.005 && (
-          <div className="flex justify-between gap-3 text-gray-600">
+          <div className="flex justify-between gap-3 text-gray-600 dark:text-slate-300">
             <span>📤 {isBanker ? t('overview.cardCollectedSupplements') : t('overview.cardSupplement')}</span>
             <SignedAmount value={stats.prepaidSupplement} />
           </div>
         )}
         {Math.abs(stats.prepaidRefund) > 0.005 && (
-          <div className="flex justify-between gap-3 text-gray-600">
+          <div className="flex justify-between gap-3 text-gray-600 dark:text-slate-300">
             <span>📤 {isBanker ? t('overview.cardRefundedOverpayments') : t('overview.cardRefundedOverpayment')}</span>
             <SignedAmount value={stats.prepaidRefund} />
           </div>
         )}
-        <div className="flex justify-between gap-3 bg-white/50 -mx-1.5 px-1.5 py-1.5 rounded-lg text-gray-600">
+        <div className="flex justify-between gap-3 bg-white/50 dark:bg-white/[0.04] -mx-1.5 px-1.5 py-1.5 rounded-lg text-gray-600 dark:text-slate-300">
           <span>👤 {t('overview.cardFairShare')}</span>
-          <strong className="text-gray-900 tabular-nums">
+          <strong className="text-gray-900 dark:text-gray-100 tabular-nums">
             <ShareAmount cost={stats.cost} />
           </strong>
         </div>
         {breakdown.length > 0 && (
-          <div className="bg-white/40 -mx-1.5 px-2 py-1.5 rounded-lg space-y-1">
+          <div className="bg-white/40 dark:bg-white/[0.03] -mx-1.5 px-2 py-1.5 rounded-lg space-y-1">
             {breakdown.map((item, idx) => (
-              <div key={idx} className="flex justify-between gap-2 text-[11.5px] text-gray-600">
+              <div key={idx} className="flex justify-between gap-2 text-[11.5px] text-gray-600 dark:text-slate-300">
                 <span className="min-w-0">
-                  {item.title} <small className="text-gray-400">({podilLabel(t, locale, item.weight, item.weightIsAmount)})</small>
+                  {item.title} <small className="text-gray-400 dark:text-slate-500">({podilLabel(t, locale, item.weight, item.weightIsAmount)})</small>
                   {item.invitedGuest && (
-                    <small className="text-pink-600"> · {item.auto ? t('invitation.youPayFor', { name: item.invitedGuest }) : t('invitation.invitationFor', { name: item.invitedGuest })}</small>
+                    <small className="text-pink-600 dark:text-pink-400"> · {item.auto ? t('invitation.youPayFor', { name: item.invitedGuest }) : t('invitation.invitationFor', { name: item.invitedGuest })}</small>
                   )}
                   {item.invitedBy && (
-                    <small className="text-green-600"> · {item.auto ? t('invitation.paysForYou', { name: item.invitedBy }) : t('invitation.invitedYou', { name: item.invitedBy })}</small>
+                    <small className="text-green-600 dark:text-green-400"> · {item.auto ? t('invitation.paysForYou', { name: item.invitedBy }) : t('invitation.invitedYou', { name: item.invitedBy })}</small>
                   )}
                 </span>
-                <span className={`tabular-nums flex-none ${item.invitedBy ? 'text-green-600' : ''}`}>
+                <span className={`tabular-nums flex-none ${item.invitedBy ? 'text-green-600 dark:text-green-400' : ''}`}>
                   {item.invitedBy ? formatCurrency(0, locale) : <ShareAmount cost={item.cost} />}
                 </span>
               </div>
@@ -598,18 +598,18 @@ function ParticipantCard({
           </div>
         )}
         {stats.plannedCost > 0 && (
-          <div className="flex justify-between gap-3 text-amber-700">
+          <div className="flex justify-between gap-3 text-amber-700 dark:text-amber-300">
             <span>🕑 {t('overview.cardPlannedFairShare')}</span>
             <strong className="tabular-nums">− {formatCurrency(stats.plannedCost, locale)}</strong>
           </div>
         )}
         <div
-          className={`flex justify-between gap-3 items-center border-t border-dashed border-gray-300 mt-2 pt-2 text-gray-600`}
+          className={`flex justify-between gap-3 items-center border-t border-dashed border-gray-300 dark:border-white/[0.15] mt-2 pt-2 text-gray-600 dark:text-slate-300`}
         >
           <span>{t('overview.cardResult')}</span>
           <strong
             className={`text-[15px] tabular-nums ${
-              v === 'get' ? 'text-green-600' : v === 'owe' ? 'text-red-600' : 'text-gray-500'
+              v === 'get' ? 'text-green-600 dark:text-green-400' : v === 'owe' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-slate-400'
             }`}
           >
             {v === 'settled'

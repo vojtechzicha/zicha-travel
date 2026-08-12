@@ -11,6 +11,7 @@ import { OrganizationView } from './OrganizationView'
 import { ParticipantsView } from './ParticipantsView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
+import { useAppTheme } from '../utils/useAppTheme'
 import { getThemeColors } from '@/utils/themeColors'
 import { setAnalyticsContext, track, trackPageview, type AnalyticsRole } from '@/lib/analytics'
 import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
@@ -68,6 +69,9 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const t = useTranslations('chata.chataView')
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Dark mode lives only on the chata detail screens — the attribute set
+  // here is what the `dark` Tailwind variant (styles.css) matches against
+  const { theme, toggleTheme } = useAppTheme()
 
   // If participant param is present but no view, default to finance
   type ViewName = 'finance' | 'information' | 'organization' | 'participants' | 'finance-overview'
@@ -213,8 +217,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             `,
           }}
         />
-        <div className="min-h-screen relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
+        <div className="min-h-screen relative" data-app-theme={theme}>
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 dark:from-[#080c14]/80 dark:to-[#080c14]/95 backdrop-blur-sm z-0 pointer-events-none" />
           <div className="relative z-10 max-w-app mx-auto px-5 py-10">
             {showLoadingIndicator ? (
               <>
@@ -230,8 +234,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
 
   if (error || !data) {
     return (
-      <div className="min-h-screen relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
+      <div className="min-h-screen relative" data-app-theme={theme}>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 dark:from-[#080c14]/80 dark:to-[#080c14]/95 backdrop-blur-sm z-0 pointer-events-none" />
         <div className="relative z-10 max-w-app mx-auto px-5 py-10">
           <div className="text-center text-white py-20">
             <h1 className="text-4xl font-bold mb-4">{t('notFound')}</h1>
@@ -261,8 +265,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
 
   return (
     <ThemeProvider chata={chata}>
-      <div className="min-h-screen relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
+      <div className="min-h-screen relative" data-app-theme={theme}>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 dark:from-[#080c14]/80 dark:to-[#080c14]/95 backdrop-blur-sm z-0 pointer-events-none" />
 
         <div className="relative z-10 max-w-app mx-auto px-5 py-10">
           <Header
@@ -275,6 +279,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             showOrganizationTab={hasOrganization}
             showParticipantsTab={hasParticipants}
             onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
 
           {/* Content area with smooth transition */}
@@ -309,11 +315,27 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 onBack={() => handleViewChange('finance')}
               />
             ) : activeView === 'organization' ? (
-              <OrganizationView chata={chata} />
+              <OrganizationView chata={chata} participants={participants} viewer={data.viewer} />
             ) : activeView === 'participants' ? (
-              <ParticipantsView chata={chata} participants={participants} />
+              <ParticipantsView
+                chata={chata}
+                participants={participants}
+                viewer={data.viewer}
+                locked={data.locked}
+                pendingClaims={data.pendingClaims}
+                viewerClaims={data.viewerClaims}
+                onDataChanged={async () => {
+                  await loadData({ silent: true })
+                }}
+              />
             ) : (
-              <InformationView chata={chata} />
+              <InformationView
+                chata={chata}
+                participants={participants}
+                stats={stats}
+                viewer={data.viewer}
+                onOpenFinance={() => handleViewChange('finance')}
+              />
             )}
           </div>
         </div>

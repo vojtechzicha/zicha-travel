@@ -1,630 +1,533 @@
 'use client'
 
-import { useState } from 'react'
-import { BedDouble, Car, ChevronDown, ChevronUp, Moon } from 'lucide-react'
+// "Organizace" — rooms & cars, redesigned per "Organizace a účastníci —
+// finál": beds and their occupants are visible right away (no expanding),
+// the night timeline shows only for people who are not staying the whole
+// trip, free places are stated openly (and hidden once the trip is over),
+// and the viewer's own bed/car is highlighted in the chata theme color.
+// Read-only by design — the rozpis is the banker's job in the admin.
+
+import { useMemo } from 'react'
+import { BedDouble, Car } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import type { AppLocale } from '@/i18n/config'
 import type { Chata, Media, Participant } from '@/payload-types'
-import { getAvatarColor } from '@/lib/formatCurrency'
+import { anonymousViewer, type FinanceViewer } from '@/lib/financeAccess'
 import {
-  type Room,
-  type Bed,
-  type Occupant,
-  getParticipantName,
-  participantHasPet,
-  getOccupantParticipant,
   getOccupantNights,
+  getOccupantParticipant,
   getTripNights,
+  type Room,
 } from '../utils/participantHelpers'
+import {
+  arrivalsOnNight,
+  carOccupants,
+  getBedAssignments,
+  getCarAssignments,
+  getTripPhase,
+  nightLabel,
+  presentOnNight,
+  sleepingCapacity,
+  tonightNumber,
+} from '../utils/tripData'
+import {
+  AccentCard,
+  PersonChip,
+  Sheet,
+  SheetHeading,
+  StatStrip,
+  StatusBadge,
+} from './SheetUi'
 
 interface OrganizationViewProps {
   chata: Chata
+  participants: Participant[]
+  viewer?: FinanceViewer
 }
 
-// Type helpers for shared cars
 type SharedCar = NonNullable<Chata['sharedCars']>[number]
-type CarPassenger = NonNullable<SharedCar['passengers']>[number]
+type Occupant = NonNullable<NonNullable<Room['beds']>[number]['occupants']>[number]
 
-// Helper to get date for a specific night
-function getNightDate(chata: Chata, nightNumber: number): Date | null {
-  if (!chata.tripDateFrom) return null
-  const from = new Date(chata.tripDateFrom)
-  from.setDate(from.getDate() + nightNumber - 1)
-  return from
+function petSuffix(participant: Participant | null): string {
+  return participant?.hasPet ? ' 🐕' : ''
 }
 
-// Format date as short format (Czech e.g. "pá 15.3.", English e.g. "Fri 15/3")
-function formatShortDate(date: Date, locale: AppLocale): string {
-  if (locale === 'cs') {
-    const days = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so']
-    const dayName = days[date.getDay()]
-    return `${dayName} ${date.getDate()}.${date.getMonth() + 1}.`
-  }
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const dayName = days[date.getDay()]
-  return `${dayName} ${date.getDate()}/${date.getMonth() + 1}`
+/**
+ * "· čt–ne" — day range covered by a partial stay (arrival day of the first
+ * night to the morning after the last night). Non-contiguous stays fall
+ * back to a night count handled by the caller.
+ */
+function nightsRangeLabel(chata: Chata, nights: number[], locale: AppLocale): string | null {
+  if (nights.length === 0) return null
+  const sorted = [...nights].sort((a, b) => a - b)
+  const contiguous = sorted.every((n, i) => i === 0 || n === sorted[i - 1] + 1)
+  if (!contiguous) return null
+  const first = sorted[0]
+  const lastMorning = sorted[sorted.length - 1] + 1
+  return `${nightLabel(chata, first, locale)}–${nightLabel(chata, lastMorning, locale)}`
 }
 
-// Calculate room occupancy
-function getRoomOccupancy(room: Room, totalNights: number = 0) {
-  const beds = room.beds || []
-  let currentOccupants = 0
-  beds.forEach((bed) => {
-    const occupants = bed.occupants || []
-    currentOccupants += occupants.length
-  })
-  return {
-    current: currentOccupants,
-    max: room.maxSleepingSpaces,
-    percentage: room.maxSleepingSpaces > 0
-      ? Math.round((currentOccupants / room.maxSleepingSpaces) * 100)
-      : 0,
-  }
+function roomOccupantCount(room: Room): number {
+  return (room.beds || []).reduce((acc, bed) => acc + (bed.occupants || []).length, 0)
 }
 
-// Get occupancy color classes
-function getOccupancyColorClass(percentage: number): string {
-  if (percentage === 0) return 'bg-gray-100 text-gray-500 border-gray-200'
-  if (percentage < 100) return 'bg-amber-100 text-amber-700 border-amber-300'
-  return 'bg-emerald-100 text-emerald-700 border-emerald-300'
-}
-
-// Get occupancy emoji
-function getOccupancyEmoji(percentage: number): string {
-  if (percentage === 0) return '😴'
-  if (percentage < 50) return '🛏️'
-  if (percentage < 100) return '🌙'
-  return '✨'
-}
-
-// Helper to get participant from relationship
-function getParticipantFromRelation(
-  relation: number | Participant | null | undefined
-): Participant | null {
-  if (typeof relation === 'object' && relation !== null) {
-    return relation as Participant
-  }
-  return null
-}
-
-// Get total passenger count for a car (driver + front + back)
-function getCarOccupancy(car: SharedCar): number {
-  let count = 1 // driver always counts
-  if (car.frontPassenger) count++
-  count += (car.passengers || []).length
-  return count
-}
-
-// Get initials from name
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-export function OrganizationView({ chata }: OrganizationViewProps) {
+export function OrganizationView({
+  chata,
+  participants,
+  viewer = anonymousViewer,
+}: OrganizationViewProps) {
   const t = useTranslations('trip')
-  const [expandedRooms, setExpandedRooms] = useState<string[]>([])
-  const [expandedCars, setExpandedCars] = useState<string[]>([])
+  const locale = useLocale() as AppLocale
 
-  const toggleRoom = (roomId: string) => {
-    setExpandedRooms((prev) =>
-      prev.includes(roomId) ? prev.filter((id) => id !== roomId) : [...prev, roomId]
-    )
-  }
-
-  const toggleCar = (carId: string) => {
-    setExpandedCars((prev) =>
-      prev.includes(carId) ? prev.filter((id) => id !== carId) : [...prev, carId]
-    )
-  }
-
-  // Feature flags
   const hasBedrooms = chata.bedroomOrganizationEnabled === true
   const hasCars = chata.sharedCarsEnabled === true
 
-  // Check if any organization feature is enabled
+  const phase = getTripPhase(chata)
+  const totalNights = getTripNights(chata)
+  const tonight = tonightNumber(chata)
+  const rooms = chata.rooms || []
+  const sharedCars = chata.sharedCars || []
+  const capacity = sleepingCapacity(chata)
+  const myIds = viewer.linkedParticipantIds
+
+  const bedAssignments = useMemo(
+    () => getBedAssignments(chata, participants),
+    [chata, participants],
+  )
+  const carAssignments = useMemo(() => getCarAssignments(chata), [chata])
+  const me = participants.find((p) => myIds.includes(p.id)) ?? null
+  const myBed = me ? bedAssignments.get(me.id) : undefined
+  const myCar = me ? carAssignments.get(me.id) : undefined
+
   if (!hasBedrooms && !hasCars) {
     return (
-      <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 max-w-4xl mx-auto animate-in fade-in duration-300">
+      <Sheet>
         <div className="text-center py-8">
-          <BedDouble className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600 text-lg">{t('organization.notAvailable')}</p>
+          <BedDouble className="mx-auto text-gray-300 dark:text-slate-600 mb-4" size={48} />
+          <p className="text-gray-600 dark:text-slate-300 text-lg">
+            {t('organization.notAvailable')}
+          </p>
         </div>
-      </div>
+      </Sheet>
     )
   }
 
-  // Bedroom data
-  const rooms = chata.rooms || []
-  const isAdvancedMode = chata.advancedBedroomMode === true
-  const totalNights = getTripNights(chata)
-
-  // Calculate bedroom stats
-  const totalStats = rooms.reduce(
-    (acc, room) => {
-      const occ = getRoomOccupancy(room)
-      acc.totalSpaces += occ.max
-      acc.occupied += occ.current
-      return acc
-    },
-    { totalSpaces: 0, occupied: 0 }
-  )
-
-  // Car data
-  const sharedCars = chata.sharedCars || []
-  const totalCarPassengers = sharedCars.reduce((acc, car) => acc + getCarOccupancy(car), 0)
-
-  // Determine hero content based on enabled features
-  const getHeroContent = () => {
-    if (hasCars && hasBedrooms) {
-      // Combined: mention both in title, but no icon (emojis in title are enough)
-      return {
-        icon: null,
-        title: t('organization.heroCombined'),
-        emoji: '',
-      }
-    } else if (hasCars) {
-      return {
-        icon: <Car size={48} className="mx-auto text-primary mb-4" />,
-        title: t('organization.heroCars'),
-        emoji: '🚗',
-      }
-    } else {
-      return {
-        icon: <Moon size={48} className="mx-auto text-primary mb-4" />,
-        title: t('organization.heroBedrooms'),
-        emoji: '🛏️',
-      }
+  // ── header strip ──
+  const occupied = bedAssignments.size
+  const statItems: Array<{ value: React.ReactNode; label: string }> = []
+  if (hasBedrooms && rooms.length > 0) {
+    statItems.push({
+      value: rooms.length,
+      label: t('organization.roomsCountLabel', { count: rooms.length }),
+    })
+    if (capacity > 0) {
+      statItems.push({ value: `${occupied}/${capacity}`, label: t('organization.placesTaken') })
     }
   }
+  if (totalNights > 0) {
+    statItems.push({
+      value: totalNights,
+      label: t('organization.nightsCountLabel', { count: totalNights }),
+    })
+  }
+  if (hasCars && sharedCars.length > 0) {
+    statItems.push({
+      value: sharedCars.length,
+      label:
+        t('organization.carsCountLabel', { count: sharedCars.length }) +
+        ((chata.publicTransportOptions || []).length > 0
+          ? ` + ${t('organization.trainSuffix')}`
+          : ''),
+    })
+  }
 
-  const heroContent = getHeroContent()
-
-  return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto animate-in fade-in duration-300">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8 border-2 border-primary/10">
-        {heroContent.icon}
-        <h2 className="font-serif text-2xl sm:text-3xl font-black text-gray-900 mb-6">
-          {heroContent.title} {heroContent.emoji}
-        </h2>
-        <div className="flex justify-center gap-4 sm:gap-8 flex-wrap">
-          {/* Bedroom stats only - car stats don't make sense across different trips */}
-          {hasBedrooms && rooms.length > 0 && (
-            <>
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
-                <span className="text-3xl block mb-1">🏠</span>
-                <span className="text-2xl font-bold text-primary font-serif">{rooms.length}</span>
-                <span className="block text-sm text-gray-600 font-medium">
-                  {t('organization.roomsCountLabel', { count: rooms.length })}
+  // ── my places card ──
+  const myPlaces =
+    me && (myBed || myCar) ? (
+      <AccentCard label={t('organization.yourPlaces')} className="mt-4">
+        <div className="flex flex-col gap-1.5 text-sm text-gray-800 dark:text-slate-200">
+          {myBed && (
+            <div>
+              {t('organization.youSleepIn')}{' '}
+              <strong className="font-semibold">{myBed.roomName}</strong>, {myBed.bedName}
+              {myBed.roommates.length > 0 && (
+                <span className="text-gray-500 dark:text-slate-400">
+                  {' '}
+                  · {t('organization.togetherWith')}{' '}
+                  {myBed.roommates.map((p) => p.name + petSuffix(p)).join(', ')}
                 </span>
-              </div>
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
-                <span className="text-3xl block mb-1">🛏️</span>
-                <span className="text-2xl font-bold text-primary font-serif">
-                  {totalStats.occupied}/{totalStats.totalSpaces}
-                </span>
-                <span className="block text-sm text-gray-600 font-medium">
-                  {t('organization.occupied')}
-                </span>
-              </div>
-            </>
+              )}
+            </div>
           )}
-          {isAdvancedMode && totalNights > 0 && (
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
-              <span className="text-3xl block mb-1">🌙</span>
-              <span className="text-2xl font-bold text-primary font-serif">{totalNights}</span>
-              <span className="block text-sm text-gray-600 font-medium">
-                {t('organization.nightsCountLabel', { count: totalNights })}
+          {myCar && (
+            <div>
+              {t('organization.youRideIn')}{' '}
+              <strong className="font-semibold">{myCar.carName}</strong>
+              <span className="text-gray-500 dark:text-slate-400">
+                {' '}
+                ·{' '}
+                {myCar.role === 'driver'
+                  ? t('organization.roleYouDrive')
+                  : myCar.role === 'front'
+                    ? t('organization.roleFrontSeat')
+                    : t('organization.roleBackSeat')}
               </span>
             </div>
+          )}
+        </div>
+      </AccentCard>
+    ) : null
+
+  // ── tonight box (during the trip) ──
+  const presentTonight = tonight > 0 ? presentOnNight(chata, participants, tonight) : []
+  const arrivingToday = tonight > 0 ? arrivalsOnNight(chata, participants, tonight) : []
+  const tonightBox =
+    phase === 'during' && hasBedrooms && presentTonight.length > 0 ? (
+      <div className="mt-4 rounded-2xl border border-emerald-600/25 bg-emerald-600/[0.05] dark:border-emerald-400/25 dark:bg-emerald-400/[0.06] px-4 py-3.5 sm:px-5">
+        <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300 mb-1.5">
+          {t('organization.tonightTitle', {
+            from: nightLabel(chata, tonight, locale),
+            to: nightLabel(chata, tonight + 1, locale),
+          })}
+        </div>
+        <div className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">
+          {t.rich('organization.tonightSleeps', {
+            count: presentTonight.length,
+            capacity: capacity > 0 ? capacity : presentTonight.length,
+            strong: (chunks) => (
+              <strong className="text-gray-900 dark:text-gray-100">{chunks}</strong>
+            ),
+          })}
+          {arrivingToday.length > 0 && (
+            <span className="text-gray-500 dark:text-slate-400">
+              {' '}
+              {t('organization.tonightArrives', {
+                names: arrivingToday.map((p) => p.name + petSuffix(p)).join(', '),
+              })}
+            </span>
           )}
         </div>
       </div>
+    ) : null
 
-      {/* Rooms Section - bedrooms come first */}
-      {hasBedrooms && (
-        <div className="mb-8">
-        <div className="flex items-center gap-3 mb-6 pb-3 border-b-4 border-gray-100">
-          <BedDouble size={24} className="text-primary" />
-          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900">
-            {t('organization.roomsTitle')}
-          </h3>
-        </div>
+  // ── occupant chip with optional partial-stay suffix ──
+  const occupantChip = (occupant: Occupant, key: React.Key) => {
+    const participant = getOccupantParticipant(occupant)
+    if (!participant) return null
+    const isMine = myIds.includes(participant.id)
+    const occupantNights = getOccupantNights(occupant)
+    const rangeLabel =
+      occupantNights !== null && totalNights > 0 && occupantNights.length < totalNights
+        ? (nightsRangeLabel(chata, occupantNights, locale) ??
+          t('organization.nightsShort', { count: occupantNights.length }))
+        : null
+    return (
+      <PersonChip key={key} highlight={isMine}>
+        {participant.name}
+        {petSuffix(participant)}
+        {isMine && ` ${t('organization.youSuffix')}`}
+        {rangeLabel && (
+          <span className={isMine ? 'text-white/80' : 'text-primary-dark dark:text-primary-light'}>
+            {' '}
+            · {rangeLabel}
+          </span>
+        )}
+      </PersonChip>
+    )
+  }
 
-        {rooms.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>{t('organization.noRooms')}</p>
-          </div>
-        ) : (
-          <div className="rooms-grid">
-            {rooms.map((room, idx) => {
-              const roomId = room.id || String(idx)
-              const isExpanded = expandedRooms.includes(roomId)
-              const occupancy = getRoomOccupancy(room)
-              const colorClass = getOccupancyColorClass(occupancy.percentage)
-              const emoji = getOccupancyEmoji(occupancy.percentage)
-              const image = room.image as Media | null
+  // ── rooms ──
+  const roomsSection =
+    hasBedrooms && rooms.length > 0 ? (
+      <div>
+        <SheetHeading
+          icon={BedDouble}
+          title={t('organization.roomsTitle')}
+          aside={t('organization.readOnlyNote')}
+        />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
+          {rooms.map((room, roomIdx) => {
+            const image = room.image as Media | null
+            const occupantCount = roomOccupantCount(room)
+            const max = room.maxSleepingSpaces || 0
+            const isMyRoom = Boolean(myBed && myBed.roomName === room.name)
+            const free = Math.max(0, max - occupantCount)
+            const partialOccupants = (room.beds || [])
+              .flatMap((bed) => bed.occupants || [])
+              .filter((occupant) => {
+                const nightsList = getOccupantNights(occupant)
+                return (
+                  nightsList !== null && totalNights > 0 && nightsList.length < totalNights
+                )
+              })
 
-              return (
-                <div
-                  key={roomId}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:-translate-y-1 transition-all duration-300"
-                >
-                  {/* Room Image */}
-                  {image?.url && (
-                    <div className="w-full h-44 overflow-hidden">
-                      <img
-                        src={image.url}
-                        alt={image.alt || room.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-5">
-                    {/* Room Header */}
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-serif text-xl font-bold text-gray-900">{room.name}</h4>
-                      <span
-                        className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${colorClass}`}
+            return (
+              <div
+                key={room.id || roomIdx}
+                className={`rounded-2xl overflow-hidden border ${
+                  isMyRoom
+                    ? 'border-2 border-primary/40'
+                    : 'border-gray-200 dark:border-white/[0.08]'
+                } bg-white dark:bg-white/[0.02]`}
+              >
+                {image?.url && (
+                  <img
+                    src={image.url}
+                    alt={image.alt || room.name}
+                    loading="lazy"
+                    className="w-full h-24 object-cover"
+                  />
+                )}
+                <div className="p-3.5">
+                  <div className="flex justify-between items-baseline gap-2 mb-1">
+                    <strong className="font-serif text-[16px] text-gray-900 dark:text-gray-100">
+                      {room.name}
+                    </strong>
+                    {max > 0 && (
+                      <StatusBadge
+                        tone={occupantCount >= max ? 'green' : occupantCount > 0 ? 'amber' : 'gray'}
                       >
-                        {emoji} {occupancy.current}/{occupancy.max}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    {room.description && (
-                      <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                        {room.description}
-                      </p>
-                    )}
-
-                    {/* Expandable Beds Section */}
-                    {room.beds && room.beds.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => toggleRoom(roomId)}
-                          className="w-full flex justify-between items-center px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer font-semibold text-gray-600 hover:bg-gray-100 hover:text-primary transition-colors"
-                        >
-                          <span>
-                            {isExpanded ? t('organization.hideBeds') : t('organization.showBeds')}
-                          </span>
-                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-
-                        {isExpanded && (
-                          <div className="mt-4 space-y-3 animate-slideDown">
-                            {isAdvancedMode && totalNights > 0 ? (
-                              // Advanced Mode: Timeline Grid
-                              <AdvancedBedsView
-                                beds={room.beds}
-                                totalNights={totalNights}
-                                chata={chata}
-                              />
-                            ) : (
-                              // Simple Mode: Bed list with occupant tags
-                              room.beds.map((bed, bedIdx) => {
-                                const bedOccupants = (bed.occupants || []).filter(
-                                  (o) => getParticipantName(o)
-                                )
-
-                                return (
-                                  <div
-                                    key={bed.id || bedIdx}
-                                    className="bg-gray-50 p-4 rounded-xl border-l-4 border-primary"
-                                  >
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <BedDouble size={16} className="text-primary" />
-                                      <span className="font-semibold text-gray-900">{bed.name}</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {bedOccupants.length > 0 ? (
-                                        bedOccupants.map((occupant, i) => {
-                                          const participant = getOccupantParticipant(occupant)
-                                          return (
-                                            <span
-                                              key={occupant.id || i}
-                                              className="bg-primary text-white px-3 py-1.5 rounded-full text-sm font-semibold"
-                                            >
-                                              {participant?.name}
-                                              {participantHasPet(participant) && ' + 🐕'}
-                                            </span>
-                                          )
-                                        })
-                                      ) : (
-                                        <span className="bg-gray-200 text-gray-500 px-3 py-1.5 rounded-full text-sm font-semibold">
-                                          {t('organization.freeSpot')}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              })
-                            )}
-                          </div>
-                        )}
-                      </>
+                        {occupantCount}/{max}
+                      </StatusBadge>
                     )}
                   </div>
+                  {room.description && (
+                    <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed m-0 mb-2.5">
+                      {room.description}
+                      {isMyRoom && (
+                        <span className="text-primary-dark dark:text-primary-light font-semibold">
+                          {' '}
+                          {t('organization.yourRoomNote')}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {(room.beds || []).map((bed, bedIdx) => {
+                      const occupants = (bed.occupants || []).filter((o) =>
+                        getOccupantParticipant(o),
+                      )
+                      // Archived trips don't advertise free places (design rule)
+                      if (occupants.length === 0 && phase === 'after') return null
+                      return (
+                        <div
+                          key={bed.id || bedIdx}
+                          className="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-2.5 py-2"
+                        >
+                          <div className="text-[10px] font-bold uppercase tracking-[0.05em] text-gray-500 dark:text-slate-400 mb-1.5">
+                            {bed.name}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {occupants.length > 0 ? (
+                              occupants.map((occupant, i) => occupantChip(occupant, occupant.id || i))
+                            ) : (
+                              <PersonChip dashed>{t('organization.freeSpot')}</PersonChip>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {free > 0 && phase !== 'after' && occupantCount > 0 && (
+                      <div className="flex">
+                        <PersonChip dashed>
+                          {t('organization.freePlaces', { count: free })}
+                        </PersonChip>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* mini timeline — only people NOT staying the whole trip */}
+                  {partialOccupants.length > 0 && totalNights > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
+                      {partialOccupants.map((occupant, i) => {
+                        const participant = getOccupantParticipant(occupant)
+                        const nightsList = getOccupantNights(occupant) || []
+                        return (
+                          <div key={occupant.id || i} className="flex gap-1 items-center mt-1">
+                            <span
+                              className="w-14 shrink-0 text-[10px] text-gray-400 dark:text-slate-500 truncate"
+                              title={participant?.name}
+                            >
+                              {participant?.name}
+                            </span>
+                            {Array.from({ length: totalNights }, (_, nightIdx) => (
+                              <span
+                                key={nightIdx}
+                                className={`flex-1 h-2.5 rounded-[3px] ${
+                                  nightsList.includes(nightIdx + 1)
+                                    ? 'bg-primary-light'
+                                    : 'bg-gray-100 border border-gray-200 dark:bg-white/[0.05] dark:border-white/[0.08]'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )
+                      })}
+                      <div className="flex gap-1 mt-0.5" aria-hidden="true">
+                        <span className="w-14 shrink-0" />
+                        {Array.from({ length: totalNights }, (_, nightIdx) => (
+                          <span
+                            key={nightIdx}
+                            className="flex-1 text-center text-[9px] text-gray-400 dark:text-slate-500"
+                          >
+                            {nightLabel(chata, nightIdx + 1, locale)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    ) : null
+
+  // ── cars ──
+  const withoutCar = useMemo(() => {
+    if (!hasCars || sharedCars.length === 0) return []
+    return participants.filter((p) => !carAssignments.has(p.id))
+  }, [hasCars, sharedCars.length, participants, carAssignments])
+
+  const carsSection =
+    hasCars && sharedCars.length > 0 ? (
+      <div>
+        <SheetHeading
+          icon={Car}
+          title={t('organization.sharedCarsTitle')}
+          aside={
+            withoutCar.length > 0 && (chata.publicTransportOptions || []).length > 0
+              ? t('organization.trainRidersNote', {
+                  names: withoutCar.map((p) => p.name).join(', '),
+                })
+              : undefined
+          }
+        />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
+          {sharedCars.map((car: SharedCar, carIdx) => {
+            const { driver, front, back } = carOccupants(car, participants)
+            const occupantCount = (driver ? 1 : 0) + (front ? 1 : 0) + back.length
+            const seats = car.seats ?? null
+            const isMyCar = Boolean(myCar && myCar.carName === car.name)
+            const freeBack = seats != null ? Math.max(0, seats - occupantCount) : 0
+
+            const seatName = (participant: Participant | null) => {
+              if (!participant) return null
+              const isMine = myIds.includes(participant.id)
+              return (
+                <span
+                  className={
+                    isMine
+                      ? 'font-semibold text-primary-dark dark:text-primary-light'
+                      : undefined
+                  }
+                >
+                  {participant.name}
+                  {petSuffix(participant)}
+                  {isMine && ` ${t('organization.youSuffix')}`}
+                </span>
               )
+            }
+
+            return (
+              <div
+                key={car.id || carIdx}
+                className={`rounded-2xl border ${
+                  isMyCar
+                    ? 'border-2 border-primary/40'
+                    : 'border-gray-200 dark:border-white/[0.08]'
+                } bg-white dark:bg-white/[0.02] px-4 py-3.5`}
+              >
+                <div className="flex justify-between items-baseline gap-2 mb-1">
+                  <strong className="font-serif text-[16px] text-gray-900 dark:text-gray-100">
+                    {car.name}
+                  </strong>
+                  {seats != null ? (
+                    <StatusBadge tone={occupantCount >= seats ? 'green' : 'amber'}>
+                      {occupantCount}/{seats}
+                    </StatusBadge>
+                  ) : (
+                    <StatusBadge tone="gray">{occupantCount}</StatusBadge>
+                  )}
+                </div>
+                {car.description && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed m-0 mb-2.5 whitespace-pre-line">
+                    {car.description}
+                  </p>
+                )}
+                <div className="flex flex-col gap-1.5 text-[13px]">
+                  <div className="flex gap-2.5">
+                    <span className="w-14 shrink-0 text-gray-400 dark:text-slate-500">
+                      {t('organization.driver')}
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100 font-semibold">
+                      {driver ? seatName(driver) : t('organization.notAssigned')}
+                    </span>
+                  </div>
+                  {front && (
+                    <div className="flex gap-2.5">
+                      <span className="w-14 shrink-0 text-gray-400 dark:text-slate-500">
+                        {t('organization.frontSeat')}
+                      </span>
+                      <span className="text-gray-700 dark:text-slate-300">{seatName(front)}</span>
+                    </div>
+                  )}
+                  {(back.length > 0 || freeBack > 0) && (
+                    <div className="flex gap-2.5">
+                      <span className="w-14 shrink-0 text-gray-400 dark:text-slate-500">
+                        {t('organization.backSeat')}
+                      </span>
+                      <span className="text-gray-700 dark:text-slate-300">
+                        {back.map((p, i) => (
+                          <span key={p.id}>
+                            {i > 0 && ', '}
+                            {seatName(p)}
+                          </span>
+                        ))}
+                        {freeBack > 0 && phase !== 'after' && (
+                          <span className="text-gray-400 dark:text-slate-500">
+                            {back.length > 0 && ' · '}
+                            {t('organization.freeSeats', { count: freeBack })}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {(car.equipment || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-white/[0.06]">
+                    {(car.equipment || []).map((item, eIdx) => (
+                      <span
+                        key={item.id || eIdx}
+                        className="rounded-full bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300 text-[11px] font-semibold px-2.5 py-0.5"
+                      >
+                        {item.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {withoutCar.length > 0 && (chata.publicTransportOptions || []).length === 0 && (
+          <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-3">
+            {t('organization.withoutCarNote', {
+              names: withoutCar.map((p) => p.name).join(', '),
             })}
           </div>
         )}
-        </div>
-      )}
-
-      {/* Shared Cars Section */}
-      {hasCars && sharedCars.length > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-6 pb-3 border-b-4 border-gray-100">
-            <Car size={24} className="text-primary" />
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900">
-              {t('organization.sharedCarsTitle')}
-            </h3>
-          </div>
-
-          <div className="rooms-grid">
-            {sharedCars.map((car, idx) => {
-              const carId = car.id || String(idx)
-              const isExpanded = expandedCars.includes(carId)
-              const driver = getParticipantFromRelation(car.driver)
-              const frontPassenger = getParticipantFromRelation(car.frontPassenger)
-              const passengerCount = getCarOccupancy(car)
-
-              return (
-                <div
-                  key={carId}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:-translate-y-1 transition-all duration-300"
-                >
-                  {/* Car Header with gradient */}
-                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-5">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-serif text-xl font-bold text-gray-900">{car.name}</h4>
-                      <span className="px-3 py-1.5 rounded-full text-sm font-semibold border bg-emerald-100 text-emerald-700 border-emerald-300">
-                        🚗 {passengerCount}
-                      </span>
-                    </div>
-                    {car.description && (
-                      <p className="text-gray-600 text-sm leading-relaxed">{car.description}</p>
-                    )}
-                  </div>
-
-                  <div className="p-5">
-                    {/* Driver row - always visible */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
-                        {driver ? getInitials(driver.name) : '?'}
-                      </div>
-                      <div>
-                        <span className="text-xs text-gray-500 uppercase font-semibold">
-                          {t('organization.driver')}
-                        </span>
-                        <p className="font-semibold text-gray-900">
-                          {driver?.name || t('organization.notAssigned')}
-                          {participantHasPet(driver) && ' + 🐕'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Front passenger - if set */}
-                    {frontPassenger && (
-                      <div className="flex items-center gap-3 mb-3">
-                        <div
-                          className={`w-10 h-10 rounded-full ${getAvatarColor(frontPassenger.name)} flex items-center justify-center text-white font-bold text-sm`}
-                        >
-                          {getInitials(frontPassenger.name)}
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-500 uppercase font-semibold">
-                            {t('organization.frontPassenger')}
-                          </span>
-                          <p className="font-semibold text-gray-900">
-                            {frontPassenger.name}
-                            {participantHasPet(frontPassenger) && ' + 🐕'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Expandable passengers section */}
-                    {car.passengers && car.passengers.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => toggleCar(carId)}
-                          className="w-full flex justify-between items-center px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer font-semibold text-gray-600 hover:bg-gray-100 hover:text-primary transition-colors mt-3"
-                        >
-                          <span>
-                            {isExpanded
-                              ? t('organization.hidePassengers')
-                              : t('organization.showPassengers', {
-                                  count: car.passengers.length,
-                                })}
-                          </span>
-                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-
-                        {isExpanded && (
-                          <div className="mt-4 space-y-2 animate-slideDown">
-                            {car.passengers.map((passenger, pIdx) => {
-                              const p = getParticipantFromRelation(passenger.participant)
-                              if (!p) return null
-                              return (
-                                <div
-                                  key={passenger.id || pIdx}
-                                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
-                                >
-                                  <div
-                                    className={`w-8 h-8 rounded-full ${getAvatarColor(p.name)} flex items-center justify-center text-white font-bold text-xs`}
-                                  >
-                                    {getInitials(p.name)}
-                                  </div>
-                                  <span className="font-medium text-gray-900">
-                                    {p.name}
-                                    {participantHasPet(p) && ' + 🐕'}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {/* Equipment section - if any */}
-                    {car.equipment && car.equipment.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <span className="text-xs text-gray-500 uppercase font-semibold block mb-2">
-                          {t('organization.equipment')}
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {car.equipment.map((item, eIdx) => (
-                            <span
-                              key={item.id || eIdx}
-                              className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-sm font-semibold"
-                            >
-                              📦 {item.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Advanced Beds View with Timeline Grid
-interface AdvancedBedsViewProps {
-  beds: NonNullable<Room['beds']>
-  totalNights: number
-  chata: Chata
-}
-
-function AdvancedBedsView({ beds, totalNights, chata }: AdvancedBedsViewProps) {
-  const t = useTranslations('trip')
-  const locale = useLocale() as AppLocale
-  const nights = Array.from({ length: totalNights }, (_, i) => i + 1)
+      </div>
+    ) : null
 
   return (
-    <div className="space-y-4">
-      {beds.map((bed, bedIdx) => {
-        const occupants = bed.occupants || []
-
-        return (
-          <div key={bed.id || bedIdx} className="bg-gray-50 p-4 rounded-xl border-l-4 border-primary">
-            <div className="flex items-center gap-2 mb-4">
-              <BedDouble size={16} className="text-primary" />
-              <span className="font-semibold text-gray-900">{bed.name}</span>
-            </div>
-
-            {occupants.length === 0 ? (
-              <span className="bg-gray-200 text-gray-500 px-3 py-1.5 rounded-full text-sm font-semibold inline-block">
-                {t('organization.freeSpot')}
-              </span>
-            ) : (
-              <div className="space-y-3">
-                {/* Night headers */}
-                <div className="flex gap-1">
-                  <div className="w-24 shrink-0" />
-                  {nights.map((night) => {
-                    const nightDate = getNightDate(chata, night)
-                    return (
-                      <div
-                        key={night}
-                        className="flex-1 text-center text-xs text-gray-500 min-w-[40px]"
-                      >
-                        <div className="font-semibold">
-                          {t('organization.nightHeader', { night })}
-                        </div>
-                        {nightDate && (
-                          <div className="text-gray-400">{formatShortDate(nightDate, locale)}</div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Occupant rows */}
-                {occupants.map((occupant, occIdx) => {
-                  const name = getParticipantName(occupant)
-                  const participant = getOccupantParticipant(occupant)
-                  const occupantNights = getOccupantNights(occupant)
-                  const colorClass = getAvatarColor(name)
-                  const hasPet = participantHasPet(participant)
-
-                  return (
-                    <div key={occupant.id || occIdx} className="flex gap-1 items-center">
-                      <div
-                        className="w-24 shrink-0 text-sm font-medium text-gray-700 truncate pr-2"
-                        title={name}
-                      >
-                        {name}{hasPet && ' + 🐕'}
-                      </div>
-                      <div className="flex-1 flex gap-0.5">
-                        {nights.map((night) => {
-                          const isPresent =
-                            occupantNights === null || occupantNights.includes(night)
-                          return (
-                            <div
-                              key={night}
-                              className={`flex-1 h-8 rounded min-w-[40px] transition-all ${
-                                isPresent
-                                  ? `${colorClass} opacity-90`
-                                  : 'bg-gray-200 opacity-30'
-                              }`}
-                              title={
-                                isPresent
-                                  ? t('organization.presentTooltip', { name, night })
-                                  : t('organization.absentTooltip', { name })
-                              }
-                            />
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {/* Legend */}
-                <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                  {occupants.map((occupant, occIdx) => {
-                    const name = getParticipantName(occupant)
-                    const participant = getOccupantParticipant(occupant)
-                    const hasPet = participantHasPet(participant)
-                    const occupantNights = getOccupantNights(occupant)
-                    const nightsText =
-                      occupantNights === null
-                        ? t('organization.wholeStay')
-                        : occupantNights.length === 1
-                          ? t('organization.onlyNight', { night: occupantNights[0] })
-                          : t('organization.onlyNights', {
-                              list: occupantNights.slice(0, -1).join(', '),
-                              last: occupantNights[occupantNights.length - 1],
-                            })
-                    return (
-                      <span key={occupant.id || occIdx} className="mr-3">
-                        <span className="font-medium">{name}{hasPet && ' + 🐕'}</span>: {nightsText}
-                      </span>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
+    <Sheet>
+      {statItems.length > 0 && <StatStrip items={statItems} />}
+      {myPlaces}
+      {tonightBox}
+      {roomsSection}
+      {carsSection}
+    </Sheet>
   )
 }

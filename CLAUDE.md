@@ -183,6 +183,49 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
 - Summary box with colored background (blue=banker, green=settled/positive, red=negative)
 - Includes: prepayment rows, expandable fair share breakdown, result section, history section
 
+### Chata detail tabs ("Detail chaty — finál" redesign) + dark mode
+
+The Informace / Organizace / Účastníci tabs render one "white sheet"
+document (design docs `Detail chaty - finál.dc.html` and `Organizace a
+účastníci - finál.dc.html` in the claude.ai/design project): serif section
+headings, phase-driven ordering, optional modules that don't render without
+data. Shared building blocks in `SheetUi.tsx` (Sheet, SheetHeading,
+StatStrip, AccentCard, PersonChip, StatusBadge…); derived data in
+`utils/tripData.ts` (trip phase before/during/after, bed & car assignments,
+"kdo přijede kdy" groups, person-nights — all unit-computed from the slug
+API payload, no new endpoints).
+
+- **InformationView**: hero termín + countdown badge (before), "Právě
+  probíhá · do neděle" (during, with a "Dnes" box from `program` +
+  arrivals), "Proběhla" recap from `calculateStats` (after: total, na
+  osobonoc, expense count, largest). Personal card ("Tvoje karta" /
+  "Tvoje vyrovnání") only for signed-in linked participants; anonymous
+  visitors get a login hint. Weather (`TripWeather.tsx`) fetches
+  Open-Meteo client-side — only when `destinationLat/Lng` are set AND the
+  trip is within the ~16-day forecast horizon; fails silently.
+- **OrganizationView**: beds + occupants always visible (no expanding),
+  night timeline only for partial stays, free places stated openly and
+  hidden after the trip, viewer's bed/car highlighted in the theme color,
+  cars show driver/front/back + `seats` occupancy + equipment chips,
+  participants in no car are listed with a pointer to Informace.
+- **ParticipantsView**: cards with account-link status; for anonymous
+  visitors this is the claim-flow entry ("To jsem já" on unlinked names,
+  reusing ClaimFlow; same eligibility rules as the Finance banner).
+- **Dark mode** (chata detail + Finance only, not other screens):
+  `@custom-variant dark` in styles.css keys off `data-app-theme="dark"`,
+  set on the ChataView wrapper by `utils/useAppTheme.ts` (localStorage
+  `zt_theme`, defaults to prefers-color-scheme; toggle in the Header).
+  Components portaled to `document.body` (ExpenseComposer, ClaimFlow
+  modals, ExpenseCard lightbox) set `data-app-theme` on their portal roots
+  themselves — they escape the wrapper. QR codes stay on white in both
+  themes (scannability).
+- The trip-guide metadata lives on the chata (all optional): checkIn/
+  checkOutTime, destinationLat/Lng, packingItems, amenities (✓/✗ chips),
+  program (day-only date + text), surroundings (place|trip), contactRules,
+  sharedAlbumUrl, sharedCars[].seats. Prod DDL for these is appended to
+  `NEW_SCHEMA_DDL` in `scripts/migrate-payer-polymorphic.mjs` (captured
+  from the local dev push, additive only).
+
 ### Settlement Threshold
 
 **IMPORTANT**: The system uses a **1 Kč threshold** for determining debtor/creditor/settled status. This is intentional to avoid showing small rounding differences to users.

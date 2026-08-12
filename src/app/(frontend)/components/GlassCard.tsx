@@ -23,7 +23,7 @@ export function GlassCard({
   return (
     <div
       className={`
-        bg-white/95 backdrop-blur-md rounded-glass-lg shadow-2xl
+        bg-white/95 dark:bg-[#1b212c] dark:border dark:border-white/[0.06] backdrop-blur-md rounded-glass-lg shadow-2xl
         ${paddingClasses[padding]}
         ${animation ? 'animate-popIn' : ''}
         ${className}

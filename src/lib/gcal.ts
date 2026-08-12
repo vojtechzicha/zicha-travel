@@ -43,6 +43,29 @@ function hhmmToCompact(t: string): string {
   return `${h.padStart(2, '0')}${m.padStart(2, '0')}00`
 }
 
+export interface GcalAllDayEvent {
+  title: string
+  /** First day as ISO `YYYY-MM-DD`. */
+  dateFrom: string
+  /** Last day (inclusive) as ISO `YYYY-MM-DD`. */
+  dateTo: string
+  details?: string
+  location?: string
+}
+
+/** All-day (multi-day) variant — used for the trip itself. */
+export function googleCalendarAllDayUrl(e: GcalAllDayEvent): string {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: e.title,
+    // All-day ranges use date-only values; the end date is EXCLUSIVE.
+    dates: `${isoPlusDaysCompact(e.dateFrom, 0)}/${isoPlusDaysCompact(e.dateTo, 1)}`,
+  })
+  if (e.details) params.set('details', e.details)
+  if (e.location) params.set('location', e.location)
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
 export function googleCalendarEventUrl(e: GcalEvent): string {
   // End before start ⇒ the journey crosses midnight; roll the end onto day +1.
   const endDayOffset = hhmmToMin(e.end) < hhmmToMin(e.start) ? 1 : 0

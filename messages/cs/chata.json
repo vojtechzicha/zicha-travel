@@ -12,7 +12,9 @@
     "tabInformation": "Informace",
     "tabOrganization": "Organizace",
     "tabParticipants": "Účastníci",
-    "tabFinance": "Finance"
+    "tabFinance": "Finance",
+    "themeLight": "Přepnout na světlý režim",
+    "themeDark": "Přepnout na tmavý režim"
   },
   "chataView": {
     "notFound": "Chata nenalezena",
