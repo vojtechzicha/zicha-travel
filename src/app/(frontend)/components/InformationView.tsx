@@ -246,12 +246,16 @@ export function InformationView({
   const placeItems = (chata.surroundings || []).filter((s) => s.category !== 'trip')
   const tripItems = (chata.surroundings || []).filter((s) => s.category === 'trip')
 
-  const programToday = (chata.program || []).filter(
+  // Chronological regardless of the order rows were added in the admin
+  const programItems = [...(chata.program || [])].sort(
+    (a, b) => dayOnly(a.date).getTime() - dayOnly(b.date).getTime(),
+  )
+  const programToday = programItems.filter(
     (item) => dayOnly(item.date).getTime() === today.getTime(),
   )
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
-  const programTomorrow = (chata.program || []).filter(
+  const programTomorrow = programItems.filter(
     (item) => dayOnly(item.date).getTime() === tomorrow.getTime(),
   )
   const arrivalsToday = tonight > 0 ? arrivalsOnNight(chata, participants, tonight) : []
@@ -993,11 +997,11 @@ export function InformationView({
     ) : null
 
   const programSection =
-    phase !== 'after' && (chata.program || []).length > 0 ? (
+    phase !== 'after' && programItems.length > 0 ? (
       <div>
         <SheetHeading icon={Calendar} title={t('information.programTitle')} />
         <div className="flex flex-col gap-3">
-          {(chata.program || []).map((item, idx) => {
+          {programItems.map((item, idx) => {
             const isToday = phase === 'during' && dayOnly(item.date).getTime() === today.getTime()
             return (
               <div key={item.id || idx} className="flex gap-3.5 text-sm">
