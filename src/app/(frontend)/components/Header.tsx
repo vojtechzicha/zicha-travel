@@ -38,8 +38,10 @@ export function Header({
 }: HeaderProps) {
   const t = useTranslations('chata.header')
 
+  // Mobile: equal-width pills in a 2-column grid (Jen's feedback — the
+  // wrapped auto-width pills looked lopsided); desktop: inline pills.
   const tabClass = (view: NonNullable<HeaderProps['currentView']>) =>
-    `flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold text-[13px] transition-all whitespace-nowrap ${
+    `flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold text-[13px] transition-all whitespace-nowrap ${
       currentView === view
         ? 'bg-white text-gray-900 shadow-lg font-bold'
         : 'bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white'
@@ -134,7 +136,7 @@ export function Header({
         </div>
 
         {visibleTabs.length > 1 && onViewChange && (
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 shrink-0">
+          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-2 shrink-0">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.view}
