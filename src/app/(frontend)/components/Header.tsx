@@ -19,6 +19,10 @@ interface HeaderProps {
   onToggleTheme?: () => void
 }
 
+// Design header ("Detail chaty — finál"): top bar with the back link, then a
+// LEFT-aligned title row — theme-colored icon box beside the serif name and
+// subtitle — with the tab pills on the right (desktop) or wrapped below
+// (mobile). The active pill is solid white with dark text.
 export function Header({
   chataName,
   location,
@@ -34,11 +38,8 @@ export function Header({
 }: HeaderProps) {
   const t = useTranslations('chata.header')
 
-  // Design pills: the ACTIVE tab is a solid white chip with dark text, the
-  // rest are translucent chips on the photo backdrop (same in both themes —
-  // the backdrop is always the darkened photo).
   const tabClass = (view: NonNullable<HeaderProps['currentView']>) =>
-    `flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-full font-semibold text-[13px] transition-all ${
+    `flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold text-[13px] transition-all whitespace-nowrap ${
       currentView === view
         ? 'bg-white text-gray-900 shadow-lg font-bold'
         : 'bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white'
@@ -78,66 +79,75 @@ export function Header({
   const visibleTabs = tabs.filter((tab) => tab.show)
 
   return (
-    <header className="text-center mb-10 text-white">
-      {/* top row: back link left, theme toggle right */}
-      {(onSwitchChata || onToggleTheme) && (
-        <div className="flex items-center justify-between mb-4 -mt-3">
-          {onSwitchChata ? (
-            <button
-              onClick={onSwitchChata}
-              className="flex items-center gap-1.5 text-white/75 hover:text-white text-sm font-medium transition-colors"
-            >
-              <ArrowLeft size={15} aria-hidden="true" />
-              {t('switchChata')}
-            </button>
-          ) : (
-            <span />
-          )}
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              aria-label={theme === 'dark' ? t('themeLight') : t('themeDark')}
-              title={theme === 'dark' ? t('themeLight') : t('themeDark')}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white transition-colors"
-            >
-              {theme === 'dark' ? (
-                <Sun size={16} aria-hidden="true" />
-              ) : (
-                <Moon size={16} aria-hidden="true" />
-              )}
-            </button>
-          )}
-        </div>
-      )}
-
-      <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20 shadow-lg">
-        <DynamicIcon className="text-primary-light" size={48} />
+    <header className="mb-6 sm:mb-8 text-white max-w-5xl mx-auto">
+      {/* top bar: back link left, theme toggle right */}
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
+        {onSwitchChata ? (
+          <button
+            onClick={onSwitchChata}
+            className="flex items-center gap-1.5 text-white/75 hover:text-white text-sm font-medium transition-colors"
+          >
+            <ArrowLeft size={15} aria-hidden="true" />
+            {t('switchChata')}
+          </button>
+        ) : (
+          <span />
+        )}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? t('themeLight') : t('themeDark')}
+            title={theme === 'dark' ? t('themeLight') : t('themeDark')}
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white transition-colors"
+          >
+            {theme === 'dark' ? (
+              <Sun size={16} aria-hidden="true" />
+            ) : (
+              <Moon size={16} aria-hidden="true" />
+            )}
+          </button>
+        )}
       </div>
-      <h1 className="font-serif text-4xl md:text-5xl font-black tracking-tight mb-1 text-shadow-heading">
-        {chataName}
-      </h1>
-      {(location || bankerName) && (
-        <p className="text-white/80 text-lg text-shadow-subheading">
-          {location}
-          {location && bankerName && ' • '}
-          {bankerName && (
-            <>
-              {t('banker')} <strong>{bankerName}</strong>
-            </>
-          )}
-        </p>
-      )}
 
-      {visibleTabs.length > 1 && onViewChange && (
-        <div className="flex flex-wrap gap-2 justify-center items-center mt-5">
-          {visibleTabs.map((tab) => (
-            <button key={tab.view} onClick={() => onViewChange(tab.view)} className={tabClass(tab.view)}>
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+      {/* title row: icon box + name left, tabs right (desktop) / below (mobile) */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+          <div className="bg-primary rounded-[11px] sm:rounded-[14px] p-2 sm:p-2.5 shadow-lg shadow-primary/40 shrink-0">
+            <DynamicIcon className="text-white" size={26} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-serif text-xl sm:text-[32px] font-black tracking-tight leading-tight text-shadow-heading">
+              {chataName}
+            </h1>
+            {(location || bankerName) && (
+              <p className="text-white/75 text-xs sm:text-sm text-shadow-subheading truncate">
+                {location}
+                {location && bankerName && ' · '}
+                {bankerName && (
+                  <>
+                    {t('banker')} <strong className="text-white/90">{bankerName}</strong>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
         </div>
-      )}
+
+        {visibleTabs.length > 1 && onViewChange && (
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 shrink-0">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab.view}
+                onClick={() => onViewChange(tab.view)}
+                className={tabClass(tab.view)}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </header>
   )
 }

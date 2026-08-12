@@ -56,7 +56,7 @@ function iconKind(code: number): 'sun' | 'partly' | 'cloud' | 'rain' | 'snow' | 
   return 'rain'
 }
 
-function WeatherIcon({ code }: { code: number }) {
+function WeatherIcon({ code, size = 24 }: { code: number; size?: number }) {
   const kind = iconKind(code)
   const sun = <circle cx="12" cy="12" r="5" fill="#f59e0b" />
   const smallSun = <circle cx="9" cy="9" r="4" fill="#f59e0b" />
@@ -73,7 +73,13 @@ function WeatherIcon({ code }: { code: number }) {
     </>
   )
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" className="mx-auto my-1">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="mx-auto my-1 sm:m-0 shrink-0"
+    >
       {kind === 'sun' && sun}
       {kind === 'partly' && (
         <>
@@ -137,47 +143,51 @@ export function TripWeather({ lat, lng, from, to, locale }: TripWeatherProps) {
 
   if (!days) return null
 
-  const dayFormat = new Intl.DateTimeFormat(locale === 'cs' ? 'cs-CZ' : 'en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'numeric',
-  })
+  const tag = locale === 'cs' ? 'cs-CZ' : 'en-GB'
+  const dayShort = new Intl.DateTimeFormat(tag, { weekday: 'short', day: 'numeric', month: 'numeric' })
+  const dayLong = new Intl.DateTimeFormat(tag, { weekday: 'long', day: 'numeric', month: 'numeric' })
 
   return (
     <div className="flex gap-1.5 sm:gap-2.5 overflow-x-auto pb-1">
       {days.map((day) => {
         const rainy = day.precipitation >= 0.5
+        const mm = day.precipitation.toLocaleString(tag, { maximumFractionDigits: 1 }) + ' mm'
+        const dayClass = `text-[11px] sm:text-xs font-semibold ${
+          rainy ? 'text-sky-700 dark:text-sky-300' : 'text-gray-500 dark:text-slate-400'
+        }`
+        const tempLine = (
+          <div className="text-[13px] sm:text-base font-bold text-gray-900 dark:text-gray-100">
+            {day.max}°{' '}
+            <span className="font-medium text-gray-400 dark:text-slate-500">/ {day.min}°</span>
+          </div>
+        )
         return (
           <div
             key={day.date}
-            className={`flex-1 min-w-[72px] text-center rounded-xl border px-1 py-2.5 ${
+            className={`flex-1 min-w-[72px] sm:min-w-0 rounded-xl sm:rounded-[14px] border px-1 py-2.5 sm:px-4 sm:py-3.5 ${
               rainy
                 ? 'bg-sky-50 border-sky-100 dark:bg-sky-400/[0.07] dark:border-sky-400/15'
                 : 'bg-gray-50 border-gray-100 dark:bg-white/[0.04] dark:border-white/[0.06]'
             }`}
           >
-            <div
-              className={`text-[11px] font-semibold ${
-                rainy
-                  ? 'text-sky-700 dark:text-sky-300'
-                  : 'text-gray-500 dark:text-slate-400'
-              }`}
-            >
-              {dayFormat.format(new Date(day.date)).replace(' ', ' ')}
+            {/* mobile: vertical, centered (phone mock) */}
+            <div className="sm:hidden text-center">
+              <div className={dayClass}>{dayShort.format(new Date(day.date))}</div>
+              <WeatherIcon code={day.code} size={20} />
+              {tempLine}
+              {rainy && <div className="text-[11px] text-sky-700 dark:text-sky-300">{mm}</div>}
             </div>
-            <WeatherIcon code={day.code} />
-            <div className="text-[13px] font-bold text-gray-900 dark:text-gray-100">
-              {day.max}°{' '}
-              <span className="font-medium text-gray-400 dark:text-slate-500">/ {day.min}°</span>
-            </div>
-            {rainy && (
-              <div className="text-[11px] text-sky-700 dark:text-sky-300">
-                {day.precipitation.toLocaleString(locale === 'cs' ? 'cs-CZ' : 'en-GB', {
-                  maximumFractionDigits: 1,
-                })}{' '}
-                mm
+            {/* desktop: icon beside the text (design 1a) */}
+            <div className="hidden sm:flex items-center gap-3">
+              <WeatherIcon code={day.code} size={30} />
+              <div className="min-w-0">
+                <div className={`${dayClass} truncate`}>
+                  {dayLong.format(new Date(day.date))}
+                  {rainy && ` · ${mm}`}
+                </div>
+                {tempLine}
               </div>
-            )}
+            </div>
           </div>
         )
       })}

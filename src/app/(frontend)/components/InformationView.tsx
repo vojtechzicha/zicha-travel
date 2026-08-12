@@ -312,84 +312,113 @@ export function InformationView({
   const badgeBase =
     'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-[0.06em]'
 
+  // Design desktop hero (1a): dates left · countdown badge center · actions
+  // stacked right, with the stats strip framed by rules below. On mobile the
+  // badge tops a centered stack, exactly like the phone mock.
+  const beforeBadge = (
+    <div
+      className={`${badgeBase} bg-sky-600/10 border-sky-600/25 text-sky-700 dark:bg-sky-400/15 dark:border-sky-400/30 dark:text-sky-300`}
+    >
+      {t('information.badgeBefore', {
+        countdown: countdownLabel(daysUntilTrip(chata), locale),
+      })}
+    </div>
+  )
+  const dateBoxes = (
+    <div className="flex items-center justify-center gap-4 sm:gap-5">
+      <div className="text-center">
+        <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-gray-400 dark:text-slate-500">
+          {t('information.arrival')}
+        </div>
+        <div className="font-serif text-xl sm:text-[26px] font-black text-gray-900 dark:text-gray-100">
+          {chata.tripDateFrom ? weekdayShortDate(chata.tripDateFrom, locale) : ''}
+        </div>
+        {chata.checkInTime && (
+          <div className="text-[13px] text-gray-500 dark:text-slate-400">
+            {t('information.checkInPrefix')} {chata.checkInTime}
+          </div>
+        )}
+      </div>
+      <ArrowRight
+        size={26}
+        className="text-primary dark:text-primary-light shrink-0"
+        aria-hidden="true"
+      />
+      <div className="text-center">
+        <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-gray-400 dark:text-slate-500">
+          {t('information.departure')}
+        </div>
+        <div className="font-serif text-xl sm:text-[26px] font-black text-gray-900 dark:text-gray-100">
+          {chata.tripDateTo ? weekdayShortDate(chata.tripDateTo, locale) : ''}
+        </div>
+        {chata.checkOutTime && (
+          <div className="text-[13px] text-gray-500 dark:text-slate-400">
+            {t('information.checkOutPrefix')} {chata.checkOutTime}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+  const heroActions = (calendar: boolean) => (
+    <>
+      {calendar && calendarUrl && (
+        <SecondaryAction href={calendarUrl}>
+          <CalendarPlus size={14} aria-hidden="true" /> {t('information.tripToCalendar')}
+        </SecondaryAction>
+      )}
+      {navUrl && (
+        <PrimaryAction href={navUrl}>
+          <Navigation size={14} aria-hidden="true" /> {t('information.navigate')}
+        </PrimaryAction>
+      )}
+    </>
+  )
+
   const hero =
     phase === null ? null : phase === 'before' ? (
-      <div className="text-center">
-        <div
-          className={`${badgeBase} bg-sky-600/10 border-sky-600/25 text-sky-700 dark:bg-sky-400/15 dark:border-sky-400/30 dark:text-sky-300 mb-4`}
-        >
-          {t('information.badgeBefore', {
-            countdown: countdownLabel(daysUntilTrip(chata), locale),
-          })}
+      <div>
+        {/* mobile: centered stack */}
+        <div className="sm:hidden text-center">
+          <div className="mb-4">{beforeBadge}</div>
+          {dateBoxes}
+          {heroStats.length > 0 && <StatStrip items={heroStats} bordered={false} />}
+          <div className="flex flex-wrap justify-center gap-2">{heroActions(true)}</div>
         </div>
-        <div className="flex items-center justify-center gap-4 sm:gap-6">
-          <div className="text-center">
-            <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-gray-400 dark:text-slate-500">
-              {t('information.arrival')}
-            </div>
-            <div className="font-serif text-xl sm:text-[26px] font-black text-gray-900 dark:text-gray-100">
-              {chata.tripDateFrom ? weekdayShortDate(chata.tripDateFrom, locale) : ''}
-            </div>
-            {chata.checkInTime && (
-              <div className="text-[13px] text-gray-500 dark:text-slate-400">
-                {t('information.checkInPrefix')} {chata.checkInTime}
-              </div>
-            )}
+        {/* desktop: dates · badge · stacked actions, stats strip below */}
+        <div className="hidden sm:flex items-center justify-between gap-6">
+          {dateBoxes}
+          <div className="flex-1 flex justify-center">{beforeBadge}</div>
+          <div className="flex flex-col items-stretch gap-2">{heroActions(true)}</div>
+        </div>
+        {heroStats.length > 0 && (
+          <div className="hidden sm:block mt-4">
+            <StatStrip items={heroStats} />
           </div>
-          <ArrowRight
-            size={26}
-            className="text-primary dark:text-primary-light shrink-0"
-            aria-hidden="true"
-          />
-          <div className="text-center">
-            <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-gray-400 dark:text-slate-500">
-              {t('information.departure')}
-            </div>
-            <div className="font-serif text-xl sm:text-[26px] font-black text-gray-900 dark:text-gray-100">
-              {chata.tripDateTo ? weekdayShortDate(chata.tripDateTo, locale) : ''}
-            </div>
-            {chata.checkOutTime && (
-              <div className="text-[13px] text-gray-500 dark:text-slate-400">
-                {t('information.checkOutPrefix')} {chata.checkOutTime}
-              </div>
-            )}
-          </div>
-        </div>
-        {heroStats.length > 0 && <StatStrip items={heroStats} bordered={false} />}
-        <div className="flex flex-wrap justify-center gap-2">
-          {calendarUrl && (
-            <SecondaryAction href={calendarUrl}>
-              <CalendarPlus size={14} aria-hidden="true" /> {t('information.tripToCalendar')}
-            </SecondaryAction>
-          )}
-          {navUrl && (
-            <PrimaryAction href={navUrl}>
-              <Navigation size={14} aria-hidden="true" /> {t('information.navigate')}
-            </PrimaryAction>
-          )}
-        </div>
+        )}
       </div>
     ) : phase === 'during' ? (
-      <div className="text-center">
-        <div
-          className={`${badgeBase} bg-emerald-600/10 border-emerald-600/25 text-emerald-700 dark:bg-emerald-400/15 dark:border-emerald-400/30 dark:text-emerald-300 mb-3`}
-        >
-          <span
-            className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-300"
-            aria-hidden="true"
-          />
-          {t('information.badgeDuring', {
-            until: chata.tripDateTo ? untilLabel(chata.tripDateTo, locale) : '',
-          })}
-        </div>
-        <div className="font-serif text-[21px] sm:text-[27px] font-black text-gray-900 dark:text-gray-100">
-          {longDayLabel(new Date(), locale)}{' '}
-          <span className="text-gray-400 dark:text-slate-500 font-normal text-[15px] sm:text-[19px]">
-            · {t('information.dayOfTrip', { day: tripDayIndex(chata), total: tripTotalDays(chata) })}
-          </span>
+      <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div>
+          <div
+            className={`${badgeBase} bg-emerald-600/10 border-emerald-600/25 text-emerald-700 dark:bg-emerald-400/15 dark:border-emerald-400/30 dark:text-emerald-300 mb-3`}
+          >
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-300"
+              aria-hidden="true"
+            />
+            {t('information.badgeDuring', {
+              until: chata.tripDateTo ? untilLabel(chata.tripDateTo, locale) : '',
+            })}
+          </div>
+          <div className="font-serif text-[21px] sm:text-[27px] font-black text-gray-900 dark:text-gray-100">
+            {longDayLabel(new Date(), locale)}{' '}
+            <span className="text-gray-400 dark:text-slate-500 font-normal text-[15px] sm:text-[19px]">
+              · {t('information.dayOfTrip', { day: tripDayIndex(chata), total: tripTotalDays(chata) })}
+            </span>
+          </div>
         </div>
         {navUrl && (
-          <div className="flex flex-wrap justify-center gap-2 mt-3">
+          <div className="flex flex-wrap justify-center gap-2 mt-3 sm:mt-0 sm:shrink-0">
             <PrimaryAction href={navUrl}>
               <Navigation size={14} aria-hidden="true" /> {t('information.navigate')}
             </PrimaryAction>
@@ -397,34 +426,36 @@ export function InformationView({
         )}
       </div>
     ) : (
-      <div className="text-center">
-        <div
-          className={`${badgeBase} bg-gray-100 border-gray-200 text-gray-500 dark:bg-white/[0.06] dark:border-white/[0.12] dark:text-slate-400 mb-3`}
-        >
-          {t('information.badgeAfter', {
-            range:
-              chata.tripDateFrom && chata.tripDateTo
-                ? formatDateRangeLong(chata.tripDateFrom, chata.tripDateTo, locale)
-                : '',
-          })}
-        </div>
-        <div className="font-serif text-[21px] sm:text-[27px] font-black text-gray-900 dark:text-gray-100">
-          {t('information.thanksTitle')}
-        </div>
-        {(nights > 0 || participants.length > 0) && (
-          <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-1">
-            {[
-              nights > 0 ? `${nights} ${t('information.nightsUnit', { count: nights })}` : null,
-              participants.length > 0
-                ? `${participants.length} ${t('information.peopleUnit', { count: participants.length })}` +
-                  (petsCount > 0 ? ` + ${t('information.petsUnit', { count: petsCount })}` : '')
-                : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
+      <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div>
+          <div
+            className={`${badgeBase} bg-gray-100 border-gray-200 text-gray-500 dark:bg-white/[0.06] dark:border-white/[0.12] dark:text-slate-400 mb-3`}
+          >
+            {t('information.badgeAfter', {
+              range:
+                chata.tripDateFrom && chata.tripDateTo
+                  ? formatDateRangeLong(chata.tripDateFrom, chata.tripDateTo, locale)
+                  : '',
+            })}
           </div>
-        )}
-        <div className="flex flex-wrap justify-center gap-2 mt-3">
+          <div className="font-serif text-[21px] sm:text-[27px] font-black text-gray-900 dark:text-gray-100">
+            {t('information.thanksTitle')}{' '}
+            {(nights > 0 || participants.length > 0) && (
+              <span className="block sm:inline text-[13px] sm:text-[19px] font-normal text-gray-500 dark:text-slate-400 sm:text-gray-400 mt-1 sm:mt-0">
+                {[
+                  nights > 0 ? `${nights} ${t('information.nightsUnit', { count: nights })}` : null,
+                  participants.length > 0
+                    ? `${participants.length} ${t('information.peopleUnit', { count: participants.length })}` +
+                      (petsCount > 0 ? ` + ${t('information.petsUnit', { count: petsCount })}` : '')
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2 mt-3 sm:mt-0 sm:shrink-0">
           {chata.sharedAlbumUrl && (
             <SecondaryAction href={chata.sharedAlbumUrl}>
               <ImageIcon size={14} aria-hidden="true" /> {t('information.sharedAlbum')}
@@ -500,9 +531,25 @@ export function InformationView({
   const myNightsLine =
     myBed && nights > 0
       ? myBed.nights === null
-        ? t('information.wholeStayNights', { count: nights })
+        ? t('information.wholeStayNights', { count: nights }) +
+          ' — ' +
+          t('information.nightsRange', {
+            from: nightLabel(chata, 1, locale),
+            to: nightLabel(chata, nights + 1, locale),
+          })
         : t('information.partialStayNights', { nights: myBed.nights.length, total: nights })
       : null
+
+  // Design card cell: tiny label above the value (4 columns on desktop),
+  // label-left rows on mobile like the phone mock
+  const cardCell = (label: string, content: React.ReactNode, key: string) => (
+    <div key={key} className="flex gap-3 sm:block">
+      <div className="w-14 shrink-0 sm:w-auto text-[13px] sm:text-xs text-primary-dark/85 dark:text-primary-light/85 sm:mb-0.5">
+        {label}
+      </div>
+      <div className="text-sm text-gray-900 dark:text-gray-100 min-w-0">{content}</div>
+    </div>
+  )
 
   const settlement = settlementFromBalance(myBalance)
 
@@ -549,26 +596,28 @@ export function InformationView({
               ) : undefined
             }
           >
-            <div className="grid gap-x-5 gap-y-2 sm:grid-cols-2">
-              {myBedLine && (
-                <InfoRow label={t('information.yourCardSleep')}>{myBedLine}</InfoRow>
-              )}
-              {myCarLine && <InfoRow label={t('information.yourCardRide')}>{myCarLine}</InfoRow>}
-              {phase !== 'during' && myNightsLine && (
-                <InfoRow label={t('information.yourCardNights')}>{myNightsLine}</InfoRow>
-              )}
-              {phase === 'during' && mySpent != null ? (
-                <InfoRow label={t('information.yourCardSpent')}>
-                  {formatCurrency(Math.round(mySpent), locale)}
-                </InfoRow>
-              ) : myAdvance > 0 ? (
-                <InfoRow label={t('information.yourCardDeposit')}>
-                  <span className="inline-flex items-center gap-2">
-                    {formatCurrency(myAdvance, locale)}
-                    <StatusBadge tone="green">{t('information.paidBadge')}</StatusBadge>
-                  </span>
-                </InfoRow>
-              ) : null}
+            <div className="grid gap-x-5 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              {myBedLine && cardCell(t('information.yourCardSleep'), myBedLine, 'bed')}
+              {myCarLine && cardCell(t('information.yourCardRide'), myCarLine, 'car')}
+              {phase !== 'during' &&
+                myNightsLine &&
+                cardCell(t('information.yourCardNights'), myNightsLine, 'nights')}
+              {phase === 'during' && mySpent != null
+                ? cardCell(
+                    t('information.yourCardSpent'),
+                    formatCurrency(Math.round(mySpent), locale),
+                    'spent',
+                  )
+                : myAdvance > 0
+                  ? cardCell(
+                      t('information.yourCardDeposit'),
+                      <span className="inline-flex items-center gap-2">
+                        {formatCurrency(myAdvance, locale)}
+                        <StatusBadge tone="green">{t('information.paidBadge')}</StatusBadge>
+                      </span>,
+                      'deposit',
+                    )
+                  : null}
             </div>
           </AccentCard>
         ) : null

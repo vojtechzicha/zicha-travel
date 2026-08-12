@@ -7,8 +7,8 @@
     "notFoundTitle": "Chata nenalezena"
   },
   "header": {
-    "banker": "Pokladník:",
-    "switchChata": "Změnit chatu",
+    "banker": "pokladník",
+    "switchChata": "Všechny chaty",
     "tabInformation": "Informace",
     "tabOrganization": "Organizace",
     "tabParticipants": "Účastníci",

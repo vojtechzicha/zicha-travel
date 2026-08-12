@@ -7,8 +7,8 @@
     "notFoundTitle": "Chata not found"
   },
   "header": {
-    "banker": "Banker:",
-    "switchChata": "Switch chata",
+    "banker": "banker",
+    "switchChata": "All chatas",
     "tabInformation": "Information",
     "tabOrganization": "Organization",
     "tabParticipants": "Participants",
