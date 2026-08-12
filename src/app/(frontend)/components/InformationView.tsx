@@ -1249,9 +1249,11 @@ export function InformationView({
                       {connections.map((conn, connIdx) => (
                         <div
                           key={conn.id || connIdx}
-                          className="flex gap-3 text-[13px] items-baseline"
+                          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]"
                         >
-                          <span className="font-mono text-gray-400 dark:text-slate-500 w-24 shrink-0 inline-flex items-center gap-1.5">
+                          {/* vehicle chip sizes to its content — real train names
+                              ("Ex2 (EC 122 „Valašský expres“)") overflow a fixed column */}
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 text-gray-500 dark:bg-white/[0.07] dark:text-slate-400 font-mono text-xs px-2 py-1 shrink-0 whitespace-nowrap">
                             {conn.type === 'autobus' ? (
                               <Bus size={12} aria-hidden="true" />
                             ) : (
@@ -1260,8 +1262,13 @@ export function InformationView({
                             {conn.number}
                           </span>
                           <span className="text-gray-700 dark:text-slate-300">
-                            <strong>{conn.from}</strong> {conn.departure} →{' '}
-                            <strong>{conn.to}</strong> {conn.arrival}
+                            <strong className="text-gray-900 dark:text-gray-100">
+                              {conn.from}
+                            </strong>{' '}
+                            <span className="tabular-nums">{conn.departure}</span>{' '}
+                            <span className="text-primary dark:text-primary-light">→</span>{' '}
+                            <strong className="text-gray-900 dark:text-gray-100">{conn.to}</strong>{' '}
+                            <span className="tabular-nums">{conn.arrival}</span>
                           </span>
                         </div>
                       ))}
