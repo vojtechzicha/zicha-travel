@@ -447,6 +447,81 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_claim_requests_id_idx
   ON payload_locked_documents_rels USING btree (claim_requests_id);
+
+-- Trip document redesign ("Detail chaty — finál"): descriptive metadata on
+-- the chata. All additive & optional — check-in/out times, destination
+-- coordinates (weather + navigation), shared album link, packing list,
+-- amenities, day-by-day program, surroundings, contact/rules rows, and a
+-- seat count on shared cars. DDL captured verbatim from the local dev push.
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS check_in_time character varying;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS check_out_time character varying;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS destination_lat numeric;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS destination_lng numeric;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS shared_album_url character varying;
+ALTER TABLE chatas_shared_cars ADD COLUMN IF NOT EXISTS seats numeric;
+
+CREATE TABLE IF NOT EXISTS chatas_amenities (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  name character varying NOT NULL,
+  available boolean DEFAULT true,
+  CONSTRAINT chatas_amenities_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_amenities_order_idx ON chatas_amenities USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_amenities_parent_id_idx ON chatas_amenities USING btree (_parent_id);
+
+CREATE TABLE IF NOT EXISTS chatas_packing_items (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  item character varying NOT NULL,
+  CONSTRAINT chatas_packing_items_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_packing_items_order_idx ON chatas_packing_items USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_packing_items_parent_id_idx ON chatas_packing_items USING btree (_parent_id);
+
+CREATE TABLE IF NOT EXISTS chatas_program (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  date timestamp(3) with time zone NOT NULL,
+  description character varying NOT NULL,
+  CONSTRAINT chatas_program_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_program_order_idx ON chatas_program USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_program_parent_id_idx ON chatas_program USING btree (_parent_id);
+
+DO $$ BEGIN
+  CREATE TYPE enum_chatas_surroundings_category AS ENUM('place', 'trip');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE TABLE IF NOT EXISTS chatas_surroundings (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  name character varying NOT NULL,
+  note character varying,
+  category enum_chatas_surroundings_category DEFAULT 'place',
+  CONSTRAINT chatas_surroundings_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_surroundings_order_idx ON chatas_surroundings USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_surroundings_parent_id_idx ON chatas_surroundings USING btree (_parent_id);
+
+CREATE TABLE IF NOT EXISTS chatas_contact_rules (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  label character varying NOT NULL,
+  value character varying NOT NULL,
+  CONSTRAINT chatas_contact_rules_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_contact_rules_order_idx ON chatas_contact_rules USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_contact_rules_parent_id_idx ON chatas_contact_rules USING btree (_parent_id);
 `
 
 async function enumLabels(typeName) {

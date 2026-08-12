@@ -81,7 +81,7 @@ export function SelectedParticipantHeader({
       {/* Selected participant display */}
       {/* h-full: in the side-by-side row on wide screens the header shares a
           grid row with the claim banner and should match its height */}
-      <div className="h-full flex items-center justify-between gap-2 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
+      <div className="h-full flex items-center justify-between gap-2 bg-white/60 dark:bg-[#1b212c] dark:border dark:border-white/[0.06] backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
         <div className="flex items-center gap-3 min-w-0">
           <div
             className={`w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-white text-lg font-bold ${avatarColor}`}
@@ -90,10 +90,10 @@ export function SelectedParticipantHeader({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-serif text-xl font-bold text-gray-900 truncate">
+              <span className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
                 {selectedParticipant.name}
               </span>
-              {isBanker && <Crown size={18} className="text-primary shrink-0" />}
+              {isBanker && <Crown size={18} className="text-primary dark:text-primary-light shrink-0" />}
             </div>
           </div>
         </div>
@@ -105,6 +105,7 @@ export function SelectedParticipantHeader({
             }
             className="flex items-center gap-1 shrink-0 px-3 py-2 rounded-lg
                        text-gray-600 hover:text-gray-900 hover:bg-white/80
+                       dark:text-slate-300 dark:hover:text-gray-100 dark:hover:bg-white/[0.06]
                        transition-all font-medium"
           >
             {t('change')}
@@ -120,12 +121,13 @@ export function SelectedParticipantHeader({
       {canChange && isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 z-50
                         bg-white rounded-xl shadow-2xl border border-gray-100
+                        dark:bg-[#1b212c] dark:border-white/[0.07]
                         overflow-hidden">
           {/* Search input */}
-          <div className="p-3 border-b border-gray-100">
+          <div className="p-3 border-b border-gray-100 dark:border-white/[0.07]">
             <div className="relative">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
                 size={18}
               />
               <input
@@ -135,8 +137,9 @@ export function SelectedParticipantHeader({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200
+                           dark:bg-white/[0.06] dark:border-white/[0.15]
                            focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-                           text-gray-900 placeholder-gray-400 text-sm"
+                           text-gray-900 placeholder-gray-400 dark:text-gray-100 dark:placeholder-slate-500 text-sm"
               />
             </div>
           </div>
@@ -154,28 +157,28 @@ export function SelectedParticipantHeader({
                   onClick={() => handleSelect(participant.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left
                              transition-colors
-                             ${isSelected ? 'bg-primary/10' : 'hover:bg-gray-50'}`}
+                             ${isSelected ? 'bg-primary/10' : 'hover:bg-gray-50 dark:hover:bg-white/[0.06]'}`}
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${pAvatarColor}`}
                   >
                     {getInitials(participant.name)}
                   </div>
-                  <span className="flex-1 font-medium text-gray-900">
+                  <span className="flex-1 font-medium text-gray-900 dark:text-gray-100">
                     {participant.name}
                   </span>
                   {participantIsBanker && (
-                    <Crown size={14} className="text-primary" />
+                    <Crown size={14} className="text-primary dark:text-primary-light" />
                   )}
                   {isSelected && (
-                    <Check size={18} className="text-primary" />
+                    <Check size={18} className="text-primary dark:text-primary-light" />
                   )}
                 </button>
               )
             })}
 
             {filteredParticipants.length === 0 && (
-              <p className="text-center text-gray-500 py-4 text-sm">{t('noneFound')}</p>
+              <p className="text-center text-gray-500 dark:text-slate-400 py-4 text-sm">{t('noneFound')}</p>
             )}
           </div>
         </div>

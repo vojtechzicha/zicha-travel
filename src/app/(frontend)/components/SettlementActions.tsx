@@ -45,17 +45,17 @@ function CopyableRow({ label, value, copyValue }: { label: string; value: string
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 py-2.5 border-b border-gray-100 last:border-0">
-      <div className="flex-shrink-0 text-gray-500 text-sm">{label}</div>
+    <div className="flex items-center justify-between gap-2 py-2.5 border-b border-gray-100 dark:border-white/[0.07] last:border-0">
+      <div className="flex-shrink-0 text-gray-500 dark:text-slate-400 text-sm">{label}</div>
       <div className="flex items-center gap-2 min-w-0">
-        <span className="font-mono text-sm font-medium text-gray-900 truncate" title={value}>{value}</span>
+        <span className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={value}>{value}</span>
         <button
           onClick={handleCopy}
-          className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+          className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
           title={t('settlement.copy')}
         >
           {copied ? (
-            <Check size={16} className="text-green-500" />
+            <Check size={16} className="text-green-500 dark:text-green-400" />
           ) : (
             <Copy size={16} />
           )}
@@ -100,8 +100,8 @@ export function SettlementActions({
       <div className="grid md:grid-cols-2 gap-6">
           {/* Debtors - people who owe money */}
           <div>
-            <h4 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
-              <ArrowDown className="text-red-600" size={20} />
+            <h4 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+              <ArrowDown className="text-red-600 dark:text-red-400" size={20} />
               {t('settlement.owes', { count: activeDebtors.length })}
             </h4>
             <div className="space-y-2">
@@ -109,16 +109,16 @@ export function SettlementActions({
                 activeDebtors.map((debtor) => (
                   <div
                     key={debtor.name}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white border-2 border-gray-200"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/[0.12]"
                   >
                     <span className="font-medium">{debtor.name}</span>
-                    <span className="font-bold text-red-600">
+                    <span className="font-bold text-red-600 dark:text-red-400">
                       {formatCurrency(debtor.amount, locale)}
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 dark:text-slate-400 text-center py-4">
                   {t('settlement.nobodyOwes')}
                 </p>
               )}
@@ -127,8 +127,8 @@ export function SettlementActions({
 
           {/* Creditors - people who are owed money */}
           <div>
-            <h4 className="font-semibold text-lg text-gray-900 mb-3 flex items-center gap-2">
-              <ArrowUp className="text-green-600" size={20} />
+            <h4 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+              <ArrowUp className="text-green-600 dark:text-green-400" size={20} />
               {t('settlement.pay', { count: activeCreditors.length })}
             </h4>
             <div className="space-y-4">
@@ -150,20 +150,20 @@ export function SettlementActions({
                     return (
                       <div
                         key={creditor.name}
-                        className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4"
+                        className="bg-yellow-50 dark:bg-amber-400/10 border-2 border-yellow-400 dark:border-amber-400/40 rounded-xl p-4"
                       >
                         <div className="flex items-center gap-3">
                           <div className="bg-yellow-400 p-2 rounded-lg">
                             <ArrowUp className="text-white" size={20} />
                           </div>
                           <div>
-                            <p className="text-sm text-yellow-700">{t('settlement.payCash')}</p>
-                            <p className="font-semibold text-lg text-gray-900">
-                              {creditor.name} – <span className="text-green-600">{formatCurrency(creditor.amount, locale)}</span>
+                            <p className="text-sm text-yellow-700 dark:text-amber-300">{t('settlement.payCash')}</p>
+                            <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                              {creditor.name} – <span className="text-green-600 dark:text-green-400">{formatCurrency(creditor.amount, locale)}</span>
                             </p>
                           </div>
                         </div>
-                        <p className="mt-2 text-xs text-yellow-600">
+                        <p className="mt-2 text-xs text-yellow-600 dark:text-amber-300/90">
                           {t('settlement.noBankDetails')}
                         </p>
                       </div>
@@ -175,23 +175,23 @@ export function SettlementActions({
                   return (
                     <div
                       key={creditor.name}
-                      className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden"
+                      className="bg-white dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/[0.12] rounded-xl overflow-hidden"
                     >
                       <button
                         onClick={() => setShowQr(isExpanded ? null : creditor.name)}
-                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
                       >
                         <span className="font-medium">{creditor.name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-green-600">
+                          <span className="font-bold text-green-600 dark:text-green-400">
                             {formatCurrency(creditor.amount, locale)}
                           </span>
-                          <QrCode size={16} className={`text-gray-400`} />
+                          <QrCode size={16} className={`text-gray-400 dark:text-slate-500`} />
                         </div>
                       </button>
 
                       {isExpanded && (
-                        <div className="border-t border-gray-200 p-4 bg-green-50">
+                        <div className="border-t border-gray-200 dark:border-white/[0.12] p-4 bg-green-50 dark:bg-emerald-500/10">
                           <div className="flex flex-col gap-4 items-center">
                             {/* QR Code */}
                             <div className="bg-white p-4 rounded-xl shadow-sm">
@@ -204,8 +204,8 @@ export function SettlementActions({
 
                             {/* Payment details table */}
                             <div className="w-full">
-                              <div className="bg-white rounded-xl p-4 shadow-sm">
-                                <h5 className="text-sm font-medium text-gray-500 mb-3">{t('settlement.manualEntry')}</h5>
+                              <div className="bg-white dark:bg-white/[0.04] rounded-xl p-4 shadow-sm">
+                                <h5 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">{t('settlement.manualEntry')}</h5>
                                 <div>
                                   <CopyableRow label={t('settlement.accountNumber')} value={creditorBank.accountNumber} />
                                   {creditorBank.iban && (
@@ -226,7 +226,7 @@ export function SettlementActions({
                   )
                 })
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 dark:text-slate-400 text-center py-4">
                   {t('settlement.nobodyToPay')}
                 </p>
               )}
@@ -240,12 +240,12 @@ export function SettlementActions({
   return (
     <div className="space-y-4">
       {isDebtor && bankerAccount?.number && (
-        <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6">
+        <div className="bg-red-50 dark:bg-red-500/10 border-2 border-red-500 dark:border-red-500/50 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="bg-red-500 p-2 rounded-lg">
               <ArrowDown className="text-white" size={24} />
             </div>
-            <h4 className="font-semibold text-lg text-red-800">
+            <h4 className="font-semibold text-lg text-red-800 dark:text-red-300">
               {t('settlement.payBanker')}
             </h4>
           </div>
@@ -264,8 +264,8 @@ export function SettlementActions({
 
             {/* Payment details table — wraps below the QR when too narrow to show the IBAN */}
             <div className="flex-1 basis-[21rem] min-w-0">
-              <div className="bg-white rounded-xl p-4 shadow-sm">
-                <h5 className="text-sm font-medium text-gray-500 mb-3">{t('settlement.manualEntry')}</h5>
+              <div className="bg-white dark:bg-white/[0.04] rounded-xl p-4 shadow-sm">
+                <h5 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-3">{t('settlement.manualEntry')}</h5>
                 <div>
                   <CopyableRow label={t('settlement.accountNumber')} value={bankerAccount.number} />
                   {bankerAccount.iban && <CopyableRow label={t('settlement.iban')} value={bankerAccount.iban} />}
@@ -282,21 +282,21 @@ export function SettlementActions({
       )}
 
       {isCreditor && (
-        <div className="bg-green-50 border-2 border-green-500 rounded-xl p-6">
+        <div className="bg-green-50 dark:bg-emerald-500/10 border-2 border-green-500 dark:border-emerald-500/50 rounded-xl p-6">
           <div className="flex items-start gap-3">
             <div className="bg-green-500 p-2 rounded-lg">
               <ArrowUp className="text-white" size={24} />
             </div>
             <div>
-              <h4 className="font-semibold text-lg text-green-800 mb-1">
+              <h4 className="font-semibold text-lg text-green-800 dark:text-emerald-300 mb-1">
                 {t('settlement.receiveFromBanker')}
               </h4>
-              <p className="text-3xl font-bold text-green-600">
+              <p className="text-3xl font-bold text-green-600 dark:text-emerald-300">
                 {formatCurrency(balance, locale)}
               </p>
             </div>
           </div>
-          <p className="mt-4 text-sm text-gray-600">
+          <p className="mt-4 text-sm text-gray-600 dark:text-slate-300">
             {t('settlement.bankerWillSend')}
           </p>
         </div>

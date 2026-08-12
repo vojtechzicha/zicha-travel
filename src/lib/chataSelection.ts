@@ -114,6 +114,19 @@ export function untilLabel(to: string | Date, locale: AppLocale = 'cs'): string 
   return `do ${WEEKDAY_UNTIL[d.getUTCDay()]}`
 }
 
+/** "od čtvrtka" / "from Thursday" — partial-stay labels (same genitive). */
+export function sinceLabel(from: string | Date, locale: AppLocale = 'cs'): string {
+  const d = typeof from === 'string' ? new Date(from) : from
+  if (locale === 'en') {
+    const weekday = new Intl.DateTimeFormat('en-GB', {
+      weekday: 'long',
+      timeZone: 'UTC',
+    }).format(d)
+    return `from ${weekday}`
+  }
+  return `od ${WEEKDAY_UNTIL[d.getUTCDay()]}`
+}
+
 // Genitive month names ("5. srpna"), and nominative for "srpen 2026"
 const MONTHS_GENITIVE = [
   'ledna', 'února', 'března', 'dubna', 'května', 'června',

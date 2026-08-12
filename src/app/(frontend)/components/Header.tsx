@@ -1,8 +1,9 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { ArrowLeft, BedDouble, Info, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, BedDouble, Info, Moon, Sun, Users, Wallet } from 'lucide-react'
 import { DynamicIcon } from './DynamicIcon'
+import type { AppTheme } from '../utils/useAppTheme'
 
 interface HeaderProps {
   chataName: string
@@ -14,8 +15,14 @@ interface HeaderProps {
   showOrganizationTab?: boolean
   showParticipantsTab?: boolean
   onSwitchChata?: () => void
+  theme?: AppTheme
+  onToggleTheme?: () => void
 }
 
+// Design header ("Detail chaty — finál"): top bar with the back link, then a
+// LEFT-aligned title row — theme-colored icon box beside the serif name and
+// subtitle — with the tab pills on the right (desktop) or wrapped below
+// (mobile). The active pill is solid white with dark text.
 export function Header({
   chataName,
   location,
@@ -26,105 +33,123 @@ export function Header({
   showOrganizationTab = false,
   showParticipantsTab = false,
   onSwitchChata,
+  theme = 'light',
+  onToggleTheme,
 }: HeaderProps) {
   const t = useTranslations('chata.header')
+
+  // Mobile: equal-width pills in a 2-column grid (Jen's feedback — the
+  // wrapped auto-width pills looked lopsided); desktop: inline pills.
+  const tabClass = (view: NonNullable<HeaderProps['currentView']>) =>
+    `flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold text-[13px] transition-all whitespace-nowrap ${
+      currentView === view
+        ? 'bg-white text-gray-900 shadow-lg font-bold'
+        : 'bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white'
+    }`
+
+  const tabs: Array<{
+    view: NonNullable<HeaderProps['currentView']>
+    show: boolean
+    icon: React.ReactNode
+    label: string
+  }> = [
+    {
+      view: 'information',
+      show: showInformationTab,
+      icon: <Info size={15} aria-hidden="true" />,
+      label: t('tabInformation'),
+    },
+    {
+      view: 'organization',
+      show: showOrganizationTab,
+      icon: <BedDouble size={15} aria-hidden="true" />,
+      label: t('tabOrganization'),
+    },
+    {
+      view: 'finance',
+      show: true,
+      icon: <Wallet size={15} aria-hidden="true" />,
+      label: t('tabFinance'),
+    },
+    {
+      view: 'participants',
+      show: showParticipantsTab,
+      icon: <Users size={15} aria-hidden="true" />,
+      label: t('tabParticipants'),
+    },
+  ]
+  const visibleTabs = tabs.filter((tab) => tab.show)
+
   return (
-    <header className="text-center mb-10 text-white">
-      <div className="inline-block bg-white/10 p-4 rounded-full mb-3 backdrop-blur-sm border border-white/20 shadow-lg">
-        <DynamicIcon className="text-primary-light" size={48} />
+    <header className="mb-6 sm:mb-8 text-white max-w-5xl mx-auto">
+      {/* top bar: back link left, theme toggle right */}
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
+        {onSwitchChata ? (
+          <button
+            onClick={onSwitchChata}
+            className="flex items-center gap-1.5 text-white/75 hover:text-white text-sm font-medium transition-colors"
+          >
+            <ArrowLeft size={15} aria-hidden="true" />
+            {t('switchChata')}
+          </button>
+        ) : (
+          <span />
+        )}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? t('themeLight') : t('themeDark')}
+            title={theme === 'dark' ? t('themeLight') : t('themeDark')}
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white transition-colors"
+          >
+            {theme === 'dark' ? (
+              <Sun size={16} aria-hidden="true" />
+            ) : (
+              <Moon size={16} aria-hidden="true" />
+            )}
+          </button>
+        )}
       </div>
-      <h1 className="font-serif text-4xl md:text-5xl font-black tracking-tight mb-1 text-shadow-heading">
-        {chataName}
-      </h1>
-      {(location || bankerName) && (
-        <p className="text-white/80 text-lg text-shadow-subheading">
-          {location}
-          {location && bankerName && ' • '}
-          {bankerName && <>{t('banker')} <strong>{bankerName}</strong></>}
-        </p>
-      )}
 
-      {/* Header actions */}
-      {(showInformationTab || showOrganizationTab || showParticipantsTab || onSwitchChata) && (
-        <div className="flex gap-5 justify-center items-center flex-wrap mt-5">
-          {onSwitchChata && (
-            <button
-              onClick={onSwitchChata}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border border-white/30 hover:-translate-y-0.5"
-            >
-              <ArrowLeft size={16} />
-              {t('switchChata')}
-            </button>
-          )}
-
-          {(showInformationTab || showOrganizationTab || showParticipantsTab) && onViewChange && (
-            <div className="flex flex-wrap justify-center max-w-full gap-1 p-1.5 rounded-xl backdrop-blur-md bg-white/15 border border-white/20">
-              {showInformationTab && (
-                <button
-                  onClick={() => onViewChange('information')}
-                  className={`
-                    flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
-                    ${
-                      currentView === 'information'
-                        ? 'bg-primary text-white shadow-lg shadow-primary/40'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }
-                  `}
-                >
-                  <Info size={16} />
-                  {t('tabInformation')}
-                </button>
-              )}
-              {showOrganizationTab && (
-                <button
-                  onClick={() => onViewChange('organization')}
-                  className={`
-                    flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
-                    ${
-                      currentView === 'organization'
-                        ? 'bg-primary text-white shadow-lg shadow-primary/40'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }
-                  `}
-                >
-                  <BedDouble size={16} />
-                  {t('tabOrganization')}
-                </button>
-              )}
-              {showParticipantsTab && (
-                <button
-                  onClick={() => onViewChange('participants')}
-                  className={`
-                    flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
-                    ${
-                      currentView === 'participants'
-                        ? 'bg-primary text-white shadow-lg shadow-primary/40'
-                        : 'text-white/80 hover:text-white hover:bg-white/15'
-                    }
-                  `}
-                >
-                  <Users size={16} />
-                  {t('tabParticipants')}
-                </button>
-              )}
-              <button
-                onClick={() => onViewChange('finance')}
-                className={`
-                  flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg font-semibold text-sm transition-all
-                  ${
-                    currentView === 'finance'
-                      ? 'bg-primary text-white shadow-lg shadow-primary/40'
-                      : 'text-white/80 hover:text-white hover:bg-white/15'
-                  }
-                `}
-              >
-                <Wallet size={16} />
-                {t('tabFinance')}
-              </button>
-            </div>
-          )}
+      {/* title row: icon box + name left, tabs right (desktop) / below (mobile) */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+          <div className="bg-primary rounded-[11px] sm:rounded-[14px] p-2 sm:p-2.5 shadow-lg shadow-primary/40 shrink-0">
+            <DynamicIcon className="text-white" size={26} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-serif text-xl sm:text-[32px] font-black tracking-tight leading-tight text-shadow-heading">
+              {chataName}
+            </h1>
+            {(location || bankerName) && (
+              <p className="text-white/75 text-xs sm:text-sm text-shadow-subheading truncate">
+                {location}
+                {location && bankerName && ' · '}
+                {bankerName && (
+                  <>
+                    {t('banker')} <strong className="text-white/90">{bankerName}</strong>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
         </div>
-      )}
+
+        {visibleTabs.length > 1 && onViewChange && (
+          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-2 shrink-0">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab.view}
+                onClick={() => onViewChange(tab.view)}
+                className={tabClass(tab.view)}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </header>
   )
 }

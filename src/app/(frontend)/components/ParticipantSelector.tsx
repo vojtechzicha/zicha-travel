@@ -66,16 +66,16 @@ export function ParticipantSelector({
   return (
     <GlassCard padding="large" className="w-full">
       <div className="text-center mb-6">
-        <h2 className="font-serif text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="font-serif text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           {t('title')}
         </h2>
-        <p className="text-gray-600">{t('subtitle')}</p>
+        <p className="text-gray-600 dark:text-slate-300">{t('subtitle')}</p>
       </div>
 
       {/* Search input */}
       <div className="relative mb-6 max-w-md mx-auto">
         <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
           size={20}
         />
         <input
@@ -84,8 +84,9 @@ export function ParticipantSelector({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white/80
+                     dark:bg-white/[0.06] dark:border-white/[0.15]
                      focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-                     text-gray-900 placeholder-gray-400"
+                     text-gray-900 placeholder-gray-400 dark:text-gray-100 dark:placeholder-slate-500"
         />
       </div>
 
@@ -111,7 +112,9 @@ export function ParticipantSelector({
               className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold
                          transition-all text-left w-full
                          bg-white/80 text-gray-800 shadow-md
-                         hover:bg-white hover:-translate-y-0.5 hover:shadow-lg"
+                         dark:bg-white/[0.04] dark:text-slate-200
+                         hover:bg-white hover:-translate-y-0.5 hover:shadow-lg
+                         dark:hover:bg-white/[0.07]"
             >
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${avatarColor}`}
@@ -123,14 +126,16 @@ export function ParticipantSelector({
                 {claimHint && (
                   <span
                     className={`block text-[11px] font-normal truncate ${
-                      hasPendingClaim ? 'text-amber-700' : 'text-gray-400'
+                      hasPendingClaim
+                        ? 'text-amber-700 dark:text-amber-300'
+                        : 'text-gray-400 dark:text-slate-500'
                     }`}
                   >
                     {claimHint}
                   </span>
                 )}
               </span>
-              {isBanker && <Crown size={16} className="text-primary flex-shrink-0" />}
+              {isBanker && <Crown size={16} className="text-primary dark:text-primary-light flex-shrink-0" />}
             </button>
           )
         })}
@@ -138,25 +143,25 @@ export function ParticipantSelector({
 
       {/* No results message */}
       {filteredParticipants.length === 0 && participants.length > 0 && (
-        <p className="text-center text-gray-500 py-8">
+        <p className="text-center text-gray-500 dark:text-slate-400 py-8">
           {t('noMatch', { query: searchQuery })}
         </p>
       )}
 
       {/* Everyone selectable has an account — point to login */}
       {participants.length === 0 && lockedParticipants.length > 0 && (
-        <p className="text-center text-gray-500 py-8">{t('allLocked')}</p>
+        <p className="text-center text-gray-500 dark:text-slate-400 py-8">{t('allLocked')}</p>
       )}
 
       {/* Participants locked behind login (their account is active) */}
       {filteredLocked.length > 0 && (
         <div className="mt-8">
-          <div className="flex items-center gap-3 mb-4 text-gray-400 text-sm">
-            <div className="flex-1 h-px bg-gray-200" />
+          <div className="flex items-center gap-3 mb-4 text-gray-400 dark:text-slate-500 text-sm">
+            <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.12]" />
             <span className="flex items-center gap-1.5">
               <Lock size={13} /> {t('lockedDivider')}
             </span>
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.12]" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {filteredLocked.map(({ participant, maskedEmail }) => {
@@ -171,6 +176,7 @@ export function ParticipantSelector({
                   title={t('lockedTitle', { email: maskedEmail })}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold
                              text-left w-full bg-white/40 text-gray-400 shadow-sm
+                             dark:bg-white/[0.03] dark:text-slate-500
                              transition-all ${
                                isRevealed
                                  ? 'opacity-100 ring-2 ring-primary/50'
@@ -182,7 +188,7 @@ export function ParticipantSelector({
                   </div>
                   <span className="flex-1 min-w-0">
                     <span className="block truncate">{participant.name}</span>
-                    <span className="block text-[11px] font-normal text-gray-400 truncate">
+                    <span className="block text-[11px] font-normal text-gray-400 dark:text-slate-500 truncate">
                       {maskedEmail}
                     </span>
                   </span>
@@ -199,12 +205,12 @@ export function ParticipantSelector({
             )
             if (!revealed) {
               return (
-                <p className="text-center text-gray-500 text-sm mt-4">{t('lockedTapHint')}</p>
+                <p className="text-center text-gray-500 dark:text-slate-400 text-sm mt-4">{t('lockedTapHint')}</p>
               )
             }
             return (
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 bg-primary/10 border border-primary/25 rounded-xl px-5 py-4">
-                <p className="text-sm text-gray-700 text-center sm:text-left">
+                <p className="text-sm text-gray-700 dark:text-slate-300 text-center sm:text-left">
                   {t.rich('lockedDetail', {
                     name: revealed.participant.name,
                     email: revealed.maskedEmail,

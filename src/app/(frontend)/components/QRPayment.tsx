@@ -32,7 +32,8 @@ export function QRPayment({ amount, accountNumber, message }: QRPaymentProps) {
   const url = `https://api.paylibo.com/paylibo/generator/czech/image?${params.toString()}`
 
   return (
-    <div className="text-center inline-block">
+    // The QR must stay on a white background in both themes to remain scannable
+    <div className="text-center inline-block bg-white rounded-lg">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={t('qrPayment.alt')} className="w-full max-w-[220px]" />
     </div>

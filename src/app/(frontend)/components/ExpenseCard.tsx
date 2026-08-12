@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { formatCurrency, formatShortDateTime } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
+import { useAppTheme } from '../utils/useAppTheme'
 import { getPayerDisplay } from '@/lib/payerRef'
 import { accusativeName } from '@/lib/czechNames'
 import type { AppLocale } from '@/i18n/config'
@@ -45,6 +46,7 @@ export function ExpenseCard({
 }: ExpenseCardProps) {
   const t = useTranslations('finance')
   const locale = useLocale() as AppLocale
+  const { theme } = useAppTheme()
   const [expanded, setExpanded] = useState(false)
   const [lightboxAttachment, setLightboxAttachment] = useState<ExpenseAttachment | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -117,7 +119,7 @@ export function ExpenseCard({
     return (
       <span
         key={participantName}
-        className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md"
+        className="bg-gray-100 text-gray-700 dark:bg-white/[0.07] dark:text-slate-300 text-xs px-2 py-1 rounded-md"
       >
         {participantName}: {weightsAreAmounts ? formatCurrency(w.weight, locale) : `${w.weight}x`}
       </span>
@@ -128,42 +130,46 @@ export function ExpenseCard({
     <div
       className={`
         rounded-xl p-4 shadow-md flex gap-3 transition-transform hover:scale-[1.02]
-        ${isOther ? 'bg-gray-50 opacity-60' : 'bg-white'}
-        ${isRefund ? 'border-2 border-green-200' : ''}
-        ${isPlanned ? 'border-2 border-dashed border-amber-300 bg-amber-50/50' : ''}
+        ${isOther ? 'bg-gray-50 opacity-60 dark:bg-white/[0.04]' : 'bg-white dark:bg-[#1b212c]'}
+        ${isRefund ? 'border-2 border-green-200 dark:border-green-500/30' : ''}
+        ${isPlanned ? 'border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-400/40 dark:bg-amber-400/10' : ''}
       `}
     >
       <div className="flex-shrink-0">
         {isPlanned ? (
-          <div className="bg-amber-100 p-2 rounded-lg">
-            <Clock size={20} className="text-amber-600" />
+          <div className="bg-amber-100 dark:bg-amber-400/15 p-2 rounded-lg">
+            <Clock size={20} className="text-amber-600 dark:text-amber-300" />
           </div>
         ) : isRefund ? (
-          <div className="bg-green-100 p-2 rounded-lg">
-            <ArrowLeft size={20} className="text-green-600" />
+          <div className="bg-green-100 dark:bg-green-500/15 p-2 rounded-lg">
+            <ArrowLeft size={20} className="text-green-600 dark:text-green-300" />
           </div>
         ) : (
           <div className="bg-primary/10 p-2 rounded-lg">
-            <Receipt size={20} className="text-primary" />
+            <Receipt size={20} className="text-primary dark:text-primary-light" />
           </div>
         )}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start gap-2 mb-1">
-          <span className="font-semibold text-gray-900 min-w-0 break-words [overflow-wrap:anywhere]">
+          <span className="font-semibold text-gray-900 dark:text-gray-100 min-w-0 break-words [overflow-wrap:anywhere]">
             {expense.title}
           </span>
           <span
             className={`font-bold flex-shrink-0 ${
-              isPlanned ? 'text-amber-600' : isRefund ? 'text-green-600' : 'text-gray-900'
+              isPlanned
+                ? 'text-amber-600 dark:text-amber-300'
+                : isRefund
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-gray-900 dark:text-gray-100'
             }`}
           >
             {formatCurrency(expense.amount, locale)}
           </span>
         </div>
 
-        <div className="text-sm text-gray-600 mb-2 flex items-center gap-2 flex-wrap">
+        <div className="text-sm text-gray-600 dark:text-slate-300 mb-2 flex items-center gap-2 flex-wrap">
           <span>
             {t.rich(
               isPlanned
@@ -178,11 +184,11 @@ export function ExpenseCard({
               { name: payerName, strong: (chunks) => <strong>{chunks}</strong> }
             )}
             {payer.kind === 'jointAccount' && (
-              <span className="text-gray-400"> {t('expenseCard.jointAccount')}</span>
+              <span className="text-gray-400 dark:text-slate-500"> {t('expenseCard.jointAccount')}</span>
             )}
           </span>
           {isPlanned && (
-            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
+            <span className="bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
               {t('expenseCard.plannedBadge')}
             </span>
           )}
@@ -190,7 +196,7 @@ export function ExpenseCard({
 
         <div className="flex flex-wrap gap-1">
           {expense.splitType === 'equal' ? (
-            <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md">
+            <span className="bg-gray-100 text-gray-700 dark:bg-white/[0.07] dark:text-slate-300 text-xs px-2 py-1 rounded-md">
               {t('expenseCard.equalSplit')}
             </span>
           ) : (
@@ -203,7 +209,7 @@ export function ExpenseCard({
               {hiddenCount > 0 && !expanded && (
                 <button
                   onClick={() => setExpanded(true)}
-                  className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md hover:bg-gray-300 transition-colors"
+                  className="bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-white/[0.1] dark:text-slate-300 dark:hover:bg-white/[0.14] text-xs px-2 py-1 rounded-md transition-colors"
                 >
                   {t('expenseCard.showMore', { count: hiddenCount })}
                 </button>
@@ -211,7 +217,7 @@ export function ExpenseCard({
               {expanded && totalOthers > MAX_VISIBLE_OTHERS && (
                 <button
                   onClick={() => setExpanded(false)}
-                  className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md hover:bg-gray-300 transition-colors"
+                  className="bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-white/[0.1] dark:text-slate-300 dark:hover:bg-white/[0.14] text-xs px-2 py-1 rounded-md transition-colors"
                 >
                   {t('expenseCard.hide')}
                 </button>
@@ -232,7 +238,7 @@ export function ExpenseCard({
               return (
                 <span
                   key={inv.id ?? i}
-                  className="bg-pink-50 text-pink-700 text-xs px-2 py-1 rounded-md flex items-center gap-1"
+                  className="bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-300 text-xs px-2 py-1 rounded-md flex items-center gap-1"
                 >
                   <HeartHandshake size={12} /> {t('expenseCard.invites', { host: hostName, guest: guestName })}
                 </span>
@@ -251,7 +257,7 @@ export function ExpenseCard({
                     track('expense_attachment_opened', { kind: 'image' })
                     setLightboxAttachment(att)
                   }}
-                  className="block w-10 h-10 rounded-md overflow-hidden border border-gray-200 hover:border-primary transition-colors"
+                  className="block w-10 h-10 rounded-md overflow-hidden border border-gray-200 dark:border-white/[0.12] hover:border-primary dark:hover:border-primary-light transition-colors"
                   title={att.alt || att.filename || t('expenseCard.receipt')}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -269,7 +275,7 @@ export function ExpenseCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => track('expense_attachment_opened', { kind: 'pdf' })}
-                  className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                  className="bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.07] dark:text-slate-300 dark:hover:bg-white/[0.1] text-xs px-2 py-1 rounded-md flex items-center gap-1 transition-colors"
                   title={att.alt || att.filename || t('expenseCard.attachment')}
                 >
                   <FileText size={12} /> PDF
@@ -281,8 +287,8 @@ export function ExpenseCard({
 
         {/* Manage footer (1b): only on expenses the viewer authored */}
         {canManage && !confirmingDelete && (
-          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100">
-            <span className="text-xs text-gray-400 min-w-0 truncate">
+          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
+            <span className="text-xs text-gray-400 dark:text-slate-500 min-w-0 truncate">
               {t('expenseCard.addedByYou')}
               {/* timestamp only where the icon buttons leave room (design 1b) */}
               <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt, locale)}</span>
@@ -294,7 +300,7 @@ export function ExpenseCard({
                 title={t('expenseCard.edit')}
                 aria-label={t('expenseCard.editExpense')}
                 onClick={() => onEdit?.(expense)}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-white/[0.07] dark:hover:text-gray-100 transition-colors"
               >
                 <Pencil size={15} />
               </button>
@@ -306,7 +312,7 @@ export function ExpenseCard({
                   setDeleteError(null)
                   setConfirmingDelete(true)
                 }}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-red-100 hover:text-red-600 transition-colors"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-red-100 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-500/15 dark:hover:text-red-400 transition-colors"
               >
                 <Trash2 size={15} />
               </button>
@@ -316,7 +322,7 @@ export function ExpenseCard({
               <button
                 type="button"
                 onClick={() => onEdit?.(expense)}
-                className="flex items-center gap-1.5 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
+                className="flex items-center gap-1.5 text-gray-700 dark:text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 active:bg-gray-200 dark:bg-white/[0.07] dark:active:bg-white/[0.1] transition-colors"
               >
                 <Pencil size={13} /> {t('expenseCard.edit')}
               </button>
@@ -326,7 +332,7 @@ export function ExpenseCard({
                   setDeleteError(null)
                   setConfirmingDelete(true)
                 }}
-                className="flex items-center gap-1.5 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 active:bg-red-100 transition-colors"
+                className="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-xs font-semibold px-3 py-1.5 rounded-full bg-red-50 active:bg-red-100 dark:bg-red-500/10 dark:active:bg-red-500/20 transition-colors"
               >
                 <Trash2 size={13} /> {t('expenseCard.delete')}
               </button>
@@ -336,8 +342,8 @@ export function ExpenseCard({
 
         {/* Inline delete confirmation (1b) — no browser dialogs */}
         {canManage && confirmingDelete && (
-          <div className="flex items-center justify-between flex-wrap gap-2 mt-2.5 bg-red-50 border border-red-200 rounded-lg px-2.5 py-2">
-            <span className="text-[13px] text-red-800 font-medium">
+          <div className="flex items-center justify-between flex-wrap gap-2 mt-2.5 bg-red-50 border border-red-200 dark:bg-red-500/10 dark:border-red-500/30 rounded-lg px-2.5 py-2">
+            <span className="text-[13px] text-red-800 dark:text-red-300 font-medium">
               {deleteError ?? t('expenseCard.confirmDelete')}
             </span>
             <div className="flex gap-1.5">
@@ -365,7 +371,7 @@ export function ExpenseCard({
                   setConfirmingDelete(false)
                   setDeleteError(null)
                 }}
-                className="text-gray-700 hover:bg-red-100 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+                className="text-gray-700 hover:bg-red-100 dark:text-slate-300 dark:hover:bg-red-500/20 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
               >
                 {t('expenseCard.back')}
               </button>
@@ -379,6 +385,7 @@ export function ExpenseCard({
         {lightboxAttachment &&
           createPortal(
             <div
+              data-app-theme={theme}
               className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
               onClick={() => setLightboxAttachment(null)}
             >

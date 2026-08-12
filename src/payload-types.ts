@@ -196,6 +196,14 @@ export interface Chata {
   tripDateFrom?: string | null;
   tripDateTo?: string | null;
   /**
+   * Check-in time (e.g., "od 15:00")
+   */
+  checkInTime?: string | null;
+  /**
+   * Check-out time (e.g., "do 10:00")
+   */
+  checkOutTime?: string | null;
+  /**
    * Name of the accommodation (e.g., "Chaloupka pod Medem")
    */
   destinationName?: string | null;
@@ -207,6 +215,14 @@ export interface Chata {
    * Description of the destination
    */
   destinationDescription?: string | null;
+  /**
+   * Latitude — enables the weather forecast and the navigation button
+   */
+  destinationLat?: number | null;
+  /**
+   * Longitude
+   */
+  destinationLng?: number | null;
   /**
    * Useful links about the destination
    */
@@ -235,6 +251,72 @@ export interface Chata {
         id?: string | null;
       }[]
     | null;
+  /**
+   * What the place has (or is missing) — shown as ✓/✗ chips ("Na chatě je")
+   */
+  amenities?:
+    | {
+        /**
+         * e.g., "Sauna", "Wi-Fi", "Povlečení"
+         */
+        name: string;
+        available?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * What to bring ("Co s sebou") — one bullet per item
+   */
+  packingItems?:
+    | {
+        item: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Day-by-day plan; during the trip the current day is highlighted as "Today"
+   */
+  program?:
+    | {
+        date: string;
+        /**
+         * e.g., "Túra na Praděd (celý den, 18 km)"
+         */
+        description: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Shops, pubs and trip tips around the place ("Okolí")
+   */
+  surroundings?:
+    | {
+        /**
+         * e.g., "Potraviny Hruška — poslední obchod"
+         */
+        name: string;
+        /**
+         * Distance/opening hours (e.g., "400 m · po–so 7–17")
+         */
+        note?: string | null;
+        category?: ('place' | 'trip') | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Label + value rows ("Majitel — p. Novák · 605 112 233", "Noční klid — po 22:00")
+   */
+  contactRules?:
+    | {
+        label: string;
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Link to the shared photo album — shown after the trip
+   */
+  sharedAlbumUrl?: string | null;
   /**
    * Parking information
    */
@@ -383,9 +465,13 @@ export interface Chata {
          */
         name: string;
         /**
-         * Additional details about this ride
+         * Additional details about this ride (e.g., "Odjezd st 8:15 z Prahy-Chodova")
          */
         description?: string | null;
+        /**
+         * Total seats including the driver — enables the "4/5" occupancy badge and free-seat hints
+         */
+        seats?: number | null;
         /**
          * Who is driving this car
          */
@@ -938,9 +1024,13 @@ export interface ChatasSelect<T extends boolean = true> {
   informationEnabled?: T;
   tripDateFrom?: T;
   tripDateTo?: T;
+  checkInTime?: T;
+  checkOutTime?: T;
   destinationName?: T;
   destinationLocation?: T;
   destinationDescription?: T;
+  destinationLat?: T;
+  destinationLng?: T;
   destinationLinks?:
     | T
     | {
@@ -960,6 +1050,42 @@ export interface ChatasSelect<T extends boolean = true> {
         info?: T;
         id?: T;
       };
+  amenities?:
+    | T
+    | {
+        name?: T;
+        available?: T;
+        id?: T;
+      };
+  packingItems?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  program?:
+    | T
+    | {
+        date?: T;
+        description?: T;
+        id?: T;
+      };
+  surroundings?:
+    | T
+    | {
+        name?: T;
+        note?: T;
+        category?: T;
+        id?: T;
+      };
+  contactRules?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
+  sharedAlbumUrl?: T;
   parking?: T;
   carRoutes?:
     | T
@@ -1020,6 +1146,7 @@ export interface ChatasSelect<T extends boolean = true> {
     | {
         name?: T;
         description?: T;
+        seats?: T;
         driver?: T;
         frontPassenger?: T;
         passengers?:

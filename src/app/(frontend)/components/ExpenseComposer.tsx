@@ -35,6 +35,7 @@ import { track } from '@/lib/analytics'
 import { accusativeName } from '@/lib/czechNames'
 import { ownJointAccounts } from '@/lib/expenseAuthoring'
 import { downscaleImage } from '@/lib/imageDownscale'
+import { useAppTheme } from '../utils/useAppTheme'
 import type { AppLocale } from '@/i18n/config'
 import type { FinanceViewer } from '@/lib/financeAccess'
 import type { Chata, Expense, ExpenseAttachment, JointAccount, Participant } from '@/payload-types'
@@ -135,6 +136,7 @@ export function ExpenseComposer({
   const isDesktop = useIsDesktop()
   const t = useTranslations('composer')
   const locale = useLocale() as AppLocale
+  const { theme } = useAppTheme()
 
   const ownIds = viewer.linkedParticipantIds
   const ownIdsStr = useMemo(() => ownIds.map(String), [ownIds])
@@ -600,7 +602,7 @@ export function ExpenseComposer({
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
                   selected
                     ? 'border-2 border-primary bg-primary/10'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-gray-200 hover:border-gray-300 dark:border-white/[0.12] dark:hover:border-white/[0.25]'
                 }`}
               >
                 {option.initialsOf ? (
@@ -615,11 +617,13 @@ export function ExpenseComposer({
                   </span>
                 )}
                 <span
-                  className={`text-sm ${selected ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
+                  className={`text-sm ${selected ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-slate-300'}`}
                 >
                   {option.label}
                 </span>
-                {selected && <Check size={16} className="text-primary" strokeWidth={2.5} />}
+                {selected && (
+                  <Check size={16} className="text-primary dark:text-primary-light" strokeWidth={2.5} />
+                )}
               </button>
             )
           })}
@@ -639,7 +643,7 @@ export function ExpenseComposer({
           aria-checked={isRefund}
           onClick={() => setIsRefund((v) => !v)}
           className={`relative w-[38px] h-[22px] rounded-full flex-shrink-0 transition-colors ${
-            isRefund ? 'bg-green-500' : 'bg-gray-200'
+            isRefund ? 'bg-green-500' : 'bg-gray-200 dark:bg-white/[0.15]'
           }`}
         >
           <span
@@ -649,7 +653,7 @@ export function ExpenseComposer({
           />
         </button>
       )}
-      <span className="text-sm text-gray-600">{t('stepWhat.refundToggle')}</span>
+      <span className="text-sm text-gray-600 dark:text-slate-300">{t('stepWhat.refundToggle')}</span>
       {!compact && (
         <button
           type="button"
@@ -657,7 +661,7 @@ export function ExpenseComposer({
           aria-checked={isRefund}
           onClick={() => setIsRefund((v) => !v)}
           className={`relative w-[46px] h-7 rounded-full flex-shrink-0 transition-colors ${
-            isRefund ? 'bg-green-500' : 'bg-gray-200'
+            isRefund ? 'bg-green-500' : 'bg-gray-200 dark:bg-white/[0.15]'
           }`}
         >
           <span
@@ -690,10 +694,10 @@ export function ExpenseComposer({
             key={p.id}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors ${
               !row.included
-                ? 'border-dashed border-gray-200 opacity-55'
+                ? 'border-dashed border-gray-200 dark:border-white/[0.12] opacity-55'
                 : isAuto
                   ? 'border-2 border-primary bg-primary/5'
-                  : 'border-gray-200'
+                  : 'border-gray-200 dark:border-white/[0.12]'
             }`}
           >
             <button
@@ -703,7 +707,7 @@ export function ExpenseComposer({
               aria-label={t('stepWho.ariaIncluded', { name: p.name })}
               onClick={() => setRow(p.id, { included: !row.included })}
               className={`w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${
-                row.included ? 'bg-primary' : 'border-2 border-gray-300'
+                row.included ? 'bg-primary' : 'border-2 border-gray-300 dark:border-white/[0.25]'
               }`}
             >
               {row.included && <Check size={14} className="text-white" strokeWidth={3} />}
@@ -713,22 +717,24 @@ export function ExpenseComposer({
             >
               {getInitials(p.name)}
             </span>
-            <span className="flex-1 min-w-0 truncate text-[15px] font-medium text-gray-900">
+            <span className="flex-1 min-w-0 truncate text-[15px] font-medium text-gray-900 dark:text-gray-100">
               {label}
             </span>
             {row.included && mode === 'shares' && (
-              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white flex-shrink-0">
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white dark:bg-white/[0.06] dark:border-white/[0.15] flex-shrink-0">
                 <button
                   type="button"
                   aria-label={t('stepWho.ariaFewerShares')}
                   onClick={() => setRow(p.id, { shares: Math.max(1, row.shares - 1) })}
-                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 dark:text-slate-400 dark:hover:bg-white/[0.06]"
                 >
                   <Minus size={14} />
                 </button>
                 <span
                   className={`w-9 text-center text-sm ${
-                    row.shares !== 1 ? 'font-bold text-primary' : 'font-semibold text-gray-900'
+                    row.shares !== 1
+                      ? 'font-bold text-primary dark:text-primary-light'
+                      : 'font-semibold text-gray-900 dark:text-gray-100'
                   }`}
                 >
                   {row.shares}×
@@ -737,7 +743,7 @@ export function ExpenseComposer({
                   type="button"
                   aria-label={t('stepWho.ariaMoreShares')}
                   onClick={() => setRow(p.id, { shares: row.shares + 1 })}
-                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 dark:text-slate-400 dark:hover:bg-white/[0.06]"
                 >
                   <Plus size={14} />
                 </button>
@@ -746,7 +752,7 @@ export function ExpenseComposer({
             {row.included && mode === 'amounts' && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 {isAuto && (
-                  <span className="text-xs text-primary-dark font-medium">{t('stepWho.computed')}</span>
+                  <span className="text-xs text-primary-dark dark:text-primary-light font-medium">{t('stepWho.computed')}</span>
                 )}
                 <div className="relative">
                   <input
@@ -763,20 +769,20 @@ export function ExpenseComposer({
                         requestAnimationFrame(() => e.target.select())
                       }
                     }}
-                    className={`w-24 text-right text-sm font-semibold rounded-lg border pl-2 pr-7 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                    className={`w-24 text-right text-sm font-semibold rounded-lg border pl-2 pr-7 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/40 dark:placeholder-slate-500 ${
                       isAuto
-                        ? 'border-primary text-primary-dark bg-white'
-                        : 'border-gray-200 text-gray-900'
+                        ? 'border-primary text-primary-dark bg-white dark:bg-white/[0.06] dark:text-primary-light'
+                        : 'border-gray-200 text-gray-900 dark:border-white/[0.15] dark:bg-white/[0.06] dark:text-gray-100'
                     }`}
                   />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500 pointer-events-none">
                     {t('currencySuffix')}
                   </span>
                 </div>
               </div>
             )}
             {!row.included && (
-              <span className="text-[13px] text-gray-400">{t('stepWho.notIncluded')}</span>
+              <span className="text-[13px] text-gray-400 dark:text-slate-500">{t('stepWho.notIncluded')}</span>
             )}
           </div>
         )
@@ -795,27 +801,27 @@ export function ExpenseComposer({
     const total = amount !== null ? (isRefund ? -amount : amount) : null
     return (
       <div>
-        <div className="border border-gray-200 rounded-2xl px-5 py-5 text-center">
+        <div className="border border-gray-200 dark:border-white/[0.12] dark:bg-white/[0.03] rounded-2xl px-5 py-5 text-center">
           <div className="flex justify-center mb-3.5">
             {shown.map((p, i) => (
               <span
                 key={p.id}
-                className={`w-11 h-11 rounded-full text-white text-sm font-bold flex items-center justify-center border-[3px] border-white shadow-sm ${getAvatarColor(p.name)} ${i > 0 ? '-ml-2.5' : ''}`}
+                className={`w-11 h-11 rounded-full text-white text-sm font-bold flex items-center justify-center border-[3px] border-white dark:border-[#1b212c] shadow-sm ${getAvatarColor(p.name)} ${i > 0 ? '-ml-2.5' : ''}`}
               >
                 {getInitials(p.name)}
               </span>
             ))}
             {extra > 0 && (
-              <span className="w-11 h-11 rounded-full bg-gray-200 text-gray-600 text-sm font-bold flex items-center justify-center border-[3px] border-white shadow-sm -ml-2.5">
+              <span className="w-11 h-11 rounded-full bg-gray-200 text-gray-600 dark:bg-white/[0.1] dark:text-slate-300 text-sm font-bold flex items-center justify-center border-[3px] border-white dark:border-[#1b212c] shadow-sm -ml-2.5">
                 +{extra}
               </span>
             )}
           </div>
-          <div className="text-[15px] font-semibold text-gray-900 mb-1">{headline}</div>
+          <div className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 mb-1">{headline}</div>
           {total !== null && count > 0 && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-slate-400">
               {formatCurrency(total, locale)} ÷ {count} {perPersonOp(total / count)}{' '}
-              <strong className="text-gray-900">
+              <strong className="text-gray-900 dark:text-gray-100">
                 {formatCurrency(Math.round(total / count), locale)}
               </strong>{' '}
               {t('stepWho.perPerson')}
@@ -823,7 +829,7 @@ export function ExpenseComposer({
           )}
         </div>
         {count > 1 && (
-          <p className="text-[13px] text-gray-400 text-center mt-3.5">
+          <p className="text-[13px] text-gray-400 dark:text-slate-500 text-center mt-3.5">
             {t('stepWho.equalNudge', { label: switchLabel })}
           </p>
         )}
@@ -837,13 +843,13 @@ export function ExpenseComposer({
       const ok = amountsPlan.valid
       return (
         <div className="flex items-center justify-between mt-2.5 px-1">
-          <span className="text-[13px] text-gray-500">
+          <span className="text-[13px] text-gray-500 dark:text-slate-400">
             {t('stepWho.toSplit')}{' '}
-            <strong className="text-gray-700">{formatCurrency(amount!, locale)}</strong>
+            <strong className="text-gray-700 dark:text-slate-300">{formatCurrency(amount!, locale)}</strong>
           </span>
           <span
             className={`flex items-center gap-1.5 text-[13px] font-semibold ${
-              ok ? 'text-green-600' : 'text-red-600'
+              ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             }`}
           >
             {ok && <Check size={14} strokeWidth={2.5} />}
@@ -856,7 +862,7 @@ export function ExpenseComposer({
       const perShare = (isRefund ? -amount! : amount!) / totalShares
       const sharesLabel = t('stepWho.sharesCount', { count: totalShares })
       return (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3 text-[13px] text-amber-800 mt-2.5">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-400/15 dark:border-amber-400/30 dark:text-amber-300 rounded-xl px-3.5 py-3 text-[13px] mt-2.5">
           <strong>{formatCurrency(isRefund ? -amount! : amount!, locale)}</strong> · {sharesLabel}{' '}
           {perPersonOp(perShare)} <strong>{formatCurrency(Math.round(perShare), locale)}</strong>{' '}
           {t('stepWho.perShare')}
@@ -869,13 +875,13 @@ export function ExpenseComposer({
   const renderInvitations = () => (
     <div>
       <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-sm font-semibold text-gray-700">{t('invites.title')}</span>
-        <span className="text-xs text-gray-400">{t('invites.subtitle')}</span>
+        <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">{t('invites.title')}</span>
+        <span className="text-xs text-gray-400 dark:text-slate-500">{t('invites.subtitle')}</span>
       </div>
       {autoBannerText && (
-        <div className="flex items-center gap-2.5 bg-pink-50 border border-pink-200 rounded-xl px-3 py-2.5 mb-2">
-          <HeartHandshake size={15} className="text-pink-700 flex-shrink-0" />
-          <span className="text-[13px] text-pink-900">
+        <div className="flex items-center gap-2.5 bg-pink-50 border border-pink-200 dark:bg-pink-500/10 dark:border-pink-500/30 rounded-xl px-3 py-2.5 mb-2">
+          <HeartHandshake size={15} className="text-pink-700 dark:text-pink-300 flex-shrink-0" />
+          <span className="text-[13px] text-pink-900 dark:text-pink-200">
             {t('invites.autoPrefix')} <strong>{autoBannerText}</strong>{' '}
             {isEdit ? t('invites.autoSuffixEdit') : t('invites.autoSuffixCreate')}
           </span>
@@ -894,7 +900,7 @@ export function ExpenseComposer({
             return (
               <span
                 key={`${inv.host}-${inv.guest}-${i}`}
-                className="flex items-center gap-1.5 bg-pink-50 text-pink-700 text-[13px] font-medium px-3 py-2 rounded-full"
+                className="flex items-center gap-1.5 bg-pink-50 text-pink-700 dark:bg-pink-500/10 dark:text-pink-300 text-[13px] font-medium px-3 py-2 rounded-full"
               >
                 <HeartHandshake size={13} />
                 {chipLabel}
@@ -902,7 +908,7 @@ export function ExpenseComposer({
                   type="button"
                   aria-label={t('invites.ariaRemove')}
                   onClick={() => setManualInvites((prev) => prev.filter((_, j) => j !== i))}
-                  className="hover:text-pink-900"
+                  className="hover:text-pink-900 dark:hover:text-pink-100"
                 >
                   <X size={13} />
                 </button>
@@ -916,7 +922,7 @@ export function ExpenseComposer({
           value={draftHost}
           aria-label={t('invites.ariaHost')}
           onChange={(e) => setDraftHost(e.target.value === '' ? '' : Number(e.target.value))}
-          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           <option value="">{t('invites.hostPlaceholder')}</option>
           {inviteHostOptions.map((p) => (
@@ -925,7 +931,7 @@ export function ExpenseComposer({
             </option>
           ))}
         </select>
-        <span className="text-[13px] text-gray-500 flex-shrink-0">{t('invites.between')}</span>
+        <span className="text-[13px] text-gray-500 dark:text-slate-400 flex-shrink-0">{t('invites.between')}</span>
         <select
           value=""
           aria-label={t('invites.ariaGuest')}
@@ -937,7 +943,7 @@ export function ExpenseComposer({
               setDraftHost('')
             }
           }}
-          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white disabled:text-gray-400 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white disabled:text-gray-400 disabled:bg-gray-50 dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:disabled:text-slate-500 dark:disabled:bg-white/[0.03] focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           <option value="">{t('invites.guestPlaceholder')}</option>
           {inviteGuestOptions.map((p) => (
@@ -959,10 +965,10 @@ export function ExpenseComposer({
             <img
               src={att.url}
               alt={att.alt || att.filename || t('attachments.receiptAlt')}
-              className="w-full h-full object-cover rounded-lg border border-gray-200"
+              className="w-full h-full object-cover rounded-lg border border-gray-200 dark:border-white/[0.12]"
             />
           ) : (
-            <div className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400">
+            <div className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 dark:border-white/[0.12] dark:bg-white/[0.04] flex items-center justify-center text-gray-400 dark:text-slate-500">
               <FileText size={16} />
             </div>
           )}
@@ -985,10 +991,10 @@ export function ExpenseComposer({
             <img
               src={nf.previewUrl}
               alt={nf.file.name}
-              className="w-full h-full object-cover rounded-lg border border-gray-200"
+              className="w-full h-full object-cover rounded-lg border border-gray-200 dark:border-white/[0.12]"
             />
           ) : (
-            <div className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400">
+            <div className="w-full h-full rounded-lg border border-gray-200 bg-gray-50 dark:border-white/[0.12] dark:bg-white/[0.04] flex items-center justify-center text-gray-400 dark:text-slate-500">
               <FileText size={16} />
             </div>
           )}
@@ -1036,7 +1042,7 @@ export function ExpenseComposer({
   )
 
   const errorBanner = error && (
-    <div className="bg-red-50 border border-red-200 text-red-800 text-sm rounded-xl px-3.5 py-2.5">
+    <div className="bg-red-50 border border-red-200 text-red-800 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 text-sm rounded-xl px-3.5 py-2.5">
       {error}
     </div>
   )
@@ -1044,13 +1050,19 @@ export function ExpenseComposer({
   // ═══ MOBILE: entry bottom sheet ══════════════════════════════════════
   if (!isDesktop && mobileStep === 'entry') {
     return createPortal(
-      <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={heading}>
+      <div
+        data-app-theme={theme}
+        className="fixed inset-0 z-50"
+        role="dialog"
+        aria-modal="true"
+        aria-label={heading}
+      >
         {hiddenFileInputs}
         <div className="absolute inset-0 bg-slate-900/45" onClick={onClose} />
-        <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[28px] px-5 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(0,0,0,0.35)] animate-slideUp">
-          <div className="w-9 h-[5px] rounded-full bg-gray-300 mx-auto mb-4" />
-          <h3 className="font-serif text-xl font-bold text-gray-900 mb-1">{t('headingNew')}</h3>
-          <p className="text-sm text-gray-500 mb-4">{t('entry.prompt')}</p>
+        <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1b212c] dark:border dark:border-white/[0.06] rounded-t-[28px] px-5 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))] shadow-[0_-20px_50px_rgba(0,0,0,0.35)] animate-slideUp">
+          <div className="w-9 h-[5px] rounded-full bg-gray-300 dark:bg-white/[0.2] mx-auto mb-4" />
+          <h3 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('headingNew')}</h3>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">{t('entry.prompt')}</p>
           <div className="flex flex-col gap-3">
             <button
               type="button"
@@ -1058,14 +1070,14 @@ export function ExpenseComposer({
                 track('expense_compose_started', { entry: 'photo' })
                 cameraInputRef.current?.click()
               }}
-              className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 bg-gray-50 text-left active:bg-gray-100 transition-colors"
+              className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 bg-gray-50 active:bg-gray-100 dark:border-white/[0.12] dark:bg-white/[0.04] dark:active:bg-white/[0.07] text-left transition-colors"
             >
               <span className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Camera size={21} className="text-primary" />
+                <Camera size={21} className="text-primary dark:text-primary-light" />
               </span>
               <span>
-                <span className="block font-semibold text-gray-900">{t('entry.photo')}</span>
-                <span className="block text-[13px] text-gray-500">{t('entry.photoHint')}</span>
+                <span className="block font-semibold text-gray-900 dark:text-gray-100">{t('entry.photo')}</span>
+                <span className="block text-[13px] text-gray-500 dark:text-slate-400">{t('entry.photoHint')}</span>
               </span>
             </button>
             <button
@@ -1074,21 +1086,21 @@ export function ExpenseComposer({
                 track('expense_compose_started', { entry: 'manual' })
                 setMobileStep('details')
               }}
-              className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 bg-gray-50 text-left active:bg-gray-100 transition-colors"
+              className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 bg-gray-50 active:bg-gray-100 dark:border-white/[0.12] dark:bg-white/[0.04] dark:active:bg-white/[0.07] text-left transition-colors"
             >
               <span className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Pencil size={19} className="text-primary" />
+                <Pencil size={19} className="text-primary dark:text-primary-light" />
               </span>
               <span>
-                <span className="block font-semibold text-gray-900">{t('entry.manual')}</span>
-                <span className="block text-[13px] text-gray-500">{t('entry.manualHint')}</span>
+                <span className="block font-semibold text-gray-900 dark:text-gray-100">{t('entry.manual')}</span>
+                <span className="block text-[13px] text-gray-500 dark:text-slate-400">{t('entry.manualHint')}</span>
               </span>
             </button>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-full text-center text-[15px] font-medium text-gray-500 pt-4"
+            className="w-full text-center text-[15px] font-medium text-gray-500 dark:text-slate-400 pt-4"
           >
             {t('cancel')}
           </button>
@@ -1117,7 +1129,8 @@ export function ExpenseComposer({
 
     return createPortal(
       <div
-        className="fixed inset-0 z-50 bg-white flex flex-col"
+        data-app-theme={theme}
+        className="fixed inset-0 z-50 bg-white dark:bg-[#1b212c] flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-label={heading}
@@ -1129,12 +1142,12 @@ export function ExpenseComposer({
             type="button"
             onClick={goBack}
             aria-label={t('back')}
-            className="p-1 -ml-1 text-gray-500"
+            className="p-1 -ml-1 text-gray-500 dark:text-slate-400"
           >
             <ChevronLeft size={24} />
           </button>
-          <span className="font-semibold text-gray-900">{heading}</span>
-          <button type="button" onClick={onClose} className="text-sm text-gray-500">
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{heading}</span>
+          <button type="button" onClick={onClose} className="text-sm text-gray-500 dark:text-slate-400">
             {t('cancel')}
           </button>
         </div>
@@ -1144,11 +1157,11 @@ export function ExpenseComposer({
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className={`flex-1 h-1 rounded-full ${i <= stepIndex ? 'bg-primary' : 'bg-gray-200'}`}
+                className={`flex-1 h-1 rounded-full ${i <= stepIndex ? 'bg-primary' : 'bg-gray-200 dark:bg-white/[0.1]'}`}
               />
             ))}
           </div>
-          <div className="text-[13px] text-gray-500 mb-4">
+          <div className="text-[13px] text-gray-500 dark:text-slate-400 mb-4">
             {t('wizard.progress', { step: stepIndex, label: stepLabel })}
           </div>
         </div>
@@ -1158,17 +1171,17 @@ export function ExpenseComposer({
           {mobileStep === 'details' && (
             <>
               {(existingAttachments.length > 0 || newFiles.length > 0) && (
-                <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-3 py-2.5">
+                <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.12] rounded-2xl px-3 py-2.5">
                   <div className="flex gap-2 flex-wrap flex-1 min-w-0 items-center">
                     {renderAttachmentThumbs()}
-                    <span className="text-xs text-gray-400">{t('stepWhat.receiptAttached')}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500">{t('stepWhat.receiptAttached')}</span>
                   </div>
                 </div>
               )}
               <div>
                 <label
                   htmlFor="expense-title"
-                  className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                  className="block text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5"
                 >
                   {t('stepWhat.titleLabel')}
                 </label>
@@ -1178,13 +1191,13 @@ export function ExpenseComposer({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={t('stepWhat.titlePlaceholder')}
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-base text-gray-900 dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 />
               </div>
               <div>
                 <label
                   htmlFor="expense-amount"
-                  className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                  className="block text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5"
                 >
                   {t('stepWhat.amountLabelMobile')}
                 </label>
@@ -1196,35 +1209,35 @@ export function ExpenseComposer({
                     value={amountText}
                     onChange={(e) => setAmountText(sanitizeAmountInput(e.target.value))}
                     placeholder="0"
-                    className="w-40 text-3xl font-bold text-gray-900 text-right focus:outline-none bg-transparent"
+                    className="w-40 text-3xl font-bold text-gray-900 dark:text-gray-100 dark:placeholder-slate-500 text-right focus:outline-none bg-transparent"
                   />
-                  <span className="text-lg text-gray-400 font-medium">{t('currencySuffix')}</span>
+                  <span className="text-lg text-gray-400 dark:text-slate-500 font-medium">{t('currencySuffix')}</span>
                 </div>
                 {renderRefundToggle()}
               </div>
               <div>
                 <label
                   htmlFor="expense-date"
-                  className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                  className="block text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5"
                 >
                   {t('stepWhat.dateLabelMobile')}
                 </label>
                 <div className="relative">
                   <Calendar
                     size={17}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none"
                   />
                   <input
                     id="expense-date"
                     type="date"
                     value={dateStr}
                     onChange={(e) => setDateStr(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-3 text-[15px] text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full border border-gray-200 rounded-xl pl-10 pr-3.5 py-3 text-[15px] text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
               </div>
               <div>
-                <div className="text-[13px] font-semibold text-gray-700 mb-1.5">{t('stepWhat.payerLabel')}</div>
+                <div className="text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5">{t('stepWhat.payerLabel')}</div>
                 {renderPayerChips()}
               </div>
             </>
@@ -1232,14 +1245,14 @@ export function ExpenseComposer({
 
           {mobileStep === 'split' && (
             <>
-              <div className="flex bg-gray-100 rounded-xl p-1">
+              <div className="flex bg-gray-100 dark:bg-white/[0.07] rounded-xl p-1">
                 <button
                   type="button"
                   onClick={() => setSplitMode('equal')}
                   className={`flex-1 text-center text-sm py-2 rounded-lg transition-colors ${
                     splitMode === 'equal'
-                      ? 'bg-white font-semibold text-gray-900 shadow-sm'
-                      : 'font-medium text-gray-500'
+                      ? 'bg-white font-semibold text-gray-900 shadow-sm dark:bg-white/[0.12] dark:text-gray-100'
+                      : 'font-medium text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {t('stepWho.modeEqual')}
@@ -1249,8 +1262,8 @@ export function ExpenseComposer({
                   onClick={() => splitMode === 'equal' && setSplitMode('shares')}
                   className={`flex-1 text-center text-sm py-2 rounded-lg transition-colors ${
                     splitMode !== 'equal'
-                      ? 'bg-white font-semibold text-gray-900 shadow-sm'
-                      : 'font-medium text-gray-500'
+                      ? 'bg-white font-semibold text-gray-900 shadow-sm dark:bg-white/[0.12] dark:text-gray-100'
+                      : 'font-medium text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {t('stepWho.selectShares')}
@@ -1268,7 +1281,7 @@ export function ExpenseComposer({
                       onClick={() =>
                         setSplitMode(splitMode === 'amounts' ? 'shares' : 'amounts')
                       }
-                      className="text-center text-[13px] text-primary-dark underline underline-offset-2"
+                      className="text-center text-[13px] text-primary-dark dark:text-primary-light underline underline-offset-2"
                     >
                       {splitMode === 'amounts'
                         ? t('stepWho.switchToShares')
@@ -1283,27 +1296,27 @@ export function ExpenseComposer({
           {mobileStep === 'review' && (
             <>
               {/* preview card */}
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+              <div className="bg-gray-50 border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.12] rounded-2xl p-4">
                 <div className="flex gap-3">
                   <div className="flex-shrink-0">
                     <div
-                      className={`p-2 rounded-lg ${isRefund ? 'bg-green-100' : 'bg-primary/10'}`}
+                      className={`p-2 rounded-lg ${isRefund ? 'bg-green-100 dark:bg-green-500/15' : 'bg-primary/10'}`}
                     >
                       {isRefund ? (
-                        <ArrowLeft size={20} className="text-green-600" />
+                        <ArrowLeft size={20} className="text-green-600 dark:text-green-300" />
                       ) : (
-                        <Receipt size={20} className="text-primary" />
+                        <Receipt size={20} className="text-primary dark:text-primary-light" />
                       )}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between gap-2 mb-0.5">
-                      <span className="font-semibold text-[15px] text-gray-900 min-w-0 break-words">
+                      <span className="font-semibold text-[15px] text-gray-900 dark:text-gray-100 min-w-0 break-words">
                         {title || '—'}
                       </span>
                       <span
                         className={`font-bold text-[15px] flex-shrink-0 ${
-                          isRefund ? 'text-green-600' : 'text-gray-900'
+                          isRefund ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
                         }`}
                       >
                         {amount !== null
@@ -1311,20 +1324,20 @@ export function ExpenseComposer({
                           : '—'}
                       </span>
                     </div>
-                    <div className="text-[13px] text-gray-600 mb-2">
+                    <div className="text-[13px] text-gray-600 dark:text-slate-300 mb-2">
                       {t('summary.paidBy')} <strong>{payer ? payerName(payer) : '—'}</strong> ·{' '}
                       {formatDayShort(dateStr, locale)}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {splitMode === 'equal' ? (
-                        <span className="bg-white border border-gray-200 text-gray-700 text-[11px] px-2 py-1 rounded-md">
+                        <span className="bg-white border border-gray-200 text-gray-700 dark:bg-white/[0.06] dark:border-white/[0.12] dark:text-slate-300 text-[11px] px-2 py-1 rounded-md">
                           {t('stepWho.modeEqual')}
                         </span>
                       ) : (
                         includedParticipants.map((p) => (
                           <span
                             key={p.id}
-                            className="bg-white border border-gray-200 text-gray-700 text-[11px] px-2 py-1 rounded-md"
+                            className="bg-white border border-gray-200 text-gray-700 dark:bg-white/[0.06] dark:border-white/[0.12] dark:text-slate-300 text-[11px] px-2 py-1 rounded-md"
                           >
                             {p.name.split(' ')[0]}:{' '}
                             {splitMode === 'shares'
@@ -1345,7 +1358,7 @@ export function ExpenseComposer({
                         type="button"
                         aria-label={t('attachments.ariaAdd')}
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-11 h-11 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-400"
+                        className="w-11 h-11 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 dark:border-white/[0.15] dark:text-slate-500 dark:hover:text-slate-300 dark:hover:border-white/[0.25] flex items-center justify-center"
                       >
                         <Camera size={16} />
                       </button>
@@ -1360,7 +1373,7 @@ export function ExpenseComposer({
         </div>
 
         {/* sticky CTA */}
-        <div className="px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-100">
+        <div className="px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-100 dark:bg-[#1b212c] dark:border-white/[0.07]">
           {mobileStep === 'review' ? (
             <>
               <button
@@ -1371,7 +1384,7 @@ export function ExpenseComposer({
               >
                 {saving ? t('saving') : t('save')}
               </button>
-              <p className="text-center text-xs text-gray-400 mt-2.5">
+              <p className="text-center text-xs text-gray-400 dark:text-slate-500 mt-2.5">
                 {t('summary.editHint')}
               </p>
             </>
@@ -1394,6 +1407,7 @@ export function ExpenseComposer({
   // ═══ DESKTOP: single modal form ══════════════════════════════════════
   return createPortal(
     <div
+      data-app-theme={theme}
       className="fixed inset-0 z-50 flex items-center justify-center p-6"
       role="dialog"
       aria-modal="true"
@@ -1401,15 +1415,15 @@ export function ExpenseComposer({
     >
       {hiddenFileInputs}
       <div className="absolute inset-0 bg-slate-900/60" onClick={() => !saving && onClose()} />
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-[720px] max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white dark:bg-[#1b212c] dark:border dark:border-white/[0.06] rounded-3xl shadow-2xl w-full max-w-[720px] max-h-[92vh] flex flex-col overflow-hidden">
         {/* header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100 flex-shrink-0">
-          <h2 className="font-serif text-[22px] font-bold text-gray-900">{heading}</h2>
+        <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100 dark:border-white/[0.07] flex-shrink-0">
+          <h2 className="font-serif text-[22px] font-bold text-gray-900 dark:text-gray-100">{heading}</h2>
           <button
             type="button"
             aria-label={t('close')}
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+            className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 dark:bg-white/[0.07] dark:hover:bg-white/[0.1] dark:text-slate-400 flex items-center justify-center transition-colors"
           >
             <X size={18} />
           </button>
@@ -1421,7 +1435,7 @@ export function ExpenseComposer({
             <div className="col-span-2">
               <label
                 htmlFor="expense-title"
-                className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                className="block text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5"
               >
                 {t('stepWhat.titleLabel')}
               </label>
@@ -1432,13 +1446,13 @@ export function ExpenseComposer({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t('stepWhat.titlePlaceholder')}
-                className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-[15px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+                className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-[15px] text-gray-900 dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               />
             </div>
             <div>
               <label
                 htmlFor="expense-amount"
-                className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                className="block text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5"
               >
                 {t('stepWhat.amountLabel')}
               </label>
@@ -1450,9 +1464,9 @@ export function ExpenseComposer({
                   value={amountText}
                   onChange={(e) => setAmountText(sanitizeAmountInput(e.target.value))}
                   placeholder="0"
-                  className="w-full border border-gray-200 rounded-xl pl-3.5 pr-10 py-3 text-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+                  className="w-full border border-gray-200 rounded-xl pl-3.5 pr-10 py-3 text-lg font-bold text-gray-900 dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-slate-500 pointer-events-none">
                   {t('currencySuffix')}
                 </span>
               </div>
@@ -1461,33 +1475,33 @@ export function ExpenseComposer({
             <div>
               <label
                 htmlFor="expense-date"
-                className="block text-[13px] font-semibold text-gray-700 mb-1.5"
+                className="block text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5"
               >
                 {t('stepWhat.dateLabel')}
               </label>
               <div className="relative">
                 <Calendar
                   size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none"
                 />
                 <input
                   id="expense-date"
                   type="date"
                   value={dateStr}
                   onChange={(e) => setDateStr(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl pl-9 pr-3.5 py-3 text-[15px] text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full border border-gray-200 rounded-xl pl-9 pr-3.5 py-3 text-[15px] text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
             </div>
             <div className="col-span-2">
-              <div className="text-[13px] font-semibold text-gray-700 mb-1.5">{t('stepWhat.payerLabel')}</div>
+              <div className="text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5">{t('stepWhat.payerLabel')}</div>
               {renderPayerChips()}
             </div>
           </div>
 
           {/* attachments */}
           <div>
-            <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 mb-2.5">
+            <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 dark:text-slate-500 mb-2.5">
               {t('attachments.title')}
             </div>
             <div
@@ -1502,7 +1516,7 @@ export function ExpenseComposer({
                 addFiles(e.dataTransfer.files)
               }}
               className={`border-2 border-dashed rounded-2xl px-5 py-4 flex items-center gap-4 transition-colors ${
-                dragActive ? 'border-primary bg-primary/5' : 'border-gray-200'
+                dragActive ? 'border-primary bg-primary/5' : 'border-gray-200 dark:border-white/[0.12]'
               }`}
             >
               {(existingAttachments.length > 0 || newFiles.length > 0) && (
@@ -1511,28 +1525,28 @@ export function ExpenseComposer({
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-700">
+                <div className="text-sm font-medium text-gray-700 dark:text-slate-300">
                   {t('attachments.dropHere')}
                 </div>
-                <div className="text-[13px] text-gray-400">
+                <div className="text-[13px] text-gray-400 dark:text-slate-500">
                   {t('attachments.orPrefix')}{' '}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-primary-dark font-semibold hover:underline"
+                    className="text-primary-dark dark:text-primary-light font-semibold hover:underline"
                   >
                     {t('attachments.chooseFile')}
                   </button>{' '}
                   {t('attachments.mobileHint')}
                 </div>
               </div>
-              <Upload size={22} className="text-gray-400 flex-shrink-0" />
+              <Upload size={22} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
             </div>
           </div>
 
           {/* split */}
           <div>
-            <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 mb-2.5">
+            <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 dark:text-slate-500 mb-2.5">
               {t('stepWho.sectionTitle')}
             </div>
             <div className="flex gap-2 mb-3.5 flex-wrap">
@@ -1554,7 +1568,7 @@ export function ExpenseComposer({
                     className={`text-[13px] px-3.5 py-2 rounded-full border transition-colors ${
                       splitMode === mode
                         ? 'font-semibold text-white bg-primary border-primary'
-                        : 'font-medium text-gray-500 border-gray-200 hover:border-gray-300 disabled:opacity-40'
+                        : 'font-medium text-gray-500 border-gray-200 hover:border-gray-300 dark:text-slate-400 dark:border-white/[0.12] dark:hover:border-white/[0.25] disabled:opacity-40'
                     }`}
                   >
                     {label}
@@ -1578,13 +1592,13 @@ export function ExpenseComposer({
         </div>
 
         {/* footer */}
-        <div className="flex items-center justify-end gap-4 px-7 py-4 border-t border-gray-100 bg-gray-50/60 flex-shrink-0">
+        <div className="flex items-center justify-end gap-4 px-7 py-4 border-t border-gray-100 bg-gray-50/60 dark:border-white/[0.07] dark:bg-white/[0.03] flex-shrink-0">
           <div className="flex gap-2.5 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="text-sm font-semibold text-gray-600 px-4.5 py-2.5 rounded-xl hover:bg-gray-100 transition-colors"
+              className="text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-white/[0.07] px-4.5 py-2.5 rounded-xl transition-colors"
             >
               {t('cancel')}
             </button>

@@ -68,7 +68,7 @@ export function InformationViewSkeleton() {
 
 export function OrganizationViewSkeleton() {
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
+    <div className="bg-white/95 dark:bg-[#1b212c] dark:border dark:border-white/[0.06] backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
       {/* Hero section skeleton */}
       <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8">
         <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
@@ -83,7 +83,7 @@ export function OrganizationViewSkeleton() {
         <Skeleton className="h-8 w-48 mb-6 rounded-lg" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100">
+            <div key={i} className="bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 dark:border-white/[0.07]">
               <Skeleton className="h-44 w-full" />
               <div className="p-5">
                 <div className="flex justify-between items-center mb-3">
@@ -103,7 +103,7 @@ export function OrganizationViewSkeleton() {
 
 export function ParticipantsViewSkeleton() {
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
+    <div className="bg-white/95 dark:bg-[#1b212c] dark:border dark:border-white/[0.06] backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
       {/* Hero section skeleton */}
       <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8">
         <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />

@@ -1,137 +1,268 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Users, Moon } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+// "Účastníci" — participant cards with the account-link status, redesigned
+// per "Organizace a účastníci — finál" (1d/1e). For anonymous visitors this
+// tab is the main entry into the claim flow: unlinked names offer
+// "To jsem já", linked ones are locked. The viewer's own card is
+// highlighted in the chata theme color.
+
+import { useMemo, useState } from 'react'
+import { Check, Lock } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
+import type { AppLocale } from '@/i18n/config'
 import type { Chata, Participant } from '@/payload-types'
 import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
+import { sinceLabel } from '@/lib/chataSelection'
+import { anonymousViewer, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
+import type { ViewerClaim } from '@/lib/claimRequests'
+import { getTripNights } from '../utils/participantHelpers'
+import { getBedAssignments } from '../utils/tripData'
+import { Sheet, StatStrip, StatusBadge } from './SheetUi'
 import {
-  participantHasPet,
-  getOccupantParticipant,
-  getOccupantNights,
-  getTripNights,
-} from '../utils/participantHelpers'
+  ClaimDialog,
+  ClaimResultModal,
+  submitClaim,
+  type ClaimSubmitOutcome,
+} from './ClaimFlow'
 
 interface ParticipantsViewProps {
   chata: Chata
   participants: Participant[]
+  viewer?: FinanceViewer
+  locked?: LockedParticipant[]
+  pendingClaims?: number[]
+  viewerClaims?: ViewerClaim[]
+  onDataChanged?: () => Promise<void> | void
 }
 
-interface ParticipantNightInfo {
-  nights: number
-  isPartialStay: boolean
-}
+export function ParticipantsView({
+  chata,
+  participants,
+  viewer = anonymousViewer,
+  locked = [],
+  pendingClaims = [],
+  viewerClaims = [],
+  onDataChanged,
+}: ParticipantsViewProps) {
+  const t = useTranslations('trip')
+  const locale = useLocale() as AppLocale
 
-function buildParticipantNightMap(chata: Chata): Map<number, ParticipantNightInfo> {
+  const [claimDialogFor, setClaimDialogFor] = useState<Participant | null>(null)
+  const [claimResult, setClaimResult] = useState<{
+    outcome: ClaimSubmitOutcome
+    participant: Participant | null
+  } | null>(null)
+  const [claimBusyId, setClaimBusyId] = useState<number | null>(null)
+
   const totalNights = getTripNights(chata)
-  const nightMap = new Map<number, ParticipantNightInfo>()
+  const bedAssignments = useMemo(
+    () => getBedAssignments(chata, participants),
+    [chata, participants],
+  )
+  const lockedIds = useMemo(() => new Set(locked.map((l) => l.id)), [locked])
 
-  if (totalNights === 0) return nightMap
+  const bankerId =
+    typeof chata.banker === 'object' && chata.banker !== null ? chata.banker.id : chata.banker
 
-  const rooms = chata.rooms || []
-  for (const room of rooms) {
-    for (const bed of room.beds || []) {
-      for (const occupant of bed.occupants || []) {
-        const participant = getOccupantParticipant(occupant)
-        if (!participant) continue
+  const sorted = useMemo(() => {
+    const mine = (p: Participant) => (viewer.linkedParticipantIds.includes(p.id) ? 0 : 1)
+    return [...participants].sort(
+      (a, b) => mine(a) - mine(b) || a.name.localeCompare(b.name, 'cs'),
+    )
+  }, [participants, viewer.linkedParticipantIds])
 
-        const occupantNights = getOccupantNights(occupant)
-        const stayNights = occupantNights ? occupantNights.length : totalNights
+  const petsCount = participants.filter((p) => p.hasPet).length
+  const linkedCount = participants.filter((p) => p.account != null).length
 
-        // If participant appears in multiple beds, take the maximum
-        const existing = nightMap.get(participant.id)
-        if (!existing || stayNights > existing.nights) {
-          nightMap.set(participant.id, {
-            nights: stayNights,
-            isPartialStay: occupantNights !== null && stayNights < totalNights,
-          })
-        }
+  // Claim UI only for viewers without their own participant here (the same
+  // rule as the Finance banner — admins and already-linked users never see it)
+  const showClaimUi = !viewer.canViewAll && viewer.linkedParticipantIds.length === 0
+  const isClaimable = (p: Participant) =>
+    !lockedIds.has(p.id) && !viewer.linkedParticipantIds.includes(p.id) && p.account == null
+
+  const doSubmitClaim = async (participant: Participant) => {
+    setClaimBusyId(participant.id)
+    try {
+      const outcome = await submitClaim(participant.id)
+      if (outcome.kind === 'approved' || outcome.kind === 'pending') {
+        await onDataChanged?.()
       }
+      setClaimResult({ outcome, participant })
+    } finally {
+      setClaimBusyId(null)
     }
   }
 
-  return nightMap
-}
+  const statItems: Array<{ value: React.ReactNode; label: string }> = [
+    {
+      value: participants.length,
+      label: t('participants.participantsCountLabel', { count: participants.length }),
+    },
+  ]
+  if (petsCount > 0) {
+    statItems.push({ value: petsCount, label: t('participants.petsCountLabel', { count: petsCount }) })
+  }
+  if (totalNights > 0) {
+    statItems.push({
+      value: totalNights,
+      label: t('participants.nightsCountLabel', { count: totalNights }),
+    })
+  }
+  if (linkedCount > 0) {
+    statItems.push({
+      value: linkedCount,
+      label: t('participants.linkedCountLabel', { count: linkedCount }),
+    })
+  }
 
-export function ParticipantsView({ chata, participants }: ParticipantsViewProps) {
-  const t = useTranslations('trip')
-  const sortedParticipants = useMemo(
-    () => [...participants].sort((a, b) => a.name.localeCompare(b.name, 'cs')),
-    [participants],
-  )
-
-  const nightMap = useMemo(() => buildParticipantNightMap(chata), [chata])
-
-  const totalNights = getTripNights(chata)
+  /** "3 ze 4 nocí · od čtvrtka" — needs the rozpis; plain name without it. */
+  const nightsInfo = (p: Participant): string | null => {
+    if (totalNights === 0) return null
+    const assignment = bedAssignments.get(p.id)
+    if (!assignment) return null
+    if (assignment.nights === null || assignment.nights.length >= totalNights) {
+      return t('participants.wholeStay')
+    }
+    const first = Math.min(...assignment.nights)
+    let suffix = ''
+    if (chata.tripDateFrom && first > 1) {
+      const d = new Date(chata.tripDateFrom)
+      d.setDate(d.getDate() + first - 1)
+      suffix = ` · ${sinceLabel(d, locale)}`
+    }
+    return (
+      t('participants.partialStay', { nights: assignment.nights.length, total: totalNights }) +
+      suffix
+    )
+  }
 
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto animate-in fade-in duration-300">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8 border-2 border-primary/10">
-        <Users size={48} className="mx-auto text-primary mb-4" />
-        <h2 className="font-serif text-2xl sm:text-3xl font-black text-gray-900 mb-6">
-          {t('participants.title')}
-        </h2>
-        <div className="flex justify-center gap-4 sm:gap-8 flex-wrap">
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
-            <span className="text-3xl block mb-1">👥</span>
-            <span className="text-2xl font-bold text-primary font-serif">
-              {participants.length}
-            </span>
-            <span className="block text-sm text-gray-600 font-medium">
-              {t('participants.participantsCountLabel', { count: participants.length })}
-            </span>
-          </div>
-          {totalNights > 0 && (
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md min-w-[120px]">
-              <span className="text-3xl block mb-1">🌙</span>
-              <span className="text-2xl font-bold text-primary font-serif">{totalNights}</span>
-              <span className="block text-sm text-gray-600 font-medium">
-                {t('participants.nightsCountLabel', { count: totalNights })}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+    <Sheet>
+      {statItems.length > 0 && <StatStrip items={statItems} />}
 
-      {/* Participant Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {sortedParticipants.map((participant) => {
-          const nightInfo = nightMap.get(participant.id)
-          const hasPet = participantHasPet(participant)
-          const avatarColor = getAvatarColor(participant.name)
+      {showClaimUi && !viewer.authenticated && (
+        <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 dark:border-white/20 dark:bg-white/[0.03] px-4 py-3.5 text-[13px] text-gray-500 dark:text-slate-400 leading-relaxed">
+          {t.rich('participants.claimIntro', {
+            strong: (chunks) => (
+              <strong className="text-gray-700 dark:text-slate-200">{chunks}</strong>
+            ),
+          })}
+        </div>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-5">
+        {sorted.map((participant) => {
+          const isMine = viewer.linkedParticipantIds.includes(participant.id)
+          const isBanker = bankerId != null && participant.id === bankerId
+          const hasAccount = participant.account != null
+          const ownPending = viewerClaims.some(
+            (c) => c.participantId === participant.id && c.status === 'pending',
+          )
+          const pendingByAnyone = pendingClaims.includes(participant.id)
+          const claimable = showClaimUi && isClaimable(participant) && !ownPending
+          const stayInfo = nightsInfo(participant)
 
           return (
             <div
               key={participant.id}
-              className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100"
+              className={`flex items-center gap-3 rounded-2xl px-3.5 py-3 border ${
+                isMine
+                  ? 'border-2 border-primary/40 bg-primary/[0.06] dark:bg-primary/10'
+                  : 'border-gray-100 bg-gray-50 dark:border-white/[0.06] dark:bg-white/[0.03]'
+              }`}
             >
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${avatarColor}`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-[13px] font-bold shrink-0 ${getAvatarColor(participant.name)}`}
               >
                 {getInitials(participant.name)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-900 truncate">
+                <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                   {participant.name}
-                  {hasPet && ' + 🐕'}
+                  {participant.hasPet && ' 🐕'}
+                  {isMine && (
+                    <span className="text-primary-dark dark:text-primary-light font-semibold">
+                      {' '}
+                      {t('participants.thatIsYou')}
+                    </span>
+                  )}
+                  {isBanker && (
+                    <span className="ml-1.5 align-[1px] rounded-[5px] bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300 text-[10px] font-bold px-1.5 py-0.5">
+                      {t('participants.bankerBadge')}
+                    </span>
+                  )}
                 </div>
-                {nightInfo && totalNights > 0 && (
-                  <div className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                    <Moon size={14} />
-                    {nightInfo.isPartialStay
-                      ? t('participants.partialStay', {
-                          nights: nightInfo.nights,
-                          total: totalNights,
-                        })
-                      : t('participants.wholeStay')}
-                  </div>
-                )}
+                <div
+                  className={`text-xs mt-0.5 flex items-center gap-1.5 flex-wrap ${
+                    stayInfo && stayInfo !== t('participants.wholeStay')
+                      ? 'text-primary-dark dark:text-primary-light'
+                      : 'text-gray-500 dark:text-slate-400'
+                  }`}
+                >
+                  {stayInfo && <span>{stayInfo}</span>}
+                  {hasAccount ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+                      {showClaimUi && !viewer.authenticated ? (
+                        <Lock size={10} aria-hidden="true" />
+                      ) : (
+                        <Check size={10} strokeWidth={3} aria-hidden="true" />
+                      )}
+                      {t('participants.linked')}
+                    </span>
+                  ) : ownPending ? (
+                    <span className="text-primary-dark dark:text-primary-light">
+                      {t('participants.claimPendingOwn')}
+                    </span>
+                  ) : showClaimUi && pendingByAnyone ? (
+                    <span className="text-gray-400 dark:text-slate-500">
+                      {t('participants.claimPending')}
+                    </span>
+                  ) : showClaimUi ? (
+                    <span className="text-gray-400 dark:text-slate-500">
+                      {t('participants.notLinked')}
+                    </span>
+                  ) : null}
+                </div>
               </div>
+              {ownPending ? (
+                <StatusBadge tone="amber">{t('participants.waitingBadge')}</StatusBadge>
+              ) : claimable ? (
+                <button
+                  type="button"
+                  disabled={claimBusyId !== null}
+                  onClick={() =>
+                    viewer.authenticated
+                      ? void doSubmitClaim(participant)
+                      : setClaimDialogFor(participant)
+                  }
+                  className="rounded-[10px] border border-primary text-primary-dark dark:text-primary-light text-xs font-bold px-3 py-1.5 whitespace-nowrap hover:bg-primary/10 transition-colors disabled:opacity-50"
+                >
+                  {t('participants.thatIsMe')}
+                </button>
+              ) : null}
             </div>
           )
         })}
       </div>
-    </div>
+
+      <div className="text-[13px] text-gray-400 dark:text-slate-500 text-center mt-5">
+        {t('participants.footnote')}
+      </div>
+
+      {claimDialogFor && (
+        <ClaimDialog
+          participant={claimDialogFor}
+          chataName={chata.name}
+          onClose={() => setClaimDialogFor(null)}
+        />
+      )}
+      {claimResult && (
+        <ClaimResultModal
+          outcome={claimResult.outcome}
+          participant={claimResult.participant}
+          onClose={() => setClaimResult(null)}
+        />
+      )}
+    </Sheet>
   )
 }
