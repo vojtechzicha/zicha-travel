@@ -17,6 +17,7 @@ import {
   getOccupantNights,
   getOccupantParticipant,
   getTripNights,
+  isTentativeTrip,
   type Room,
 } from '../utils/participantHelpers'
 import {
@@ -568,7 +569,10 @@ export function OrganizationView({
             const firstDeparture = connections[0]?.departure
             const lastArrival = connections[connections.length - 1]?.arrival
             const isBack = option.direction === 'zpet'
-            const day = ptDayLabel(isBack ? chata.tripDateTo : chata.tripDateFrom)
+            // tentative dates: the window bounds are not travel days
+            const day = isTentativeTrip(chata)
+              ? null
+              : ptDayLabel(isBack ? chata.tripDateTo : chata.tripDateFrom)
             const isMyRide = riders.some((p) => myIds.includes(p.id))
             const whenBits = [
               day,

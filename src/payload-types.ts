@@ -196,6 +196,14 @@ export interface Chata {
   tripDateFrom?: string | null;
   tripDateTo?: string | null;
   /**
+   * The dates above are only the window the trip will fall into. The frontend then shows the window and the planned number of nights instead of a fixed arrival and departure.
+   */
+  tripDatesTentative?: boolean | null;
+  /**
+   * How many nights the stay will take within the window.
+   */
+  tripPlannedNights?: number | null;
+  /**
    * Check-in time (e.g., "od 15:00")
    */
   checkInTime?: string | null;
@@ -1049,6 +1057,8 @@ export interface ChatasSelect<T extends boolean = true> {
   informationEnabled?: T;
   tripDateFrom?: T;
   tripDateTo?: T;
+  tripDatesTentative?: T;
+  tripPlannedNights?: T;
   checkInTime?: T;
   checkOutTime?: T;
   destinationName?: T;

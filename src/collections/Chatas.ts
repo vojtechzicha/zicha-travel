@@ -1,6 +1,8 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { Chata } from '../payload-types'
 import { afterReadHook } from './Chatas/hooks/afterRead'
 import { canManageChata, ownChataAccess, refId, superadminOnly } from '../lib/access'
+import { pickValidationMessage } from '../i18n/adminTranslations'
 
 export const Chatas: CollectionConfig = {
   slug: 'chatas',
@@ -329,6 +331,61 @@ export const Chatas: CollectionConfig = {
               pickerAppearance: 'dayOnly',
             },
             condition: (data) => data.informationEnabled === true,
+          },
+        },
+        {
+          name: 'tripDatesTentative',
+          type: 'checkbox',
+          defaultValue: false,
+          label: { en: 'Dates not fixed yet', cs: 'Termín zatím orientační' },
+          admin: {
+            description: {
+              en: 'The dates above are only the window the trip will fall into. The frontend then shows the window and the planned number of nights instead of a fixed arrival and departure.',
+              cs: 'Datumy výše vymezují jen období, do kterého výlet spadne. Web pak místo pevného příjezdu a odjezdu ukazuje toto období a plánovaný počet nocí.',
+            },
+            condition: (data) => data.informationEnabled === true,
+          },
+        },
+        {
+          name: 'tripPlannedNights',
+          type: 'number',
+          min: 1,
+          label: { en: 'Planned nights', cs: 'Plánovaný počet nocí' },
+          validate: (
+            value: number | null | undefined,
+            { req, siblingData }: { req: PayloadRequest; siblingData: unknown },
+          ) => {
+            const data = siblingData as Partial<Chata> | undefined
+            if (data?.tripDatesTentative !== true) return true
+            if (!value || value < 1) {
+              return pickValidationMessage(
+                req,
+                'A tentative trip needs the planned number of nights',
+                'Orientační termín potřebuje plánovaný počet nocí',
+              )
+            }
+            if (data.tripDateFrom && data.tripDateTo) {
+              const windowNights = Math.round(
+                (new Date(data.tripDateTo).getTime() - new Date(data.tripDateFrom).getTime()) /
+                  86_400_000,
+              )
+              if (windowNights > 0 && value > windowNights) {
+                return pickValidationMessage(
+                  req,
+                  `The planned nights don't fit the window (at most ${windowNights})`,
+                  `Plánované noci se do uvedeného období nevejdou (nejvýš ${windowNights})`,
+                )
+              }
+            }
+            return true
+          },
+          admin: {
+            description: {
+              en: 'How many nights the stay will take within the window.',
+              cs: 'Na kolik nocí se v rámci uvedeného období pojede.',
+            },
+            condition: (data) =>
+              data.informationEnabled === true && data.tripDatesTentative === true,
           },
         },
         {

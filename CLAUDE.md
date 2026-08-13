@@ -226,6 +226,22 @@ API payload, no new endpoints).
   publicTransportOptions[].riders. Prod DDL for these is appended to
   `NEW_SCHEMA_DDL` in `scripts/migrate-payer-polymorphic.mjs` (captured
   from the local dev push, additive only).
+- **Tentative dates** ("orientační termín", `tripDatesTentative` +
+  `tripPlannedNights`): for far-away trips booked long ahead,
+  tripDateFrom/To only bound the WINDOW the trip will fall into and the
+  stay length lives in `tripPlannedNights` (validated to fit the window).
+  `getTripNights` returns the planned count, `getTripPhase` never says
+  "during" (before until the window closes, then after), `bucketChatas`
+  keeps the chata in "upcoming" even mid-window. UI: hero shows a window
+  box ("červenec 2027", full-month windows collapse via
+  `tentativeWindowLabel`) with a "Termín upřesníme" badge instead of
+  countdown + arrival/departure; homepage cards show
+  `tentativeDateLabel` ("červenec 2027 · 10 nocí · termín upřesníme");
+  calendar links, weather and per-night weekday labels are suppressed
+  until the dates are fixed (untick the box + set real dates, planned
+  nights is ignored afterwards). Label helpers live in
+  `src/lib/chataSelection.ts` with the other date grammar; tests in
+  `tests/int/tripData.int.spec.ts` + `chataSelection.int.spec.ts`.
 - **"Klíče a Wi-Fi"** (`privateInfo` label+value rows): the ONE piece of
   chata data that is NOT public. Signed-in viewers see the values;
   anonymous visitors see the same rows with masked values and a sign-in

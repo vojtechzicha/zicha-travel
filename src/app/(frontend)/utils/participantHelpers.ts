@@ -38,8 +38,16 @@ export function getOccupantNights(occupant: Occupant): number[] | null {
   return null // all nights
 }
 
+// A tentative trip ("orientační termín"): tripDateFrom/To only bound the
+// window the trip will fall into; the stay length lives in tripPlannedNights
+// until the dates are fixed.
+export function isTentativeTrip(chata: Chata): boolean {
+  return chata.tripDatesTentative === true
+}
+
 // Helper to calculate number of trip nights
 export function getTripNights(chata: Chata): number {
+  if (isTentativeTrip(chata)) return chata.tripPlannedNights ?? 0
   if (!chata.tripDateFrom || !chata.tripDateTo) return 0
   const from = new Date(chata.tripDateFrom)
   const to = new Date(chata.tripDateTo)

@@ -460,6 +460,11 @@ ALTER TABLE chatas ADD COLUMN IF NOT EXISTS destination_lng numeric;
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS shared_album_url character varying;
 ALTER TABLE chatas_shared_cars ADD COLUMN IF NOT EXISTS seats numeric;
 
+-- Tentative trip dates ("orientační termín"): the trip dates become a window
+-- and the stay length lives in trip_planned_nights until the dates are fixed.
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS trip_dates_tentative boolean DEFAULT false;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS trip_planned_nights numeric;
+
 CREATE TABLE IF NOT EXISTS chatas_amenities (
   _order integer NOT NULL,
   _parent_id integer NOT NULL,

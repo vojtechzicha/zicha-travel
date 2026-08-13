@@ -10,6 +10,8 @@
 export interface DatedChata {
   tripDateFrom?: string | null
   tripDateTo?: string | null
+  /** true = the dates only bound a window, the exact dates aren't set yet */
+  tripDatesTentative?: boolean | null
 }
 
 /** Day-granular number (UTC date part). Trip dates are stored at 12:00Z, so
@@ -59,7 +61,10 @@ export function bucketChatas<T extends DatedChata>(chatas: T[], today: Date): Ch
     if (!chata.tripDateFrom && !chata.tripDateTo) {
       undated.push(chata)
     } else if (startOf(chata) <= todayDay && endOf(chata) >= todayDay) {
-      live.push(chata)
+      // A tentative trip is never "live": today being inside the window does
+      // not mean the trip is happening. It stays upcoming until the window ends.
+      if (chata.tripDatesTentative === true) upcoming.push(chata)
+      else live.push(chata)
     } else if (startOf(chata) > todayDay) {
       upcoming.push(chata)
     } else {
@@ -227,6 +232,47 @@ export function formatMonthYear(date: string | Date, locale: AppLocale = 'cs'): 
 export function chataYear(chata: DatedChata): number | null {
   const date = chata.tripDateFrom ?? chata.tripDateTo
   return date ? parts(date).year : null
+}
+
+// ─── tentative dates ("orientační termín") ────────────────────────────────
+// The trip dates only bound a window; the stay length is a separate night
+// count. Labels live here with the other date grammar, not in the catalogs.
+
+/** "10 nocí" / "10 nights" with the Czech 1 / 2–4 / 5+ forms. */
+export function nightsLabel(count: number, locale: AppLocale = 'cs'): string {
+  if (locale === 'en') return count === 1 ? '1 night' : `${count} nights`
+  if (count === 1) return '1 noc'
+  if (count >= 2 && count <= 4) return `${count} noci`
+  return `${count} nocí`
+}
+
+/** "červenec 2027" when the window is a whole calendar month, otherwise the
+ * long range ("1.–20. července 2027"). */
+export function tentativeWindowLabel(
+  from: string | Date,
+  to: string | Date,
+  locale: AppLocale = 'cs',
+): string {
+  const f = parts(from)
+  const t = parts(to)
+  const lastDayOfMonth = new Date(Date.UTC(t.year, t.month + 1, 0)).getUTCDate()
+  if (f.year === t.year && f.month === t.month && f.day === 1 && t.day === lastDayOfMonth) {
+    return formatMonthYear(from, locale)
+  }
+  return formatDateRangeLong(from, to, locale)
+}
+
+/** Card meta line: "červenec 2027 · 10 nocí · termín upřesníme". */
+export function tentativeDateLabel(
+  from: string | Date,
+  to: string | Date,
+  plannedNights: number | null | undefined,
+  locale: AppLocale = 'cs',
+): string {
+  const window = tentativeWindowLabel(from, to, locale)
+  const nights = plannedNights && plannedNights > 0 ? nightsLabel(plannedNights, locale) : null
+  const note = locale === 'en' ? 'dates to be confirmed' : 'termín upřesníme'
+  return [window, nights, note].filter(Boolean).join(' · ')
 }
 
 // ─── viewer settlement ────────────────────────────────────────────────────

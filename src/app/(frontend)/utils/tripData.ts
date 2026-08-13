@@ -5,7 +5,7 @@
 
 import type { Chata, Participant } from '@/payload-types'
 import type { AppLocale } from '@/i18n/config'
-import { getOccupantNights, getTripNights, type Room } from './participantHelpers'
+import { getOccupantNights, getTripNights, isTentativeTrip, type Room } from './participantHelpers'
 
 export type TripPhase = 'before' | 'during' | 'after'
 
@@ -25,6 +25,12 @@ function diffDays(a: Date, b: Date): number {
 export function getTripPhase(chata: Chata, now: Date = new Date()): TripPhase | null {
   if (!chata.tripDateFrom || !chata.tripDateTo) return null
   const today = dayOnly(now)
+  // A tentative trip is never "during": the window only says where the trip
+  // will land, not that it is happening. It stays "before" until the window
+  // closes (in practice the dates get fixed long before that).
+  if (isTentativeTrip(chata)) {
+    return today > dayOnly(chata.tripDateTo) ? 'after' : 'before'
+  }
   if (today < dayOnly(chata.tripDateFrom)) return 'before'
   if (today > dayOnly(chata.tripDateTo)) return 'after'
   return 'during'
@@ -54,7 +60,8 @@ export function tonightNumber(chata: Chata, now: Date = new Date()): number {
 
 /** Short weekday label of night N (its starting evening), e.g. "st". */
 export function nightLabel(chata: Chata, night: number, locale: AppLocale): string {
-  if (!chata.tripDateFrom) return String(night)
+  // Tentative trips have no calendar day for night N yet — plain numbers
+  if (isTentativeTrip(chata) || !chata.tripDateFrom) return String(night)
   const d = dayOnly(chata.tripDateFrom)
   d.setDate(d.getDate() + night - 1)
   return new Intl.DateTimeFormat(locale === 'cs' ? 'cs-CZ' : 'en-GB', {

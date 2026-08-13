@@ -40,11 +40,13 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import {
   countdownLabel,
   formatDateRangeLong,
+  nightsLabel,
   settlementFromBalance,
+  tentativeWindowLabel,
   untilLabel,
   viewerCost,
 } from '@/lib/chataSelection'
-import { getTripNights } from '../utils/participantHelpers'
+import { getTripNights, isTentativeTrip } from '../utils/participantHelpers'
 import {
   arrivalsOnNight,
   dayOnly,
@@ -177,6 +179,9 @@ export function InformationView({
 
   const phase: TripPhase | null = getTripPhase(chata)
   const nights = getTripNights(chata)
+  // Tentative dates: tripDateFrom/To only bound a window, nights come from
+  // tripPlannedNights. No countdown, no calendar event, no weather.
+  const tentative = isTentativeTrip(chata)
   const chataName = chata.shortName || chata.name
 
   // ── viewer's own data (personal card) ──
@@ -235,6 +240,7 @@ export function InformationView({
   const tonight = tonightNumber(chata)
 
   const hasWeather =
+    !tentative &&
     chata.destinationLat != null &&
     chata.destinationLng != null &&
     chata.tripDateFrom != null &&
@@ -283,7 +289,7 @@ export function InformationView({
   // ─── hero ────────────────────────────────────────────────────────────────
 
   const calendarUrl =
-    chata.tripDateFrom && chata.tripDateTo
+    chata.tripDateFrom && chata.tripDateTo && !tentative
       ? googleCalendarAllDayUrl({
           title: chataName,
           dateFrom: new Date(chata.tripDateFrom).toLocaleDateString('en-CA'),
@@ -329,9 +335,29 @@ export function InformationView({
     <div
       className={`${badgeBase} bg-sky-600/10 border-sky-600/25 text-sky-700 dark:bg-sky-400/15 dark:border-sky-400/30 dark:text-sky-300`}
     >
-      {t('information.badgeBefore', {
-        countdown: countdownLabel(daysUntilTrip(chata), locale),
-      })}
+      {tentative
+        ? t('information.badgeTentative')
+        : t('information.badgeBefore', {
+            countdown: countdownLabel(daysUntilTrip(chata), locale),
+          })}
+    </div>
+  )
+  // Tentative hero: one window box instead of arrival -> departure
+  const windowBox = (
+    <div className="text-center">
+      <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-gray-400 dark:text-slate-500">
+        {t('information.whenTitle')}
+      </div>
+      <div className="font-serif text-xl sm:text-[26px] font-black text-gray-900 dark:text-gray-100">
+        {chata.tripDateFrom && chata.tripDateTo
+          ? tentativeWindowLabel(chata.tripDateFrom, chata.tripDateTo, locale)
+          : ''}
+      </div>
+      <div className="text-[13px] text-gray-500 dark:text-slate-400">
+        {nights > 0
+          ? t('information.tentativeNightsNote', { nights: nightsLabel(nights, locale) })
+          : t('information.tentativeNote')}
+      </div>
     </div>
   )
   const dateBoxes = (
@@ -400,13 +426,13 @@ export function InformationView({
         {/* mobile: centered stack */}
         <div className="sm:hidden text-center">
           <div className="mb-4">{beforeBadge}</div>
-          {dateBoxes}
+          {tentative ? windowBox : dateBoxes}
           {heroStats.length > 0 && <StatStrip items={heroStats} bordered={false} />}
           <div className="flex flex-wrap justify-center gap-2">{heroActions(true)}</div>
         </div>
         {/* desktop: dates · badge · stacked actions, stats strip below */}
         <div className="hidden sm:flex items-center justify-between gap-6">
-          {dateBoxes}
+          {tentative ? windowBox : dateBoxes}
           <div className="flex-1 flex justify-center">{beforeBadge}</div>
           <div className="flex flex-col items-stretch gap-2">{heroActions(true)}</div>
         </div>
@@ -452,7 +478,9 @@ export function InformationView({
             {t('information.badgeAfter', {
               range:
                 chata.tripDateFrom && chata.tripDateTo
-                  ? formatDateRangeLong(chata.tripDateFrom, chata.tripDateTo, locale)
+                  ? tentative
+                    ? tentativeWindowLabel(chata.tripDateFrom, chata.tripDateTo, locale)
+                    : formatDateRangeLong(chata.tripDateFrom, chata.tripDateTo, locale)
                   : '',
             })}
           </div>
@@ -550,11 +578,14 @@ export function InformationView({
     myBed && nights > 0
       ? myBed.nights === null
         ? t('information.wholeStayNights', { count: nights }) +
-          ' · ' +
-          t('information.nightsRange', {
-            from: nightLabel(chata, 1, locale),
-            to: nightLabel(chata, nights + 1, locale),
-          })
+          // tentative: night N has no weekday yet, so drop the "st až ne" range
+          (tentative
+            ? ''
+            : ' · ' +
+              t('information.nightsRange', {
+                from: nightLabel(chata, 1, locale),
+                to: nightLabel(chata, nights + 1, locale),
+              }))
         : t('information.partialStayNights', { nights: myBed.nights.length, total: nights })
       : null
 
@@ -781,7 +812,9 @@ export function InformationView({
             )}
             {phase === 'after' && chata.tripDateFrom && chata.tripDateTo && (
               <InfoRow label={t('information.termLabel')}>
-                {formatDateRangeLong(chata.tripDateFrom, chata.tripDateTo, locale)}
+                {tentative
+                  ? tentativeWindowLabel(chata.tripDateFrom, chata.tripDateTo, locale)
+                  : formatDateRangeLong(chata.tripDateFrom, chata.tripDateTo, locale)}
               </InfoRow>
             )}
           </div>
@@ -1275,8 +1308,13 @@ export function InformationView({
               const connections = option.connections || []
               const firstDeparture = connections[0]?.departure
               const lastArrival = connections[connections.length - 1]?.arrival
-              const eventDate =
-                option.direction === 'zpet' ? chata.tripDateTo : chata.tripDateFrom
+              // no calendar link while the dates are tentative — the window
+              // bounds are not travel days
+              const eventDate = tentative
+                ? null
+                : option.direction === 'zpet'
+                  ? chata.tripDateTo
+                  : chata.tripDateFrom
               const riders = transportRiders(option, participants)
 
               return (

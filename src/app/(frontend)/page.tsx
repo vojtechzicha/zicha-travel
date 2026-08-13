@@ -17,6 +17,7 @@ import {
   formatDateRangeShort,
   formatMonthYear,
   greetingName,
+  tentativeDateLabel,
   untilLabel,
   viewerCost,
   viewerFlow,
@@ -151,6 +152,9 @@ export default async function HomePage() {
     const rangeStart = from ?? to
     const rangeEnd = from ? to : null
     const archiveDate = to ?? from
+    // tentative dates: the range is only a window, so cards show the window
+    // plus the planned night count instead of a countdown to a made-up day
+    const tentative = chata.tripDatesTentative === true && rangeStart != null
 
     return {
       id: chata.id,
@@ -162,11 +166,15 @@ export default async function HomePage() {
       coverUrl: identities.get(chata.id)?.coverUrl ?? null,
       status,
       countdown:
-        status === 'upcoming' && rangeStart
+        status === 'upcoming' && rangeStart && !tentative
           ? countdownLabel(daysUntil(rangeStart, today), locale)
           : null,
       untilLabel: status === 'live' && to ? untilLabel(to, locale) : null,
-      dateRangeLong: rangeStart ? formatDateRangeLong(rangeStart, rangeEnd, locale) : null,
+      dateRangeLong: tentative
+        ? tentativeDateLabel(rangeStart!, rangeEnd ?? rangeStart!, chata.tripPlannedNights, locale)
+        : rangeStart
+          ? formatDateRangeLong(rangeStart, rangeEnd, locale)
+          : null,
       dateRangeShort: rangeStart ? formatDateRangeShort(rangeStart, rangeEnd, locale) : null,
       monthYear: archiveDate ? formatMonthYear(archiveDate, locale) : null,
       year: chataYear(chata),

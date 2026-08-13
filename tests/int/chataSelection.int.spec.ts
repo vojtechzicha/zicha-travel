@@ -8,7 +8,10 @@ import {
   formatDateRangeShort,
   formatMonthYear,
   greetingName,
+  nightsLabel,
   settlementFromBalance,
+  tentativeDateLabel,
+  tentativeWindowLabel,
   untilLabel,
   viewerFlow,
   viewerCost,
@@ -50,6 +53,32 @@ describe('bucketChatas', () => {
     expect(buckets.live.map((c) => c.name)).toEqual(['endsToday'])
     expect(buckets.upcoming.map((c) => c.name)).toEqual(['endsLater'])
     expect(buckets.past.map((c) => c.name)).toEqual(['endedEarlier'])
+  })
+
+  it('keeps a tentative trip in upcoming even when today is inside its window', () => {
+    // balt/polsko-2027 shape: the whole window entered as trip dates
+    const tentativeInside = {
+      name: 'tentativeInside',
+      tripDateFrom: d('2026-08-01'),
+      tripDateTo: d('2026-08-31'),
+      tripDatesTentative: true,
+    }
+    const tentativeFuture = {
+      name: 'tentativeFuture',
+      tripDateFrom: d('2027-07-01'),
+      tripDateTo: d('2027-07-31'),
+      tripDatesTentative: true,
+    }
+    const tentativeOver = {
+      name: 'tentativeOver',
+      tripDateFrom: d('2026-06-01'),
+      tripDateTo: d('2026-06-30'),
+      tripDatesTentative: true,
+    }
+    const buckets = bucketChatas([tentativeInside, tentativeFuture, tentativeOver], TODAY)
+    expect(buckets.live).toHaveLength(0)
+    expect(buckets.upcoming.map((c) => c.name)).toEqual(['tentativeInside', 'tentativeFuture'])
+    expect(buckets.past.map((c) => c.name)).toEqual(['tentativeOver'])
   })
 
   it('uses the Czech calendar date for "today", not UTC', () => {
@@ -117,6 +146,43 @@ describe('date range formatting', () => {
     expect(chataYear({ tripDateFrom: d('2026-03-27'), tripDateTo: d('2026-03-29') })).toBe(2026)
     expect(chataYear({ tripDateFrom: null, tripDateTo: d('2025-12-16') })).toBe(2025)
     expect(chataYear({ tripDateFrom: null, tripDateTo: null })).toBeNull()
+  })
+})
+
+describe('tentative dates ("orientační termín")', () => {
+  it('pluralizes the night count', () => {
+    expect(nightsLabel(1)).toBe('1 noc')
+    expect(nightsLabel(3)).toBe('3 noci')
+    expect(nightsLabel(10)).toBe('10 nocí')
+    expect(nightsLabel(1, 'en')).toBe('1 night')
+    expect(nightsLabel(10, 'en')).toBe('10 nights')
+  })
+
+  it('collapses a whole-month window to month + year', () => {
+    expect(tentativeWindowLabel(d('2027-07-01'), d('2027-07-31'))).toBe('červenec 2027')
+    expect(tentativeWindowLabel(d('2027-07-01'), d('2027-07-31'), 'en')).toBe('July 2027')
+    // February handled via the real month length
+    expect(tentativeWindowLabel(d('2027-02-01'), d('2027-02-28'))).toBe('únor 2027')
+  })
+
+  it('keeps a partial window as a range', () => {
+    expect(tentativeWindowLabel(d('2027-07-01'), d('2027-07-20'))).toBe('1.–20. července 2027')
+    expect(tentativeWindowLabel(d('2027-06-15'), d('2027-07-15'))).toBe(
+      '15. června – 15. července 2027'
+    )
+  })
+
+  it('builds the card meta line', () => {
+    expect(tentativeDateLabel(d('2027-07-01'), d('2027-07-31'), 10)).toBe(
+      'červenec 2027 · 10 nocí · termín upřesníme'
+    )
+    expect(tentativeDateLabel(d('2027-07-01'), d('2027-07-31'), 10, 'en')).toBe(
+      'July 2027 · 10 nights · dates to be confirmed'
+    )
+    // without a night count the line still reads fine
+    expect(tentativeDateLabel(d('2027-07-01'), d('2027-07-31'), null)).toBe(
+      'červenec 2027 · termín upřesníme'
+    )
   })
 })
 

@@ -15,7 +15,7 @@ import { getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { sinceLabel } from '@/lib/chataSelection'
 import { anonymousViewer, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
 import type { ViewerClaim } from '@/lib/claimRequests'
-import { getTripNights } from '../utils/participantHelpers'
+import { getTripNights, isTentativeTrip } from '../utils/participantHelpers'
 import { getBedAssignments } from '../utils/tripData'
 import { Sheet, StatStrip, StatusBadge } from './SheetUi'
 import {
@@ -125,7 +125,8 @@ export function ParticipantsView({
     }
     const first = Math.min(...assignment.nights)
     let suffix = ''
-    if (chata.tripDateFrom && first > 1) {
+    // tentative dates: night N has no calendar day yet, so no "od čtvrtka"
+    if (chata.tripDateFrom && first > 1 && !isTentativeTrip(chata)) {
       const d = new Date(chata.tripDateFrom)
       d.setDate(d.getDate() + first - 1)
       suffix = ` · ${sinceLabel(d, locale)}`
