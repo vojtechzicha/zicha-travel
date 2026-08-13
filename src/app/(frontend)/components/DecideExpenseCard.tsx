@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { Check, Receipt, X } from 'lucide-react'
+import { Check, Receipt, Wallet, X } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { formatCurrency, getAvatarColor, getInitials } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
@@ -17,7 +17,9 @@ interface DecideExpenseCardProps {
   chataName: string
   createdAt: string
   splitSummary: string
-  /** the recipient is the payer themselves, not an admin/banker */
+  /** the payer is a joint account ("společný účet"), not a person */
+  payerIsJointAccount: boolean
+  /** the recipient speaks for the payer, rather than deciding as banker/admin */
   decidingAsPayer: boolean
 }
 
@@ -45,6 +47,7 @@ export function DecideExpenseCard({
   chataName,
   createdAt,
   splitSummary,
+  payerIsJointAccount,
   decidingAsPayer,
 }: DecideExpenseCardProps) {
   const t = useTranslations('auth')
@@ -62,6 +65,16 @@ export function DecideExpenseCard({
     if (code) console.warn('[expenses] unmapped decide error code:', code)
     return t('expenseDecide.card.errors.generic')
   }
+
+  // Four ways to say the same thing: a person or a shared wallet paid, and
+  // the reader either speaks for that payer or is confirming as banker/admin
+  const introKey = payerIsJointAccount
+    ? decidingAsPayer
+      ? 'expenseDecide.card.introJointMember'
+      : 'expenseDecide.card.introJoint'
+    : decidingAsPayer
+      ? 'expenseDecide.card.introPayer'
+      : 'expenseDecide.card.intro'
 
   const createdAtText = new Date(createdAt).toLocaleDateString(
     locale === 'cs' ? 'cs-CZ' : 'en-GB',
@@ -121,7 +134,7 @@ export function DecideExpenseCard({
         {t('expenseDecide.card.title')}
       </h1>
       <p className="text-gray-600 text-sm mb-4">
-        {t.rich(decidingAsPayer ? 'expenseDecide.card.introPayer' : 'expenseDecide.card.intro', {
+        {t.rich(introKey, {
           chataName,
           author: authorLabel,
           payer: payerName,
@@ -141,12 +154,21 @@ export function DecideExpenseCard({
             {createdAtText} • {splitSummary}
           </div>
         </div>
-        <div
-          className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${getAvatarColor(payerName)}`}
-          title={payerName}
-        >
-          {getInitials(payerName)}
-        </div>
+        {payerIsJointAccount ? (
+          <div
+            className="w-9 h-9 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0"
+            title={payerName}
+          >
+            <Wallet size={16} />
+          </div>
+        ) : (
+          <div
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${getAvatarColor(payerName)}`}
+            title={payerName}
+          >
+            {getInitials(payerName)}
+          </div>
+        )}
       </div>
 
       <div className="mb-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">

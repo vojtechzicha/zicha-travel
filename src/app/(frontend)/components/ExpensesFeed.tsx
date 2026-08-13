@@ -6,6 +6,7 @@ import { Lock } from 'lucide-react'
 import { ExpenseCard } from './ExpenseCard'
 import { GlassCard } from './GlassCard'
 import { isPayerOrMember } from '@/lib/payerRef'
+import { isCountedExpense } from '@/lib/expenseAuthoring'
 import type { Expense } from '@/payload-types'
 
 interface ExpensesFeedProps {
@@ -19,6 +20,8 @@ interface ExpensesFeedProps {
   onDeleteExpense?: (expense: Expense) => Promise<void>
   /** viewer confirms every pending expense here (chata admin or banker) */
   canApproveAll?: boolean
+  /** joint accounts the viewer is a member of — they may confirm what one paid */
+  ownJointAccountIds?: number[]
   /** confirm/refuse an expense somebody recorded for another payer */
   onDecideApproval?: (
     expense: Expense,
@@ -68,6 +71,7 @@ export function ExpensesFeed({
   onMarkExpensePaid,
   onDeleteExpense,
   canApproveAll = false,
+  ownJointAccountIds = [],
   onDecideApproval,
   showLoginHint = false,
 }: ExpensesFeedProps) {
@@ -81,12 +85,16 @@ export function ExpensesFeed({
     return idA - idB
   })
 
-  // Filter expenses based on selection
+  // Filter expenses based on selection. An expense still waiting for a
+  // verdict ignores the filter: it only ever reaches the handful of people
+  // who can act on it, and hiding it behind the "vše" tab is how it would
+  // sit unconfirmed for weeks (docs/PRD-vydaj-za-jineho.md)
   const filteredExpenses = showAll
     ? sortedExpenses
     : sortedExpenses.filter(
         (expense) =>
           selectedParticipantId === null ||
+          !isCountedExpense(expense.approvalStatus) ||
           isParticipantInExpense(expense, selectedParticipantId)
       )
 
@@ -125,6 +133,12 @@ export function ExpensesFeed({
             // afterwards you may correct or delete it
             const paidByViewer =
               viewerUserId != null && relId(expense.payerAccount) === viewerUserId
+            // A joint account has no single owner, so its members confirm or
+            // refuse what it supposedly paid, but correcting it stays with
+            // the author (and the admins)
+            const paidByOwnJointAccount =
+              expense.payer?.relationTo === 'joint-accounts' &&
+              ownJointAccountIds.includes(relId(expense.payer.value) ?? -1)
             return (
               <ExpenseCard
                 key={expense.id}
@@ -136,7 +150,7 @@ export function ExpensesFeed({
                 onEdit={onEditExpense}
                 onMarkPaid={onMarkExpensePaid}
                 onDelete={onDeleteExpense}
-                canDecideApproval={canApproveAll || paidByViewer}
+                canDecideApproval={canApproveAll || paidByViewer || paidByOwnJointAccount}
                 onDecideApproval={onDecideApproval}
               />
             )

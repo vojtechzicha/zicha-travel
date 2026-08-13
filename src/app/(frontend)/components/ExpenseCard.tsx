@@ -353,7 +353,9 @@ export function ExpenseCard({
                   ? t('expenseCard.approval.rejectedWithReason', { reason: expense.approvalNote })
                   : t('expenseCard.approval.rejectedNote')
                 : canDecideApproval
-                  ? t('expenseCard.approval.decidePrompt', { payer: payerName })
+                  ? payer.kind === 'jointAccount'
+                    ? t('expenseCard.approval.decidePromptJoint', { payer: payerName })
+                    : t('expenseCard.approval.decidePrompt', { payer: payerName })
                   : t('expenseCard.approval.waitingNote')}
             </span>
             {isPending && canDecideApproval && onDecideApproval && (

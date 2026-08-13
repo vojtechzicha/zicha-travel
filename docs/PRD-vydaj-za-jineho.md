@@ -26,11 +26,21 @@ Who may record an expense for another payer, and what happens then:
 | frontend user (`user`)    | own participant / own joint account | approved right away (unchanged behaviour)   |
 | frontend user             | another participant **with** an account | pending: **the payer** or the banker/admins confirm |
 | frontend user             | another participant **without** an account | pending: **the banker/admins** confirm |
-| frontend user             | a joint account they are not in    | refused (403) — see below                    |
+| frontend user             | a joint account they are not in    | pending: **any member with an account** or the banker/admins confirm |
+| anyone                    | somebody from another chata        | refused (400) — the payer must belong to this chata |
 
-A **joint account is a shared wallet, not a person**: nobody can confirm a
-payment out of it on the other members' behalf, so it stays members-only
-instead of entering the approval queue.
+A **joint account is a shared wallet, not a person**, so it has no single
+voice: every member with an account may vouch for what it paid
+(`payerAccountIds`), and the notification email goes to all of them. What it
+does not get is an owner — correcting or deleting such an expense stays with
+the author and the admins, while a member who disagrees rejects it.
+
+**Who can actually confirm** is never assumed. `Chata.banker` is optional and
+a banker need not have an account, so the composer asks before it promises:
+with a banker account the note says "pokladník", without one it says "správce
+chaty", which is the one confirmer that always exists. The same holds for the
+payer side, which is why the note names the payer only when
+`payerAccountIds` is non-empty.
 
 Being the **author** carries no say of its own: the approval email skips
 them, and an unrelated author cannot confirm their claim. An admin author
@@ -55,7 +65,12 @@ correct or delete it (same rights as the author, `Expenses.authoredBy`).
 Access filters cannot join, hence the denormalized column; a
 `Participants` afterChange hook re-stamps it whenever an account link
 changes (a claim approval, an admin re-link), and the deploy migration
-backfills it.
+backfills it. It stays **null for a joint-account payer** — a shared wallet
+has no owner to hand those rights to, and a stamp copied from its members
+would go stale on every membership change. Members are resolved live
+instead, by `payerAccountIds` (pure, from participants + joint accounts),
+which is what the decide endpoint, the decide page, the emails and the slug
+API all use.
 
 Legacy rows have no `approvalStatus` at all — `isCountedExpense(null)` is
 `true`, so nothing that existed before this feature is ever hidden.
@@ -70,11 +85,16 @@ Three layers, because the read API is public by design:
    about the feature.
 2. **Slug API** (`/api/chatas/slug/:slug`, local API, access overridden) —
    pending/rejected expenses ship only to the people who have business with
-   them: chata admins, the author, the payer's account, the banker's
-   account. For everybody else they are not in the payload at all.
+   them: chata admins, the author, the accounts speaking for the payer
+   (`payerAccountIds`, so every member of a paying joint account) and the
+   banker's account. For everybody else they are not in the payload at all.
 3. **Payload REST read access** — anonymous and unrelated accounts get a
-   `Where` that hides anything not approved. The `/api/chatas/:id/full`
-   export (anonymous) filters in its query.
+   `Where` that hides anything not approved. It is stricter than the slug
+   API on purpose: a `Where` cannot resolve joint-account membership or the
+   chata's banker, so it grants only admins, the author and `payerAccount`.
+   Everything the frontend needs comes from the slug API and the decide
+   endpoint (which overrides access), so nobody loses a button to it. The
+   `/api/chatas/:id/full` export (anonymous) filters in its query.
 
 ## Deciding
 
@@ -116,15 +136,20 @@ payer back to yourself approves it immediately.
 
 ## UI
 
-- **Composer**: a quiet "Zaplatil to někdo jiný?" link under the payer
-  chips opens a select of the other participants. Choosing one shows an
-  amber note saying exactly what will happen ("nikde se neukáže a do
-  vyrovnání se nepočítá, dokud to nepotvrdí …"), repeated on the mobile
-  summary step.
+- **Composer**: a quiet "Zaplatil to někdo jiný?" link under the payer chips
+  reveals a second chip row, "Někdo jiný", holding the rest of the chata —
+  people and joint accounts alike, in the same chip language as the row
+  above rather than a native select, which would be the odd control out in
+  this form and reads as a platform widget in dark mode. Picking one shows an
+  amber note saying exactly what will happen and who can undo the wait
+  ("dokud to nepotvrdí …"), repeated on the mobile summary step. Picking one
+  of your own chips again is the way back.
 - **Expense card**: pending cards get a dashed grey frame and a "Čeká na
-  potvrzení" badge; approvers get Potvrdit / Zamítnout (with an optional
-  reason) inline. Rejected cards state the reason and that they count in no
-  balance.
+  potvrzení" badge, and they ignore the "moje / vše" filter for the people
+  who can act on them (otherwise the one card that needs attention is the
+  one hiding behind a tab). Approvers get Potvrdit / Zamítnout (with an
+  optional reason) inline. Rejected cards state the reason and that they
+  count in no balance.
 - **Admin panel**: `approvalStatus` is a normal sidebar field, so an admin
   can decide there too — the same afterChange hook emails the author.
 

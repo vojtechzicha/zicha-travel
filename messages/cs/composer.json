@@ -39,10 +39,12 @@
     "you": "Vy",
     "nameYou": "{name} (vy)",
     "someoneElseLink": "Zaplatil to někdo jiný?",
-    "someoneElseLabel": "Jiný plátce",
-    "someoneElsePlaceholder": "Vyberte plátce…",
-    "approvalLinked": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí {name} nebo pokladník.",
-    "approvalUnlinked": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí pokladník."
+    "someoneElseLabel": "Někdo jiný",
+    "approvalOne": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí {who}.",
+    "approvalTwo": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí {first} nebo {second}.",
+    "approverJoint": "někdo ze společného účtu {name}",
+    "approverBanker": "pokladník",
+    "approverAdmin": "správce chaty"
   },
   "stepWho": {
     "sectionTitle": "Rozdělení",

@@ -23,6 +23,7 @@ import {
   type FinanceViewer,
   type LockedParticipant,
 } from '@/lib/financeAccess'
+import { ownJointAccounts } from '@/lib/expenseAuthoring'
 import type { ViewerClaim } from '@/lib/claimRequests'
 import { track } from '@/lib/analytics'
 import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/payload-types'
@@ -193,11 +194,16 @@ export function FinanceView({
       : chata.banker
 
   // Who confirms an expense recorded for somebody else, whoever the payer
-  // is: the chata's admins and the banker ("pokladník"). The payer's own
-  // account is decided per card in the feed.
+  // is: the chata's admins and the banker ("pokladník"). Being the payer
+  // yourself, or a member of the joint account named as payer, is decided
+  // per card in the feed.
   const canApproveAll =
     viewer.canViewAll ||
     (bankerId != null && viewer.linkedParticipantIds.includes(bankerId as number))
+  const ownJointAccountIds = ownJointAccounts(
+    viewer.linkedParticipantIds.map(String),
+    jointAccounts,
+  ).map((ja) => ja.id)
 
   // Which participants this viewer may open: admins of the chata see all,
   // a linked user only their own, anonymous everyone except locked
@@ -449,6 +455,7 @@ export function FinanceView({
             onMarkExpensePaid={(expense) => setComposer({ expense, markPaid: true })}
             onDeleteExpense={handleDeleteExpense}
             canApproveAll={canApproveAll}
+            ownJointAccountIds={ownJointAccountIds}
             onDecideApproval={handleDecideApproval}
             showLoginHint={!viewer.authenticated}
           />

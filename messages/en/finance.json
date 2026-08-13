@@ -137,8 +137,9 @@
     "approval": {
       "pendingBadge": "Unconfirmed",
       "rejectedBadge": "Rejected",
-      "waitingNote": "Recorded for a different payer. Others will see it once the payer or the banker confirms it.",
+      "waitingNote": "Recorded for a different payer. Others will see it once the payer, the banker or a chata admin confirms it.",
       "decidePrompt": "This expense is waiting to be confirmed. Did {payer} really pay it?",
+      "decidePromptJoint": "This expense is waiting to be confirmed. Did it really come out of the {payer} joint account?",
       "approve": "Confirm",
       "reject": "Reject",
       "rejectConfirm": "Reject expense",

@@ -4,9 +4,9 @@
 // - create expenses in a chata where it owns at least one participant
 // - pay as one of its own participants, or as a joint account
 //   ("společný účet") one of its participants is a member of
-// - pay as SOMEBODY ELSE's participant of the same chata ("výdaj za jiného
-//   plátce") — that expense is stored but stays invisible and out of the
-//   maths until it is approved (see approvalForPayer below)
+// - pay as SOMEBODY ELSE of the same chata, participant or joint account
+//   ("výdaj za jiného plátce") — that expense is stored but stays invisible
+//   and out of the maths until it is confirmed (see needsApproval below)
 // - update/delete expenses it authored (Expense.authoredBy) and expenses
 //   paid by one of its own participants (Expense.payerAccount)
 //
@@ -87,35 +87,55 @@ export function ownJointAccounts<T extends JointAccountLike>(
 //
 // Not the usual case, so the UI keeps it subtle, and nothing is taken on
 // trust: the expense is stored with approvalStatus 'pending', which hides it
-// from the journal and keeps it out of every balance until an approver
-// confirms it. Who may confirm depends on whether the payer has an account:
-// - 'linked'   — the payer can speak for themselves: they OR the banker
-//                ("pokladník") / a chata admin approve
-// - 'unlinked' — nobody can confirm on the payer's behalf, so only the
-//                banker / chata admins do
+// from the journal and keeps it out of every balance until somebody confirms
+// it. The chata's admins always can; on top of them, whoever the payer
+// speaks through can (payerAccountIds below) and so can the banker
+// ("pokladník") — but only when those accounts actually exist, which is why
+// the composer asks before promising a confirmer.
 // See docs/PRD-vydaj-za-jineho.md.
 
 export type ApprovalStatus = 'approved' | 'pending' | 'rejected'
-export type AlternatePayerKind = 'linked' | 'unlinked'
-
-export type ApprovalRequirement =
-  | { required: false }
-  | { required: true; kind: AlternatePayerKind }
 
 /**
- * Does this payer choice need approval before the expense counts?
+ * Does this payer choice need confirmation before the expense counts?
  * Admin roles and payers the author speaks for (own participant, own joint
- * account) never do.
+ * account) never do; anybody else's participant or joint account does.
  */
-export function approvalForPayer(args: {
+export function needsApproval(args: {
   isAdmin: boolean
   /** the author owns the payer (own participant / own joint account) */
   payerIsOwn: boolean
-  /** the payer participant is linked to a user account */
-  payerHasAccount: boolean
-}): ApprovalRequirement {
-  if (args.isAdmin || args.payerIsOwn) return { required: false }
-  return { required: true, kind: args.payerHasAccount ? 'linked' : 'unlinked' }
+}): boolean {
+  return !args.isAdmin && !args.payerIsOwn
+}
+
+/**
+ * Accounts that speak for the payer, so may confirm the expense: a
+ * participant's own account, or EVERY member account of a joint account
+ * ("společný účet" — a shared wallet, so any member can vouch for it).
+ * Empty when nobody involved has an account: then only the banker and the
+ * chata's admins are left.
+ */
+export function payerAccountIds(
+  payer: PayerRefLike | null,
+  participants: ParticipantLike[],
+  jointAccounts: JointAccountLike[] = [],
+): string[] {
+  if (!payer) return []
+  const accountOf = (participantId: string): string | null => {
+    const found = participants.find((p) => String(p.id) === participantId)
+    return found?.account != null ? refId(found.account) : null
+  }
+  if (payer.relationTo === 'participants') {
+    const account = accountOf(refId(payer.value))
+    return account ? [account] : []
+  }
+  const jointAccount = jointAccounts.find((ja) => String(ja.id) === refId(payer.value))
+  if (!jointAccount) return []
+  const ids = (jointAccount.members || [])
+    .map((m) => accountOf(refId(m)))
+    .filter((id): id is string => id != null)
+  return [...new Set(ids)]
 }
 
 /**
@@ -129,8 +149,8 @@ export function approvalForPayer(args: {
 export function canDecideExpense(args: {
   userId: number | string | null | undefined
   managesChata: boolean
-  /** account linked to the payer participant, if any */
-  payerAccountId?: number | string | null
+  /** accounts speaking for the payer (see payerAccountIds) */
+  payerAccountIds?: ReadonlyArray<number | string | null | undefined>
   /** account linked to the chata's banker, if any */
   bankerAccountId?: number | string | null
 }): boolean {
@@ -138,7 +158,7 @@ export function canDecideExpense(args: {
   if (args.userId == null) return false
   const me = String(args.userId)
   return (
-    (args.payerAccountId != null && refId(args.payerAccountId) === me) ||
+    (args.payerAccountIds || []).some((id) => id != null && refId(id) === me) ||
     (args.bankerAccountId != null && refId(args.bankerAccountId) === me)
   )
 }

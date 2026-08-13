@@ -197,7 +197,7 @@ export default function VydajeContentEn() {
           <p>
             Sometimes you need to record an expense for a friend who has no time for it. That is
             what the quiet <em>Did someone else pay?</em> link under the payer choice is for. It
-            opens a list of the other people in the chata.
+            opens the rest of the chata, people and joint accounts alike.
           </p>
           <List
             items={[
@@ -208,6 +208,7 @@ export default function VydajeContentEn() {
               <>
                 If the payer has an account, they can confirm it themselves, and so can the banker
                 or a chata admin. If they have no account, it is up to the banker and the admins.
+                For a joint account, any of its members can confirm.
               </>,
               <>
                 Everyone who can decide gets an email with a link. Confirming or rejecting also
@@ -215,8 +216,8 @@ export default function VydajeContentEn() {
               </>,
               <>
                 While it waits, the card with the <em>Unconfirmed</em> badge is visible only to the
-                author, the payer, the banker and the admins. Once confirmed, the expense behaves
-                like any other.
+                author, the payer, the banker and the admins, and it shows in the <em>mine</em> tab
+                too so they don&apos;t miss it. Once confirmed, the expense behaves like any other.
               </>,
               <>
                 A rejected expense stays hidden for good, and the author gets an email with the

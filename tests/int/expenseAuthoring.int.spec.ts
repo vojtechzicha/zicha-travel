@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
-  approvalForPayer,
   canDecideExpense,
   canManageExpense,
   isAllowedPayer,
   isCountedExpense,
   linkedParticipantIds,
+  needsApproval,
   normalizePayer,
   ownJointAccounts,
+  payerAccountIds,
   samePayer,
   type PayerRefLike,
 } from '@/lib/expenseAuthoring'
@@ -103,36 +104,53 @@ describe('ownJointAccounts', () => {
 
 // ── "výdaj za jiného plátce" ────────────────────────────────────────────
 
-describe('approvalForPayer', () => {
+describe('needsApproval', () => {
   it('asks nothing of an admin, whoever the payer is', () => {
-    expect(approvalForPayer({ isAdmin: true, payerIsOwn: false, payerHasAccount: false })).toEqual({
-      required: false,
-    })
+    expect(needsApproval({ isAdmin: true, payerIsOwn: false })).toBe(false)
   })
 
   it('asks nothing when you pay as yourself', () => {
-    expect(approvalForPayer({ isAdmin: false, payerIsOwn: true, payerHasAccount: true })).toEqual({
-      required: false,
-    })
+    expect(needsApproval({ isAdmin: false, payerIsOwn: true })).toBe(false)
   })
 
-  it('lets a payer with an account speak for themselves', () => {
-    expect(approvalForPayer({ isAdmin: false, payerIsOwn: false, payerHasAccount: true })).toEqual({
-      required: true,
-      kind: 'linked',
-    })
+  it('holds back an expense recorded for somebody else', () => {
+    expect(needsApproval({ isAdmin: false, payerIsOwn: false })).toBe(true)
+  })
+})
+
+describe('payerAccountIds', () => {
+  it('gives the participant their own account', () => {
+    expect(payerAccountIds(payer('participants', 3), participants, jointAccounts)).toEqual(['20'])
+    expect(payerAccountIds(payer('participants', { id: 1 }), participants)).toEqual(['10'])
   })
 
-  it('leaves a payer without an account to the banker', () => {
-    expect(approvalForPayer({ isAdmin: false, payerIsOwn: false, payerHasAccount: false })).toEqual({
-      required: true,
-      kind: 'unlinked',
-    })
+  it('gives a joint account every member account, deduplicated', () => {
+    // Auto = Katka (10) + Tomáš (20)
+    expect(payerAccountIds(payer('joint-accounts', 100), participants, jointAccounts)).toEqual([
+      '10',
+      '20',
+    ])
+    // Zichovi = Tomáš (20) + Petra (no account)
+    expect(payerAccountIds(payer('joint-accounts', 101), participants, jointAccounts)).toEqual([
+      '20',
+    ])
+    expect(
+      payerAccountIds(payer('joint-accounts', 102), participants, [
+        { id: 102, members: [1, 2] }, // both Katka's
+      ]),
+    ).toEqual(['10'])
+  })
+
+  it('comes back empty when nobody involved has an account', () => {
+    expect(payerAccountIds(payer('participants', 4), participants, jointAccounts)).toEqual([])
+    expect(payerAccountIds(null, participants, jointAccounts)).toEqual([])
+    // a payer that is not in this chata's data at all
+    expect(payerAccountIds(payer('joint-accounts', 999), participants, jointAccounts)).toEqual([])
   })
 })
 
 describe('canDecideExpense', () => {
-  const base = { payerAccountId: 10, bankerAccountId: 20 }
+  const base = { payerAccountIds: ['10'], bankerAccountId: 20 }
 
   it('lets the chata admins decide', () => {
     expect(canDecideExpense({ userId: 99, managesChata: true, ...base })).toBe(true)
@@ -144,6 +162,13 @@ describe('canDecideExpense', () => {
     expect(canDecideExpense({ userId: '10', managesChata: false, ...base })).toBe(true)
   })
 
+  it('lets any member of the paying joint account decide', () => {
+    const joint = { payerAccountIds: ['10', '20'], bankerAccountId: null }
+    expect(canDecideExpense({ userId: 10, managesChata: false, ...joint })).toBe(true)
+    expect(canDecideExpense({ userId: 20, managesChata: false, ...joint })).toBe(true)
+    expect(canDecideExpense({ userId: 30, managesChata: false, ...joint })).toBe(false)
+  })
+
   it('turns everybody else away, anonymous visitors included', () => {
     expect(canDecideExpense({ userId: 30, managesChata: false, ...base })).toBe(false)
     expect(canDecideExpense({ userId: null, managesChata: false, ...base })).toBe(false)
@@ -151,7 +176,15 @@ describe('canDecideExpense', () => {
 
   it('does not treat a missing account link as a match', () => {
     expect(
-      canDecideExpense({ userId: 10, managesChata: false, payerAccountId: null, bankerAccountId: null }),
+      canDecideExpense({ userId: 10, managesChata: false, payerAccountIds: [], bankerAccountId: null }),
+    ).toBe(false)
+    expect(
+      canDecideExpense({
+        userId: 10,
+        managesChata: false,
+        payerAccountIds: [null, undefined],
+        bankerAccountId: null,
+      }),
     ).toBe(false)
   })
 })

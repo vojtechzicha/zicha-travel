@@ -3,7 +3,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { canManageChata, refId } from '@/lib/access'
 import { maskEmail, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
-import { isCountedExpense } from '@/lib/expenseAuthoring'
+import { isCountedExpense, normalizePayer, payerAccountIds } from '@/lib/expenseAuthoring'
 import type { ViewerClaim } from '@/lib/claimRequests'
 import {
   calculateStats,
@@ -158,11 +158,14 @@ export async function GET(
 
     // "Výdaj za jiného plátce": an expense recorded for somebody else is
     // stored but stays out of the journal until it is confirmed. It ships
-    // ONLY to the people who have business with it — the chata's admins,
-    // the author, the named payer's account and the banker's account — so
-    // they can act on it; for everyone else it does not exist. The maths
-    // above already ignores it either way. (The plain REST API applies the
-    // same rule through field access; this route runs on the local API.)
+    // ONLY to the people who have business with it — the chata's admins, the
+    // author, the accounts speaking for the payer (the named participant, or
+    // every member of the paying joint account) and the banker's account —
+    // so they can act on it; for everyone else it does not exist. The maths
+    // above already ignores it either way. (The plain REST API is stricter
+    // still: it hides an unconfirmed expense from everyone but the admins,
+    // the author and the payer participant's account. This route runs on the
+    // local API, which has the chata context those Where filters lack.)
     const bankerParticipant = participantsResult.docs.find(
       (p: any) => String(p.id) === refId(chata.banker),
     )
@@ -174,10 +177,12 @@ export async function GET(
       if (isCountedExpense(expense.approvalStatus)) return true
       if (!user) return false
       if (canManageChata(user, chata.id) || viewerIsBanker) return true
-      return (
-        (expense.authoredBy != null && refId(expense.authoredBy) === String(user.id)) ||
-        (expense.payerAccount != null && refId(expense.payerAccount) === String(user.id))
-      )
+      if (expense.authoredBy != null && refId(expense.authoredBy) === String(user.id)) return true
+      return payerAccountIds(
+        normalizePayer(expense.payer),
+        participantsResult.docs,
+        jointAccountsResult.docs,
+      ).includes(String(user.id))
     })
 
     // "Klíče a Wi-Fi": the values (passwords, key codes) are for signed-in

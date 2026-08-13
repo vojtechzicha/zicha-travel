@@ -187,8 +187,8 @@ export default function VydajeContentCs() {
         <Section title="Zaplatil to někdo jiný" icon={<UserCheck size={20} />}>
           <p>
             Někdy je potřeba zapsat výdaj za kamaráda, který zrovna nemá čas. Pod výběrem plátce
-            je proto tichý odkaz <em>Zaplatil to někdo jiný?</em> a za ním seznam ostatních
-            účastníků chaty.
+            je proto tichý odkaz <em>Zaplatil to někdo jiný?</em> a za ním zbytek chaty, lidé i
+            společné účty.
           </p>
           <List
             items={[
@@ -198,7 +198,8 @@ export default function VydajeContentCs() {
               </>,
               <>
                 Když má plátce svůj účet, potvrdit to může on sám, nebo pokladník či správce chaty.
-                Když účet nemá, rozhodují pokladník a správci.
+                Když účet nemá, rozhodují pokladník a správci. U společného účtu může potvrdit
+                kterýkoli jeho člen.
               </>,
               <>
                 Všem, kdo mohou rozhodnout, přijde e-mail s odkazem. Potvrdit nebo zamítnout jde i
@@ -206,7 +207,8 @@ export default function VydajeContentCs() {
               </>,
               <>
                 Než se rozhodne, vidí kartu se značkou <em>Čeká na potvrzení</em> jenom autor,
-                plátce, pokladník a správci. Po potvrzení se výdaj chová jako každý jiný.
+                plátce, pokladník a správci, a to i v záložce <em>moje</em>, aby jim neutekla. Po
+                potvrzení se výdaj chová jako každý jiný.
               </>,
               <>
                 Při zamítnutí zůstane skrytý napořád a autorovi přijde e-mail, i s důvodem, pokud

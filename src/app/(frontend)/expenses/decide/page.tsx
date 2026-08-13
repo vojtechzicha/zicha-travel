@@ -5,7 +5,7 @@ import config from '@/payload.config'
 import { refId, canManageChata } from '@/lib/access'
 import { canDecideExpense, normalizePayer } from '@/lib/expenseAuthoring'
 import { verifyExpenseDecideToken } from '@/lib/expenseApproval'
-import { bankerParticipant } from '@/utils/expenseApproval'
+import { bankerParticipant, expensePayerContext } from '@/utils/expenseApproval'
 import { GlassCard } from '../../components/GlassCard'
 import { DecideExpenseCard } from '../../components/DecideExpenseCard'
 import '../../styles.css'
@@ -85,18 +85,8 @@ export default async function DecideExpensePage({
       context: { triggerAfterRead: false },
     })
     .catch(() => null)
-  const payerRef = normalizePayer(expense.payer)
   const [payer, banker, author] = await Promise.all([
-    payerRef?.relationTo === 'participants'
-      ? payload
-          .findByID({
-            collection: 'participants',
-            id: refId(payerRef.value),
-            depth: 0,
-            overrideAccess: true,
-          })
-          .catch(() => null)
-      : null,
+    expensePayerContext(payload, normalizePayer(expense.payer)),
     chata ? bankerParticipant(payload, chata) : null,
     expense.authoredBy != null
       ? payload
@@ -117,7 +107,7 @@ export default async function DecideExpensePage({
     canDecideExpense({
       userId: decider.id,
       managesChata: canManageChata({ ...decider, collection: 'users' }, refId(expense.chata)),
-      payerAccountId: payer?.account != null ? refId(payer.account) : null,
+      payerAccountIds: payer?.accountIds,
       bankerAccountId: banker?.account != null ? refId(banker.account) : null,
     })
   if (!allowed) {
@@ -154,7 +144,8 @@ export default async function DecideExpensePage({
       chataName={chata?.name ?? ''}
       createdAt={expense.createdAt}
       splitSummary={splitSummary}
-      decidingAsPayer={payer.account != null && refId(payer.account) === String(decider!.id)}
+      payerIsJointAccount={payer.isJointAccount}
+      decidingAsPayer={payer.accountIds.includes(String(decider!.id))}
     />
   )
 }

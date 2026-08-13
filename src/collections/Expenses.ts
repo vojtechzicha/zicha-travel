@@ -1,20 +1,21 @@
 import { APIError, type Access, type CollectionConfig, type Where } from 'payload'
-import type { Expense, Participant } from '../payload-types'
+import type { Expense } from '../payload-types'
 import { buildAutoInvitations, findPaidByPairs } from '../utils/paidByInvitations'
 import { canManageChata, isAdminRole, isSuperadmin, refId } from '../lib/access'
 import {
-  approvalForPayer,
   canDecideExpense,
   isAllowedPayer,
   linkedParticipantIds,
+  needsApproval,
   normalizePayer,
-  samePayer,
+  payerAccountIds,
 } from '../lib/expenseAuthoring'
 import { verifyExpenseDecideToken } from '../lib/expenseApproval'
 import { requestOrigin } from '../lib/auth/session'
 import {
   bankerParticipant,
   chataOrigin,
+  expensePayerContext,
   notifyExpenseApprovers,
   notifyExpenseAuthor,
 } from '../utils/expenseApproval'
@@ -137,15 +138,10 @@ export const Expenses: CollectionConfig = {
           throw new APIError('Výdaj musí mít plátce', 400)
         }
 
-        // An unchanged payer stays valid on update even if it is one the
-        // author could not pick today (an admin assigned it, or they left
-        // the joint account since) — only a NEW choice is judged
-        const payerUnchanged =
-          operation === 'update' && samePayer(payer, normalizePayer(original?.payer))
-
         // Who is named as the payer, and may this author speak for them?
+        // Anybody of THIS chata may be named; whether the author speaks for
+        // them decides whether the expense counts right away or waits.
         let payerIsOwn: boolean
-        let payerParticipant: Participant | undefined
         if (payer.relationTo === 'joint-accounts') {
           const jointAccountsResult = await req.payload.find({
             collection: 'joint-accounts',
@@ -154,19 +150,15 @@ export const Expenses: CollectionConfig = {
             depth: 0,
             overrideAccess: true,
           })
-          payerIsOwn = isAllowedPayer(payer, ownIds, jointAccountsResult.docs)
-          // A joint account is a shared wallet, not a person — nobody can
-          // confirm a payment from it on the others' behalf, so this one
-          // stays members-only instead of going through approval
-          if (!payerIsOwn) {
-            if (!payerUnchanged) {
-              throw new APIError('Platit můžete jen za společný účet, jehož jste členem', 403)
-            }
-            // keep the expense (and its approval state) exactly as it was
-            return data
+          const payerJointAccount = jointAccountsResult.docs.find(
+            (ja) => String(ja.id) === refId(payer.value),
+          )
+          if (!payerJointAccount) {
+            throw new APIError('Plátcem může být jen společný účet této chaty', 400)
           }
+          payerIsOwn = isAllowedPayer(payer, ownIds, jointAccountsResult.docs)
         } else {
-          payerParticipant = participantsResult.docs.find(
+          const payerParticipant = participantsResult.docs.find(
             (p) => String(p.id) === refId(payer.value),
           )
           if (!payerParticipant) {
@@ -176,15 +168,10 @@ export const Expenses: CollectionConfig = {
         }
 
         // "Výdaj za jiného plátce": stored, but invisible and outside the
-        // maths until the payer (if they have an account) or the banker /
-        // a chata admin confirms it. Editing one puts it back in the queue —
-        // an approved amount must not be changeable after the fact.
-        const approval = approvalForPayer({
-          isAdmin: false,
-          payerIsOwn,
-          payerHasAccount: payerParticipant?.account != null,
-        })
-        data.approvalStatus = approval.required ? 'pending' : 'approved'
+        // maths until the payer, the banker or a chata admin confirms it.
+        // Editing one puts it back in the queue — an approved amount must
+        // not be changeable after the fact.
+        data.approvalStatus = needsApproval({ isAdmin: false, payerIsOwn }) ? 'pending' : 'approved'
         data.approvalDecidedBy = null
         data.approvalDecidedAt = null
         data.approvalNote = null
@@ -263,16 +250,7 @@ export const Expenses: CollectionConfig = {
                 })
                 .catch(() => null)
             : null,
-          payerRef?.relationTo === 'participants'
-            ? req.payload
-                .findByID({
-                  collection: 'participants',
-                  id: refId(payerRef.value),
-                  depth: 0,
-                  overrideAccess: true,
-                })
-                .catch(() => null)
-            : null,
+          expensePayerContext(req.payload, payerRef),
           doc.authoredBy != null
             ? req.payload
                 .findByID({
@@ -398,23 +376,12 @@ export const Expenses: CollectionConfig = {
           })
           .catch(() => null)
         const banker = chata ? await bankerParticipant(req.payload, chata) : null
-        const payerRef = normalizePayer(expense.payer)
-        const payer =
-          payerRef?.relationTo === 'participants'
-            ? await req.payload
-                .findByID({
-                  collection: 'participants',
-                  id: refId(payerRef.value),
-                  depth: 0,
-                  overrideAccess: true,
-                })
-                .catch(() => null)
-            : null
+        const payer = await expensePayerContext(req.payload, normalizePayer(expense.payer))
 
         const allowed = canDecideExpense({
           userId: decider.id,
           managesChata: canManageChata({ ...decider, collection: 'users' }, refId(expense.chata)),
-          payerAccountId: payer?.account != null ? refId(payer.account) : null,
+          payerAccountIds: payer?.accountIds,
           bankerAccountId: banker?.account != null ? refId(banker.account) : null,
         })
         if (!allowed) {

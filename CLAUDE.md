@@ -97,20 +97,27 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - **"Výdaj za jiného plátce"** (`approvalStatus`, `approvalNote`,
      `approvalDecidedBy/At`, `payerAccount`): a frontend account may record
      an expense SOMEBODY ELSE paid — a quiet "Zaplatil to někdo jiný?" link
-     under the payer chips. The expense is stored `pending`: hidden from the
-     journal (slug API ships it only to the author, the payer's account, the
-     banker and chata admins; REST read access hides it too) and skipped by
-     `calculateStats`, until the payer (when they have an account) or the
-     banker / a chata admin confirms it. Confirming happens on the expense
-     card or through the signed link in the "Sedí to?" email
-     (`POST /api/expenses/decide`, page `/expenses/decide`, 14-day token in
-     `src/lib/expenseApproval.ts`, side effects in
-     `src/utils/expenseApproval.ts`). Editing such an expense puts it back
-     in the queue; joint accounts stay members-only. `payerAccount` (the
-     paying participant's account) makes the expense theirs to confirm,
-     edit and delete — a Participants afterChange hook re-stamps it when an
-     account link changes. Admin-entered expenses are approved from the
-     start. See `docs/PRD-vydaj-za-jineho.md`
+     under the payer chips reveals the rest of the chata as a second chip
+     row, participants AND joint accounts. The expense is stored `pending`:
+     hidden from the journal (slug API ships it only to the author, the
+     accounts speaking for the payer, the banker and chata admins; REST read
+     access hides it too) and skipped by `calculateStats`, until somebody
+     confirms it. Who that is comes from `payerAccountIds` in
+     `src/lib/expenseAuthoring.ts` (the participant's own account, or EVERY
+     member account of a paying joint account) plus the banker and the
+     chata's admins — and because `Chata.banker` is optional and may have no
+     account, the composer note only promises "pokladník" when one exists,
+     falling back to "správce chaty". Confirming happens on the expense card
+     (pending cards ignore the moje/vše filter) or through the signed link in
+     the "Sedí to?" email (`POST /api/expenses/decide`, page
+     `/expenses/decide`, 14-day token in `src/lib/expenseApproval.ts`, side
+     effects in `src/utils/expenseApproval.ts`). Editing such an expense puts
+     it back in the queue. `payerAccount` (the paying PARTICIPANT's account,
+     null for joint accounts, re-stamped by a Participants afterChange hook)
+     makes the expense theirs to confirm, edit and delete; joint-account
+     members may confirm or reject but not edit, since a shared wallet has no
+     owner. Admin-entered expenses are approved from the start. See
+     `docs/PRD-vydaj-za-jineho.md`
 
 4. **Prepayments** (`src/collections/Prepayments.ts`)
    - Money transfers between participants and banker

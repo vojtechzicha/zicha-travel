@@ -34,7 +34,8 @@ import { useLocale, useTranslations } from 'next-intl'
 import { formatCurrency, getAvatarColor, getInitials } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { accusativeName } from '@/lib/czechNames'
-import { approvalForPayer, ownJointAccounts } from '@/lib/expenseAuthoring'
+import { needsApproval, ownJointAccounts, payerAccountIds } from '@/lib/expenseAuthoring'
+import { refId } from '@/lib/access'
 import { downscaleImage } from '@/lib/imageDownscale'
 import { useAppTheme } from '../utils/useAppTheme'
 import type { AppLocale } from '@/i18n/config'
@@ -156,16 +157,27 @@ export function ExpenseComposer({
     () => ownJointAccounts(ownIdsStr, jointAccounts),
     [ownIdsStr, jointAccounts],
   )
-  // "Zaplatil někdo jiný" — everyone else in the chata. Not the usual case,
-  // so it hides behind one quiet link and the expense then waits for
-  // approval (docs/PRD-vydaj-za-jineho.md)
-  const otherPayers = useMemo(
-    () =>
-      participants
-        .filter((p) => !ownIds.includes(p.id))
-        .sort((a, b) => a.name.localeCompare(b.name, 'cs')),
-    [participants, ownIds],
-  )
+  // "Zaplatil někdo jiný" — everyone else in the chata, people and shared
+  // wallets alike. Not the usual case, so it hides behind one quiet link and
+  // the expense then waits for confirmation (docs/PRD-vydaj-za-jineho.md)
+  const otherPayers = useMemo<{ choice: PayerChoice; name: string; isJoint: boolean }[]>(() => {
+    const ownJointIds = new Set(payableJointAccounts.map((ja) => ja.id))
+    const people = participants
+      .filter((p) => !ownIds.includes(p.id))
+      .map((p) => ({
+        choice: { relationTo: 'participants' as const, value: p.id },
+        name: p.name,
+        isJoint: false,
+      }))
+    const wallets = jointAccounts
+      .filter((ja) => !ownJointIds.has(ja.id))
+      .map((ja) => ({
+        choice: { relationTo: 'joint-accounts' as const, value: ja.id },
+        name: ja.name,
+        isJoint: true,
+      }))
+    return [...people, ...wallets].sort((a, b) => a.name.localeCompare(b.name, 'cs'))
+  }, [participants, ownIds, jointAccounts, payableJointAccounts])
 
   // Split rows keep ALL chata participants: own first, then alphabetically
   const orderedParticipants = useMemo(() => {
@@ -320,20 +332,37 @@ export function ExpenseComposer({
   // Payer somebody else than the author: the expense is saved but stays
   // invisible (and out of the maths) until it is confirmed. Admins of the
   // chata skip that queue — they are the ones who would confirm it anyway.
-  const alternatePayer = useMemo(() => {
-    if (payer === null || payer.relationTo !== 'participants') return null
-    if (ownIds.includes(payer.value)) return null
-    return participants.find((p) => p.id === payer.value) ?? null
-  }, [payer, ownIds, participants])
-  const approval = useMemo(
+  const alternatePayer = useMemo(
     () =>
-      approvalForPayer({
-        isAdmin: viewer.canViewAll,
-        payerIsOwn: alternatePayer === null,
-        payerHasAccount: alternatePayer?.account != null,
-      }),
-    [viewer.canViewAll, alternatePayer],
+      payer === null
+        ? null
+        : (otherPayers.find(
+            (o) => o.choice.relationTo === payer.relationTo && o.choice.value === payer.value,
+          ) ?? null),
+    [payer, otherPayers],
   )
+  // Who can actually confirm it, so the note names real people: the accounts
+  // speaking for the payer, and the banker only if there IS one with an
+  // account (the chata's admins are the fallback that always exists)
+  const bankerCanConfirm = useMemo(() => {
+    const bankerId = chata.banker != null ? refId(chata.banker) : null
+    if (bankerId == null) return false
+    return participants.some((p) => String(p.id) === bankerId && p.account != null)
+  }, [chata.banker, participants])
+  const payerCanConfirm = useMemo(
+    () =>
+      alternatePayer !== null &&
+      payerAccountIds(
+        { relationTo: alternatePayer.choice.relationTo, value: alternatePayer.choice.value },
+        participants,
+        jointAccounts,
+      ).length > 0,
+    [alternatePayer, participants, jointAccounts],
+  )
+  const approvalRequired = needsApproval({
+    isAdmin: viewer.canViewAll,
+    payerIsOwn: alternatePayer === null,
+  })
   const [showOtherPayers, setShowOtherPayers] = useState(() => alternatePayer !== null)
 
   const includedParticipants = useMemo(
@@ -651,8 +680,10 @@ export function ExpenseComposer({
           payer.relationTo === 'participants' ? payerName(payer) : undefined,
       })
     }
-    // once somebody else is the payer, the select stays open — it is the
-    // only place that shows who it is
+    // The rest of the chata, in the same chip language as the row above —
+    // a native select would be the odd control out here, and these are just
+    // as pickable, only rarer. Once one is chosen the row stays open: it is
+    // the only place showing who is meant to have paid.
     const otherPayerUi =
       otherPayers.length === 0 ? null : !showOtherPayers && alternatePayer === null ? (
         <button
@@ -663,96 +694,92 @@ export function ExpenseComposer({
           {t('payer.someoneElseLink')}
         </button>
       ) : (
-        <div className="mt-2.5">
-          <select
-            value={alternatePayer ? String(alternatePayer.id) : ''}
-            aria-label={t('payer.someoneElseLabel')}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === '') {
-                // back to paying as yourself
-                setPayer(
-                  ownParticipants.length > 0
-                    ? { relationTo: 'participants', value: ownParticipants[0].id }
-                    : null,
-                )
-                setShowOtherPayers(false)
-              } else {
-                setPayer({ relationTo: 'participants', value: Number(value) })
-              }
-            }}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/40"
-          >
-            <option value="">{t('payer.someoneElsePlaceholder')}</option>
-            {otherPayers.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+        <div className="mt-3" role="group" aria-label={t('payer.someoneElseLabel')}>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500 mb-1.5">
+            {t('payer.someoneElseLabel')}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {otherPayers.map((option) =>
+              renderPayerChip({
+                choice: option.choice,
+                label: option.name,
+                initialsOf: option.isJoint ? undefined : option.name,
+              }),
+            )}
+          </div>
         </div>
       )
 
     return (
       <div>
-        <div className="flex flex-wrap gap-2">
-          {options.map((option) => {
-            const selected =
-              payer !== null &&
-              payer.relationTo === option.choice.relationTo &&
-              payer.value === option.choice.value
-            return (
-              <button
-                key={`${option.choice.relationTo}-${option.choice.value}`}
-                type="button"
-                onClick={() => setPayer(option.choice)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
-                  selected
-                    ? 'border-2 border-primary bg-primary/10'
-                    : 'border-gray-200 hover:border-gray-300 dark:border-white/[0.12] dark:hover:border-white/[0.25]'
-                }`}
-              >
-                {option.initialsOf ? (
-                  <span
-                    className={`w-[26px] h-[26px] rounded-full text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 ${getAvatarColor(option.initialsOf)}`}
-                  >
-                    {getInitials(option.initialsOf)}
-                  </span>
-                ) : (
-                  <span className="w-[26px] h-[26px] rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                    <Wallet size={13} />
-                  </span>
-                )}
-                <span
-                  className={`text-sm ${selected ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-slate-300'}`}
-                >
-                  {option.label}
-                </span>
-                {selected && (
-                  <Check size={16} className="text-primary dark:text-primary-light" strokeWidth={2.5} />
-                )}
-              </button>
-            )
-          })}
-        </div>
+        <div className="flex flex-wrap gap-2">{options.map(renderPayerChip)}</div>
         {otherPayerUi}
         {renderApprovalNote()}
       </div>
     )
   }
 
+  const renderPayerChip = (option: {
+    choice: PayerChoice
+    label: string
+    /** a person: their initials avatar; omitted for a joint account (wallet) */
+    initialsOf?: string
+  }) => {
+    const selected =
+      payer !== null &&
+      payer.relationTo === option.choice.relationTo &&
+      payer.value === option.choice.value
+    return (
+      <button
+        key={`${option.choice.relationTo}-${option.choice.value}`}
+        type="button"
+        onClick={() => setPayer(option.choice)}
+        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
+          selected
+            ? 'border-2 border-primary bg-primary/10'
+            : 'border-gray-200 hover:border-gray-300 dark:border-white/[0.12] dark:hover:border-white/[0.25]'
+        }`}
+      >
+        {option.initialsOf ? (
+          <span
+            className={`w-[26px] h-[26px] rounded-full text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 ${getAvatarColor(option.initialsOf)}`}
+          >
+            {getInitials(option.initialsOf)}
+          </span>
+        ) : (
+          <span className="w-[26px] h-[26px] rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
+            <Wallet size={13} />
+          </span>
+        )}
+        <span
+          className={`text-sm ${selected ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-slate-300'}`}
+        >
+          {option.label}
+        </span>
+        {selected && (
+          <Check size={16} className="text-primary dark:text-primary-light" strokeWidth={2.5} />
+        )}
+      </button>
+    )
+  }
+
   // The one thing people must understand before saving an expense for
   // somebody else: it is recorded, but nobody sees it and nothing moves
-  // until it is confirmed.
+  // until it is confirmed. Name only confirmers who really exist — with no
+  // banker account, the chata's admins are the ones who will do it.
   const renderApprovalNote = () => {
-    if (!approval.required || !alternatePayer) return null
+    if (!approvalRequired || !alternatePayer) return null
+    const fallback = bankerCanConfirm ? t('payer.approverBanker') : t('payer.approverAdmin')
+    const payerSide = alternatePayer.isJoint
+      ? t('payer.approverJoint', { name: alternatePayer.name })
+      : alternatePayer.name
     return (
       <div className="flex items-start gap-2.5 mt-2.5 bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-400/10 dark:border-amber-400/30 dark:text-amber-200 rounded-xl px-3 py-2.5">
         <Clock size={15} className="flex-shrink-0 mt-0.5" />
         <span className="text-[13px] leading-relaxed">
-          {approval.kind === 'linked'
-            ? t('payer.approvalLinked', { name: alternatePayer.name })
-            : t('payer.approvalUnlinked')}
+          {payerCanConfirm
+            ? t('payer.approvalTwo', { first: payerSide, second: fallback })
+            : t('payer.approvalOne', { who: fallback })}
         </span>
       </div>
     )

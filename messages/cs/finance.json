@@ -137,8 +137,9 @@
     "approval": {
       "pendingBadge": "Čeká na potvrzení",
       "rejectedBadge": "Zamítnuto",
-      "waitingNote": "Zapsáno za jiného plátce. Ostatním se výdaj ukáže, až ho potvrdí plátce nebo pokladník.",
+      "waitingNote": "Zapsáno za jiného plátce. Ostatním se výdaj ukáže, až ho potvrdí plátce, pokladník nebo správce chaty.",
       "decidePrompt": "Tenhle výdaj čeká na potvrzení. Zaplatil/a ho opravdu {payer}?",
+      "decidePromptJoint": "Tenhle výdaj čeká na potvrzení. Šel opravdu ze společného účtu {payer}?",
       "approve": "Potvrdit",
       "reject": "Zamítnout",
       "rejectConfirm": "Zamítnout výdaj",
