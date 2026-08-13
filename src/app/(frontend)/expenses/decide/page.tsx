@@ -7,7 +7,7 @@ import { canDecideExpense, normalizePayer } from '@/lib/expenseAuthoring'
 import { verifyExpenseDecideToken } from '@/lib/expenseApproval'
 import { bankerParticipant, expensePayerContext } from '@/utils/expenseApproval'
 import { GlassCard } from '../../components/GlassCard'
-import { DecideExpenseCard } from '../../components/DecideExpenseCard'
+import { DecideExpenseCard, type DecideExpenseDetails } from '../../components/DecideExpenseCard'
 import '../../styles.css'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -67,8 +67,10 @@ export default async function DecideExpensePage({
     payload
       .findByID({ collection: 'users', id: verified.userId, depth: 0, overrideAccess: true })
       .catch(() => null),
+    // depth 1 so "Podrobnosti" has real content: receipts with their URLs and
+    // the weight rows with participant names, not bare ids
     payload
-      .findByID({ collection: 'expenses', id: verified.expenseId, depth: 0, overrideAccess: true })
+      .findByID({ collection: 'expenses', id: verified.expenseId, depth: 1, overrideAccess: true })
       .catch(() => null),
   ])
 
@@ -134,6 +136,56 @@ export default async function DecideExpensePage({
       ? t('expenseDecide.page.splitEqual')
       : t('expenseDecide.page.splitWeighted', { count: expense.weights?.length ?? 0 })
 
+  // Behind "Podrobnosti": an equal split needs the chata's headcount to say
+  // what one share is; a weighted one already carries its own rows
+  const weightRows = (expense.weights ?? []).flatMap((w) =>
+    typeof w.participant === 'object' && w.participant !== null
+      ? [{ name: w.participant.name, weight: w.weight }]
+      : [],
+  )
+  let split: DecideExpenseDetails['split'] = null
+  if (expense.splitType === 'equal') {
+    const sharers = await payload
+      .find({
+        collection: 'participants',
+        where: { chata: { equals: refId(expense.chata) } },
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+      .catch(() => null)
+    const names = (sharers?.docs ?? []).map((p) => p.name)
+    if (names.length > 0) {
+      split = { kind: 'equal', names, perPerson: expense.amount / names.length }
+    }
+  } else if (weightRows.length > 0) {
+    // weights that add up to the total are exact amounts, not shares
+    const sum = weightRows.reduce((total, row) => total + (row.weight ?? 0), 0)
+    split = {
+      kind: 'weighted',
+      rows: weightRows,
+      asAmounts: Math.abs(sum - expense.amount) <= 1,
+    }
+  }
+
+  const details: DecideExpenseDetails = {
+    isPlanned: expense.isPlanned ?? false,
+    note: expense.note,
+    split,
+    attachments: (expense.attachments ?? []).flatMap((att) =>
+      typeof att === 'object' && att !== null && att.url
+        ? [
+            {
+              id: String(att.id),
+              url: att.url,
+              isImage: att.mimeType?.startsWith('image/') ?? false,
+              label: att.filename || t('expenseDecide.page.receipt'),
+            },
+          ]
+        : [],
+    ),
+  }
+
   return shell(
     <DecideExpenseCard
       token={token}
@@ -146,6 +198,7 @@ export default async function DecideExpensePage({
       splitSummary={splitSummary}
       payerIsJointAccount={payer.isJointAccount}
       decidingAsPayer={payer.accountIds.includes(String(decider!.id))}
+      details={details}
     />
   )
 }

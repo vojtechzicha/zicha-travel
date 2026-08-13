@@ -2,11 +2,29 @@
 
 import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { Check, Receipt, Wallet, X } from 'lucide-react'
+import { Check, ChevronDown, Clock, FileText, Receipt, Wallet, X } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { formatCurrency, getAvatarColor, getInitials } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import type { AppLocale } from '@/i18n/config'
+
+/**
+ * Everything behind "Podrobnosti" — the parts of the expense somebody needs
+ * to answer "sedí to?" beyond its name and price. All of it is optional;
+ * whatever the expense does not carry simply does not render.
+ */
+export interface DecideExpenseDetails {
+  /** "zatím nezaplaceno" — a planned expense, not a payment that happened */
+  isPlanned: boolean
+  note?: string | null
+  /** who shares it: per-person shares, or the headcount of an equal split */
+  split:
+    | { kind: 'equal'; names: string[]; perPerson: number }
+    | { kind: 'weighted'; rows: { name: string; weight: number }[]; asAmounts: boolean }
+    | null
+  /** receipts, the strongest evidence there is that the sum is real */
+  attachments: { id: string; url: string; isImage: boolean; label: string }[]
+}
 
 interface DecideExpenseCardProps {
   token: string
@@ -21,6 +39,7 @@ interface DecideExpenseCardProps {
   payerIsJointAccount: boolean
   /** the recipient speaks for the payer, rather than deciding as banker/admin */
   decidingAsPayer: boolean
+  details: DecideExpenseDetails
 }
 
 // API error codes with a dedicated message in messages/{cs,en}/auth.json
@@ -49,9 +68,11 @@ export function DecideExpenseCard({
   splitSummary,
   payerIsJointAccount,
   decidingAsPayer,
+  details,
 }: DecideExpenseCardProps) {
   const t = useTranslations('auth')
   const locale = useLocale() as AppLocale
+  const [showDetails, setShowDetails] = useState(false)
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
@@ -79,6 +100,100 @@ export function DecideExpenseCard({
   const createdAtText = new Date(createdAt).toLocaleDateString(
     locale === 'cs' ? 'cs-CZ' : 'en-GB',
     { dateStyle: 'long' },
+  )
+
+  const hasDetails =
+    details.isPlanned ||
+    !!details.note?.trim() ||
+    details.split !== null ||
+    details.attachments.length > 0
+
+  const renderDetails = () => (
+    <div className="mt-2.5 pt-2.5 border-t border-gray-200 flex flex-col gap-3 text-[13px]">
+      {details.isPlanned && (
+        <div className="flex items-start gap-2 text-amber-800">
+          <Clock size={14} className="flex-shrink-0 mt-0.5" />
+          <span>{t('expenseDecide.card.plannedNote')}</span>
+        </div>
+      )}
+
+      {details.split && (
+        <div>
+          <div className="text-gray-500 mb-1">{t('expenseDecide.card.splitLabel')}</div>
+          {details.split.kind === 'equal' ? (
+            <div className="text-gray-800">
+              {details.split.names.join(', ')}
+              <span className="text-gray-500">
+                {' · '}
+                {t('expenseDecide.card.perPerson', {
+                  amount: formatCurrency(details.split.perPerson, locale),
+                })}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {details.split.rows.map((row) => (
+                <span
+                  key={row.name}
+                  className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs"
+                >
+                  {row.name}:{' '}
+                  {details.split!.kind === 'weighted' && details.split!.asAmounts
+                    ? formatCurrency(row.weight, locale)
+                    : `${row.weight}x`}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {details.note?.trim() && (
+        <div>
+          <div className="text-gray-500 mb-1">{t('expenseDecide.card.noteLabel')}</div>
+          <div className="text-gray-800 break-words whitespace-pre-line">{details.note.trim()}</div>
+        </div>
+      )}
+
+      {details.attachments.length > 0 && (
+        <div>
+          <div className="text-gray-500 mb-1">{t('expenseDecide.card.receiptsLabel')}</div>
+          <div className="flex flex-wrap gap-1.5">
+            {details.attachments.map((att) =>
+              att.isImage ? (
+                <a
+                  key={att.id}
+                  href={att.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-14 h-14 rounded-md overflow-hidden border border-gray-200 hover:border-primary transition-colors"
+                  title={att.label}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={att.url}
+                    alt={att.label}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                </a>
+              ) : (
+                <a
+                  key={att.id}
+                  href={att.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gray-100 text-gray-600 hover:bg-gray-200 px-2 py-1 rounded-md flex items-center gap-1 text-xs transition-colors"
+                  title={att.label}
+                >
+                  <FileText size={12} /> PDF
+                </a>
+              ),
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   )
 
   const decide = async (action: 'approve' | 'reject') => {
@@ -142,32 +257,58 @@ export function DecideExpenseCard({
         })}
       </p>
 
-      <div className="flex items-center gap-3 bg-white/70 border border-gray-200 rounded-xl px-4 py-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-          <Receipt size={20} />
+      <div className="bg-white/70 border border-gray-200 rounded-xl px-4 py-3 mb-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+            <Receipt size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            {/* the title wraps rather than truncating: on this page the name of
+                the thing is half of what the reader is being asked about */}
+            <div className="font-semibold text-gray-900 break-words">{title}</div>
+            <div className="text-xs text-gray-500">
+              {createdAtText} • {splitSummary}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+            <span className="font-semibold text-gray-900 whitespace-nowrap">
+              {formatCurrency(amount, locale)}
+            </span>
+            {payerIsJointAccount ? (
+              <span
+                className="w-9 h-9 rounded-full bg-gray-700 text-white flex items-center justify-center"
+                title={payerName}
+              >
+                <Wallet size={16} />
+              </span>
+            ) : (
+              <span
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold ${getAvatarColor(payerName)}`}
+                title={payerName}
+              >
+                {getInitials(payerName)}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-gray-900 truncate">
-            {title} · {formatCurrency(amount, locale)}
-          </div>
-          <div className="text-xs text-gray-500">
-            {createdAtText} • {splitSummary}
-          </div>
-        </div>
-        {payerIsJointAccount ? (
-          <div
-            className="w-9 h-9 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0"
-            title={payerName}
-          >
-            <Wallet size={16} />
-          </div>
-        ) : (
-          <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${getAvatarColor(payerName)}`}
-            title={payerName}
-          >
-            {getInitials(payerName)}
-          </div>
+        {hasDetails && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowDetails((open) => !open)}
+              aria-expanded={showDetails}
+              className="mt-2.5 flex items-center gap-1 text-[13px] text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <ChevronDown
+                size={14}
+                className={`transition-transform ${showDetails ? 'rotate-180' : ''}`}
+              />
+              {showDetails
+                ? t('expenseDecide.card.detailsHide')
+                : t('expenseDecide.card.detailsShow')}
+            </button>
+            {showDetails && renderDetails()}
+          </>
         )}
       </div>
 
