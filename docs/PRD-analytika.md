@@ -186,7 +186,7 @@ is good enough).
 
 - **Expense wizard:** `expense_compose_started` (`entry`: photo / manual) →
   `expense_compose_step` (`step`: 1–3, `split_mode`) →
-  `expense_created` | `expense_compose_abandoned`.
+  `expense_created` (`split_mode`, `planned`) | `expense_compose_abandoned`.
 - **Login:** `login_started` (`method`: magic-link / microsoft) →
   `login_link_requested` → `login_completed`.
 - **Claim:** `claim_started` → `claim_submitted` → `claim_resolved`

@@ -1,8 +1,10 @@
 {
   "headingNew": "New expense",
   "headingEdit": "Edit expense",
+  "headingMarkPaid": "Confirm the payment",
   "cancel": "Cancel",
   "save": "Save expense",
+  "saveMarkPaid": "Save as paid",
   "saving": "Saving…",
   "continue": "Continue",
   "back": "Back",
@@ -30,7 +32,8 @@
     "dateLabelMobile": "When?",
     "dateLabel": "Date",
     "payerLabel": "Who paid?",
-    "refundToggle": "You got money back (a refund)"
+    "refundToggle": "You got money back (a refund)",
+    "plannedToggle": "Not paid yet (a planned expense)"
   },
   "payer": {
     "you": "You",
@@ -88,6 +91,7 @@
   },
   "summary": {
     "paidBy": "Paid by",
+    "willPay": "Will be paid by",
     "editHint": "You can edit or delete the expense at any time."
   },
   "errors": {

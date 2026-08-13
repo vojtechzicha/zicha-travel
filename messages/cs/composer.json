@@ -1,8 +1,10 @@
 {
   "headingNew": "Nový výdaj",
   "headingEdit": "Upravit výdaj",
+  "headingMarkPaid": "Potvrdit zaplacení",
   "cancel": "Zrušit",
   "save": "Uložit výdaj",
+  "saveMarkPaid": "Uložit jako zaplacené",
   "saving": "Ukládám…",
   "continue": "Pokračovat",
   "back": "Zpět",
@@ -30,7 +32,8 @@
     "dateLabelMobile": "Kdy?",
     "dateLabel": "Datum",
     "payerLabel": "Kdo platil?",
-    "refundToggle": "Byly vám vráceny peníze (vratka)"
+    "refundToggle": "Byly vám vráceny peníze (vratka)",
+    "plannedToggle": "Zatím nezaplaceno (plánovaný výdaj)"
   },
   "payer": {
     "you": "Vy",
@@ -88,6 +91,7 @@
   },
   "summary": {
     "paidBy": "Platí",
+    "willPay": "Zaplatí",
     "editHint": "Výdaj můžete kdykoli upravit nebo smazat."
   },
   "errors": {

@@ -129,8 +129,9 @@ export default function PrehledContentCs() {
               </>,
               <>Zkontrolujte, jestli chybí zapsaná záloha nebo účtenka, kterou někdo zaplatil bokem.</>,
               <>
-                Plánované výdaje se do vyrovnání nepočítají. Jestli už jsou zaplacené, musí je někdo
-                přepnout na běžný výdaj.
+                Plánované výdaje se do vyrovnání nepočítají. Jestli už je zaplaceno, potvrdí to autor
+                výdaje tlačítkem <em>Už zaplaceno</em> na kartě, u ostatních přepne výdaj správce
+                chaty.
               </>,
               <>Svůj vlastní výdaj opravíte sami, u ostatních pomůže správce chaty.</>,
             ]}

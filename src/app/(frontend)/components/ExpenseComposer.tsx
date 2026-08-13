@@ -19,6 +19,7 @@ import {
   Camera,
   Check,
   ChevronLeft,
+  Clock,
   FileText,
   HeartHandshake,
   Minus,
@@ -47,6 +48,12 @@ interface ExpenseComposerProps {
   viewer: FinanceViewer
   /** null = create; an expense = edit (same form, prefilled) */
   expense: Expense | null
+  /**
+   * "Už zaplaceno" on a planned expense: the same edit form, opened with the
+   * planned switch already off and today's date, so the amount can still be
+   * corrected and the receipt attached before it becomes an actual expense.
+   */
+  markPaid?: boolean
   onClose: () => void
   /** reload data (and close) after a successful save */
   onSaved: () => void | Promise<void>
@@ -129,6 +136,7 @@ export function ExpenseComposer({
   jointAccounts,
   viewer,
   expense,
+  markPaid = false,
   onClose,
   onSaved,
 }: ExpenseComposerProps) {
@@ -199,7 +207,11 @@ export function ExpenseComposer({
     return { mode: areAmounts ? 'amounts' : 'shares', rows }
   }, [expense, participants])
 
-  const [mobileStep, setMobileStep] = useState<MobileStep>(isEdit ? 'details' : 'entry')
+  // "Už zaplaceno" opens straight on the summary — everything is prefilled,
+  // one tap saves, and the back arrow leads to the amount
+  const [mobileStep, setMobileStep] = useState<MobileStep>(
+    markPaid ? 'review' : isEdit ? 'details' : 'entry',
+  )
 
   // ── funnel instrumentation (docs/PRD-analytika.md) ───────────────────
   // savedRef distinguishes "closed after saving" from "abandoned";
@@ -238,7 +250,18 @@ export function ExpenseComposer({
     expense ? String(Math.round(Math.abs(expense.amount))) : '',
   )
   const [isRefund, setIsRefund] = useState((expense?.amount ?? 0) < 0)
-  const [dateStr, setDateStr] = useState(toDateInput(expense?.createdAt ?? new Date()))
+  // Planned expense ("zatím nezaplacený") — the amount is a promise, so the
+  // math keeps it apart from the real one (utils/calculateStats).
+  // The switch is a ONE-WAY door: it shows while composing a new expense and
+  // on an expense that is still planned. Once paid, editing no longer offers
+  // it — turning a real payment back into a promise is a mistake waiting to
+  // happen (one stray tap), and the way back is to delete and add it again.
+  const plannedEditable = !isEdit || (expense?.isPlanned ?? false)
+  const [isPlanned, setIsPlanned] = useState(markPaid ? false : (expense?.isPlanned ?? false))
+  // Confirming a payment re-dates the expense to the day it was paid
+  const [dateStr, setDateStr] = useState(
+    toDateInput(markPaid ? new Date() : (expense?.createdAt ?? new Date())),
+  )
   const [payer, setPayer] = useState<PayerChoice | null>(initialPayer)
   const [splitMode, setSplitMode] = useState<SplitMode>(initialSplit.mode)
   const [rows, setRows] = useState<Record<number, SplitRow>>(initialSplit.rows)
@@ -522,6 +545,9 @@ export function ExpenseComposer({
         invitations,
         createdAt: baseDate.toISOString(),
         attachments: [...existingAttachments.map((a) => a.id), ...uploadedIds],
+        // only where the switch was offered; a paid expense keeps its flag
+        // untouched (PATCH is partial), so it can never revert to planned
+        ...(plannedEditable ? { isPlanned } : {}),
       }
 
       const res = await fetch(isEdit ? `/api/expenses/${expense!.id}` : '/api/expenses', {
@@ -541,7 +567,7 @@ export function ExpenseComposer({
         )
       }
       savedRef.current = true
-      if (!isEdit) track('expense_created', { split_mode: splitMode })
+      if (!isEdit) track('expense_created', { split_mode: splitMode, planned: isPlanned })
       await onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errors.saveFailed'))
@@ -550,7 +576,8 @@ export function ExpenseComposer({
   }
 
   // ── shared render helpers ────────────────────────────────────────────
-  const heading = isEdit ? t('headingEdit') : t('headingNew')
+  const heading = markPaid ? t('headingMarkPaid') : isEdit ? t('headingEdit') : t('headingNew')
+  const saveLabel = markPaid ? t('saveMarkPaid') : t('save')
 
   const payerName = (choice: PayerChoice): string => {
     if (choice.relationTo === 'participants') {
@@ -632,46 +659,68 @@ export function ExpenseComposer({
     )
   }
 
-  const renderRefundToggle = (compact = false) => (
-    <div
-      className={`flex items-center gap-2 ${compact ? 'mt-2' : 'justify-between mt-2.5 px-0.5'}`}
-    >
-      {compact && (
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isRefund}
-          onClick={() => setIsRefund((v) => !v)}
-          className={`relative w-[38px] h-[22px] rounded-full flex-shrink-0 transition-colors ${
-            isRefund ? 'bg-green-500' : 'bg-gray-200 dark:bg-white/[0.15]'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform ${
-              isRefund ? 'translate-x-4' : ''
-            }`}
-          />
-        </button>
-      )}
-      <span className="text-sm text-gray-600 dark:text-slate-300">{t('stepWhat.refundToggle')}</span>
-      {!compact && (
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isRefund}
-          onClick={() => setIsRefund((v) => !v)}
-          className={`relative w-[46px] h-7 rounded-full flex-shrink-0 transition-colors ${
-            isRefund ? 'bg-green-500' : 'bg-gray-200 dark:bg-white/[0.15]'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-              isRefund ? 'translate-x-[18px]' : ''
-            }`}
-          />
-        </button>
-      )}
-    </div>
+  // Switch row. compact = desktop column (switch left of the label), the
+  // roomier variant puts the label left and the switch on the right.
+  const renderSwitch = ({
+    label,
+    checked,
+    onToggle,
+    onColor,
+    compact,
+  }: {
+    label: string
+    checked: boolean
+    onToggle: () => void
+    onColor: string
+    compact: boolean
+  }) => {
+    const knob = (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={onToggle}
+        className={`relative rounded-full flex-shrink-0 transition-colors ${
+          compact ? 'w-[38px] h-[22px]' : 'w-[46px] h-7'
+        } ${checked ? onColor : 'bg-gray-200 dark:bg-white/[0.15]'}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform ${
+            compact ? 'w-[18px] h-[18px]' : 'w-6 h-6'
+          } ${checked ? (compact ? 'translate-x-4' : 'translate-x-[18px]') : ''}`}
+        />
+      </button>
+    )
+    return (
+      <div className={`flex items-center gap-2 ${compact ? 'mt-2' : 'justify-between mt-2.5 px-0.5'}`}>
+        {compact && knob}
+        <span className="text-sm text-gray-600 dark:text-slate-300">{label}</span>
+        {!compact && knob}
+      </div>
+    )
+  }
+
+  // Both flags of the amount: a refund (money came back) and a planned
+  // expense (money hasn't left yet). They are independent — a deposit we
+  // expect back is a planned refund.
+  const renderAmountToggles = (compact = false) => (
+    <>
+      {renderSwitch({
+        label: t('stepWhat.refundToggle'),
+        checked: isRefund,
+        onToggle: () => setIsRefund((v) => !v),
+        onColor: 'bg-green-500',
+        compact,
+      })}
+      {plannedEditable &&
+        renderSwitch({
+          label: t('stepWhat.plannedToggle'),
+          checked: isPlanned,
+          onToggle: () => setIsPlanned((v) => !v),
+          onColor: 'bg-amber-500',
+          compact,
+        })}
+    </>
   )
 
   const setRow = (participantId: number, patch: Partial<SplitRow>) =>
@@ -1124,7 +1173,8 @@ export function ExpenseComposer({
         if (isEdit) onClose()
         else setMobileStep('entry')
       } else if (mobileStep === 'split') setMobileStep('details')
-      else setMobileStep('split')
+      // "Už zaplaceno" starts on the summary, so back leads to the amount
+      else setMobileStep(markPaid ? 'details' : 'split')
     }
 
     return createPortal(
@@ -1213,7 +1263,7 @@ export function ExpenseComposer({
                   />
                   <span className="text-lg text-gray-400 dark:text-slate-500 font-medium">{t('currencySuffix')}</span>
                 </div>
-                {renderRefundToggle()}
+                {renderAmountToggles()}
               </div>
               <div>
                 <label
@@ -1299,10 +1349,20 @@ export function ExpenseComposer({
               <div className="bg-gray-50 border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.12] rounded-2xl p-4">
                 <div className="flex gap-3">
                   <div className="flex-shrink-0">
+                    {/* mirrors the finished card (ExpenseCard): planned wins
+                        over refund in the styling */}
                     <div
-                      className={`p-2 rounded-lg ${isRefund ? 'bg-green-100 dark:bg-green-500/15' : 'bg-primary/10'}`}
+                      className={`p-2 rounded-lg ${
+                        isPlanned
+                          ? 'bg-amber-100 dark:bg-amber-400/15'
+                          : isRefund
+                            ? 'bg-green-100 dark:bg-green-500/15'
+                            : 'bg-primary/10'
+                      }`}
                     >
-                      {isRefund ? (
+                      {isPlanned ? (
+                        <Clock size={20} className="text-amber-600 dark:text-amber-300" />
+                      ) : isRefund ? (
                         <ArrowLeft size={20} className="text-green-600 dark:text-green-300" />
                       ) : (
                         <Receipt size={20} className="text-primary dark:text-primary-light" />
@@ -1316,7 +1376,11 @@ export function ExpenseComposer({
                       </span>
                       <span
                         className={`font-bold text-[15px] flex-shrink-0 ${
-                          isRefund ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
+                          isPlanned
+                            ? 'text-amber-600 dark:text-amber-300'
+                            : isRefund
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-gray-900 dark:text-gray-100'
                         }`}
                       >
                         {amount !== null
@@ -1325,7 +1389,8 @@ export function ExpenseComposer({
                       </span>
                     </div>
                     <div className="text-[13px] text-gray-600 dark:text-slate-300 mb-2">
-                      {t('summary.paidBy')} <strong>{payer ? payerName(payer) : '—'}</strong> ·{' '}
+                      {t(isPlanned ? 'summary.willPay' : 'summary.paidBy')}{' '}
+                      <strong>{payer ? payerName(payer) : '—'}</strong> ·{' '}
                       {formatDayShort(dateStr, locale)}
                     </div>
                     <div className="flex flex-wrap gap-1">
@@ -1382,7 +1447,7 @@ export function ExpenseComposer({
                 onClick={handleSave}
                 className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white text-center font-semibold text-base rounded-2xl py-[15px] shadow-lg shadow-primary/40 transition-colors"
               >
-                {saving ? t('saving') : t('save')}
+                {saving ? t('saving') : saveLabel}
               </button>
               <p className="text-center text-xs text-gray-400 dark:text-slate-500 mt-2.5">
                 {t('summary.editHint')}
@@ -1470,7 +1535,7 @@ export function ExpenseComposer({
                   {t('currencySuffix')}
                 </span>
               </div>
-              {renderRefundToggle(true)}
+              {renderAmountToggles(true)}
             </div>
             <div>
               <label
@@ -1608,7 +1673,7 @@ export function ExpenseComposer({
               onClick={handleSave}
               className="text-sm font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 px-5.5 py-2.5 rounded-xl shadow-lg shadow-primary/30 transition-colors"
             >
-              {saving ? t('saving') : t('save')}
+              {saving ? t('saving') : saveLabel}
             </button>
           </div>
         </div>

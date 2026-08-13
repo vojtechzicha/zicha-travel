@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import {
   Receipt,
   ArrowLeft,
+  CheckCircle2,
   Clock,
   HeartHandshake,
   FileText,
@@ -31,6 +32,8 @@ interface ExpenseCardProps {
   /** the viewer authored this expense — show the manage footer (1b) */
   canManage?: boolean
   onEdit?: (expense: Expense) => void
+  /** planned expense of your own: reopen the composer to confirm the payment */
+  onMarkPaid?: (expense: Expense) => void
   /** resolves after the expense is deleted (data reload included) */
   onDelete?: (expense: Expense) => Promise<void>
 }
@@ -42,6 +45,7 @@ export function ExpenseCard({
   selectedParticipantId,
   canManage = false,
   onEdit,
+  onMarkPaid,
   onDelete,
 }: ExpenseCardProps) {
   const t = useTranslations('finance')
@@ -125,6 +129,19 @@ export function ExpenseCard({
       </span>
     )
   }
+
+  // A planned expense of your own gets the one action that matters: the day
+  // it is really paid, confirm it in the composer (amount, receipt, date)
+  const markPaidButton =
+    isPlanned && onMarkPaid ? (
+      <button
+        type="button"
+        onClick={() => onMarkPaid(expense)}
+        className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 active:bg-amber-200 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 transition-colors"
+      >
+        <CheckCircle2 size={13} /> {t('expenseCard.markPaid')}
+      </button>
+    ) : null
 
   return (
     <div
@@ -287,14 +304,15 @@ export function ExpenseCard({
 
         {/* Manage footer (1b): only on expenses the viewer authored */}
         {canManage && !confirmingDelete && (
-          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
+          <div className="flex items-center justify-between flex-wrap gap-2 mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
             <span className="text-xs text-gray-400 dark:text-slate-500 min-w-0 truncate">
               {t('expenseCard.addedByYou')}
               {/* timestamp only where the icon buttons leave room (design 1b) */}
               <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt, locale)}</span>
             </span>
             {/* Desktop: compact icon buttons */}
-            <div className="hidden lg:flex gap-0.5 flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
+              {markPaidButton}
               <button
                 type="button"
                 title={t('expenseCard.edit')}
@@ -318,7 +336,8 @@ export function ExpenseCard({
               </button>
             </div>
             {/* Mobile: labeled pill buttons above the thumb */}
-            <div className="flex lg:hidden gap-2 flex-shrink-0">
+            <div className="flex lg:hidden flex-wrap gap-2 flex-shrink-0">
+              {markPaidButton}
               <button
                 type="button"
                 onClick={() => onEdit?.(expense)}

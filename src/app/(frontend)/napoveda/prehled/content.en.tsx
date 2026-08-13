@@ -138,8 +138,9 @@ export default function PrehledContentEn() {
               </>,
               <>Check whether an advance is missing, or a receipt someone paid on the side.</>,
               <>
-                Planned expenses do not count towards the settlement. If they are already paid,
-                someone has to switch them to a regular expense.
+                Planned expenses do not count towards the settlement. If one is already paid, its
+                author confirms it with <em>Paid now</em> on the card; for the rest, the chata admin
+                can switch it.
               </>,
               <>You can fix your own expense yourself; for the others, the chata admin can help.</>,
             ]}

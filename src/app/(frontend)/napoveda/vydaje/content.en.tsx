@@ -1,7 +1,7 @@
 // English content. A translation of content.cs.tsx — same structure, same
 // screenshots (which show the Czech UI), idiomatic English.
 
-import { Camera, HeartHandshake, Monitor, PencilLine, Plus, Scale, Smartphone } from 'lucide-react'
+import { Camera, Clock, HeartHandshake, Monitor, PencilLine, Plus, Scale, Smartphone } from 'lucide-react'
 import { Callout, HelpShell, List, NextPage, Screenshot, ScreenshotRow, Section, Steps } from '../ui'
 
 export default function VydajeContentEn() {
@@ -128,6 +128,36 @@ export default function VydajeContentEn() {
               <>Photos are shrunk right in the browser before uploading, so it does not take forever.</>,
               <>On the expense card they then appear as small thumbnails that open full screen.</>,
               <>You can remove an attached receipt at any time with the cross.</>,
+            ]}
+          />
+        </Section>
+
+        <Section title="Planned expense: not paid yet" icon={<Clock size={20} />}>
+          <p>
+            The <em>Not paid yet</em> switch right below the amount says the expense is still ahead
+            of you. The chata is booked, but it gets paid on arrival. In the journal such a card has
+            a dashed amber border and a <em>Planned</em> tag, and the totals keep it apart, so it
+            stays clear what has already happened and what is still coming.
+          </p>
+          <List
+            items={[
+              <>
+                Once the money really leaves, tap <strong>Paid now</strong> on the card. The expense
+                summary opens, where you can still correct the amount to what it really was and add
+                the receipt.
+              </>,
+              <>
+                The date moves to today, the day it was paid. You can always set it back by hand.
+              </>,
+              <>
+                There is no way back. Once an expense is paid, editing no longer offers the switch,
+                so nobody can drop it back among the plans by accident. If you get it wrong, delete
+                the expense and add it again.
+              </>,
+              <>
+                Other people&apos;s planned expenses, the chata admin&apos;s for instance, cannot be
+                switched. Those stay with their author.
+              </>,
             ]}
           />
         </Section>

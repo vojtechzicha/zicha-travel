@@ -79,7 +79,16 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      "Přidali jste vy" footer with Upravit/Smazat (inline confirm).
      Split modes: rovným dílem / podíly / přesné částky (weights summing
      to the total; untouched rows auto-absorb the remainder,
-     "dopočítáno"). Receipt photos are downscaled client-side
+     "dopočítáno"). Planned expenses ("zatím nezaplaceno", `isPlanned`) are
+     authored here too: a switch under the amount, and on your own planned
+     card an "Už zaplaceno" button that reopens the composer with the switch
+     off and today's date (`markPaid` prop) so the real amount and the
+     receipt land with the payment. Planned → paid is a ONE-WAY door: the
+     switch only renders while creating or while the expense is still
+     planned (`plannedEditable`), and `isPlanned` is left out of the PATCH
+     otherwise, so a paid expense can't revert with one stray tap (delete
+     and re-add instead). Admin-entered planned expenses stay
+     admin-only — updates need `authoredBy`. Receipt photos are downscaled client-side
      (`src/lib/imageDownscale.ts`) before the REST upload — Vercel caps
      request bodies at ~4.5 MB. Saving goes through the Payload REST API
      (`POST/PATCH/DELETE /api/expenses`, `POST /api/expense-attachments` —

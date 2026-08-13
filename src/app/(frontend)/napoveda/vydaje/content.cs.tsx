@@ -1,7 +1,7 @@
 // Czech content, moved verbatim from page.tsx when the frontend went
 // bilingual. Edit wording here; page.tsx only picks a locale.
 
-import { Camera, HeartHandshake, Monitor, PencilLine, Plus, Scale, Smartphone } from 'lucide-react'
+import { Camera, Clock, HeartHandshake, Monitor, PencilLine, Plus, Scale, Smartphone } from 'lucide-react'
 import { Callout, HelpShell, List, NextPage, Screenshot, ScreenshotRow, Section, Steps } from '../ui'
 
 export default function VydajeContentCs() {
@@ -121,6 +121,35 @@ export default function VydajeContentCs() {
               <>Fotka se před odesláním zmenší přímo v prohlížeči, takže nahrání netrvá věčnost.</>,
               <>Na kartě výdaje se pak zobrazí jako malý náhled, který se dá otevřít přes celou obrazovku.</>,
               <>Přiloženou účtenku můžete kdykoli odebrat křížkem.</>,
+            ]}
+          />
+        </Section>
+
+        <Section title="Plánovaný výdaj: zatím nezaplaceno" icon={<Clock size={20} />}>
+          <p>
+            Přepínač <em>Zatím nezaplaceno</em> hned pod částkou říká, že se výdaj teprve chystá.
+            Chata je zamluvená, platí se ale až na místě. V deníku má taková karta žlutý čárkovaný
+            rámeček a značku <em>Plánovaný</em> a v součtech se drží zvlášť, aby bylo poznat, co už
+            proběhlo a co teprve přijde.
+          </p>
+          <List
+            items={[
+              <>
+                Až peníze opravdu odejdou, klepněte na kartě na <strong>Už zaplaceno</strong>. Otevře
+                se souhrn výdaje, kde ještě jde opravit částku podle skutečnosti a přifotit účtenku.
+              </>,
+              <>
+                Datum se přitom přepíše na dnešek, tedy na den, kdy se platilo. Ručně ho můžete
+                změnit zpátky.
+              </>,
+              <>
+                Zpátky to nejde. Jakmile je výdaj zaplacený, přepínač v úpravě už není, aby ho
+                nikdo omylem nevrátil mezi plány. Když se spletete, výdaj smažte a zadejte znovu.
+              </>,
+              <>
+                Cizí plánované výdaje, třeba ty od správce chaty, přepnout nejde. Ty zůstávají na
+                svém autorovi.
+              </>,
             ]}
           />
         </Section>

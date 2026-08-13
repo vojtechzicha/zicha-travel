@@ -14,6 +14,8 @@ interface ExpensesFeedProps {
   /** signed-in account id — expenses it authored get the manage footer */
   viewerUserId?: number | null
   onEditExpense?: (expense: Expense) => void
+  /** planned expense of the viewer: confirm it was paid */
+  onMarkExpensePaid?: (expense: Expense) => void
   onDeleteExpense?: (expense: Expense) => Promise<void>
   /** anonymous visitors: subtle bar that signing in unlocks authoring (1e) */
   showLoginHint?: boolean
@@ -45,6 +47,7 @@ export function ExpensesFeed({
   selectedParticipantId,
   viewerUserId,
   onEditExpense,
+  onMarkExpensePaid,
   onDeleteExpense,
   showLoginHint = false,
 }: ExpensesFeedProps) {
@@ -111,6 +114,7 @@ export function ExpensesFeed({
                 selectedParticipantId={selectedParticipantId}
                 canManage={authoredByViewer}
                 onEdit={onEditExpense}
+                onMarkPaid={onMarkExpensePaid}
                 onDelete={onDeleteExpense}
               />
             )

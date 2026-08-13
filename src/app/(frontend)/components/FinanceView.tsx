@@ -72,8 +72,12 @@ export function FinanceView({
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
   // Frontend expense authoring: null = closed, { expense: null } = new,
-  // { expense } = edit. Only for signed-in accounts with a participant here.
-  const [composer, setComposer] = useState<{ expense: Expense | null } | null>(null)
+  // { expense } = edit, markPaid = confirming a planned expense was paid.
+  // Only for signed-in accounts with a participant here.
+  const [composer, setComposer] = useState<{
+    expense: Expense | null
+    markPaid?: boolean
+  } | null>(null)
   const canAuthor = viewer.authenticated && viewer.linkedParticipantIds.length > 0
 
   // Deep link from the homepage hero ("Přidat výdaj" on the live chata):
@@ -305,6 +309,7 @@ export function FinanceView({
           jointAccounts={jointAccounts}
           viewer={viewer}
           expense={composer.expense}
+          markPaid={composer.markPaid}
           onClose={() => setComposer(null)}
           onSaved={async () => {
             await onDataChanged?.()
@@ -413,6 +418,7 @@ export function FinanceView({
             selectedParticipantId={selectedParticipantId}
             viewerUserId={canAuthor ? viewer.userId : null}
             onEditExpense={(expense) => setComposer({ expense })}
+            onMarkExpensePaid={(expense) => setComposer({ expense, markPaid: true })}
             onDeleteExpense={handleDeleteExpense}
             showLoginHint={!viewer.authenticated}
           />
