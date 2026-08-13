@@ -348,7 +348,9 @@ export function InformationView({
   const calendarUrl =
     chata.tripDateFrom && chata.tripDateTo && !tentative
       ? googleCalendarAllDayUrl({
-          title: chataName,
+          // The trip event lands among other people's calendar entries — the
+          // full name carries there, the short one wouldn't.
+          title: chata.name,
           dateFrom: new Date(chata.tripDateFrom).toLocaleDateString('en-CA'),
           dateTo: new Date(chata.tripDateTo).toLocaleDateString('en-CA'),
           details: calendarDescription || undefined,
