@@ -304,8 +304,8 @@ export function ExpenseCard({
 
         {/* Manage footer (1b): only on expenses the viewer authored */}
         {canManage && !confirmingDelete && (
-          <div className="flex items-center justify-between flex-wrap gap-2 mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
-            <span className="text-xs text-gray-400 dark:text-slate-500 min-w-0 truncate">
+          <div className="flex flex-col items-start gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
+            <span className="text-xs text-gray-400 dark:text-slate-500 max-w-full min-w-0 truncate">
               {t('expenseCard.addedByYou')}
               {/* timestamp only where the icon buttons leave room (design 1b) */}
               <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt, locale)}</span>
@@ -335,8 +335,12 @@ export function ExpenseCard({
                 <Trash2 size={15} />
               </button>
             </div>
-            {/* Mobile: labeled pill buttons above the thumb */}
-            <div className="flex lg:hidden flex-wrap gap-2 flex-shrink-0">
+            {/* Mobile: labeled pill buttons above the thumb. NOT flex-shrink-0
+                and not sharing the row with the label — a non-shrinking item
+                keeps its max-content width, so three pills ("Už zaplaceno",
+                Upravit, Smazat) never wrapped: they spilled past the card edge
+                and gave the whole page a horizontal scroll on narrow phones */}
+            <div className="flex lg:hidden flex-wrap gap-2">
               {markPaidButton}
               <button
                 type="button"
