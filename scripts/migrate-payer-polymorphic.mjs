@@ -522,6 +522,32 @@ CREATE TABLE IF NOT EXISTS chatas_contact_rules (
 );
 CREATE INDEX IF NOT EXISTS chatas_contact_rules_order_idx ON chatas_contact_rules USING btree (_order);
 CREATE INDEX IF NOT EXISTS chatas_contact_rules_parent_id_idx ON chatas_contact_rules USING btree (_parent_id);
+
+CREATE TABLE IF NOT EXISTS chatas_private_info (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  label character varying NOT NULL,
+  value character varying NOT NULL,
+  CONSTRAINT chatas_private_info_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_private_info_order_idx ON chatas_private_info USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_private_info_parent_id_idx ON chatas_private_info USING btree (_parent_id);
+
+CREATE TABLE IF NOT EXISTS chatas_public_transport_options_riders (
+  _order integer NOT NULL,
+  _parent_id character varying NOT NULL,
+  id character varying PRIMARY KEY,
+  participant_id integer NOT NULL,
+  CONSTRAINT chatas_public_transport_options_riders_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas_public_transport_options(id) ON DELETE CASCADE,
+  CONSTRAINT chatas_public_transport_options_riders_participant_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS chatas_public_transport_options_riders_order_idx ON chatas_public_transport_options_riders USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_public_transport_options_riders_parent_id_idx ON chatas_public_transport_options_riders USING btree (_parent_id);
+CREATE INDEX IF NOT EXISTS chatas_public_transport_options_riders_participant_idx ON chatas_public_transport_options_riders USING btree (participant_id);
 `
 
 async function enumLabels(typeName) {

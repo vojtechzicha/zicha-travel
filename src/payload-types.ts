@@ -314,7 +314,23 @@ export interface Chata {
       }[]
     | null;
   /**
-   * Link to the shared photo album — shown after the trip
+   * Wi-Fi password, where the keys are, door codes. Signed-in participants see the values; anonymous visitors only see that they exist.
+   */
+  privateInfo?:
+    | {
+        /**
+         * e.g., "Wi-Fi". Labels are public, keep the secret in the value.
+         */
+        label: string;
+        /**
+         * e.g., "chata2024 (router in the hallway)"
+         */
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Link to the shared photo album. Offered before and during the trip so people add photos as they go, and featured again in the recap.
    */
   sharedAlbumUrl?: string | null;
   /**
@@ -355,6 +371,15 @@ export interface Chata {
          * Day used by the "add to calendar" link: tam → arrival day, zpět → departure day
          */
         direction?: ('tam' | 'zpet') | null;
+        /**
+         * Participants travelling on this connection. Shown next to the cars in Organization and as a note on the route in Information.
+         */
+        riders?:
+          | {
+              participant: number | Participant;
+              id?: string | null;
+            }[]
+          | null;
         /**
          * Total journey time
          */
@@ -1085,6 +1110,13 @@ export interface ChatasSelect<T extends boolean = true> {
         value?: T;
         id?: T;
       };
+  privateInfo?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
   sharedAlbumUrl?: T;
   parking?: T;
   carRoutes?:
@@ -1101,6 +1133,12 @@ export interface ChatasSelect<T extends boolean = true> {
     | {
         title?: T;
         direction?: T;
+        riders?:
+          | T
+          | {
+              participant?: T;
+              id?: T;
+            };
         totalDuration?: T;
         notes?: T;
         connections?:

@@ -222,9 +222,33 @@ API payload, no new endpoints).
 - The trip-guide metadata lives on the chata (all optional): checkIn/
   checkOutTime, destinationLat/Lng, packingItems, amenities (✓/✗ chips),
   program (day-only date + text), surroundings (place|trip), contactRules,
-  sharedAlbumUrl, sharedCars[].seats. Prod DDL for these is appended to
+  sharedAlbumUrl, privateInfo, sharedCars[].seats,
+  publicTransportOptions[].riders. Prod DDL for these is appended to
   `NEW_SCHEMA_DDL` in `scripts/migrate-payer-polymorphic.mjs` (captured
   from the local dev push, additive only).
+- **"Klíče a Wi-Fi"** (`privateInfo` label+value rows): the ONE piece of
+  chata data that is NOT public. Signed-in viewers see the values;
+  anonymous visitors see the same rows with masked values and a sign-in
+  nudge (labels are public by design — they tease what's behind the
+  login); the section disappears after the trip. Gated server-side twice:
+  field-level `access.read` (needs `req.user`) hides the array from
+  Payload's public REST/GraphQL, and the slug API deep-scrubs every
+  `privateInfo.value` in the whole payload for anonymous viewers —
+  depth-2 population nests the chata doc inside participants (banker,
+  occupants, riders) and expenses, so a top-level strip alone would leak.
+  The contact section's "page is public" note switches to point at this
+  section when rows exist.
+- Shared album (`sharedAlbumUrl`) is promoted in every phase, not just the
+  recap: hero action before ("Sdílené album") and during ("Přidávej fotky
+  do alba"), gallery aside link always — people should add photos as the
+  trip happens.
+- Public transport assignment (`publicTransportOptions[].riders`, same
+  `{ participant }` array shape as car passengers): Organizace renders a
+  "Veřejnou dopravou" block next to the cars (route title, Tam/Zpět badge,
+  date + times, rider chips, viewer highlighted) and the "bez auta" note
+  skips assigned riders; Informace shows a quiet "Jede: …" line on the
+  route row as a nudge. Helpers `getTransportAssignments`/`transportRiders`
+  in `utils/tripData.ts`.
 
 ### Settlement Threshold
 

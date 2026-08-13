@@ -19,6 +19,8 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Info,
+  KeyRound,
+  Lock,
   MapPin,
   Mountain,
   Navigation,
@@ -58,6 +60,7 @@ import {
   presentOnNight,
   sleepingCapacity,
   tonightNumber,
+  transportRiders,
   tripDayIndex,
   tripTotalDays,
   type TripPhase,
@@ -366,6 +369,15 @@ export function InformationView({
       </div>
     </div>
   )
+  // The album link shows in every phase — people should add photos as the
+  // trip happens, not find the album for the first time in the recap.
+  const albumAction = chata.sharedAlbumUrl ? (
+    <SecondaryAction href={chata.sharedAlbumUrl}>
+      <ImageIcon size={14} aria-hidden="true" />{' '}
+      {phase === 'during' ? t('information.sharedAlbumDuring') : t('information.sharedAlbum')}
+    </SecondaryAction>
+  ) : null
+
   const heroActions = (calendar: boolean) => (
     <>
       {calendar && calendarUrl && (
@@ -373,6 +385,7 @@ export function InformationView({
           <CalendarPlus size={14} aria-hidden="true" /> {t('information.tripToCalendar')}
         </SecondaryAction>
       )}
+      {albumAction}
       {navUrl && (
         <PrimaryAction href={navUrl}>
           <Navigation size={14} aria-hidden="true" /> {t('information.navigate')}
@@ -424,11 +437,9 @@ export function InformationView({
             </span>
           </div>
         </div>
-        {navUrl && (
+        {(navUrl || albumAction) && (
           <div className="flex flex-wrap justify-center gap-2 mt-3 sm:mt-0 sm:shrink-0">
-            <PrimaryAction href={navUrl}>
-              <Navigation size={14} aria-hidden="true" /> {t('information.navigate')}
-            </PrimaryAction>
+            {heroActions(false)}
           </div>
         )}
       </div>
@@ -1068,6 +1079,61 @@ export function InformationView({
       </div>
     ) : null
 
+  // ─── "Klíče a Wi-Fi" — the locked-in details ─────────────────────────────
+  // Signed-in viewers get the values; anonymous visitors get the same rows
+  // with masked values (the slug API never sent them) and a sign-in nudge.
+  // Gone after the trip — a stale Wi-Fi password helps nobody.
+
+  const privateRows = chata.privateInfo || []
+  const privateSection =
+    phase !== 'after' && privateRows.length > 0 ? (
+      <div>
+        <SheetHeading
+          icon={KeyRound}
+          title={t('information.privateTitle')}
+          aside={
+            <span className="inline-flex items-center gap-1.5">
+              <Lock size={12} aria-hidden="true" />
+              {t('information.privateAside')}
+            </span>
+          }
+        />
+        <div className="flex flex-col gap-2.5">
+          {privateRows.map((row, idx) => (
+            <InfoRow key={row.id || idx} label={row.label}>
+              {viewer.authenticated ? (
+                <span className="select-all font-medium">{row.value}</span>
+              ) : (
+                <span
+                  className="tracking-widest text-gray-300 dark:text-slate-600 select-none"
+                  aria-label={t('information.privateMasked')}
+                >
+                  ••••••••
+                </span>
+              )}
+            </InfoRow>
+          ))}
+        </div>
+        {viewer.authenticated ? (
+          <div className="mt-3.5 rounded-xl bg-gray-50 border border-gray-100 dark:bg-white/[0.04] dark:border-white/[0.06] px-3.5 py-3 text-[13px] text-gray-500 dark:text-slate-400 leading-relaxed">
+            {t('information.privateVisibleNote')}
+          </div>
+        ) : (
+          <div className="mt-3.5">
+            <HintCard>
+              <span>{t('information.privateTeaser')}</span>
+              <a
+                href="/login"
+                className="rounded-lg border border-primary text-primary-dark dark:text-primary-light text-xs font-bold px-3.5 py-2 whitespace-nowrap hover:bg-primary/10 transition-colors"
+              >
+                {t('information.signIn')}
+              </a>
+            </HintCard>
+          </div>
+        )}
+      </div>
+    ) : null
+
   const contactSection =
     (chata.contactRules || []).length > 0 ? (
       <div>
@@ -1080,7 +1146,9 @@ export function InformationView({
           ))}
         </div>
         <div className="mt-3.5 rounded-xl bg-gray-50 border border-gray-100 dark:bg-white/[0.04] dark:border-white/[0.06] px-3.5 py-3 text-[13px] text-gray-500 dark:text-slate-400 leading-relaxed">
-          {t('information.publicPageNote')}
+          {privateRows.length > 0
+            ? t('information.publicPageNoteLocked')
+            : t('information.publicPageNote')}
         </div>
       </div>
     ) : null
@@ -1092,7 +1160,7 @@ export function InformationView({
           icon={ImageIcon}
           title={t('information.galleryTitle')}
           aside={
-            phase === 'after' && chata.sharedAlbumUrl ? (
+            chata.sharedAlbumUrl ? (
               <a
                 href={chata.sharedAlbumUrl}
                 target="_blank"
@@ -1209,6 +1277,7 @@ export function InformationView({
               const lastArrival = connections[connections.length - 1]?.arrival
               const eventDate =
                 option.direction === 'zpet' ? chata.tripDateTo : chata.tripDateFrom
+              const riders = transportRiders(option, participants)
 
               return (
                 <div
@@ -1248,6 +1317,32 @@ export function InformationView({
                       <ChevronDown size={18} className="text-gray-400 shrink-0" aria-hidden="true" />
                     )}
                   </div>
+                  {/* who takes this connection — a quiet nudge, the full
+                      rundown lives in Organizace */}
+                  {riders.length > 0 && (
+                    <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-1.5">
+                      {t('information.ridersLabel')}{' '}
+                      {riders.map((p, i) => {
+                        const isMine = viewer.linkedParticipantIds.includes(p.id)
+                        return (
+                          <span key={p.id}>
+                            {i > 0 && ', '}
+                            <span
+                              className={
+                                isMine
+                                  ? 'font-semibold text-primary-dark dark:text-primary-light'
+                                  : undefined
+                              }
+                            >
+                              {p.name}
+                              {petSuffix(p)}
+                              {isMine && ` ${t('information.youSuffix')}`}
+                            </span>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
                   {isExpanded && (
                     <div className="flex flex-col gap-2 pt-3 mt-3 border-t border-gray-100 dark:border-white/[0.07] animate-slideDown">
                       {connections.map((conn, connIdx) => (
@@ -1323,6 +1418,9 @@ export function InformationView({
         ]
       : phase === 'during'
         ? [
+            // during the trip the key codes and Wi-Fi come first — that's
+            // what you look up while standing at the door
+            privateSection,
             weatherSection,
             pairGrid([surroundingsSection, contactSection], 'during-pair-1'),
             pairGrid([whoIsHereSection, programSection], 'during-pair-2'),
@@ -1336,6 +1434,7 @@ export function InformationView({
             pairGrid([packingSection, arrivalsSection], 'before-pair-1'),
             pairGrid([programSection, surroundingsSection], 'before-pair-2'),
             basicInfoSection,
+            privateSection,
             transportSection,
             pairGrid([contactSection, gallerySection], 'before-pair-3'),
           ]

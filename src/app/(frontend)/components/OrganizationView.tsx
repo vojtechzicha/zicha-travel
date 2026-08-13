@@ -8,7 +8,7 @@
 // Read-only by design — the rozpis is the banker's job in the admin.
 
 import { useMemo } from 'react'
-import { BedDouble, Car } from 'lucide-react'
+import { BedDouble, Car, TrainFront } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import type { AppLocale } from '@/i18n/config'
 import type { Chata, Media, Participant } from '@/payload-types'
@@ -22,13 +22,16 @@ import {
 import {
   arrivalsOnNight,
   carOccupants,
+  dayOnly,
   getBedAssignments,
   getCarAssignments,
+  getTransportAssignments,
   getTripPhase,
   nightLabel,
   presentOnNight,
   sleepingCapacity,
   tonightNumber,
+  transportRiders,
 } from '../utils/tripData'
 import {
   AccentCard,
@@ -95,9 +98,11 @@ export function OrganizationView({
     [chata, participants],
   )
   const carAssignments = useMemo(() => getCarAssignments(chata), [chata])
+  const transportAssignments = useMemo(() => getTransportAssignments(chata), [chata])
   const me = participants.find((p) => myIds.includes(p.id)) ?? null
   const myBed = me ? bedAssignments.get(me.id) : undefined
   const myCar = me ? carAssignments.get(me.id) : undefined
+  const myTransport = me && !myCar ? transportAssignments.get(me.id) : undefined
 
   if (!hasBedrooms && !hasCars) {
     return (
@@ -143,7 +148,7 @@ export function OrganizationView({
 
   // ── my places card ──
   const myPlaces =
-    me && (myBed || myCar) ? (
+    me && (myBed || myCar || myTransport) ? (
       <AccentCard label={t('organization.yourPlaces')} className="mt-4">
         <div className="flex flex-col gap-1.5 text-sm text-gray-800 dark:text-slate-200">
           {myBed && (
@@ -171,6 +176,16 @@ export function OrganizationView({
                   : myCar.role === 'front'
                     ? t('organization.roleFrontSeat')
                     : t('organization.roleBackSeat')}
+              </span>
+            </div>
+          )}
+          {myTransport && (
+            <div>
+              {t('organization.youRideIn')}{' '}
+              <strong className="font-semibold">{myTransport.optionTitle}</strong>
+              <span className="text-gray-500 dark:text-slate-400">
+                {' '}
+                · {t('organization.ptRideNote')}
               </span>
             </div>
           )}
@@ -381,10 +396,14 @@ export function OrganizationView({
     ) : null
 
   // ── cars ──
+  // People riding public transport have a seat too — they don't belong in
+  // the "no car yet" list.
   const withoutCar = useMemo(() => {
     if (!hasCars || sharedCars.length === 0) return []
-    return participants.filter((p) => !carAssignments.has(p.id))
-  }, [hasCars, sharedCars.length, participants, carAssignments])
+    return participants.filter(
+      (p) => !carAssignments.has(p.id) && !transportAssignments.has(p.id),
+    )
+  }, [hasCars, sharedCars.length, participants, carAssignments, transportAssignments])
 
   const carsSection =
     hasCars && sharedCars.length > 0 ? (
@@ -517,6 +536,85 @@ export function OrganizationView({
       </div>
     ) : null
 
+  // ── public transport ("kdo jede vlakem") ──
+  const ptDayLabel = (dateString: string | null | undefined): string | null => {
+    if (!dateString) return null
+    const d = dayOnly(dateString)
+    const weekday = new Intl.DateTimeFormat(locale === 'cs' ? 'cs-CZ' : 'en-GB', {
+      weekday: 'short',
+    })
+      .format(d)
+      .replace('.', '')
+    return locale === 'cs'
+      ? `${weekday} ${d.getDate()}. ${d.getMonth() + 1}.`
+      : `${weekday} ${d.getDate()}/${d.getMonth() + 1}`
+  }
+
+  const ptOptions = (chata.publicTransportOptions || [])
+    .map((option) => ({ option, riders: transportRiders(option, participants) }))
+    .filter(({ riders }) => riders.length > 0)
+
+  const ptSection =
+    ptOptions.length > 0 ? (
+      <div>
+        <SheetHeading
+          icon={TrainFront}
+          title={t('organization.ptTitle')}
+          aside={t('organization.ptDetailNote')}
+        />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
+          {ptOptions.map(({ option, riders }, idx) => {
+            const connections = option.connections || []
+            const firstDeparture = connections[0]?.departure
+            const lastArrival = connections[connections.length - 1]?.arrival
+            const isBack = option.direction === 'zpet'
+            const day = ptDayLabel(isBack ? chata.tripDateTo : chata.tripDateFrom)
+            const isMyRide = riders.some((p) => myIds.includes(p.id))
+            const whenBits = [
+              day,
+              firstDeparture && lastArrival ? `${firstDeparture} → ${lastArrival}` : null,
+              option.totalDuration || null,
+            ].filter(Boolean)
+            return (
+              <div
+                key={option.id || idx}
+                className={`rounded-2xl border ${
+                  isMyRide
+                    ? 'border-2 border-primary/40'
+                    : 'border-gray-200 dark:border-white/[0.08]'
+                } bg-white dark:bg-white/[0.02] px-4 py-3.5`}
+              >
+                <div className="flex justify-between items-baseline gap-2 mb-1">
+                  <strong className="font-serif text-[16px] text-gray-900 dark:text-gray-100">
+                    {option.title}
+                  </strong>
+                  <StatusBadge tone="gray">
+                    {isBack
+                      ? t('organization.directionBack')
+                      : t('organization.directionThere')}
+                  </StatusBadge>
+                </div>
+                {whenBits.length > 0 && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed m-0 mb-2.5 tabular-nums">
+                    {whenBits.join(' · ')}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {riders.map((p) => (
+                    <PersonChip key={p.id} highlight={myIds.includes(p.id)}>
+                      {p.name}
+                      {petSuffix(p)}
+                      {myIds.includes(p.id) && ` ${t('organization.youSuffix')}`}
+                    </PersonChip>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    ) : null
+
   return (
     <Sheet>
       {statItems.length > 0 && <StatStrip items={statItems} />}
@@ -524,6 +622,7 @@ export function OrganizationView({
       {tonightBox}
       {roomsSection}
       {carsSection}
+      {ptSection}
     </Sheet>
   )
 }

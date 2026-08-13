@@ -130,6 +130,40 @@ export function getCarAssignments(chata: Chata): Map<number, CarAssignment> {
   return result
 }
 
+export type TransportOption = NonNullable<Chata['publicTransportOptions']>[number]
+
+export interface TransportAssignment {
+  optionTitle: string
+  direction: 'tam' | 'zpet'
+}
+
+/** participantId → the public-transport route they take (first match wins). */
+export function getTransportAssignments(chata: Chata): Map<number, TransportAssignment> {
+  const result = new Map<number, TransportAssignment>()
+  for (const option of chata.publicTransportOptions || []) {
+    for (const rider of option.riders || []) {
+      const id = participantId(rider.participant)
+      if (id != null && !result.has(id)) {
+        result.set(id, { optionTitle: option.title, direction: option.direction ?? 'tam' })
+      }
+    }
+  }
+  return result
+}
+
+/** Riders of one public-transport route, resolved to participants. */
+export function transportRiders(
+  option: TransportOption,
+  participants: Participant[],
+): Participant[] {
+  const byId = new Map(participants.map((p) => [p.id, p]))
+  return (option.riders || [])
+    .map((r) => participantId(r.participant))
+    .filter((id): id is number => id != null)
+    .map((id) => byId.get(id))
+    .filter((p): p is Participant => p != null)
+}
+
 /** Everyone in a car, in seating order (for occupancy counts and lists). */
 export function carOccupants(
   car: SharedCar,

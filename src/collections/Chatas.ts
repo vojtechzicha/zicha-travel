@@ -662,12 +662,57 @@ export const Chatas: CollectionConfig = {
           ],
         },
         {
+          name: 'privateInfo',
+          type: 'array',
+          labels: {
+            singular: { en: 'Private detail', cs: 'Neveřejný údaj' },
+            plural: { en: 'Keys & Wi-Fi (private)', cs: 'Klíče a Wi-Fi (neveřejné)' },
+          },
+          // Wi-Fi passwords and key-box codes must never reach the public
+          // read API. Field-level access hides the whole array from
+          // anonymous REST reads; the slug API additionally strips VALUES
+          // (labels stay) so the page can tease what's behind the login.
+          access: {
+            read: ({ req }) => Boolean(req.user),
+          },
+          admin: {
+            description: {
+              en: 'Wi-Fi password, where the keys are, door codes. Signed-in participants see the values; anonymous visitors only see that they exist.',
+              cs: 'Heslo Wi-Fi, kde jsou klíče, kódy od dveří. Přihlášení účastníci hodnoty uvidí, nepřihlášení jen to, že existují.',
+            },
+          },
+          fields: [
+            {
+              name: 'label',
+              type: 'text',
+              required: true,
+              admin: {
+                description: {
+                  en: 'e.g., "Wi-Fi". Labels are public, keep the secret in the value.',
+                  cs: 'např. „Wi-Fi“. Štítek je veřejný, tajnou část pište do hodnoty.',
+                },
+              },
+            },
+            {
+              name: 'value',
+              type: 'text',
+              required: true,
+              admin: {
+                description: {
+                  en: 'e.g., "chata2024 (router in the hallway)"',
+                  cs: 'např. „chata2024 (router je v předsíni)“',
+                },
+              },
+            },
+          ],
+        },
+        {
           name: 'sharedAlbumUrl',
           type: 'text',
           admin: {
             description: {
-              en: 'Link to the shared photo album — shown after the trip',
-              cs: 'Odkaz na sdílené album fotek — zobrazí se po výletu',
+              en: 'Link to the shared photo album. Offered before and during the trip so people add photos as they go, and featured again in the recap.',
+              cs: 'Odkaz na sdílené album fotek. Nabízí se před výletem i během něj, aby lidé fotky přidávali průběžně, a znovu v ohlédnutí po výletu.',
             },
           },
         },
@@ -778,6 +823,38 @@ export const Chatas: CollectionConfig = {
                   cs: 'Den použitý odkazem „přidat do kalendáře“: tam → den příjezdu, zpět → den odjezdu',
                 },
               },
+            },
+            {
+              name: 'riders',
+              type: 'array',
+              labels: {
+                singular: { en: 'Rider', cs: 'Cestující' },
+                plural: { en: 'Who takes this connection', cs: 'Kdo jede tímhle spojem' },
+              },
+              admin: {
+                description: {
+                  en: 'Participants travelling on this connection. Shown next to the cars in Organization and as a note on the route in Information.',
+                  cs: 'Účastníci, kteří jedou tímhle spojem. Ukážou se vedle aut v Organizaci a jako poznámka u spoje v Informacích.',
+                },
+              },
+              fields: [
+                {
+                  name: 'participant',
+                  type: 'relationship',
+                  relationTo: 'participants',
+                  required: true,
+                  filterOptions: ({ data }) => {
+                    if (data?.id) {
+                      return {
+                        chata: {
+                          equals: data.id,
+                        },
+                      }
+                    }
+                    return false
+                  },
+                },
+              ],
             },
             {
               name: 'totalDuration',

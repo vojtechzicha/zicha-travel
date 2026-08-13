@@ -154,6 +154,40 @@ export async function GET(
         : [],
     }
 
+    // "Klíče a Wi-Fi": the values (passwords, key codes) are for signed-in
+    // eyes only. Anonymous visitors keep the LABELS so the page can show
+    // that these details exist, but every value is blanked before the
+    // response leaves the server. The scrub walks the WHOLE payload: the
+    // local API skips field access (overrideAccess default) and depth-2
+    // population nests the chata doc inside participants (banker, bed
+    // occupants, riders) and expenses, so a top-level strip alone leaks.
+    // (Payload's own REST API hides the array from anonymous reads via
+    // field-level access.)
+    if (!viewer.authenticated) {
+      const blankPrivateInfoValues = (node: unknown): void => {
+        if (Array.isArray(node)) {
+          node.forEach(blankPrivateInfoValues)
+          return
+        }
+        if (node && typeof node === 'object') {
+          const obj = node as Record<string, unknown>
+          if (Array.isArray(obj.privateInfo)) {
+            for (const row of obj.privateInfo) {
+              if (row && typeof row === 'object') (row as { value?: string }).value = ''
+            }
+          }
+          Object.values(obj).forEach(blankPrivateInfoValues)
+        }
+      }
+      blankPrivateInfoValues([
+        chata,
+        participantsResult.docs,
+        expensesResult.docs,
+        prepaymentsResult.docs,
+        jointAccountsResult.docs,
+      ])
+    }
+
     // Locked participants: account owner has an ACTIVE account (lastLoginAt
     // set). Shipped with a masked email so the anonymous selector can show
     // "sign in as d***.n***@g***.com" instead of silently hiding people.
