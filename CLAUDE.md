@@ -438,7 +438,9 @@ fallback.
   (`src/lib/auth/magicLinkEmails.ts`), using the locale of the request that
   asked for the link; claim emails (`src/utils/claimRequests.ts`) stay
   Czech-only by design (their audience is the Czech admin circle).
-- **Editorial rules**: English strings avoid em dashes and follow natural
+- **Editorial rules**: frontend UI strings avoid em dashes in BOTH
+  languages — replace with a period, comma or the `·` separator (admin
+  descriptions still use the dash style); English follows natural
   idiomatic phrasing (the /humanizer conventions); "chata" stays
   untranslated in English (plural "chatas"); domain terms are fixed —
   banker, Advance (záloha), Top-up (doplatek), Overpayment returned

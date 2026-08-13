@@ -539,7 +539,7 @@ export function InformationView({
     myBed && nights > 0
       ? myBed.nights === null
         ? t('information.wholeStayNights', { count: nights }) +
-          ' — ' +
+          ' · ' +
           t('information.nightsRange', {
             from: nightLabel(chata, 1, locale),
             to: nightLabel(chata, nights + 1, locale),
@@ -981,7 +981,7 @@ export function InformationView({
               ))}
               {arrivalsToday.length > 0 && (
                 <PersonChip dashed>
-                  {arrivalsToday.map((p) => p.name + petSuffix(p)).join(', ')} —{' '}
+                  {arrivalsToday.map((p) => p.name + petSuffix(p)).join(', ')} ·{' '}
                   {t('information.arrivingToday')}
                 </PersonChip>
               )}

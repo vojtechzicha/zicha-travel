@@ -240,11 +240,7 @@ export function OrganizationView({
   const roomsSection =
     hasBedrooms && rooms.length > 0 ? (
       <div>
-        <SheetHeading
-          icon={BedDouble}
-          title={t('organization.roomsTitle')}
-          aside={t('organization.readOnlyNote')}
-        />
+        <SheetHeading icon={BedDouble} title={t('organization.roomsTitle')} />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
           {rooms.map((room, roomIdx) => {
             const image = room.image as Media | null

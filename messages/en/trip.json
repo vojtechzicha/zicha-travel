@@ -1,6 +1,6 @@
 {
   "information": {
-    "notAvailable": "No information is available for this chata.",
+    "notAvailable": "There's no information for this chata yet.",
     "whenTitle": "When are we going?",
     "arrival": "Arrival",
     "departure": "Departure",
@@ -60,7 +60,7 @@
     "yourSettlement": "Your settlement",
     "youOwe": "You still owe {amount}. The QR payment is in Finance.",
     "youReceive": "You get {amount} back.",
-    "youAreSettled": "You are all settled.",
+    "youAreSettled": "You're all settled.",
     "payAction": "Pay →",
     "anonHint": "Are you one of the participants? Sign in to see <strong>your bed, your ride and your advance</strong>.",
     "signIn": "Sign in",
@@ -68,15 +68,15 @@
     "todayArrives": "Arriving: {names}",
     "tomorrowLabel": "tomorrow",
     "checkOutReminder": "check-out {time}",
-    "weatherTitle": "Weather at the place",
+    "weatherTitle": "Weather at the chata",
     "whereWereTitle": "Where we stayed",
     "addressLabel": "Address",
     "checkInLabel": "Check-in",
     "termLabel": "Dates",
     "packingTitle": "What to pack",
-    "amenitiesTitle": "The place has",
+    "amenitiesTitle": "The chata has",
     "arrivalsTitle": "Who arrives when",
-    "sleepsTotal": "Sleeping total",
+    "sleepsTotal": "Sleeping per night",
     "capacityNote": "(capacity {count})",
     "youSuffix": "(you)",
     "whoIsHereTitle": "Who is here",
@@ -117,7 +117,7 @@
     "hidePassengers": "Hide passengers",
     "equipment": "Cargo",
     "nightHeader": "Night {night}",
-    "presentTooltip": "{name} - Night {night}",
+    "presentTooltip": "{name}: night {night}",
     "absentTooltip": "{name} won't be there",
     "wholeStay": "whole stay",
     "onlyNight": "night {night} only",
@@ -135,7 +135,6 @@
     "tonightTitle": "Tonight · {from} → {to}",
     "tonightSleeps": "<strong>{count} of {capacity}</strong> sleeping here.",
     "tonightArrives": "Arriving today: {names}.",
-    "readOnlyNote": "the banker manages the assignments, read-only here",
     "yourRoomNote": "This is where you sleep.",
     "freePlaces": "{count, plural, one {# free place} other {# free places}}",
     "freeSeats": "{count, plural, one {# free seat} other {# free seats}}",
@@ -162,7 +161,6 @@
     "claimPendingOwn": "your request awaits approval",
     "claimPending": "request awaiting approval",
     "waitingBadge": "waiting",
-    "thatIsMe": "That's me",
-    "footnote": "Nights come from the room assignments; without them only names show. Bank details are visible to the banker only."
+    "thatIsMe": "That's me"
   }
 }

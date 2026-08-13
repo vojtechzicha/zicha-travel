@@ -245,10 +245,6 @@ export function ParticipantsView({
         })}
       </div>
 
-      <div className="text-[13px] text-gray-400 dark:text-slate-500 text-center mt-5">
-        {t('participants.footnote')}
-      </div>
-
       {claimDialogFor && (
         <ClaimDialog
           participant={claimDialogFor}
