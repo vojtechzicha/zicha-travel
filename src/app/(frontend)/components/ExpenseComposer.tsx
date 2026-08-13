@@ -702,24 +702,32 @@ export function ExpenseComposer({
 
   // Both flags of the amount: a refund (money came back) and a planned
   // expense (money hasn't left yet). They are independent — a deposit we
-  // expect back is a planned refund.
-  const renderAmountToggles = (compact = false) => (
-    <>
-      {renderSwitch({
-        label: t('stepWhat.refundToggle'),
-        checked: isRefund,
-        onToggle: () => setIsRefund((v) => !v),
-        onColor: 'bg-green-500',
-        compact,
-      })}
-      {plannedEditable &&
-        renderSwitch({
+  // expect back is a planned refund. Mobile stacks them under the amount;
+  // the desktop modal hangs one under each of the amount/date columns.
+  const renderRefundSwitch = (compact = false) =>
+    renderSwitch({
+      label: t('stepWhat.refundToggle'),
+      checked: isRefund,
+      onToggle: () => setIsRefund((v) => !v),
+      onColor: 'bg-green-500',
+      compact,
+    })
+
+  const renderPlannedSwitch = (compact = false) =>
+    plannedEditable
+      ? renderSwitch({
           label: t('stepWhat.plannedToggle'),
           checked: isPlanned,
           onToggle: () => setIsPlanned((v) => !v),
           onColor: 'bg-amber-500',
           compact,
-        })}
+        })
+      : null
+
+  const renderAmountToggles = (compact = false) => (
+    <>
+      {renderRefundSwitch(compact)}
+      {renderPlannedSwitch(compact)}
     </>
   )
 
@@ -1535,7 +1543,7 @@ export function ExpenseComposer({
                   {t('currencySuffix')}
                 </span>
               </div>
-              {renderAmountToggles(true)}
+              {renderRefundSwitch(true)}
             </div>
             <div>
               <label
@@ -1557,6 +1565,7 @@ export function ExpenseComposer({
                   className="w-full border border-gray-200 rounded-xl pl-9 pr-3.5 py-3 text-[15px] text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
+              {renderPlannedSwitch(true)}
             </div>
             <div className="col-span-2">
               <div className="text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5">{t('stepWhat.payerLabel')}</div>
