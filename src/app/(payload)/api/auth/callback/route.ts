@@ -4,7 +4,7 @@ import config from '@payload-config'
 import { getAuthConfig } from '@/lib/auth/config'
 import { exchangeCodeForTokens, decodeIdToken } from '@/lib/auth/microsoft'
 import {
-  safeReturnTo,
+  safeReturnUrl,
   sessionCookieDomain,
   setLoginEventCookie,
   setSessionCookie,
@@ -23,10 +23,15 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state')
   const error = searchParams.get('error')
 
-  // A frontend-initiated sign-in (footer/login page) carries a return path;
-  // report its errors on the frontend login page, not /admin/login
+  // A frontend-initiated sign-in (footer/login page) carries a return URL;
+  // report its errors on the frontend login page, not /admin/login — and on
+  // the host the sign-in started from, which may be a chata subdomain even
+  // though Microsoft always sends the callback to the apex
   const returnTo = request.cookies.get('oauth-return-to')?.value || null
-  const errorPage = returnTo ? `${origin}/login` : `${origin}/admin/login`
+  const returnUrl = returnTo ? safeReturnUrl(returnTo, origin) : null
+  const errorPage = returnUrl
+    ? new URL('/login', returnUrl).toString()
+    : `${origin}/admin/login`
 
   const fail = (code: string): NextResponse => {
     const response = buildRedirect(`${errorPage}?error=${code}`)
@@ -89,10 +94,8 @@ export async function GET(request: NextRequest) {
     // where they started (frontend when returnTo is set, /admin otherwise)
     const destination =
       user.role === 'user'
-        ? `${origin}${safeReturnTo(returnTo)}`
-        : returnTo
-          ? `${origin}${safeReturnTo(returnTo)}`
-          : `${origin}/admin`
+        ? (returnUrl ?? `${origin}/`)
+        : (returnUrl ?? `${origin}/admin`)
 
     const { token, maxAge } = signSessionToken(user)
     const response = buildRedirect(destination)

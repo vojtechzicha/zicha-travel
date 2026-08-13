@@ -3,7 +3,7 @@ import type { Payload } from 'payload'
 import type { User } from '@/payload-types'
 import type { AppLocale } from '@/i18n/config'
 import { sendAppEmail } from '@/lib/email'
-import { safeReturnTo } from '@/lib/auth/session'
+import { requestOrigin, safeReturnTo } from '@/lib/auth/session'
 import { magicLinkEmail, superadminNoticeEmail } from '@/lib/auth/magicLinkEmails'
 
 // Magic-link login mechanics shared by the /api/auth/magic-link/request
@@ -16,14 +16,9 @@ import { magicLinkEmail, superadminNoticeEmail } from '@/lib/auth/magicLinkEmail
 
 export const MAGIC_LINK_TTL_MINUTES = 15
 
-/** Origin as the visitor sees it (works for zicha.travel wildcard domains). */
-export function requestOrigin(headers: Headers): string {
-  const host = headers.get('host') || 'zicha.travel'
-  const proto =
-    headers.get('x-forwarded-proto') ||
-    (host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https')
-  return `${proto}://${host}`
-}
+// Lives in session.ts (dependency-free) so auth routes can reach it without
+// pulling in the email stack; re-exported for the existing call sites.
+export { requestOrigin }
 
 /**
  * Superadmins must ALWAYS sign in with Microsoft — a magic link would let

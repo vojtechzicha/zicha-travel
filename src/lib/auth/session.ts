@@ -7,6 +7,15 @@ import type { NextResponse } from 'next/server'
 // collection (src/collections/Users.ts) verifies them, so the same session
 // works for the admin panel and the frontend.
 
+/** Origin as the visitor sees it (works for zicha.travel wildcard domains). */
+export function requestOrigin(headers: Headers): string {
+  const host = headers.get('host') || 'zicha.travel'
+  const proto =
+    headers.get('x-forwarded-proto') ||
+    (host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https')
+  return `${proto}://${host}`
+}
+
 /** Frontend users stay signed in for a month; admin sessions stay short. */
 export function sessionDurationSeconds(role: string | null | undefined): number {
   return role === 'user' ? 30 * 24 * 60 * 60 : 2 * 60 * 60
@@ -99,8 +108,85 @@ export function clearSessionCookie(response: NextResponse, requestHost?: string 
 /**
  * Only allow same-origin path redirects ("/", "/lipno?view=finance", ...) —
  * anything absolute or protocol-relative falls back to `/`.
+ *
+ * Callers resolve the result against an origin (`new URL(path, origin)`),
+ * and the WHATWG parser has two ways to escape that origin beyond a plain
+ * leading "//": it reads "\" as "/" for http(s) URLs, and it STRIPS tabs
+ * and newlines before parsing. So "/\evil.com" and "/<TAB>/evil.com" both
+ * resolve to https://evil.com/ — reject those characters outright.
  */
 export function safeReturnTo(value: string | null | undefined): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/'
+  if (!value || /[\\\t\n\r]/.test(value)) return '/'
+  if (!value.startsWith('/') || value.startsWith('//')) return '/'
   return value
+}
+
+/**
+ * Hosts we are willing to redirect back to: the deployment's own host, plus
+ * anything under SESSION_COOKIE_DOMAIN (`.zicha.travel` ⇒ the apex and every
+ * chata subdomain). That is exactly the boundary the session cookie already
+ * spans, so it grants no reach the sign-in didn't already have.
+ */
+function isTrustedRedirectHost(host: string, fallbackOrigin: string): boolean {
+  const hostname = host.split(':')[0].toLowerCase()
+  if (!hostname) return false
+  try {
+    if (hostname === new URL(fallbackOrigin).hostname.toLowerCase()) return true
+  } catch {
+    // fall through to the cookie-domain check
+  }
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.toLowerCase()
+  if (!cookieDomain) return false
+  const apex = cookieDomain.replace(/^\./, '')
+  return hostname === apex || hostname.endsWith(`.${apex}`)
+}
+
+/**
+ * Resolve a stored return target to an absolute URL.
+ *
+ * A sign-in may START on a chata subdomain (lipno.zicha.travel) but the
+ * Microsoft callback always lands on the apex — AZURE_REDIRECT_URI is fixed
+ * in the app registration. Carrying only the PATH through that hop dropped
+ * people on the apex homepage, so the return target is stored absolute and
+ * validated here. Non-absolute values (and untrusted hosts) keep the old
+ * behaviour: the path, on the fallback origin.
+ */
+export function safeReturnUrl(
+  value: string | null | undefined,
+  fallbackOrigin: string,
+): string {
+  const home = (): string => new URL('/', fallbackOrigin).toString()
+  if (!value) return home()
+
+  let baseOrigin: string
+  let path: string
+
+  if (value.startsWith('/')) {
+    baseOrigin = fallbackOrigin
+    path = safeReturnTo(value)
+  } else {
+    let target: URL
+    try {
+      target = new URL(value)
+    } catch {
+      return home()
+    }
+    // No javascript:, data:, mailto: … — only real page loads
+    if (target.protocol !== 'http:' && target.protocol !== 'https:') return home()
+    path = safeReturnTo(`${target.pathname}${target.search}`)
+    baseOrigin = isTrustedRedirectHost(target.host, fallbackOrigin)
+      ? target.origin
+      : fallbackOrigin
+  }
+
+  // Belt and braces: rather than trusting the sanitized string, resolve it
+  // and confirm we did not leave the origin we chose. Any parser trick that
+  // slips past safeReturnTo dies here.
+  try {
+    const resolved = new URL(path, baseOrigin)
+    if (resolved.origin !== new URL(baseOrigin).origin) return home()
+    return resolved.toString()
+  } catch {
+    return home()
+  }
 }

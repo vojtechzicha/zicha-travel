@@ -2,7 +2,8 @@ import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { isOAuthConfigured } from '@/lib/auth/config'
 import { getAuthorizationUrl } from '@/lib/auth/microsoft'
-import { safeReturnTo, sessionCookieDomain } from '@/lib/auth/session'
+import { requestOrigin } from '@/lib/auth/magicLink'
+import { safeReturnUrl, sessionCookieDomain } from '@/lib/auth/session'
 
 export async function GET(request: NextRequest) {
   if (!isOAuthConfigured()) {
@@ -27,10 +28,14 @@ export async function GET(request: NextRequest) {
   response.cookies.set('oauth-state', state, cookieOptions)
 
   // Frontend sign-in passes ?returnTo=/...; its presence also tells the
-  // callback to report errors on /login instead of /admin/login
+  // callback to report errors on /login instead of /admin/login.
+  // Stored ABSOLUTE against the host the sign-in started on: the callback
+  // always lands on the apex, so a path alone would strand someone who
+  // started on a chata subdomain (lipno.zicha.travel) on the apex homepage.
   const returnTo = request.nextUrl.searchParams.get('returnTo')
   if (returnTo) {
-    response.cookies.set('oauth-return-to', safeReturnTo(returnTo), cookieOptions)
+    const startedAt = requestOrigin(request.headers)
+    response.cookies.set('oauth-return-to', safeReturnUrl(returnTo, startedAt), cookieOptions)
   } else {
     response.cookies.set('oauth-return-to', '', { ...cookieOptions, maxAge: 0 })
   }

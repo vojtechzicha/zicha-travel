@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import {
+  requestOrigin,
   safeReturnTo,
   setLoginEventCookie,
   setSessionCookie,
@@ -20,7 +21,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const token = searchParams.get('token')
   const returnTo = safeReturnTo(searchParams.get('returnTo'))
 
-  const loginUrl = new URL('/login', request.nextUrl.origin)
+  // Host as the visitor sees it — the emailed link is built the same way,
+  // so a link opened on a chata subdomain returns to that subdomain
+  const origin = requestOrigin(request.headers)
+  const loginUrl = new URL('/login', origin)
   if (!token) {
     loginUrl.searchParams.set('error', 'invalid_link')
     return NextResponse.redirect(loginUrl)
@@ -70,7 +74,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   })
 
   const { token: sessionToken, maxAge } = signSessionToken(user)
-  const response = NextResponse.redirect(new URL(returnTo, request.nextUrl.origin))
+  const response = NextResponse.redirect(new URL(returnTo, origin))
   setSessionCookie(response, sessionToken, maxAge)
   setLoginEventCookie(response, 'magic-link')
   return response

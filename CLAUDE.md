@@ -348,6 +348,22 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   click doubles as email verification); nothing is emailed until the
   person requests a login link themselves. A claim intent survives login
   via `?claim=<participantId>` in returnTo (`claimReturnTo`).
+- **Return target keeps the HOST, not just the path**: a sign-in usually
+  starts on a chata subdomain, but Microsoft always sends the callback to
+  the apex (`AZURE_REDIRECT_URI` is fixed in the app registration), so
+  `/api/auth/login` stores `oauth-return-to` as an absolute URL built from
+  the request host and the callback redirects there. `safeReturnUrl` in
+  `src/lib/auth/session.ts` validates it: only the deployment's own host
+  and hosts under `SESSION_COOKIE_DOMAIN` are honoured (exactly the
+  session cookie's reach), anything else keeps just the path. Magic-link
+  verify redirects to `requestOrigin(headers)` — the same host that built
+  the emailed link. Tests in `tests/int/authSession.int.spec.ts`.
+- **Open-redirect rule**: never hand a user-supplied path to
+  `new URL(path, origin)` after only a `startsWith('//')` check. The WHATWG
+  parser reads `\` as `/` and strips tabs/newlines, so `/\evil.com` and
+  `/<TAB>/evil.com` resolve to `https://evil.com/`. `safeReturnTo` rejects
+  those characters and `safeReturnUrl` re-checks `resolved.origin` after
+  resolving. Keep both guards if you touch this code.
 - Bot protection: Cloudflare Turnstile on the two public POST forms —
   invisible on `/login`, visible in the claim dialog. Gated on
   `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (both unset in
