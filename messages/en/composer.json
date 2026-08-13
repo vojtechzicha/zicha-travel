@@ -41,8 +41,8 @@
     "someoneElseLink": "Did someone else pay?",
     "someoneElseLabel": "Different payer",
     "someoneElsePlaceholder": "Choose the payer…",
-    "approvalLinked": "We save it, but it stays hidden and out of every balance until {name} or the banker confirms it.",
-    "approvalUnlinked": "We save it, but it stays hidden and out of every balance until the banker confirms it."
+    "approvalLinked": "We'll save it, but it won't show anywhere or count towards the settlement until {name} or the banker confirms it.",
+    "approvalUnlinked": "We'll save it, but it won't show anywhere or count towards the settlement until the banker confirms it."
   },
   "stepWho": {
     "sectionTitle": "Split",

@@ -202,8 +202,8 @@ export default function VydajeContentEn() {
           <List
             items={[
               <>
-                The expense is saved, but it shows up nowhere and counts in no balance until
-                somebody confirms it.
+                The expense is saved, but it stays hidden and doesn&apos;t count towards the
+                settlement until somebody confirms it.
               </>,
               <>
                 If the payer has an account, they can confirm it themselves, and so can the banker
@@ -214,7 +214,7 @@ export default function VydajeContentEn() {
                 works straight from the expense card in the finances.
               </>,
               <>
-                While it waits, the card with the <em>Waiting</em> badge is visible only to the
+                While it waits, the card with the <em>Unconfirmed</em> badge is visible only to the
                 author, the payer, the banker and the admins. Once confirmed, the expense behaves
                 like any other.
               </>,

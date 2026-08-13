@@ -32,9 +32,12 @@ A **joint account is a shared wallet, not a person**: nobody can confirm a
 payment out of it on the other members' behalf, so it stays members-only
 instead of entering the approval queue.
 
-The **author is never an approver** — approving your own claim would defeat
-the point. If the author is also the banker or an admin, the expense is
-approved on the spot by the rules above.
+Being the **author** carries no say of its own: the approval email skips
+them, and an unrelated author cannot confirm their claim. An admin author
+skips the queue entirely (first row above). A banker author still goes
+through it, but may confirm their own entry with one tap on the card — the
+verdict is recorded (`approvalDecidedBy`), so it stays an explicit,
+attributable step rather than silent trust.
 
 ## Data model (Expenses)
 

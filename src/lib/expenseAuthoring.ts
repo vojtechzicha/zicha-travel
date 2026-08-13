@@ -121,9 +121,10 @@ export function approvalForPayer(args: {
 /**
  * May this account decide a pending expense? The chata's admins (and
  * superadmins) always may; so may the accounts of the two people the expense
- * speaks for — the payer participant and the banker ("pokladník"). The
- * author is deliberately NOT an approver: approving your own claim would
- * defeat the point.
+ * speaks for — the payer participant and the banker ("pokladník"). Being the
+ * author grants no say by itself (and the approval email skips them), but an
+ * author who happens to be the banker or an admin may confirm their own
+ * record — the verdict is stamped with their name either way.
  */
 export function canDecideExpense(args: {
   userId: number | string | null | undefined

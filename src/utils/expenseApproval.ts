@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 import type { Chata, Expense, Participant, User } from '../payload-types'
 import { refId, isSuperadmin } from '../lib/access'
+import { akuzativName } from '../lib/czechNames'
 import { signExpenseDecideToken } from '../lib/expenseApproval'
 import { formatCurrency } from '../lib/formatCurrency'
 import { sendAppEmail } from '../lib/email'
@@ -114,7 +115,9 @@ export async function notifyExpenseApprovers(payload: Payload, args: NotifyArgs)
   })
 
   const amount = formatCurrency(expense.amount)
-  const subject = `Sedí to? ${author.name || author.email} zapsal(a) výdaj za ${payer.name}`
+  // "za" needs the accusative ("výdaj za Katku") — Participant.akuzativ,
+  // falling back to the nominative name
+  const subject = `Sedí to? ${author.name || author.email} zapsal(a) výdaj za ${akuzativName(payer)}`
   const intro =
     `Na chatě ${chata.name} zapsal(a) ${personLabel(author)} výdaj „${expense.title}“ ` +
     `za ${amount} s tím, že ho zaplatil(a) ${payer.name}.`

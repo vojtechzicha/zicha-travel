@@ -761,6 +761,22 @@ async function backfillExpenseApproval() {
   if (synced.rowCount > 0) {
     console.log(`expenses: stamped payer_account_id on ${synced.rowCount} row(s)`)
   }
+  // The stamp above only covers participant payers. If a payer was switched
+  // to a joint account outside the app hooks, the old participant's account
+  // would linger — a joint account has no single owner, so clear it.
+  const cleared = await client.query(`
+    UPDATE expenses e
+      SET payer_account_id = NULL
+      WHERE e.payer_account_id IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM expenses_rels r
+          WHERE r.parent_id = e.id
+            AND r.path = 'payer'
+            AND r.participants_id IS NOT NULL
+        )`)
+  if (cleared.rowCount > 0) {
+    console.log(`expenses: cleared payer_account_id on ${cleared.rowCount} joint-account row(s)`)
+  }
 }
 
 async function auto() {

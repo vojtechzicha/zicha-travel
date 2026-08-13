@@ -135,18 +135,18 @@
     "back": "Back",
     "close": "Close",
     "approval": {
-      "pendingBadge": "Waiting",
+      "pendingBadge": "Unconfirmed",
       "rejectedBadge": "Rejected",
       "waitingNote": "Recorded for a different payer. Others will see it once the payer or the banker confirms it.",
-      "decidePrompt": "This expense is waiting for a confirmation. Did {payer} really pay it?",
+      "decidePrompt": "This expense is waiting to be confirmed. Did {payer} really pay it?",
       "approve": "Confirm",
       "reject": "Reject",
       "rejectConfirm": "Reject expense",
-      "reasonPlaceholder": "Reason (optional, we send it to the author)",
+      "reasonPlaceholder": "Reason (optional, we'll send it to the author)",
       "deciding": "Saving…",
       "decideFailed": "Saving failed. Please try again.",
-      "rejectedNote": "This expense was rejected, it counts in no balance.",
-      "rejectedWithReason": "This expense was rejected: “{reason}”. It counts in no balance."
+      "rejectedNote": "This expense was rejected and doesn't count towards the settlement.",
+      "rejectedWithReason": "This expense was rejected: “{reason}”. It doesn't count towards the settlement."
     }
   },
   "expensesFeed": {

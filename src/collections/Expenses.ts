@@ -101,6 +101,14 @@ export const Expenses: CollectionConfig = {
         }
         if (!user) return data
 
+        // The approval verdict is server-owned: whatever a frontend account
+        // put in these fields is dropped here, so the derivation below (or
+        // the stored value, on the early returns) is the only source
+        delete data.approvalStatus
+        delete data.approvalDecidedBy
+        delete data.approvalDecidedAt
+        delete data.approvalNote
+
         const original = originalDoc as Expense | undefined
         const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
         if (operation === 'update' && data?.chata != null && original?.chata != null) {
@@ -188,8 +196,12 @@ export const Expenses: CollectionConfig = {
       // correct, and it drives the write-access filter, which cannot join.
       async ({ data, operation, req, originalDoc }) => {
         if (req.context?.expenseDecision === true) return data
-        // PATCH without a payer leaves the stored value alone
-        if (operation === 'update' && data?.payer === undefined) return data
+        // PATCH without a payer keeps the stored value — the field is
+        // server-owned, so a submitted value is dropped, never honoured
+        if (operation === 'update' && data?.payer === undefined) {
+          if (data && 'payerAccount' in data) delete data.payerAccount
+          return data
+        }
         const payer = normalizePayer(data?.payer ?? originalDoc?.payer)
         if (!payer || payer.relationTo !== 'participants') {
           data.payerAccount = null
@@ -415,7 +427,9 @@ export const Expenses: CollectionConfig = {
           )
         }
 
-        const trimmedReason = typeof reason === 'string' ? reason.trim() : ''
+        // The note is the rejection reason — an approve carries none
+        const trimmedReason =
+          action === 'reject' && typeof reason === 'string' ? reason.trim() : ''
         await req.payload.update({
           collection: 'expenses',
           id: expense.id,
