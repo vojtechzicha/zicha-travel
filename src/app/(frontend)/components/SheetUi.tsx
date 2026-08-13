@@ -120,7 +120,7 @@ export function HintCard({ children }: { children: ReactNode }) {
 export function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex gap-3 text-sm">
-      <span className="w-24 shrink-0 text-gray-400 dark:text-slate-500">{label}</span>
+      <span className="w-24 shrink-0 break-words text-gray-400 dark:text-slate-500">{label}</span>
       <span className="text-gray-700 dark:text-slate-200 min-w-0">{children}</span>
     </div>
   )

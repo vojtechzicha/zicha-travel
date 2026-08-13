@@ -1068,45 +1068,38 @@ export function InformationView({
       </div>
     ) : null
 
+  // Name keeps its intrinsic width (no min-w-0 — a squeezed flex item would
+  // overflow and paint over the note); the note wraps in the remaining space
+  // or drops to its own right-aligned line when the row gets tight.
+  const surroundingsRows = (items: typeof placeItems) => (
+    <div className="flex flex-col gap-2.5 text-sm">
+      {items.map((item, idx) => (
+        <div
+          key={item.id || idx}
+          className="flex flex-wrap items-baseline justify-between gap-x-2.5"
+        >
+          <span className="text-gray-900 dark:text-gray-100 font-semibold">{item.name}</span>
+          {item.note && (
+            <span className="min-w-0 flex-1 text-gray-500 dark:text-slate-400 text-right">
+              {item.note}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+
   const surroundingsSection =
     phase !== 'after' && (placeItems.length > 0 || tripItems.length > 0) ? (
       <div>
         <SheetHeading icon={Mountain} title={t('information.surroundingsTitle')} />
-        {placeItems.length > 0 && (
-          <div className="flex flex-col gap-2.5 text-sm">
-            {placeItems.map((item, idx) => (
-              <div key={item.id || idx} className="flex justify-between gap-2.5">
-                <span className="text-gray-900 dark:text-gray-100 font-semibold min-w-0">
-                  {item.name}
-                </span>
-                {item.note && (
-                  <span className="text-gray-500 dark:text-slate-400 text-right shrink-0">
-                    {item.note}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        {placeItems.length > 0 && surroundingsRows(placeItems)}
         {tripItems.length > 0 && (
           <>
             <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-gray-500 dark:text-slate-400 mt-4 mb-2.5">
               {t('information.tripsLabel')}
             </div>
-            <div className="flex flex-col gap-2.5 text-sm">
-              {tripItems.map((item, idx) => (
-                <div key={item.id || idx} className="flex justify-between gap-2.5">
-                  <span className="text-gray-900 dark:text-gray-100 font-semibold min-w-0">
-                    {item.name}
-                  </span>
-                  {item.note && (
-                    <span className="text-gray-500 dark:text-slate-400 text-right shrink-0">
-                      {item.note}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+            {surroundingsRows(tripItems)}
           </>
         )}
       </div>
@@ -1205,9 +1198,7 @@ export function InformationView({
             ) : undefined
           }
         />
-        <div
-          className={`grid gap-3 grid-cols-2 ${phase === 'after' ? 'md:grid-cols-4' : ''}`}
-        >
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
           {(phase === 'after' ? photos : photos.slice(1)).map((photo, idx) => {
             const photoIdx = phase === 'after' ? idx : idx + 1
             return (
@@ -1436,13 +1427,19 @@ export function InformationView({
 
   // ─── assembly (phase drives the order) ───────────────────────────────────
 
-  const pairGrid = (sections: Array<React.ReactNode | null>, key: string) => {
+  // CSS multicol balances column heights natively, so a short section stacks
+  // under another instead of leaving a hole next to a tall neighbour. A lone
+  // surviving section renders full width — no ghost column.
+  const flowColumns = (sections: Array<React.ReactNode | null>, key: string) => {
     const present = sections.filter(Boolean)
     if (present.length === 0) return null
+    if (present.length === 1) return <div key={key}>{present[0]}</div>
     return (
-      <div key={key} className="md:grid md:grid-cols-2 md:gap-x-11 md:items-start">
+      <div key={key} className="md:columns-2 md:gap-x-11">
         {present.map((section, idx) => (
-          <div key={idx}>{section}</div>
+          <div key={idx} className="md:break-inside-avoid">
+            {section}
+          </div>
         ))}
       </div>
     )
@@ -1452,7 +1449,7 @@ export function InformationView({
     phase === 'after'
       ? [
           gallerySection,
-          pairGrid([destinationSection, whoWasSection], 'after-pair'),
+          flowColumns([destinationSection, whoWasSection], 'after-flow'),
         ]
       : phase === 'during'
         ? [
@@ -1460,8 +1457,10 @@ export function InformationView({
             // what you look up while standing at the door
             privateSection,
             weatherSection,
-            pairGrid([surroundingsSection, contactSection], 'during-pair-1'),
-            pairGrid([whoIsHereSection, programSection], 'during-pair-2'),
+            flowColumns(
+              [surroundingsSection, contactSection, whoIsHereSection, programSection],
+              'during-flow',
+            ),
             transportSection,
             destinationSection,
             basicInfoSection,
@@ -1469,12 +1468,15 @@ export function InformationView({
         : [
             weatherSection,
             destinationSection,
-            pairGrid([packingSection, arrivalsSection], 'before-pair-1'),
-            pairGrid([programSection, surroundingsSection], 'before-pair-2'),
+            flowColumns(
+              [packingSection, arrivalsSection, programSection, surroundingsSection],
+              'before-flow',
+            ),
             basicInfoSection,
             privateSection,
             transportSection,
-            pairGrid([contactSection, gallerySection], 'before-pair-3'),
+            contactSection,
+            gallerySection,
           ]
 
   return (
