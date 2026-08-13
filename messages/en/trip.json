@@ -36,7 +36,7 @@
     "petsUnit": "{count, plural, one {# dog} other {# dogs}}",
     "placesTaken": "places taken",
     "carsUnit": "{count, plural, one {car} other {cars}}",
-    "trainUnit": "train",
+    "orPublicTransport": "or by public transport",
     "checkInPrefix": "check-in",
     "checkOutPrefix": "check-out",
     "tripToCalendar": "Add trip to calendar",

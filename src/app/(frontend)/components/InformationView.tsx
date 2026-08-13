@@ -233,7 +233,7 @@ export function InformationView({
   const capacity = sleepingCapacity(chata)
   const occupied = getBedAssignments(chata, participants).size
   const carsCount = (chata.sharedCars || []).length
-  const hasTrainOptions = (chata.publicTransportOptions || []).length > 0
+  const hasPublicTransport = (chata.publicTransportOptions || []).length > 0
   const arrivalGroups = getArrivalGroups(chata, participants)
   const counts = nightlyCounts(chata, participants)
   const navUrl = navigateUrl(chata)
@@ -383,7 +383,7 @@ export function InformationView({
       value: carsCount,
       label:
         t('information.carsUnit', { count: carsCount }) +
-        (hasTrainOptions ? ` + ${t('information.trainUnit')}` : ''),
+        (hasPublicTransport ? ` ${t('information.orPublicTransport')}` : ''),
     })
   }
 

@@ -36,7 +36,7 @@
     "petsUnit": "{count, plural, one {# pes} few {# psi} other {# psů}}",
     "placesTaken": "míst obsazeno",
     "carsUnit": "{count, plural, one {auto} few {auta} other {aut}}",
-    "trainUnit": "vlak",
+    "orPublicTransport": "nebo veřejnou dopravou",
     "checkInPrefix": "check-in",
     "checkOutPrefix": "check-out",
     "tripToCalendar": "Výlet do kalendáře",
