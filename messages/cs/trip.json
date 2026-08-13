@@ -19,7 +19,9 @@
       "journeyBack": "Cesta z chaty",
       "total": "Celkem {duration}.",
       "bus": "bus",
-      "train": "vlak"
+      "train": "vlak",
+      "who": "Kdo jede",
+      "tripPage": "Detail chaty"
     },
     "badgeBefore": "{countdown} vyrážíme",
     "badgeDuring": "Právě probíhá · {until}",

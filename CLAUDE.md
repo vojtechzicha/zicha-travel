@@ -202,7 +202,14 @@ API payload, no new endpoints).
   "Tvoje vyrovnání") only for signed-in linked participants; anonymous
   visitors get a login hint. Weather (`TripWeather.tsx`) fetches
   Open-Meteo client-side — only when `destinationLat/Lng` are set AND the
-  trip is within the ~16-day forecast horizon; fails silently.
+  trip is within the ~16-day forecast horizon; fails silently. The hero
+  "Výlet do kalendáře" link fills the all-day Google event's description
+  from the chata: destination, nights + check-in/out, people, basic info,
+  program, packing list, contacts, participant names, plus links to this
+  page (`window.location`) and the shared album. `privateInfo` is never in
+  it (the event leaves for Google). Blocks with no data disappear, headings
+  included — `calendarDetails`/`joinParts` in `src/lib/tripCalendar.ts`
+  (escaping + the `<b>`/`<br>` markup Google renders), unit-tested.
 - **OrganizationView**: beds + occupants always visible (no expanding),
   night timeline only for partial stays, free places stated openly and
   hidden after the trip, viewer's bed/car highlighted in the theme color,

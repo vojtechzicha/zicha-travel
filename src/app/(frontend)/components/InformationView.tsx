@@ -36,6 +36,7 @@ import type { Chata, Media, Participant } from '@/payload-types'
 import type { ChataStats } from '@/utils/calculateStats'
 import { anonymousViewer, type FinanceViewer } from '@/lib/financeAccess'
 import { googleCalendarEventUrl, googleCalendarAllDayUrl } from '@/lib/gcal'
+import { calendarDetails, joinParts } from '@/lib/tripCalendar'
 import { formatCurrency } from '@/lib/formatCurrency'
 import {
   countdownLabel,
@@ -236,6 +237,10 @@ export function InformationView({
   const arrivalGroups = getArrivalGroups(chata, participants)
   const counts = nightlyCounts(chata, participants)
   const navUrl = navigateUrl(chata)
+  // Link back to this page from the calendar event. ChataView fetches its data
+  // in an effect, so this only ever runs in the browser; guarded regardless.
+  const pageUrl =
+    typeof window === 'undefined' ? null : `${window.location.origin}${window.location.pathname}`
   const today = dayOnly(new Date())
   const tonight = tonightNumber(chata)
 
@@ -288,13 +293,70 @@ export function InformationView({
 
   // ─── hero ────────────────────────────────────────────────────────────────
 
+  // An all-day event carries only a title and a date range, so everything that
+  // makes it useful later (times, program, packing list, contacts, the link
+  // back here) goes into the description. Never privateInfo — the event lands
+  // on Google's servers and gets forwarded around.
+  const calendarDescription = calendarDetails([
+    {
+      lines: [
+        joinParts([
+          chata.destinationName || chata.name,
+          chata.destinationLocation || chata.location,
+        ]),
+        joinParts([
+          nights > 0 ? nightsLabel(nights, locale) : null,
+          chata.checkInTime ? `${t('information.checkInPrefix')} ${chata.checkInTime}` : null,
+          chata.checkOutTime ? `${t('information.checkOutPrefix')} ${chata.checkOutTime}` : null,
+        ]),
+        participants.length > 0
+          ? `${participants.length} ${t('information.peopleUnit', { count: participants.length })}` +
+            (petsCount > 0 ? ` + ${t('information.petsUnit', { count: petsCount })}` : '')
+          : null,
+      ],
+    },
+    {
+      title: t('information.importantInfoTitle'),
+      lines: (chata.basicInfo || []).map((row) => row.info),
+    },
+    {
+      title: t('information.programTitle'),
+      lines: programItems.map(
+        (item) => `${programDayLabel(item.date, locale)} · ${item.description}`,
+      ),
+    },
+    {
+      title: t('information.packingTitle'),
+      lines: [joinParts((chata.packingItems || []).map((row) => row.item))],
+    },
+    {
+      title: t('information.contactTitle'),
+      lines: (chata.contactRules || []).map((row) => `${row.label}: ${row.value}`),
+    },
+    {
+      title: t('information.calendar.who'),
+      lines: [participants.map((p) => `${p.name}${petSuffix(p)}`).join(', ')],
+    },
+    {
+      lines: [
+        pageUrl ? `${t('information.calendar.tripPage')}: ${pageUrl}` : null,
+        chata.sharedAlbumUrl ? `${t('information.sharedAlbum')}: ${chata.sharedAlbumUrl}` : null,
+      ],
+    },
+  ])
+
   const calendarUrl =
     chata.tripDateFrom && chata.tripDateTo && !tentative
       ? googleCalendarAllDayUrl({
           title: chataName,
           dateFrom: new Date(chata.tripDateFrom).toLocaleDateString('en-CA'),
           dateTo: new Date(chata.tripDateTo).toLocaleDateString('en-CA'),
-          location: chata.destinationLocation || undefined,
+          details: calendarDescription || undefined,
+          // Comma-joined: this one is an address, not a display line.
+          location:
+            [chata.destinationName, chata.destinationLocation || chata.location]
+              .filter(Boolean)
+              .join(', ') || undefined,
         })
       : null
 

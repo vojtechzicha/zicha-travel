@@ -19,7 +19,9 @@
       "journeyBack": "Journey from the chata",
       "total": "Total {duration}.",
       "bus": "bus",
-      "train": "train"
+      "train": "train",
+      "who": "Who's going",
+      "tripPage": "Chata page"
     },
     "badgeBefore": "{countdown}",
     "badgeDuring": "Happening now · {until}",
