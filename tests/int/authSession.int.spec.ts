@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { requestOrigin, safeReturnTo, safeReturnUrl } from '@/lib/auth/session'
+import { refererReturnUrl, requestOrigin, safeReturnTo, safeReturnUrl } from '@/lib/auth/session'
 
 // The OAuth callback always lands on the apex (AZURE_REDIRECT_URI is fixed in
 // the Azure app registration), so the return target has to carry the host the
@@ -108,6 +108,53 @@ describe('safeReturnUrl', () => {
     expect(safeReturnUrl('https://lipno.zicha.travel/x', 'http://localhost:3000')).toBe(
       'http://localhost:3000/x',
     )
+  })
+})
+
+describe('refererReturnUrl', () => {
+  const original = process.env.SESSION_COOKIE_DOMAIN
+
+  beforeEach(() => {
+    process.env.SESSION_COOKIE_DOMAIN = '.zicha.travel'
+  })
+  afterEach(() => {
+    if (original === undefined) delete process.env.SESSION_COOKIE_DOMAIN
+    else process.env.SESSION_COOKIE_DOMAIN = original
+  })
+
+  it('keeps you on the page you signed out from', () => {
+    expect(refererReturnUrl('https://lipno.zicha.travel/?view=finance&participant=43', APEX)).toBe(
+      'https://lipno.zicha.travel/?view=finance&participant=43',
+    )
+  })
+
+  it('works on the apex with a chata path', () => {
+    expect(refererReturnUrl('https://zicha.travel/lipno?view=finance', APEX)).toBe(
+      'https://zicha.travel/lipno?view=finance',
+    )
+  })
+
+  // Stricter than safeReturnUrl: a foreign referer says nothing about where
+  // this visitor wanted to be, so its path is dropped too
+  it('drops an untrusted referer entirely', () => {
+    expect(refererReturnUrl('https://evil.example/lipno', APEX)).toBeNull()
+    expect(refererReturnUrl('https://zicha.travel.evil.example/x', APEX)).toBeNull()
+  })
+
+  it('never bounces back into the admin panel or an API route', () => {
+    expect(refererReturnUrl('https://zicha.travel/admin/collections/chatas', APEX)).toBeNull()
+    expect(refererReturnUrl('https://zicha.travel/api/auth/logout', APEX)).toBeNull()
+    // …but a chata slug that merely starts with those letters is fine
+    expect(refererReturnUrl('https://zicha.travel/administrace', APEX)).toBe(
+      'https://zicha.travel/administrace',
+    )
+  })
+
+  it('returns null when there is no usable referer', () => {
+    expect(refererReturnUrl(null, APEX)).toBeNull()
+    expect(refererReturnUrl('', APEX)).toBeNull()
+    expect(refererReturnUrl('not a url', APEX)).toBeNull()
+    expect(refererReturnUrl('javascript:alert(1)', APEX)).toBeNull()
   })
 })
 

@@ -190,3 +190,36 @@ export function safeReturnUrl(
     return home()
   }
 }
+
+/**
+ * Where to send someone after signing OUT, derived from the Referer.
+ *
+ * Chata pages are public by design, so logout leaves you on the page you
+ * were reading, re-rendered as an anonymous visitor (the Wikipedia model)
+ * rather than bouncing you to the homepage. Same-origin navigations send
+ * the full URL under the default referrer policy, so the footer link needs
+ * no extra parameter.
+ *
+ * Stricter than safeReturnUrl: an untrusted host is dropped ENTIRELY rather
+ * than having its path kept, because a foreign referer says nothing about
+ * where this visitor wanted to be. Returns null when there is nothing
+ * usable — callers fall back to "/".
+ */
+export function refererReturnUrl(
+  referer: string | null | undefined,
+  origin: string,
+): string | null {
+  if (!referer) return null
+  let url: URL
+  try {
+    url = new URL(referer)
+  } catch {
+    return null
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+  if (!isTrustedRedirectHost(url.host, origin)) return null
+  // Never bounce back into the admin panel (its own session just ended) or
+  // an API route — neither is a page anyone meant to be on
+  if (/^\/(admin|api)(\/|$)/.test(url.pathname)) return null
+  return safeReturnUrl(url.toString(), origin)
+}

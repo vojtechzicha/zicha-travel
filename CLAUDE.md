@@ -358,6 +358,12 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   session cookie's reach), anything else keeps just the path. Magic-link
   verify redirects to `requestOrigin(headers)` — the same host that built
   the emailed link. Tests in `tests/int/authSession.int.spec.ts`.
+- **Sign-out stays put**: `/api/auth/logout` without an explicit `returnTo`
+  returns to the Referer (`refererReturnUrl`), so the page re-renders as an
+  anonymous visitor instead of dumping people on the homepage — chata pages
+  are public, and `FinanceView` already ignores a `?participant=` it may no
+  longer open. Stricter than `safeReturnUrl`: an untrusted host is dropped
+  whole (its path too), as are `/admin` and `/api` referers.
 - **Open-redirect rule**: never hand a user-supplied path to
   `new URL(path, origin)` after only a `startsWith('//')` check. The WHATWG
   parser reads `\` as `/` and strips tabs/newlines, so `/\evil.com` and
