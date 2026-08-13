@@ -1318,8 +1318,8 @@ export function InformationView({
                     )}
                   </div>
                   {/* who takes this connection — a quiet nudge, the full
-                      rundown lives in Organizace */}
-                  {riders.length > 0 && (
+                      rundown lives in Organizace; only when expanded */}
+                  {isExpanded && riders.length > 0 && (
                     <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-1.5">
                       {t('information.ridersLabel')}{' '}
                       {riders.map((p, i) => {
