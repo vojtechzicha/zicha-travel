@@ -33,13 +33,20 @@ export async function GET(
       limit: 1000,
     })
 
-    // Fetch expenses
+    // Fetch expenses. This export is anonymous, so expenses still waiting
+    // for approval ("výdaj za jiného plátce") never appear here.
     const expensesResult = await payload.find({
       collection: 'expenses',
       where: {
-        chata: {
-          equals: id,
-        },
+        and: [
+          { chata: { equals: id } },
+          {
+            or: [
+              { approvalStatus: { equals: 'approved' } },
+              { approvalStatus: { exists: false } },
+            ],
+          },
+        ],
       },
       limit: 1000,
       depth: 1,

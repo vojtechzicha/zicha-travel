@@ -1,7 +1,17 @@
 // English content. A translation of content.cs.tsx — same structure, same
 // screenshots (which show the Czech UI), idiomatic English.
 
-import { Camera, Clock, HeartHandshake, Monitor, PencilLine, Plus, Scale, Smartphone } from 'lucide-react'
+import {
+  Camera,
+  Clock,
+  HeartHandshake,
+  Monitor,
+  PencilLine,
+  Plus,
+  Scale,
+  Smartphone,
+  UserCheck,
+} from 'lucide-react'
 import { Callout, HelpShell, List, NextPage, Screenshot, ScreenshotRow, Section, Steps } from '../ui'
 
 export default function VydajeContentEn() {
@@ -183,6 +193,44 @@ export default function VydajeContentEn() {
           />
         </Section>
 
+        <Section title="Someone else paid" icon={<UserCheck size={20} />}>
+          <p>
+            Sometimes you need to record an expense for a friend who has no time for it. That is
+            what the quiet <em>Did someone else pay?</em> link under the payer choice is for. It
+            opens a list of the other people in the chata.
+          </p>
+          <List
+            items={[
+              <>
+                The expense is saved, but it shows up nowhere and counts in no balance until
+                somebody confirms it.
+              </>,
+              <>
+                If the payer has an account, they can confirm it themselves, and so can the banker
+                or a chata admin. If they have no account, it is up to the banker and the admins.
+              </>,
+              <>
+                Everyone who can decide gets an email with a link. Confirming or rejecting also
+                works straight from the expense card in the finances.
+              </>,
+              <>
+                While it waits, the card with the <em>Waiting</em> badge is visible only to the
+                author, the payer, the banker and the admins. Once confirmed, the expense behaves
+                like any other.
+              </>,
+              <>
+                A rejected expense stays hidden for good, and the author gets an email with the
+                reason, if the person who decided wrote one.
+              </>,
+              <>
+                Editing such an expense sends it back for confirmation, so an amount somebody
+                already agreed to cannot be quietly rewritten.
+              </>,
+              <>Chata admins skip this loop. What they record counts right away.</>,
+            ]}
+          />
+        </Section>
+
         <Section title="Editing and deleting" icon={<PencilLine size={20} />}>
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <Screenshot
@@ -202,11 +250,12 @@ export default function VydajeContentEn() {
                   </>,
                   <>
                     Other people&apos;s expenses cannot be edited. If there is a mistake in one,
-                    ask its author or the chata admin.
+                    ask its author or the chata admin. An expense somebody recorded for you is the
+                    exception: it is yours too, so you can fix it or delete it.
                   </>,
                   <>
-                    The chata of an expense cannot be changed, and the payer can only be your own
-                    name or your joint account.
+                    The chata of an expense cannot be changed. The payer can be your own name, your
+                    joint account, or, once confirmed, somebody else.
                   </>,
                 ]}
               />

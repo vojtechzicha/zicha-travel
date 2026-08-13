@@ -134,6 +134,55 @@ export const Participants: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    afterChange: [
+      // The account link moved (a claim was approved, an admin re-linked or
+      // unlinked the participant): re-stamp Expense.payerAccount on this
+      // participant's expenses. That field is what makes an expense somebody
+      // recorded FOR this person visible to — and editable by — their
+      // account, and access filters cannot join to find it.
+      async ({ doc, previousDoc, operation, req }) => {
+        if (operation !== 'update') return doc
+        const before = previousDoc?.account != null ? refId(previousDoc.account) : null
+        const after = doc.account != null ? refId(doc.account) : null
+        if (before === after) return doc
+        try {
+          const expenses = await req.payload.find({
+            collection: 'expenses',
+            where: { 'payer.value': { equals: doc.id } },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+          })
+          for (const expense of expenses.docs) {
+            // A polymorphic value query can also match a joint account that
+            // happens to share the id — only real participant payers count
+            const payer = expense.payer as
+              | { relationTo?: string; value?: number | { id: number } }
+              | null
+            if (payer?.relationTo !== 'participants' || refId(payer.value) !== String(doc.id)) {
+              continue
+            }
+            await req.payload.update({
+              collection: 'expenses',
+              id: expense.id,
+              data: { payerAccount: after != null ? Number(after) : null },
+              overrideAccess: true,
+              depth: 0,
+              // a re-link is not a decision — no approval mail, no reset
+              context: { expenseDecision: true, skipExpenseApprovalEffects: true },
+            })
+          }
+        } catch (err) {
+          req.payload.logger.error(
+            { err, participant: doc.id },
+            'Failed to re-sync payerAccount after an account link change',
+          )
+        }
+        return doc
+      },
+    ],
+  },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'chata', 'accountNumber'],

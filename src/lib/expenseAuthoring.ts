@@ -2,9 +2,13 @@
 // the Expenses collection hook (server-side enforcement) and the composer UI
 // (building the payer options). A signed-in frontend account may:
 // - create expenses in a chata where it owns at least one participant
-// - pay only as one of its own participants, or as a joint account
+// - pay as one of its own participants, or as a joint account
 //   ("společný účet") one of its participants is a member of
-// - update/delete only expenses it authored (Expense.authoredBy)
+// - pay as SOMEBODY ELSE's participant of the same chata ("výdaj za jiného
+//   plátce") — that expense is stored but stays invisible and out of the
+//   maths until it is approved (see approvalForPayer below)
+// - update/delete expenses it authored (Expense.authoredBy) and expenses
+//   paid by one of its own participants (Expense.payerAccount)
 //
 // Admin roles are exempt — they keep the chata-scoped admin-panel rules.
 
@@ -62,7 +66,7 @@ export function isAllowedPayer(
   return (account.members || []).some((m) => ownParticipantIds.includes(refId(m)))
 }
 
-/** Same payer target? (used to skip re-validation of an unchanged payer) */
+/** Same payer target? (used to leave an unchanged payer alone on update) */
 export function samePayer(a: PayerRefLike | null, b: PayerRefLike | null): boolean {
   if (!a || !b) return a === b
   return a.relationTo === b.relationTo && refId(a.value) === refId(b.value)
@@ -76,4 +80,87 @@ export function ownJointAccounts<T extends JointAccountLike>(
   return jointAccounts.filter((ja) =>
     (ja.members || []).some((m) => ownParticipantIds.includes(refId(m))),
   )
+}
+
+// ---------------------------------------------------------------------------
+// "Výdaj za jiného plátce" — recording an expense somebody ELSE paid.
+//
+// Not the usual case, so the UI keeps it subtle, and nothing is taken on
+// trust: the expense is stored with approvalStatus 'pending', which hides it
+// from the journal and keeps it out of every balance until an approver
+// confirms it. Who may confirm depends on whether the payer has an account:
+// - 'linked'   — the payer can speak for themselves: they OR the banker
+//                ("pokladník") / a chata admin approve
+// - 'unlinked' — nobody can confirm on the payer's behalf, so only the
+//                banker / chata admins do
+// See docs/PRD-vydaj-za-jineho.md.
+
+export type ApprovalStatus = 'approved' | 'pending' | 'rejected'
+export type AlternatePayerKind = 'linked' | 'unlinked'
+
+export type ApprovalRequirement =
+  | { required: false }
+  | { required: true; kind: AlternatePayerKind }
+
+/**
+ * Does this payer choice need approval before the expense counts?
+ * Admin roles and payers the author speaks for (own participant, own joint
+ * account) never do.
+ */
+export function approvalForPayer(args: {
+  isAdmin: boolean
+  /** the author owns the payer (own participant / own joint account) */
+  payerIsOwn: boolean
+  /** the payer participant is linked to a user account */
+  payerHasAccount: boolean
+}): ApprovalRequirement {
+  if (args.isAdmin || args.payerIsOwn) return { required: false }
+  return { required: true, kind: args.payerHasAccount ? 'linked' : 'unlinked' }
+}
+
+/**
+ * May this account decide a pending expense? The chata's admins (and
+ * superadmins) always may; so may the accounts of the two people the expense
+ * speaks for — the payer participant and the banker ("pokladník"). The
+ * author is deliberately NOT an approver: approving your own claim would
+ * defeat the point.
+ */
+export function canDecideExpense(args: {
+  userId: number | string | null | undefined
+  managesChata: boolean
+  /** account linked to the payer participant, if any */
+  payerAccountId?: number | string | null
+  /** account linked to the chata's banker, if any */
+  bankerAccountId?: number | string | null
+}): boolean {
+  if (args.managesChata) return true
+  if (args.userId == null) return false
+  const me = String(args.userId)
+  return (
+    (args.payerAccountId != null && refId(args.payerAccountId) === me) ||
+    (args.bankerAccountId != null && refId(args.bankerAccountId) === me)
+  )
+}
+
+/**
+ * May this account edit/delete the expense? The author, plus the account of
+ * the participant the expense says paid — an expense recorded FOR you is
+ * yours to correct.
+ */
+export function canManageExpense(args: {
+  userId: number | string | null | undefined
+  authoredById?: number | string | null
+  payerAccountId?: number | string | null
+}): boolean {
+  if (args.userId == null) return false
+  const me = String(args.userId)
+  return (
+    (args.authoredById != null && refId(args.authoredById) === me) ||
+    (args.payerAccountId != null && refId(args.payerAccountId) === me)
+  )
+}
+
+/** Is this expense part of the journal and the maths? (undefined = legacy row) */
+export function isCountedExpense(status: ApprovalStatus | null | undefined): boolean {
+  return status == null || status === 'approved'
 }

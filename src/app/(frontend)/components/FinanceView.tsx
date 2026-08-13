@@ -153,6 +153,27 @@ export function FinanceView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // "Výdaj za jiného plátce": the payer, the banker and the chata's admins
+  // can settle a pending expense straight from its card. The endpoint
+  // re-checks all of that server-side (Expenses /decide).
+  const handleDecideApproval = async (
+    expense: Expense,
+    action: 'approve' | 'reject',
+    reason: string,
+  ) => {
+    const res = await fetch('/api/expenses/decide', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expenseId: expense.id, action, reason }),
+    })
+    if (!res.ok) {
+      track('save_failed', { operation: 'expense_decide', status: res.status })
+      throw new Error('Decide failed')
+    }
+    await onDataChanged?.()
+  }
+
   const handleDeleteExpense = async (expense: Expense) => {
     const res = await fetch(`/api/expenses/${expense.id}`, {
       method: 'DELETE',
@@ -170,6 +191,13 @@ export function FinanceView({
     typeof chata.banker === 'object' && chata.banker !== null
       ? chata.banker.id
       : chata.banker
+
+  // Who confirms an expense recorded for somebody else, whoever the payer
+  // is: the chata's admins and the banker ("pokladník"). The payer's own
+  // account is decided per card in the feed.
+  const canApproveAll =
+    viewer.canViewAll ||
+    (bankerId != null && viewer.linkedParticipantIds.includes(bankerId as number))
 
   // Which participants this viewer may open: admins of the chata see all,
   // a linked user only their own, anonymous everyone except locked
@@ -420,6 +448,8 @@ export function FinanceView({
             onEditExpense={(expense) => setComposer({ expense })}
             onMarkExpensePaid={(expense) => setComposer({ expense, markPaid: true })}
             onDeleteExpense={handleDeleteExpense}
+            canApproveAll={canApproveAll}
+            onDecideApproval={handleDecideApproval}
             showLoginHint={!viewer.authenticated}
           />
         </aside>

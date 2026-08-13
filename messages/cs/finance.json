@@ -133,7 +133,21 @@
     "deleteFailed": "Smazání se nepovedlo. Zkuste to znovu.",
     "deleting": "Mažu…",
     "back": "Zpět",
-    "close": "Zavřít"
+    "close": "Zavřít",
+    "approval": {
+      "pendingBadge": "Čeká na potvrzení",
+      "rejectedBadge": "Zamítnuto",
+      "waitingNote": "Zapsáno za jiného plátce. Ostatním se výdaj ukáže, až ho potvrdí plátce nebo pokladník.",
+      "decidePrompt": "Tenhle výdaj čeká na potvrzení. Zaplatil/a ho opravdu {payer}?",
+      "approve": "Potvrdit",
+      "reject": "Zamítnout",
+      "rejectConfirm": "Zamítnout výdaj",
+      "reasonPlaceholder": "Důvod (nepovinný, pošleme ho autorovi)",
+      "deciding": "Ukládám…",
+      "decideFailed": "Uložení se nepovedlo. Zkuste to znovu.",
+      "rejectedNote": "Výdaj byl zamítnutý, do vyrovnání se nepočítá.",
+      "rejectedWithReason": "Výdaj byl zamítnutý: „{reason}“. Do vyrovnání se nepočítá."
+    }
   },
   "expensesFeed": {
     "title": "Deník výdajů",

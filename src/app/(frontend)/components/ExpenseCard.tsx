@@ -36,6 +36,10 @@ interface ExpenseCardProps {
   onMarkPaid?: (expense: Expense) => void
   /** resolves after the expense is deleted (data reload included) */
   onDelete?: (expense: Expense) => Promise<void>
+  /** the viewer may confirm/refuse this pending expense (docs/PRD-vydaj-za-jineho.md) */
+  canDecideApproval?: boolean
+  /** resolves after the verdict is stored (data reload included) */
+  onDecideApproval?: (expense: Expense, action: 'approve' | 'reject', reason: string) => Promise<void>
 }
 
 export function ExpenseCard({
@@ -47,6 +51,8 @@ export function ExpenseCard({
   onEdit,
   onMarkPaid,
   onDelete,
+  canDecideApproval = false,
+  onDecideApproval,
 }: ExpenseCardProps) {
   const t = useTranslations('finance')
   const locale = useLocale() as AppLocale
@@ -56,6 +62,15 @@ export function ExpenseCard({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  // "Výdaj za jiného plátce" — waiting for (or refused) confirmation. The
+  // card only ever reaches the people involved; the journal, the balances
+  // and everybody else stay untouched until it is confirmed.
+  const [rejecting, setRejecting] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [deciding, setDeciding] = useState(false)
+  const [decideError, setDecideError] = useState<string | null>(null)
+  const isPending = expense.approvalStatus === 'pending'
+  const isRejected = expense.approvalStatus === 'rejected'
   const isRefund = expense.amount < 0
   const isPlanned = expense.isPlanned || false
   const payer = getPayerDisplay(expense.payer)
@@ -143,6 +158,19 @@ export function ExpenseCard({
       </button>
     ) : null
 
+  const decide = async (action: 'approve' | 'reject') => {
+    if (!onDecideApproval) return
+    setDeciding(true)
+    setDecideError(null)
+    try {
+      await onDecideApproval(expense, action, rejectReason.trim())
+      track('expense_approval_decided', { action, from: 'card' })
+    } catch {
+      setDecideError(t('expenseCard.approval.decideFailed'))
+      setDeciding(false)
+    }
+  }
+
   return (
     <div
       className={`
@@ -150,6 +178,8 @@ export function ExpenseCard({
         ${isOther ? 'bg-gray-50 opacity-60 dark:bg-white/[0.04]' : 'bg-white dark:bg-[#1b212c]'}
         ${isRefund ? 'border-2 border-green-200 dark:border-green-500/30' : ''}
         ${isPlanned ? 'border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-400/40 dark:bg-amber-400/10' : ''}
+        ${isPending ? 'border-2 border-dashed border-slate-300 bg-slate-50/70 dark:border-white/[0.2] dark:bg-white/[0.05]' : ''}
+        ${isRejected ? 'border-2 border-red-200 bg-red-50/40 dark:border-red-500/30 dark:bg-red-500/[0.07]' : ''}
       `}
     >
       <div className="flex-shrink-0">
@@ -207,6 +237,16 @@ export function ExpenseCard({
           {isPlanned && (
             <span className="bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
               {t('expenseCard.plannedBadge')}
+            </span>
+          )}
+          {isPending && (
+            <span className="bg-slate-200 text-slate-700 dark:bg-white/[0.12] dark:text-slate-200 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
+              {t('expenseCard.approval.pendingBadge')}
+            </span>
+          )}
+          {isRejected && (
+            <span className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
+              {t('expenseCard.approval.rejectedBadge')}
             </span>
           )}
         </div>
@@ -298,6 +338,84 @@ export function ExpenseCard({
                   <FileText size={12} /> PDF
                 </a>
               )
+            )}
+          </div>
+        )}
+
+        {/* Approval state ("výdaj za jiného plátce"): what is holding the
+            expense up, and — for the payer, the banker and chata admins —
+            the two buttons that resolve it */}
+        {(isPending || isRejected) && (
+          <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07] flex flex-col gap-2">
+            <span className="text-[13px] text-gray-600 dark:text-slate-300">
+              {isRejected
+                ? expense.approvalNote
+                  ? t('expenseCard.approval.rejectedWithReason', { reason: expense.approvalNote })
+                  : t('expenseCard.approval.rejectedNote')
+                : canDecideApproval
+                  ? t('expenseCard.approval.decidePrompt', { payer: payerName })
+                  : t('expenseCard.approval.waitingNote')}
+            </span>
+            {isPending && canDecideApproval && onDecideApproval && (
+              <>
+                {rejecting && (
+                  <input
+                    type="text"
+                    value={rejectReason}
+                    autoFocus
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder={t('expenseCard.approval.reasonPlaceholder')}
+                    className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {!rejecting ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={deciding}
+                        onClick={() => decide('approve')}
+                        className="flex items-center gap-1.5 text-white bg-green-600 hover:bg-green-700 disabled:opacity-60 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+                      >
+                        <CheckCircle2 size={13} /> {t('expenseCard.approval.approve')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deciding}
+                        onClick={() => setRejecting(true)}
+                        className="flex items-center gap-1.5 text-gray-700 dark:text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.1] transition-colors"
+                      >
+                        <X size={13} /> {t('expenseCard.approval.reject')}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        disabled={deciding}
+                        onClick={() => decide('reject')}
+                        className="text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+                      >
+                        {deciding ? t('expenseCard.approval.deciding') : t('expenseCard.approval.rejectConfirm')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deciding}
+                        onClick={() => {
+                          setRejecting(false)
+                          setRejectReason('')
+                        }}
+                        className="text-gray-700 dark:text-slate-300 text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/[0.07] transition-colors"
+                      >
+                        {t('expenseCard.back')}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+            {decideError && (
+              <span className="text-[13px] text-red-600 dark:text-red-400">{decideError}</span>
             )}
           </div>
         )}

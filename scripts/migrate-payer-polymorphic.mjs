@@ -553,6 +553,41 @@ CREATE TABLE IF NOT EXISTS chatas_public_transport_options_riders (
 CREATE INDEX IF NOT EXISTS chatas_public_transport_options_riders_order_idx ON chatas_public_transport_options_riders USING btree (_order);
 CREATE INDEX IF NOT EXISTS chatas_public_transport_options_riders_parent_id_idx ON chatas_public_transport_options_riders USING btree (_parent_id);
 CREATE INDEX IF NOT EXISTS chatas_public_transport_options_riders_participant_idx ON chatas_public_transport_options_riders USING btree (participant_id);
+
+-- "Výdaj za jiného plátce" (docs/PRD-vydaj-za-jineho.md): a participant may
+-- record an expense somebody ELSE paid; it waits for the payer (if they have
+-- an account) or the banker before it counts. Additive only — every existing
+-- row is an admin-panel or own-payer expense, so the DEFAULT plus the
+-- backfill below make them all 'approved'.
+DO $$ BEGIN
+  CREATE TYPE enum_expenses_approval_status AS ENUM('approved', 'pending', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TABLE expenses
+  ADD COLUMN IF NOT EXISTS approval_status enum_expenses_approval_status DEFAULT 'approved';
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS approval_note character varying;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS approval_decided_at timestamp(3) with time zone;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS approval_decided_by_id integer;
+DO $$ BEGIN
+  ALTER TABLE expenses
+    ADD CONSTRAINT expenses_approval_decided_by_id_users_id_fk
+    FOREIGN KEY (approval_decided_by_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS expenses_approval_decided_by_idx
+  ON expenses USING btree (approval_decided_by_id);
+
+-- The paying participant's account: an expense recorded FOR somebody is
+-- theirs to confirm, correct and delete, and the write-access filter cannot
+-- join to work that out. Backfilled from the current payer links below.
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payer_account_id integer;
+DO $$ BEGIN
+  ALTER TABLE expenses
+    ADD CONSTRAINT expenses_payer_account_id_users_id_fk
+    FOREIGN KEY (payer_account_id) REFERENCES users(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS expenses_payer_account_idx ON expenses USING btree (payer_account_id);
+
+-- (the data backfill for both columns runs after the payer migration, in
+-- backfillExpenseApproval() — expenses_rels is only populated by then)
 `
 
 async function enumLabels(typeName) {
@@ -705,6 +740,29 @@ async function migrateBankerBanking() {
   }
 }
 
+/**
+ * "Výdaj za jiného plátce" data backfill (idempotent, runs inside auto()'s
+ * transaction): every pre-existing expense is approved, and each one gets
+ * the account of its paying participant stamped on it. Cheap enough to
+ * re-run on every deploy, which also repairs drift.
+ */
+async function backfillExpenseApproval() {
+  await client.query(
+    `UPDATE expenses SET approval_status = 'approved' WHERE approval_status IS NULL`
+  )
+  const synced = await client.query(`
+    UPDATE expenses e
+      SET payer_account_id = p.account_id
+      FROM expenses_rels r
+      JOIN participants p ON p.id = r.participants_id
+      WHERE r.parent_id = e.id
+        AND r.path = 'payer'
+        AND e.payer_account_id IS DISTINCT FROM p.account_id`)
+  if (synced.rowCount > 0) {
+    console.log(`expenses: stamped payer_account_id on ${synced.rowCount} row(s)`)
+  }
+}
+
 async function auto() {
   await migrateUserRoles()
   await migrateBankerBanking()
@@ -721,6 +779,9 @@ async function auto() {
   await client.query(NEW_SCHEMA_DDL)
 
   if (!oldExpenses && !oldPrepayments) {
+    // Steady state (every normal deploy): the payer refs are already in
+    // expenses_rels, so the approval backfill can run right away
+    await backfillExpenseApproval()
     await client.query('COMMIT')
     console.log('Schema already migrated — nothing to do.')
     return
@@ -800,6 +861,8 @@ async function auto() {
     await client.query('ALTER TABLE prepayments DROP COLUMN from_id')
     console.log(`prepayments: migrated ${res.rowCount} from refs (${dst.rows[0].n} total in rels)`)
   }
+
+  await backfillExpenseApproval()
 
   await client.query('COMMIT')
   console.log(

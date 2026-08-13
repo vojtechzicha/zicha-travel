@@ -37,7 +37,12 @@
   },
   "payer": {
     "you": "Vy",
-    "nameYou": "{name} (vy)"
+    "nameYou": "{name} (vy)",
+    "someoneElseLink": "Zaplatil to někdo jiný?",
+    "someoneElseLabel": "Jiný plátce",
+    "someoneElsePlaceholder": "Vyberte plátce…",
+    "approvalLinked": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí {name} nebo pokladník.",
+    "approvalUnlinked": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí pokladník."
   },
   "stepWho": {
     "sectionTitle": "Rozdělení",

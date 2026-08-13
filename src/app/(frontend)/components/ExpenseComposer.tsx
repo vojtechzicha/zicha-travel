@@ -34,7 +34,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { formatCurrency, getAvatarColor, getInitials } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { accusativeName } from '@/lib/czechNames'
-import { ownJointAccounts } from '@/lib/expenseAuthoring'
+import { approvalForPayer, ownJointAccounts } from '@/lib/expenseAuthoring'
 import { downscaleImage } from '@/lib/imageDownscale'
 import { useAppTheme } from '../utils/useAppTheme'
 import type { AppLocale } from '@/i18n/config'
@@ -155,6 +155,16 @@ export function ExpenseComposer({
   const payableJointAccounts = useMemo(
     () => ownJointAccounts(ownIdsStr, jointAccounts),
     [ownIdsStr, jointAccounts],
+  )
+  // "Zaplatil někdo jiný" — everyone else in the chata. Not the usual case,
+  // so it hides behind one quiet link and the expense then waits for
+  // approval (docs/PRD-vydaj-za-jineho.md)
+  const otherPayers = useMemo(
+    () =>
+      participants
+        .filter((p) => !ownIds.includes(p.id))
+        .sort((a, b) => a.name.localeCompare(b.name, 'cs')),
+    [participants, ownIds],
   )
 
   // Split rows keep ALL chata participants: own first, then alphabetically
@@ -306,6 +316,25 @@ export function ExpenseComposer({
   // ── derived ──────────────────────────────────────────────────────────
   const amount = parseAmount(amountText)
   const amountValid = amount !== null && amount > 0
+
+  // Payer somebody else than the author: the expense is saved but stays
+  // invisible (and out of the maths) until it is confirmed. Admins of the
+  // chata skip that queue — they are the ones who would confirm it anyway.
+  const alternatePayer = useMemo(() => {
+    if (payer === null || payer.relationTo !== 'participants') return null
+    if (ownIds.includes(payer.value)) return null
+    return participants.find((p) => p.id === payer.value) ?? null
+  }, [payer, ownIds, participants])
+  const approval = useMemo(
+    () =>
+      approvalForPayer({
+        isAdmin: viewer.canViewAll,
+        payerIsOwn: alternatePayer === null,
+        payerHasAccount: alternatePayer?.account != null,
+      }),
+    [viewer.canViewAll, alternatePayer],
+  )
+  const [showOtherPayers, setShowOtherPayers] = useState(() => alternatePayer !== null)
 
   const includedParticipants = useMemo(
     () =>
@@ -567,7 +596,13 @@ export function ExpenseComposer({
         )
       }
       savedRef.current = true
-      if (!isEdit) track('expense_created', { split_mode: splitMode, planned: isPlanned })
+      if (!isEdit) {
+        track('expense_created', {
+          split_mode: splitMode,
+          planned: isPlanned,
+          for_other: alternatePayer !== null,
+        })
+      }
       await onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errors.saveFailed'))
@@ -599,9 +634,12 @@ export function ExpenseComposer({
       options.push({ choice: { relationTo: 'joint-accounts', value: ja.id }, label: ja.name })
     }
     // an edited expense may have a payer outside the viewer's options
-    // (assigned by an admin) — keep it selectable so saving doesn't break
+    // (a joint account assigned by an admin) — keep it selectable so saving
+    // doesn't break. Another participant needs no chip: the select below
+    // already shows them.
     if (
       payer &&
+      alternatePayer === null &&
       !options.some(
         (o) => o.choice.relationTo === payer.relationTo && o.choice.value === payer.value,
       )
@@ -613,6 +651,48 @@ export function ExpenseComposer({
           payer.relationTo === 'participants' ? payerName(payer) : undefined,
       })
     }
+    // once somebody else is the payer, the select stays open — it is the
+    // only place that shows who it is
+    const otherPayerUi =
+      otherPayers.length === 0 ? null : !showOtherPayers && alternatePayer === null ? (
+        <button
+          type="button"
+          onClick={() => setShowOtherPayers(true)}
+          className="mt-2.5 text-[13px] text-gray-500 dark:text-slate-400 underline underline-offset-2 hover:text-gray-700 dark:hover:text-slate-200"
+        >
+          {t('payer.someoneElseLink')}
+        </button>
+      ) : (
+        <div className="mt-2.5">
+          <select
+            value={alternatePayer ? String(alternatePayer.id) : ''}
+            aria-label={t('payer.someoneElseLabel')}
+            onChange={(e) => {
+              const value = e.target.value
+              if (value === '') {
+                // back to paying as yourself
+                setPayer(
+                  ownParticipants.length > 0
+                    ? { relationTo: 'participants', value: ownParticipants[0].id }
+                    : null,
+                )
+                setShowOtherPayers(false)
+              } else {
+                setPayer({ relationTo: 'participants', value: Number(value) })
+              }
+            }}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 bg-white dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="">{t('payer.someoneElsePlaceholder')}</option>
+            {otherPayers.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )
+
     return (
       <div>
         <div className="flex flex-wrap gap-2">
@@ -655,6 +735,25 @@ export function ExpenseComposer({
             )
           })}
         </div>
+        {otherPayerUi}
+        {renderApprovalNote()}
+      </div>
+    )
+  }
+
+  // The one thing people must understand before saving an expense for
+  // somebody else: it is recorded, but nobody sees it and nothing moves
+  // until it is confirmed.
+  const renderApprovalNote = () => {
+    if (!approval.required || !alternatePayer) return null
+    return (
+      <div className="flex items-start gap-2.5 mt-2.5 bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-400/10 dark:border-amber-400/30 dark:text-amber-200 rounded-xl px-3 py-2.5">
+        <Clock size={15} className="flex-shrink-0 mt-0.5" />
+        <span className="text-[13px] leading-relaxed">
+          {approval.kind === 'linked'
+            ? t('payer.approvalLinked', { name: alternatePayer.name })
+            : t('payer.approvalUnlinked')}
+        </span>
       </div>
     )
   }
@@ -1439,6 +1538,7 @@ export function ExpenseComposer({
                   </div>
                 </div>
               </div>
+              {renderApprovalNote()}
               {renderInvitations()}
               {errorBanner}
             </>

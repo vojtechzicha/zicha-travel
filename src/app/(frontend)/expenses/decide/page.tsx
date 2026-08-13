@@ -1,0 +1,160 @@
+import type { Metadata } from 'next'
+import { getPayload } from 'payload'
+import { getTranslations } from 'next-intl/server'
+import config from '@/payload.config'
+import { refId, canManageChata } from '@/lib/access'
+import { canDecideExpense, normalizePayer } from '@/lib/expenseAuthoring'
+import { verifyExpenseDecideToken } from '@/lib/expenseApproval'
+import { bankerParticipant } from '@/utils/expenseApproval'
+import { GlassCard } from '../../components/GlassCard'
+import { DecideExpenseCard } from '../../components/DecideExpenseCard'
+import '../../styles.css'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('auth')
+  return {
+    title: t('expenseDecide.metaTitle'),
+    description: t('expenseDecide.metaDescription'),
+  }
+}
+
+// "Výdaj za jiného plátce" (docs/PRD-vydaj-za-jineho.md): the payer, the
+// banker or a chata admin lands here from the approval email. The signed
+// token in the URL is the credential (no session needed); the decision
+// itself is a POST from the client card — a mutating GET would be triggered
+// by mail-scanner link prefetches.
+export default async function DecideExpensePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>
+}) {
+  const { token } = await searchParams
+  const t = await getTranslations('auth')
+
+  const shell = (content: React.ReactNode) => (
+    <div className="min-h-screen relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
+      <div className="relative z-10 max-w-app mx-auto px-5 py-10 flex items-center justify-center min-h-screen">
+        {content}
+      </div>
+    </div>
+  )
+
+  const message = (title: string, body: string) =>
+    shell(
+      <GlassCard padding="large" className="w-full max-w-md text-center">
+        <h1 className="font-serif text-2xl font-bold text-gray-900 mb-3">{title}</h1>
+        <p className="text-gray-600">{body}</p>
+      </GlassCard>
+    )
+
+  if (!token) {
+    return message(t('expenseDecide.page.invalidTitle'), t('expenseDecide.page.missingSignature'))
+  }
+
+  const secret = process.env.PAYLOAD_SECRET
+  const verified = secret
+    ? verifyExpenseDecideToken(token, secret)
+    : ({ ok: false, code: 'invalid' } as const)
+  if (!verified.ok) {
+    return verified.code === 'expired'
+      ? message(t('expenseDecide.page.expiredTitle'), t('expenseDecide.page.expiredBody'))
+      : message(t('expenseDecide.page.invalidTitle'), t('expenseDecide.page.badSignature'))
+  }
+
+  const payload = await getPayload({ config: await config })
+  const [decider, expense] = await Promise.all([
+    payload
+      .findByID({ collection: 'users', id: verified.userId, depth: 0, overrideAccess: true })
+      .catch(() => null),
+    payload
+      .findByID({ collection: 'expenses', id: verified.expenseId, depth: 0, overrideAccess: true })
+      .catch(() => null),
+  ])
+
+  if (!expense) {
+    return message(t('expenseDecide.page.notFoundTitle'), t('expenseDecide.page.notFoundBody'))
+  }
+
+  const chata = await payload
+    .findByID({
+      collection: 'chatas',
+      id: refId(expense.chata),
+      depth: 0,
+      overrideAccess: true,
+      context: { triggerAfterRead: false },
+    })
+    .catch(() => null)
+  const payerRef = normalizePayer(expense.payer)
+  const [payer, banker, author] = await Promise.all([
+    payerRef?.relationTo === 'participants'
+      ? payload
+          .findByID({
+            collection: 'participants',
+            id: refId(payerRef.value),
+            depth: 0,
+            overrideAccess: true,
+          })
+          .catch(() => null)
+      : null,
+    chata ? bankerParticipant(payload, chata) : null,
+    expense.authoredBy != null
+      ? payload
+          .findByID({
+            collection: 'users',
+            id: refId(expense.authoredBy),
+            depth: 0,
+            overrideAccess: true,
+          })
+          .catch(() => null)
+      : null,
+  ])
+
+  // The token names one recipient — but the CURRENT rules decide, so a
+  // forwarded link cannot outlive a role change or a re-linked participant
+  const allowed =
+    decider != null &&
+    canDecideExpense({
+      userId: decider.id,
+      managesChata: canManageChata({ ...decider, collection: 'users' }, refId(expense.chata)),
+      payerAccountId: payer?.account != null ? refId(payer.account) : null,
+      bankerAccountId: banker?.account != null ? refId(banker.account) : null,
+    })
+  if (!allowed) {
+    return message(t('expenseDecide.page.forbiddenTitle'), t('expenseDecide.page.forbiddenBody'))
+  }
+  if (!payer || !author) {
+    return message(t('expenseDecide.page.goneTitle'), t('expenseDecide.page.goneBody'))
+  }
+
+  if (expense.approvalStatus !== 'pending') {
+    const statusText: Record<string, string> = {
+      approved: t('expenseDecide.page.decidedApproved'),
+      rejected: t('expenseDecide.page.decidedRejected'),
+    }
+    return message(
+      t('expenseDecide.page.decidedTitle'),
+      statusText[expense.approvalStatus ?? 'approved'] || t('expenseDecide.page.decidedClosed')
+    )
+  }
+
+  // How the expense is split, in one line ("rovným dílem" or the headcount)
+  const splitSummary =
+    expense.splitType === 'equal'
+      ? t('expenseDecide.page.splitEqual')
+      : t('expenseDecide.page.splitWeighted', { count: expense.weights?.length ?? 0 })
+
+  return shell(
+    <DecideExpenseCard
+      token={token}
+      title={expense.title}
+      amount={expense.amount}
+      payerName={payer.name}
+      authorLabel={author.name ? `${author.name} (${author.email})` : author.email}
+      chataName={chata?.name ?? ''}
+      createdAt={expense.createdAt}
+      splitSummary={splitSummary}
+      decidingAsPayer={payer.account != null && refId(payer.account) === String(decider!.id)}
+    />
+  )
+}

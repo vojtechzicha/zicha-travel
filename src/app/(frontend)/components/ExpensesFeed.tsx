@@ -17,8 +17,26 @@ interface ExpensesFeedProps {
   /** planned expense of the viewer: confirm it was paid */
   onMarkExpensePaid?: (expense: Expense) => void
   onDeleteExpense?: (expense: Expense) => Promise<void>
+  /** viewer confirms every pending expense here (chata admin or banker) */
+  canApproveAll?: boolean
+  /** confirm/refuse an expense somebody recorded for another payer */
+  onDecideApproval?: (
+    expense: Expense,
+    action: 'approve' | 'reject',
+    reason: string,
+  ) => Promise<void>
   /** anonymous visitors: subtle bar that signing in unlocks authoring (1e) */
   showLoginHint?: boolean
+}
+
+/** Bare id of a maxDepth-0 relationship (may still arrive populated). */
+const relId = (ref: unknown): number | null => {
+  if (typeof ref === 'number') return ref
+  if (typeof ref === 'object' && ref !== null) {
+    const id = (ref as { id?: unknown }).id
+    return typeof id === 'number' ? id : null
+  }
+  return null
 }
 
 function isParticipantInExpense(expense: Expense, participantId: number): boolean {
@@ -49,6 +67,8 @@ export function ExpensesFeed({
   onEditExpense,
   onMarkExpensePaid,
   onDeleteExpense,
+  canApproveAll = false,
+  onDecideApproval,
   showLoginHint = false,
 }: ExpensesFeedProps) {
   const t = useTranslations('finance')
@@ -98,13 +118,13 @@ export function ExpensesFeed({
             const isMine =
               selectedParticipantId !== null &&
               isParticipantInExpense(expense, selectedParticipantId)
-            // authoredBy stays a bare user id (maxDepth 0 on the field)
+            // authoredBy / payerAccount stay bare user ids (maxDepth 0)
             const authoredByViewer =
-              viewerUserId != null &&
-              expense.authoredBy != null &&
-              (typeof expense.authoredBy === 'object'
-                ? expense.authoredBy.id
-                : expense.authoredBy) === viewerUserId
+              viewerUserId != null && relId(expense.authoredBy) === viewerUserId
+            // An expense recorded FOR you is yours too: you confirm it, and
+            // afterwards you may correct or delete it
+            const paidByViewer =
+              viewerUserId != null && relId(expense.payerAccount) === viewerUserId
             return (
               <ExpenseCard
                 key={expense.id}
@@ -112,10 +132,12 @@ export function ExpensesFeed({
                 isMine={isMine}
                 showAll={showAll}
                 selectedParticipantId={selectedParticipantId}
-                canManage={authoredByViewer}
+                canManage={authoredByViewer || paidByViewer}
                 onEdit={onEditExpense}
                 onMarkPaid={onMarkExpensePaid}
                 onDelete={onDeleteExpense}
+                canDecideApproval={canApproveAll || paidByViewer}
+                onDecideApproval={onDecideApproval}
               />
             )
           })

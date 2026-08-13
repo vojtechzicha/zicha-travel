@@ -792,6 +792,23 @@ export interface Expense {
    */
   authoredBy?: (number | null) | User;
   /**
+   * Account of the paying participant (set automatically). They may confirm and edit this expense.
+   */
+  payerAccount?: (number | null) | User;
+  /**
+   * Expenses recorded by a participant for SOMEBODY ELSE wait for the payer (if they have an account) or the banker. Anything but "Approved" is hidden from the site and left out of all balances.
+   */
+  approvalStatus?: ('approved' | 'pending' | 'rejected') | null;
+  /**
+   * Why it was rejected — emailed to the author
+   */
+  approvalNote?: string | null;
+  /**
+   * Who confirmed or rejected the expense
+   */
+  approvalDecidedBy?: (number | null) | User;
+  approvalDecidedAt?: string | null;
+  /**
    * Planned expense (not yet paid) - uncheck when actually paid
    */
   isPlanned?: boolean | null;
@@ -1260,6 +1277,11 @@ export interface ExpensesSelect<T extends boolean = true> {
   note?: T;
   attachments?: T;
   authoredBy?: T;
+  payerAccount?: T;
+  approvalStatus?: T;
+  approvalNote?: T;
+  approvalDecidedBy?: T;
+  approvalDecidedAt?: T;
   isPlanned?: T;
   updatedAt?: T;
 }

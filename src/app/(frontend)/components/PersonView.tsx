@@ -21,6 +21,7 @@ import { SettlementActions } from './SettlementActions'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
+import { isCountedExpense } from '@/lib/expenseAuthoring'
 import { akuzativByName } from '@/lib/czechNames'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
 import type { AppLocale } from '@/i18n/config'
@@ -108,9 +109,12 @@ export function PersonView({
     return ''
   }
 
-  // Filter prepayments and expenses for history (exclude planned expenses).
+  // Filter prepayments and expenses for history (exclude planned expenses,
+  // and expenses somebody recorded for another payer that nobody has
+  // confirmed yet — the numbers above ignore those as well).
   // Joint-account ("společný účet") payments count for each member.
   const myExpenses = expenses.filter((e) => {
+    if (!isCountedExpense(e.approvalStatus)) return false
     return getPayerDisplay(e.payer).memberIds.includes(participant.id) && !e.isPlanned
   })
   const myPrepayments = prepayments.filter((p) => {

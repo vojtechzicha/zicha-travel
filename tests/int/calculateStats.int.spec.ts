@@ -516,3 +516,41 @@ describe('normalizePayerRef / transformJointAccount', () => {
     ).toEqual(jaAliceBob)
   })
 })
+
+describe('expenses waiting for approval ("výdaj za jiného plátce")', () => {
+  const alice = { id: '1', name: 'Alice' }
+  const bob = { id: '2', name: 'Bob' }
+
+  it('ignores pending and rejected expenses everywhere', () => {
+    const counted = [expense({ title: 'Groceries', amount: 400, payer: alice })]
+    const withClaims: Expense[] = [
+      ...counted,
+      expense({ title: 'Claimed', amount: 1000, payer: bob, approvalStatus: 'pending' }),
+      expense({ title: 'Refused', amount: 800, payer: bob, approvalStatus: 'rejected' }),
+    ]
+    const base = calculateStats(participants, counted, [], 'Alice')
+    const withPending = calculateStats(participants, withClaims, [], 'Alice')
+
+    expect(withPending).toEqual(base)
+    expect(withPending.totalExpenses).toBe(400)
+    expect(withPending.participants.Bob.paidExternal).toBe(0)
+    expect(withPending.participants.Bob.costBreakdown.map((c) => c.title)).toEqual(['Groceries'])
+    expectZeroSum(withPending)
+  })
+
+  it('counts an approved expense and a legacy row with no status at all', () => {
+    const stats = calculateStats(
+      participants,
+      [
+        expense({ title: 'Approved', amount: 400, payer: alice, approvalStatus: 'approved' }),
+        expense({ title: 'Legacy', amount: 400, payer: bob }),
+      ],
+      [],
+      'Alice'
+    )
+    expect(stats.totalExpenses).toBe(800)
+    expect(stats.participants.Alice.paidExternal).toBe(400)
+    expect(stats.participants.Bob.paidExternal).toBe(400)
+    expectZeroSum(stats)
+  })
+})

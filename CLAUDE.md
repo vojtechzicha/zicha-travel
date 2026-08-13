@@ -68,9 +68,9 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      public read API never populates the user/email) is stamped by a
      beforeChange hook on every authenticated create; the same hook
      enforces for role `user`: chata must contain one of their linked
-     participants, the payer must be an own participant or a joint account
-     they belong to (unchanged payer is exempt on update), and the chata
-     can never be moved. Pure rules live in `src/lib/expenseAuthoring.ts`
+     participants, the payer must be a participant of that chata, and the
+     chata can never be moved. Pure rules live in
+     `src/lib/expenseAuthoring.ts`
      (unit-tested in `tests/int/expenseAuthoring.int.spec.ts`). UI:
      `ExpenseComposer.tsx` — mobile 3-step wizard (bottom-sheet entry
      "Vyfotit účtenku"/"Zadat ručně" → co a kolik → kdo se dělí →
@@ -94,6 +94,23 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      (`POST/PATCH/DELETE /api/expenses`, `POST /api/expense-attachments` —
      attachment create is open to any signed-in account); the slug API's
      `viewer` gained `userId` for the ownership check
+   - **"Výdaj za jiného plátce"** (`approvalStatus`, `approvalNote`,
+     `approvalDecidedBy/At`, `payerAccount`): a frontend account may record
+     an expense SOMEBODY ELSE paid — a quiet "Zaplatil to někdo jiný?" link
+     under the payer chips. The expense is stored `pending`: hidden from the
+     journal (slug API ships it only to the author, the payer's account, the
+     banker and chata admins; REST read access hides it too) and skipped by
+     `calculateStats`, until the payer (when they have an account) or the
+     banker / a chata admin confirms it. Confirming happens on the expense
+     card or through the signed link in the "Sedí to?" email
+     (`POST /api/expenses/decide`, page `/expenses/decide`, 14-day token in
+     `src/lib/expenseApproval.ts`, side effects in
+     `src/utils/expenseApproval.ts`). Editing such an expense puts it back
+     in the queue; joint accounts stay members-only. `payerAccount` (the
+     paying participant's account) makes the expense theirs to confirm,
+     edit and delete — a Participants afterChange hook re-stamps it when an
+     account link changes. Admin-entered expenses are approved from the
+     start. See `docs/PRD-vydaj-za-jineho.md`
 
 4. **Prepayments** (`src/collections/Prepayments.ts`)
    - Money transfers between participants and banker
@@ -175,6 +192,11 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
   from the banker (including the banker's share of a joint-account prepayment)
   is skipped as pot-internal. Covered by `tests/int/calculateStats.int.spec.ts`
   (zero-sum invariant asserted in every fixture)
+- Expenses whose `approvalStatus` is anything but `approved` (a "výdaj za
+  jiného plátce" nobody has confirmed) are dropped before any of the maths,
+  so every consumer — chata hook, homepage batch, slug API, overview —
+  ignores them without knowing about the feature. A missing value (legacy
+  rows) counts as approved
 - `normalizePayerRef`/`transformJointAccount` normalize Payload's polymorphic
   payer/from values for the hook and API routes;
   `populateExpenseParticipants` maps bare participant IDs inside weights and
@@ -326,8 +348,14 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   - `user` (frontend accounts): no admin panel; the ONE write exception is
     expense authoring — create expenses in chatas where they own a linked
     participant, update/delete only expenses they authored
-    (`Expenses.authoredBy`), and upload expense attachments. Enforced in
-    the Expenses beforeChange hook via `src/lib/expenseAuthoring.ts`
+    (`Expenses.authoredBy`) or that name one of their participants as the
+    payer (`Expenses.payerAccount`), confirm/reject expenses recorded for
+    them, and upload expense attachments. Enforced in the Expenses
+    beforeChange hook via `src/lib/expenseAuthoring.ts`
+  - **Expense read access is public EXCEPT unconfirmed ones**: an expense
+    waiting for (or refused) approval is a claim about somebody else's
+    money, so `Expenses.access.read` narrows to approved rows for anyone
+    but admins, the author and the payer's account
 - **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
   the slug API returns a `viewer` + `locked` list; admins of the chata get
   the full participant selector (defaulting to their own linked

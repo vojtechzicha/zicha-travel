@@ -1,7 +1,17 @@
 // Czech content, moved verbatim from page.tsx when the frontend went
 // bilingual. Edit wording here; page.tsx only picks a locale.
 
-import { Camera, Clock, HeartHandshake, Monitor, PencilLine, Plus, Scale, Smartphone } from 'lucide-react'
+import {
+  Camera,
+  Clock,
+  HeartHandshake,
+  Monitor,
+  PencilLine,
+  Plus,
+  Scale,
+  Smartphone,
+  UserCheck,
+} from 'lucide-react'
 import { Callout, HelpShell, List, NextPage, Screenshot, ScreenshotRow, Section, Steps } from '../ui'
 
 export default function VydajeContentCs() {
@@ -174,6 +184,43 @@ export default function VydajeContentCs() {
           />
         </Section>
 
+        <Section title="Zaplatil to někdo jiný" icon={<UserCheck size={20} />}>
+          <p>
+            Někdy je potřeba zapsat výdaj za kamaráda, který zrovna nemá čas. Pod výběrem plátce
+            je proto tichý odkaz <em>Zaplatil to někdo jiný?</em> a za ním seznam ostatních
+            účastníků chaty.
+          </p>
+          <List
+            items={[
+              <>
+                Výdaj se uloží, ale nikde se neukáže a do vyrovnání se nepočítá, dokud ho někdo
+                nepotvrdí.
+              </>,
+              <>
+                Když má plátce svůj účet, potvrdit to může on sám, nebo pokladník či správce chaty.
+                Když účet nemá, rozhodují pokladník a správci.
+              </>,
+              <>
+                Všem, kdo mohou rozhodnout, přijde e-mail s odkazem. Potvrdit nebo zamítnout jde i
+                rovnou na kartě výdaje ve financích.
+              </>,
+              <>
+                Než se rozhodne, vidí kartu se značkou <em>Čeká na potvrzení</em> jenom autor,
+                plátce, pokladník a správci. Po potvrzení se výdaj chová jako každý jiný.
+              </>,
+              <>
+                Při zamítnutí zůstane skrytý napořád a autorovi přijde e-mail, i s důvodem, pokud
+                ho rozhodující napsal.
+              </>,
+              <>
+                Úprava takového výdaje ho pošle k potvrzení znovu, aby se jednou odsouhlasená
+                částka nedala potichu přepsat.
+              </>,
+              <>Správci chaty tímhle kolečkem neprocházejí, jejich zápis platí rovnou.</>,
+            ]}
+          />
+        </Section>
+
         <Section title="Úprava a smazání" icon={<PencilLine size={20} />}>
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <Screenshot
@@ -190,11 +237,12 @@ export default function VydajeContentCs() {
                   <>Smazání se ptá na potvrzení přímo na kartě, žádné vyskakovací okno.</>,
                   <>
                     Cizí výdaje upravit nejde. Když je v nich chyba, řekněte si autorovi nebo správci
-                    chaty.
+                    chaty. Výjimkou je výdaj, který někdo zapsal za vás: ten je i váš, takže ho
+                    můžete opravit i smazat.
                   </>,
                   <>
-                    Chatu u výdaje změnit nelze a plátcem může být jen vaše jméno nebo váš společný
-                    účet.
+                    Chatu u výdaje změnit nelze. Plátcem může být vaše jméno, váš společný účet, a
+                    po potvrzení i někdo jiný.
                   </>,
                 ]}
               />

@@ -3,6 +3,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { canManageChata, refId } from '@/lib/access'
 import { maskEmail, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
+import { isCountedExpense } from '@/lib/expenseAuthoring'
 import type { ViewerClaim } from '@/lib/claimRequests'
 import {
   calculateStats,
@@ -133,7 +134,8 @@ export async function GET(
       return transformed
     })
 
-    // Calculate statistics
+    // Calculate statistics (calculateStats itself drops expenses waiting for
+    // approval — see docs/PRD-vydaj-za-jineho.md)
     const stats = calculateStats(participants, expenses, prepayments, bankerName, jointAccounts)
 
     // Who is looking? Drives the Finance view gating (see lib/financeAccess):
@@ -153,6 +155,30 @@ export async function GET(
             .map((p: any) => p.id)
         : [],
     }
+
+    // "Výdaj za jiného plátce": an expense recorded for somebody else is
+    // stored but stays out of the journal until it is confirmed. It ships
+    // ONLY to the people who have business with it — the chata's admins,
+    // the author, the named payer's account and the banker's account — so
+    // they can act on it; for everyone else it does not exist. The maths
+    // above already ignores it either way. (The plain REST API applies the
+    // same rule through field access; this route runs on the local API.)
+    const bankerParticipant = participantsResult.docs.find(
+      (p: any) => String(p.id) === refId(chata.banker),
+    )
+    const viewerIsBanker =
+      user != null &&
+      bankerParticipant?.account != null &&
+      refId(bankerParticipant.account) === String(user.id)
+    const visibleExpenses = expensesResult.docs.filter((expense: any) => {
+      if (isCountedExpense(expense.approvalStatus)) return true
+      if (!user) return false
+      if (canManageChata(user, chata.id) || viewerIsBanker) return true
+      return (
+        (expense.authoredBy != null && refId(expense.authoredBy) === String(user.id)) ||
+        (expense.payerAccount != null && refId(expense.payerAccount) === String(user.id))
+      )
+    })
 
     // "Klíče a Wi-Fi": the values (passwords, key codes) are for signed-in
     // eyes only. Anonymous visitors keep the LABELS so the page can show
@@ -182,7 +208,7 @@ export async function GET(
       blankPrivateInfoValues([
         chata,
         participantsResult.docs,
-        expensesResult.docs,
+        visibleExpenses,
         prepaymentsResult.docs,
         jointAccountsResult.docs,
       ])
@@ -249,7 +275,7 @@ export async function GET(
     return NextResponse.json({
       chata,
       participants: participantsResult.docs,
-      expenses: expensesResult.docs,
+      expenses: visibleExpenses,
       prepayments: prepaymentsResult.docs,
       jointAccounts: jointAccountsResult.docs,
       stats,

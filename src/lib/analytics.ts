@@ -27,7 +27,9 @@ export interface AnalyticsEvents {
   // 3. funnels
   expense_compose_started: { entry: 'photo' | 'manual' }
   expense_compose_step: { step: 1 | 2 | 3; split_mode: string }
-  expense_created: { split_mode: string; planned: boolean }
+  expense_created: { split_mode: string; planned: boolean; for_other?: boolean }
+  /** a pending "expense for somebody else" was confirmed or refused */
+  expense_approval_decided: { action: 'approve' | 'reject'; from: 'card' | 'email' }
   expense_compose_abandoned: { step: number }
   login_started: { method: 'magic-link' | 'microsoft' }
   login_link_requested: Record<string, never>

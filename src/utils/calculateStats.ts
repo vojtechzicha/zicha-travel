@@ -3,6 +3,8 @@
  * Based on the original PoC calculateStats logic
  */
 
+import { isCountedExpense, type ApprovalStatus } from '../lib/expenseAuthoring'
+
 export interface PayerRef {
   id: string | number
   name: string
@@ -26,6 +28,12 @@ export interface Expense {
     auto?: boolean | null
   }>
   isPlanned?: boolean
+  /**
+   * "Výdaj za jiného plátce": anything other than 'approved' (or a legacy
+   * row with no value at all) is a claim nobody has confirmed yet — it is
+   * skipped by every calculation below. See docs/PRD-vydaj-za-jineho.md.
+   */
+  approvalStatus?: ApprovalStatus | null
 }
 
 export interface Prepayment {
@@ -122,11 +130,14 @@ function getContributorNames(
  */
 export function calculateStats(
   participants: Participant[],
-  expenses: Expense[],
+  allExpenses: Expense[],
   prepayments: Prepayment[],
   bankerName: string,
   jointAccounts: JointAccountInfo[] = []
 ): ChataStats {
+  // An expense recorded for somebody else counts only once it is confirmed —
+  // until then it exists in the database and nowhere else (docs/PRD-vydaj-za-jineho.md)
+  const expenses = allExpenses.filter((e) => isCountedExpense(e.approvalStatus))
   const jointAccountsById = new Map<string, JointAccountInfo>()
   const jointAccountsByName = new Map<string, JointAccountInfo>()
   jointAccounts.forEach((ja) => {
@@ -358,6 +369,7 @@ export function transformExpense(expense: any): Expense {
     weights: expense.weights,
     invitations: expense.invitations,
     isPlanned: expense.isPlanned || false,
+    approvalStatus: expense.approvalStatus ?? null,
   }
 }
 

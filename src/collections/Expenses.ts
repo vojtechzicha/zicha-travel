@@ -1,18 +1,29 @@
 import { APIError, type Access, type CollectionConfig, type Where } from 'payload'
-import type { Expense } from '../payload-types'
+import type { Expense, Participant } from '../payload-types'
 import { buildAutoInvitations, findPaidByPairs } from '../utils/paidByInvitations'
-import { isAdminRole, isSuperadmin, refId } from '../lib/access'
+import { canManageChata, isAdminRole, isSuperadmin, refId } from '../lib/access'
 import {
+  approvalForPayer,
+  canDecideExpense,
   isAllowedPayer,
   linkedParticipantIds,
   normalizePayer,
   samePayer,
 } from '../lib/expenseAuthoring'
+import { verifyExpenseDecideToken } from '../lib/expenseApproval'
+import { requestOrigin } from '../lib/auth/session'
+import {
+  bankerParticipant,
+  chataOrigin,
+  notifyExpenseApprovers,
+  notifyExpenseAuthor,
+} from '../utils/expenseApproval'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 
 // Write access: superadmin everything, admin their assigned chatas, and a
-// frontend account (role "user") only the expenses it authored itself
-// (Expense.authoredBy — see docs in lib/expenseAuthoring).
+// frontend account (role "user") the expenses it authored itself
+// (Expense.authoredBy) plus the ones somebody recorded FOR it
+// (Expense.payerAccount — see docs in lib/expenseAuthoring).
 const expenseWriteAccess: Access = ({ req: { user } }) => {
   if (!user) return false
   if (isSuperadmin(user)) return true
@@ -25,11 +36,27 @@ const expenseWriteAccess: Access = ({ req: { user } }) => {
     return where
   }
   const where: Where = {
-    authoredBy: {
-      equals: user.id,
-    },
+    or: [{ authoredBy: { equals: user.id } }, { payerAccount: { equals: user.id } }],
   }
   return where
+}
+
+// Read stays public — like every other collection here — EXCEPT expenses
+// waiting for (or refused) approval: those are a claim about somebody else's
+// money and must not surface anywhere until confirmed. The people involved
+// (author, payer) still see their own; admins see everything. The banker and
+// the frontend go through the slug API (local API, access overridden), which
+// applies the same rule with the chata context it has.
+const expenseReadAccess: Access = ({ req: { user } }) => {
+  if (isAdminRole(user)) return true
+  const visible: Where[] = [
+    { approvalStatus: { equals: 'approved' } },
+    { approvalStatus: { exists: false } },
+  ]
+  if (user) {
+    visible.push({ authoredBy: { equals: user.id } }, { payerAccount: { equals: user.id } })
+  }
+  return { or: visible }
 }
 
 export const Expenses: CollectionConfig = {
@@ -43,11 +70,15 @@ export const Expenses: CollectionConfig = {
       // Frontend authoring guard + authorship stamp. Admin-panel roles only
       // get the stamp; frontend accounts (role "user") are additionally
       // restricted: the expense must live in a chata where they own a
-      // participant, the payer must be one of their own participants (or a
-      // joint account with one of them as member), and the chata of an
+      // participant, the payer must be a participant of that chata (their
+      // own, a joint account with one of them as member, or — as the
+      // approval-gated exception — somebody else's), and the chata of an
       // existing expense can never be moved.
       async ({ data, operation, req, originalDoc }) => {
         const user = req.user
+        // The decide endpoint writes the approval verdict itself; re-running
+        // the guard here would reset the very status it is setting
+        if (req.context?.expenseDecision === true) return data
         if (operation === 'create') {
           // Local API scripts have no user — leave authoredBy unset there
           if (user) data.authoredBy = user.id
@@ -55,7 +86,20 @@ export const Expenses: CollectionConfig = {
           // authorship is server-assigned; frontend accounts cannot change it
           data.authoredBy = originalDoc?.authoredBy ?? user.id
         }
-        if (!user || isAdminRole(user)) return data
+        if (isAdminRole(user)) {
+          // An admin-panel decision (status flipped by hand) records itself
+          if (
+            operation === 'update' &&
+            data?.approvalStatus != null &&
+            data.approvalStatus !== originalDoc?.approvalStatus &&
+            data.approvalStatus !== 'pending'
+          ) {
+            data.approvalDecidedBy = data.approvalDecidedBy ?? user?.id ?? null
+            data.approvalDecidedAt = data.approvalDecidedAt ?? new Date().toISOString()
+          }
+          return data
+        }
+        if (!user) return data
 
         const original = originalDoc as Expense | undefined
         const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
@@ -84,11 +128,16 @@ export const Expenses: CollectionConfig = {
         if (!payer) {
           throw new APIError('Výdaj musí mít plátce', 400)
         }
-        // On update, an unchanged payer stays valid even if an admin had
-        // assigned somebody else — only a NEW payer choice is checked.
+
+        // An unchanged payer stays valid on update even if it is one the
+        // author could not pick today (an admin assigned it, or they left
+        // the joint account since) — only a NEW choice is judged
         const payerUnchanged =
           operation === 'update' && samePayer(payer, normalizePayer(original?.payer))
-        if (payerUnchanged) return data
+
+        // Who is named as the payer, and may this author speak for them?
+        let payerIsOwn: boolean
+        let payerParticipant: Participant | undefined
         if (payer.relationTo === 'joint-accounts') {
           const jointAccountsResult = await req.payload.find({
             collection: 'joint-accounts',
@@ -97,16 +146,64 @@ export const Expenses: CollectionConfig = {
             depth: 0,
             overrideAccess: true,
           })
-          if (!isAllowedPayer(payer, ownIds, jointAccountsResult.docs)) {
-            throw new APIError(
-              'Platit můžete jen za společný účet, jehož jste členem',
-              403,
-            )
+          payerIsOwn = isAllowedPayer(payer, ownIds, jointAccountsResult.docs)
+          // A joint account is a shared wallet, not a person — nobody can
+          // confirm a payment from it on the others' behalf, so this one
+          // stays members-only instead of going through approval
+          if (!payerIsOwn) {
+            if (!payerUnchanged) {
+              throw new APIError('Platit můžete jen za společný účet, jehož jste členem', 403)
+            }
+            // keep the expense (and its approval state) exactly as it was
+            return data
           }
-        } else if (!isAllowedPayer(payer, ownIds, [])) {
-          throw new APIError('Platit můžete jen za svého účastníka', 403)
+        } else {
+          payerParticipant = participantsResult.docs.find(
+            (p) => String(p.id) === refId(payer.value),
+          )
+          if (!payerParticipant) {
+            throw new APIError('Plátce musí být účastník této chaty', 400)
+          }
+          payerIsOwn = ownIds.includes(String(payerParticipant.id))
         }
 
+        // "Výdaj za jiného plátce": stored, but invisible and outside the
+        // maths until the payer (if they have an account) or the banker /
+        // a chata admin confirms it. Editing one puts it back in the queue —
+        // an approved amount must not be changeable after the fact.
+        const approval = approvalForPayer({
+          isAdmin: false,
+          payerIsOwn,
+          payerHasAccount: payerParticipant?.account != null,
+        })
+        data.approvalStatus = approval.required ? 'pending' : 'approved'
+        data.approvalDecidedBy = null
+        data.approvalDecidedAt = null
+        data.approvalNote = null
+
+        return data
+      },
+      // Keep Expense.payerAccount in sync with the payer's linked account.
+      // It is what makes an expense recorded FOR somebody theirs to see and
+      // correct, and it drives the write-access filter, which cannot join.
+      async ({ data, operation, req, originalDoc }) => {
+        if (req.context?.expenseDecision === true) return data
+        // PATCH without a payer leaves the stored value alone
+        if (operation === 'update' && data?.payer === undefined) return data
+        const payer = normalizePayer(data?.payer ?? originalDoc?.payer)
+        if (!payer || payer.relationTo !== 'participants') {
+          data.payerAccount = null
+          return data
+        }
+        const participant = await req.payload
+          .findByID({
+            collection: 'participants',
+            id: refId(payer.value),
+            depth: 0,
+            overrideAccess: true,
+          })
+          .catch(() => null)
+        data.payerAccount = participant?.account != null ? Number(refId(participant.account)) : null
         return data
       },
       // Standing "paid by" invitations: on create, participants whose
@@ -126,18 +223,228 @@ export const Expenses: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      // Approval mail for "výdaj za jiného plátce" (docs/PRD-vydaj-za-jineho.md).
+      // One place for all of it, so the composer, the decide endpoint and the
+      // admin panel behave the same:
+      // - a freshly pending expense asks its decision makers
+      // - a decided one tells the author how it went
+      // Editing an already pending expense sends nothing — the decide page
+      // always shows the current numbers, so a second email would be noise.
+      async ({ doc, previousDoc, operation, req }) => {
+        if (req.context?.skipExpenseApprovalEffects === true) return doc
+        const wasPending = operation === 'update' && previousDoc?.approvalStatus === 'pending'
+        const isPending = doc.approvalStatus === 'pending'
+        const decided = wasPending && (doc.approvalStatus === 'approved' || doc.approvalStatus === 'rejected')
+        if (!decided && !(isPending && !wasPending)) return doc
+
+        const payerRef = normalizePayer(doc.payer)
+        const [chata, payer, author, decidedBy] = await Promise.all([
+          doc.chata != null
+            ? req.payload
+                .findByID({
+                  collection: 'chatas',
+                  id: refId(doc.chata),
+                  depth: 0,
+                  overrideAccess: true,
+                  context: { triggerAfterRead: false },
+                })
+                .catch(() => null)
+            : null,
+          payerRef?.relationTo === 'participants'
+            ? req.payload
+                .findByID({
+                  collection: 'participants',
+                  id: refId(payerRef.value),
+                  depth: 0,
+                  overrideAccess: true,
+                })
+                .catch(() => null)
+            : null,
+          doc.authoredBy != null
+            ? req.payload
+                .findByID({
+                  collection: 'users',
+                  id: refId(doc.authoredBy),
+                  depth: 0,
+                  overrideAccess: true,
+                })
+                .catch(() => null)
+            : null,
+          doc.approvalDecidedBy != null
+            ? req.payload
+                .findByID({
+                  collection: 'users',
+                  id: refId(doc.approvalDecidedBy),
+                  depth: 0,
+                  overrideAccess: true,
+                })
+                .catch(() => null)
+            : null,
+        ])
+        if (!author || !payer) return doc
+
+        try {
+          if (decided) {
+            await notifyExpenseAuthor(req.payload, {
+              expense: doc,
+              chata,
+              payerName: payer.name,
+              author,
+              decidedBy,
+            })
+          } else if (chata) {
+            await notifyExpenseApprovers(req.payload, {
+              expense: doc,
+              chata,
+              payer,
+              author,
+              // Links land on the host the author was using; a write
+              // without a request (scripts, jobs) falls back to the chata's
+              // own domain
+              origin: req.headers?.get('host') ? requestOrigin(req.headers) : chataOrigin(chata),
+            })
+          }
+        } catch (err) {
+          req.payload.logger.error({ err, expense: doc.id }, 'Expense approval mail failed')
+        }
+        return doc
+      },
+    ],
   },
+  endpoints: [
+    {
+      // Decide a pending expense ("výdaj za jiného plátce"). Two credentials
+      // lead here: the signed link from the notification email (token, no
+      // session needed) and a signed-in approver pressing the button on the
+      // expense card. Either way the CURRENT rules decide who may confirm:
+      // the chata's admins, the payer's own account, the banker's account.
+      path: '/decide',
+      method: 'post',
+      handler: async (req) => {
+        let token: unknown
+        let expenseId: unknown
+        let action: unknown
+        let reason: unknown
+        try {
+          const body = await req.json?.()
+          token = body?.token
+          expenseId = body?.expenseId
+          action = body?.action
+          reason = body?.reason
+        } catch {
+          // fall through to validation
+        }
+        if (action !== 'approve' && action !== 'reject') {
+          return Response.json({ error: 'invalid' }, { status: 400 })
+        }
+
+        // Resolve the decider: the token names one, otherwise it is the
+        // session user
+        let deciderId: number | string | null = null
+        if (typeof token === 'string') {
+          const secret = process.env.PAYLOAD_SECRET
+          if (!secret) return Response.json({ error: 'invalid' }, { status: 500 })
+          const verified = verifyExpenseDecideToken(token, secret)
+          if (!verified.ok) {
+            return Response.json({ error: verified.code }, { status: 400 })
+          }
+          deciderId = verified.userId
+          expenseId = verified.expenseId
+        } else if (req.user) {
+          deciderId = req.user.id
+        }
+        if (deciderId == null) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        if (typeof expenseId !== 'number' && typeof expenseId !== 'string') {
+          return Response.json({ error: 'Missing expenseId' }, { status: 400 })
+        }
+
+        const [decider, expense] = await Promise.all([
+          req.payload
+            .findByID({ collection: 'users', id: deciderId, depth: 0, overrideAccess: true })
+            .catch(() => null),
+          req.payload
+            .findByID({ collection: 'expenses', id: expenseId, depth: 0, overrideAccess: true })
+            .catch(() => null),
+        ])
+        if (!expense) {
+          return Response.json({ error: 'not-found' }, { status: 404 })
+        }
+        if (!decider) {
+          return Response.json({ error: 'forbidden' }, { status: 403 })
+        }
+
+        const chata = await req.payload
+          .findByID({
+            collection: 'chatas',
+            id: refId(expense.chata),
+            depth: 0,
+            overrideAccess: true,
+            context: { triggerAfterRead: false },
+          })
+          .catch(() => null)
+        const banker = chata ? await bankerParticipant(req.payload, chata) : null
+        const payerRef = normalizePayer(expense.payer)
+        const payer =
+          payerRef?.relationTo === 'participants'
+            ? await req.payload
+                .findByID({
+                  collection: 'participants',
+                  id: refId(payerRef.value),
+                  depth: 0,
+                  overrideAccess: true,
+                })
+                .catch(() => null)
+            : null
+
+        const allowed = canDecideExpense({
+          userId: decider.id,
+          managesChata: canManageChata({ ...decider, collection: 'users' }, refId(expense.chata)),
+          payerAccountId: payer?.account != null ? refId(payer.account) : null,
+          bankerAccountId: banker?.account != null ? refId(banker.account) : null,
+        })
+        if (!allowed) {
+          return Response.json({ error: 'forbidden' }, { status: 403 })
+        }
+        if (expense.approvalStatus !== 'pending') {
+          return Response.json(
+            { error: 'already-decided', status: expense.approvalStatus },
+            { status: 409 },
+          )
+        }
+
+        const trimmedReason = typeof reason === 'string' ? reason.trim() : ''
+        await req.payload.update({
+          collection: 'expenses',
+          id: expense.id,
+          data: {
+            approvalStatus: action === 'approve' ? 'approved' : 'rejected',
+            approvalDecidedBy: Number(decider.id),
+            approvalDecidedAt: new Date().toISOString(),
+            approvalNote: trimmedReason || null,
+          },
+          overrideAccess: true,
+          depth: 0,
+          context: { expenseDecision: true },
+        })
+        return Response.json({ ok: true, action })
+      },
+    },
+  ],
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'amount', 'payer', 'chata'],
+    defaultColumns: ['title', 'amount', 'payer', 'approvalStatus', 'chata'],
     group: { en: 'Expense Tracking', cs: 'Evidence výdajů' },
   },
   access: {
-    // Public read access for API consumption
-    read: () => true,
+    // Public read — except expenses waiting for approval (see above)
+    read: expenseReadAccess,
     // Admin roles, plus signed-in frontend accounts (role "user") — those
-    // are further restricted by the authoring hook above (own chata, own
-    // payer) and may update/delete only what they authored
+    // are further restricted by the authoring hook above (own chata, payer
+    // of the chata) and may update/delete only expenses they authored or
+    // that name one of their own participants as the payer
     create: ({ req: { user } }) => isAdminRole(user) || user?.role === 'user',
     update: expenseWriteAccess,
     delete: expenseWriteAccess,
@@ -471,6 +778,90 @@ export const Expenses: CollectionConfig = {
           en: 'Account that created this expense (set automatically). Frontend users may edit/delete only their own expenses.',
           cs: 'Účet, který tento výdaj vytvořil (nastavuje se automaticky). Uživatelé webu mohou upravovat/mazat jen své vlastní výdaje.',
         },
+      },
+    },
+    {
+      // Account linked to the payer participant, kept in sync by the hook
+      // above (and by the Participants hook when a link changes). An expense
+      // somebody recorded FOR you is yours too: you see it while it waits,
+      // you may confirm it, and you may correct or delete it afterwards.
+      // maxDepth 0 keeps it a bare ID on the public read APIs.
+      name: 'payerAccount',
+      type: 'relationship',
+      relationTo: 'users',
+      maxDepth: 0,
+      index: true,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: {
+          en: 'Account of the paying participant (set automatically). They may confirm and edit this expense.',
+          cs: 'Účet plátce (nastavuje se automaticky). Může tento výdaj potvrdit i upravit.',
+        },
+      },
+    },
+    {
+      // "Výdaj za jiného plátce" (docs/PRD-vydaj-za-jineho.md): a frontend
+      // account may record an expense somebody ELSE paid, but until it is
+      // confirmed it stays out of the journal and out of every balance.
+      // Admin-panel entries are approved from the start.
+      name: 'approvalStatus',
+      type: 'select',
+      defaultValue: 'approved',
+      options: [
+        { label: { en: 'Approved', cs: 'Potvrzeno' }, value: 'approved' },
+        { label: { en: 'Waiting for approval', cs: 'Čeká na potvrzení' }, value: 'pending' },
+        { label: { en: 'Rejected', cs: 'Zamítnuto' }, value: 'rejected' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: {
+          en:
+            'Expenses recorded by a participant for SOMEBODY ELSE wait for the payer (if they ' +
+            'have an account) or the banker. Anything but "Approved" is hidden from the site ' +
+            'and left out of all balances.',
+          cs:
+            'Výdaj, který někdo zapsal za JINÉHO plátce, čeká na potvrzení plátce (pokud má účet) ' +
+            'nebo pokladníka. Cokoli jiného než „Potvrzeno“ se na webu nezobrazuje a nepočítá ' +
+            'se do vyrovnání.',
+        },
+      },
+    },
+    {
+      name: 'approvalNote',
+      type: 'textarea',
+      admin: {
+        position: 'sidebar',
+        description: {
+          en: 'Why it was rejected — emailed to the author',
+          cs: 'Důvod zamítnutí – odešle se autorovi e-mailem',
+        },
+        condition: (data) => data?.approvalStatus === 'rejected',
+      },
+    },
+    {
+      name: 'approvalDecidedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      maxDepth: 0,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: {
+          en: 'Who confirmed or rejected the expense',
+          cs: 'Kdo výdaj potvrdil nebo zamítl',
+        },
+        condition: (data) => data?.approvalStatus !== 'approved' || data?.approvalDecidedBy != null,
+      },
+    },
+    {
+      name: 'approvalDecidedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        date: { displayFormat: 'yyyy-MM-dd HH:mm' },
+        condition: (data) => data?.approvalDecidedAt != null,
       },
     },
     {
