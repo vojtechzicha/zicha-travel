@@ -28,34 +28,40 @@ import { pickValidationMessage } from '../i18n/adminTranslations'
 const expenseWriteAccess: Access = ({ req: { user } }) => {
   if (!user) return false
   if (isSuperadmin(user)) return true
+  // An admin outside their assigned chatas is just a participant like anyone
+  // else: in OTHER chatas they keep only what they authored or paid for
+  const own: Where[] = [
+    { authoredBy: { equals: user.id } },
+    { payerAccount: { equals: user.id } },
+  ]
   if (user.role === 'admin') {
     const where: Where = {
-      chata: {
-        in: user.assignedChatas || [],
-      },
+      or: [{ chata: { in: user.assignedChatas || [] } }, ...own],
     }
     return where
   }
-  const where: Where = {
-    or: [{ authoredBy: { equals: user.id } }, { payerAccount: { equals: user.id } }],
-  }
+  const where: Where = { or: own }
   return where
 }
 
 // Read stays public — like every other collection here — EXCEPT expenses
 // waiting for (or refused) approval: those are a claim about somebody else's
 // money and must not surface anywhere until confirmed. The people involved
-// (author, payer) still see their own; admins see everything. The banker and
-// the frontend go through the slug API (local API, access overridden), which
-// applies the same rule with the chata context it has.
+// (author, payer) still see their own; an admin sees everything in the chatas
+// they manage, and nothing extra elsewhere. The banker and the frontend go
+// through the slug API (local API, access overridden), which applies the same
+// rule with the chata context it has.
 const expenseReadAccess: Access = ({ req: { user } }) => {
-  if (isAdminRole(user)) return true
+  if (isSuperadmin(user)) return true
   const visible: Where[] = [
     { approvalStatus: { equals: 'approved' } },
     { approvalStatus: { exists: false } },
   ]
   if (user) {
     visible.push({ authoredBy: { equals: user.id } }, { payerAccount: { equals: user.id } })
+    if (user.role === 'admin') {
+      visible.push({ chata: { in: user.assignedChatas || [] } })
+    }
   }
   return { or: visible }
 }
@@ -68,26 +74,34 @@ export const Expenses: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      // Frontend authoring guard + authorship stamp. Admin-panel roles only
-      // get the stamp; frontend accounts (role "user") are additionally
-      // restricted: the expense must live in a chata where they own a
-      // participant, the payer must be a participant of that chata (their
-      // own, a joint account with one of them as member, or — as the
-      // approval-gated exception — somebody else's), and the chata of an
-      // existing expense can never be moved.
+      // Frontend authoring guard + authorship stamp. Authority is scoped to
+      // THIS chata, never to the bare role: an admin of one chata is an
+      // ordinary participant in every other, and gets the same rules as a
+      // frontend account there. Those rules: the expense must live in a chata
+      // where they own a participant, the payer must belong to that chata
+      // (their own, a joint account with one of them as member, or — held for
+      // confirmation — somebody else's), and the chata of an existing expense
+      // can never be moved.
       async ({ data, operation, req, originalDoc }) => {
         const user = req.user
         // The decide endpoint writes the approval verdict itself; re-running
         // the guard here would reset the very status it is setting
         if (req.context?.expenseDecision === true) return data
+
+        const original = originalDoc as Expense | undefined
+        const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
+        // Who is writing: an admin OF THIS CHATA (or a superadmin) keeps the
+        // admin-panel rules; everybody else goes through the guard below
+        const managesThisChata = canManageChata(user, chataId)
+
         if (operation === 'create') {
           // Local API scripts have no user — leave authoredBy unset there
           if (user) data.authoredBy = user.id
-        } else if (data && 'authoredBy' in data && user && !isAdminRole(user)) {
+        } else if (data && 'authoredBy' in data && user && !managesThisChata) {
           // authorship is server-assigned; frontend accounts cannot change it
           data.authoredBy = originalDoc?.authoredBy ?? user.id
         }
-        if (isAdminRole(user)) {
+        if (managesThisChata) {
           // An admin-panel decision (status flipped by hand) records itself
           if (
             operation === 'update' &&
@@ -110,8 +124,6 @@ export const Expenses: CollectionConfig = {
         delete data.approvalDecidedAt
         delete data.approvalNote
 
-        const original = originalDoc as Expense | undefined
-        const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
         if (operation === 'update' && data?.chata != null && original?.chata != null) {
           if (refId(data.chata) !== refId(original.chata)) {
             throw new APIError('Výdaj nelze přesunout do jiné chaty', 403)
