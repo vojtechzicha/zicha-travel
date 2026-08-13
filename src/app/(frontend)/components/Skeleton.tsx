@@ -43,83 +43,140 @@ export function FinanceViewSkeleton() {
   )
 }
 
+/**
+ * Skeleton bar for content INSIDE the white sheet — the base Skeleton's
+ * white/20 shimmer is invisible on a white background.
+ */
+function SheetBar({ className = '' }: SkeletonProps) {
+  return <div className={`animate-pulse bg-gray-200/80 dark:bg-white/10 rounded ${className}`} />
+}
+
+/** The white-sheet document shell the Informace/Organizace/Účastníci tabs render into. */
+function SheetShell({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="mx-auto w-full max-w-5xl rounded-[22px] sm:rounded-[26px] bg-white p-5 sm:px-11 sm:py-9
+        shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] dark:bg-[#1b212c] dark:border dark:border-white/[0.06]
+        dark:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.8)]"
+    >
+      {children}
+    </div>
+  )
+}
+
+/** Centered stat strip placeholder ("4 noci · 3 lidi · …"). */
+function SheetStatStrip({ bordered = true }: { bordered?: boolean }) {
+  return (
+    <div
+      className={`flex flex-wrap justify-center gap-x-8 gap-y-1 py-3.5 ${
+        bordered ? 'border-y border-gray-100 dark:border-white/[0.07]' : ''
+      }`}
+    >
+      <SheetBar className="h-5 w-16" />
+      <SheetBar className="h-5 w-20" />
+      <SheetBar className="h-5 w-24" />
+    </div>
+  )
+}
+
+/** Serif section heading placeholder with the bottom rule. */
+function SheetHeadingBar({ width = 'w-40' }: { width?: string }) {
+  return (
+    <div className="flex items-center gap-3 pb-2.5 sm:pb-3 border-b-[3px] border-gray-100 dark:border-white/10 mt-7 sm:mt-9 mb-4">
+      <SheetBar className="w-5 h-5 rounded-md" />
+      <SheetBar className={`h-6 ${width} rounded-lg`} />
+    </div>
+  )
+}
+
 export function InformationViewSkeleton() {
   return (
-    <div className="information-view">
-      {/* Hero section skeleton */}
-      <div className="info-hero">
-        <div className="info-hero-content">
-          <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
-          <Skeleton className="h-8 w-48 mx-auto mb-6 rounded-lg" />
-          <div className="flex gap-4 justify-center">
-            <Skeleton className="h-24 w-36 rounded-xl" />
-            <Skeleton className="h-24 w-36 rounded-xl" />
-          </div>
+    <SheetShell>
+      {/* hero: date boxes · countdown badge · actions */}
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between sm:gap-6">
+        <div className="flex gap-3">
+          <SheetBar className="h-16 w-32 rounded-xl" />
+          <SheetBar className="h-16 w-32 rounded-xl" />
+        </div>
+        <SheetBar className="h-8 w-40 rounded-full" />
+        <div className="flex flex-col gap-2">
+          <SheetBar className="h-9 w-44 rounded-lg" />
+          <SheetBar className="h-9 w-44 rounded-lg" />
         </div>
       </div>
-      {/* Content sections skeleton */}
-      <div className="info-section">
-        <Skeleton className="h-8 w-40 mb-4 rounded-lg" />
-        <Skeleton className="h-32 w-full rounded-xl" />
+      <div className="mt-4">
+        <SheetStatStrip />
       </div>
-    </div>
+      {/* destination section */}
+      <SheetHeadingBar width="w-48" />
+      <SheetBar className="h-4 w-full mb-2" />
+      <SheetBar className="h-4 w-11/12 mb-2" />
+      <SheetBar className="h-4 w-3/4 mb-5" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <SheetBar key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+      {/* second section */}
+      <SheetHeadingBar width="w-36" />
+      <SheetBar className="h-28 w-full rounded-2xl" />
+    </SheetShell>
   )
 }
 
 export function OrganizationViewSkeleton() {
   return (
-    <div className="bg-white/95 dark:bg-[#1b212c] dark:border dark:border-white/[0.06] backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
-      {/* Hero section skeleton */}
-      <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8">
-        <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
-        <Skeleton className="h-8 w-56 mx-auto mb-6 rounded-lg" />
-        <div className="flex gap-4 sm:gap-8 justify-center flex-wrap">
-          <Skeleton className="h-24 w-28 rounded-2xl" />
-          <Skeleton className="h-24 w-28 rounded-2xl" />
-        </div>
-      </div>
-      {/* Rooms section skeleton */}
-      <div>
-        <Skeleton className="h-8 w-48 mb-6 rounded-lg" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white dark:bg-white/[0.03] rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 dark:border-white/[0.07]">
-              <Skeleton className="h-44 w-full" />
-              <div className="p-5">
-                <div className="flex justify-between items-center mb-3">
-                  <Skeleton className="h-6 w-32 rounded-lg" />
-                  <Skeleton className="h-8 w-16 rounded-full" />
-                </div>
-                <Skeleton className="h-4 w-full mb-2 rounded" />
-                <Skeleton className="h-12 w-full rounded-xl" />
-              </div>
+    <SheetShell>
+      <SheetStatStrip />
+      {/* "tvoje místa" accent card */}
+      <SheetBar className="h-20 w-full rounded-2xl mt-4" />
+      {/* rooms */}
+      <SheetHeadingBar width="w-48" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="rounded-2xl border border-gray-200 dark:border-white/[0.08] px-4 py-3.5"
+          >
+            <div className="flex justify-between items-baseline mb-3">
+              <SheetBar className="h-5 w-28 rounded-lg" />
+              <SheetBar className="h-5 w-14 rounded-full" />
             </div>
-          ))}
-        </div>
+            <div className="flex flex-wrap gap-1.5">
+              <SheetBar className="h-7 w-20 rounded-full" />
+              <SheetBar className="h-7 w-24 rounded-full" />
+              <SheetBar className="h-7 w-16 rounded-full" />
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+      {/* cars */}
+      <SheetHeadingBar width="w-36" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2].map((i) => (
+          <SheetBar key={i} className="h-28 rounded-2xl" />
+        ))}
+      </div>
+    </SheetShell>
   )
 }
 
 export function ParticipantsViewSkeleton() {
   return (
-    <div className="bg-white/95 dark:bg-[#1b212c] dark:border dark:border-white/[0.06] backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-10 max-w-5xl mx-auto">
-      {/* Hero section skeleton */}
-      <div className="bg-gradient-to-br from-primary-light/20 to-primary-light/40 rounded-2xl p-6 sm:p-10 text-center mb-8">
-        <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4" />
-        <Skeleton className="h-8 w-56 mx-auto mb-6 rounded-lg" />
-        <div className="flex gap-4 sm:gap-8 justify-center flex-wrap">
-          <Skeleton className="h-24 w-28 rounded-2xl" />
-          <Skeleton className="h-24 w-28 rounded-2xl" />
-        </div>
-      </div>
-      {/* Participant cards skeleton */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <SheetShell>
+      <SheetStatStrip />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-5">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Skeleton key={i} className="h-20 rounded-xl" />
+          <div
+            key={i}
+            className="rounded-2xl border border-gray-200 dark:border-white/[0.08] px-4 py-3.5"
+          >
+            <SheetBar className="h-5 w-28 rounded-lg mb-2" />
+            <SheetBar className="h-4 w-36" />
+          </div>
         ))}
       </div>
-    </div>
+    </SheetShell>
   )
 }
 
