@@ -44,12 +44,17 @@ decided further:
 
 6. Most participants will never sign in, so the finance view stays
    anonymous-readable as it is today, names, balances, settlement and the
-   payment QR included. What hides behind sign-in is only receipts and
-   the data of people who do have an account (the existing
-   locked-participants rule, enforced server-side instead of only in the
-   UI). Creating an account is thereby the opt-out: signing in once is
-   what hides your details. Blocker 1 is rescoped accordingly, and the
-   policy describes this reality instead of a wall that does not exist.
+   payment QR included. What hides behind sign-in: receipts, the data of
+   people who do have an account (the existing locked-participants rule,
+   enforced server-side instead of only in the UI), and every bank field
+   except the banker's. Investigation showed the only screen that renders
+   a non-banker participant's account is the banker's own refund view, so
+   those fields narrow to the owner, the banker and chata admins with no
+   loss to the anonymous flow; only the banker's account stays public,
+   because the anonymous QR settlement needs it. Creating an account is
+   thereby the opt-out: signing in once is what hides your details.
+   Blocker 1 is rescoped accordingly, and the policy describes this
+   reality instead of a wall that does not exist.
 7. Search engines: the homepage chata list and the chata page's default
    Informace render are indexable; to make that safe the indexable render
    carries no participant names (counts instead; names stay one click
@@ -76,14 +81,15 @@ decided further:
 Each item names the claim it unblocks. Order follows risk, matching PRD
 §14.
 
-### 1. Hide receipts, emails and account-holders' data; the rest stays public by decision
+### 1. Hide receipts, emails, account-holders' data and non-banker bank fields
 
 Policy claim (section 6): "Without signing in, a visitor cannot see:
-anyone's bank details, receipts, email addresses." Decision 6 changes the
-claim itself: the section must be rewritten to promise only what the
-product actually hides (receipts, emails, and the details of participants
-with an active account), and to say openly that everything else on a
-chata page is visible to anyone with the link.
+anyone's bank details, receipts, email addresses." Decision 6 adjusts the
+claim: the section must be rewritten to promise what the product actually
+hides (receipts, emails, the details of participants with an active
+account, and every bank field except the banker's), and to say openly
+that names, balances and the banker's payment details are visible to
+anyone with the link.
 
 Reality: `participants` (`src/collections/Participants.ts`), `expenses`,
 `prepayments`, `joint-accounts` and `expense-attachments`
@@ -95,34 +101,42 @@ and the playground is routable in production. The finance gating in
 `src/lib/financeAccess.ts` is UI-only, as CLAUDE.md says outright.
 
 Work (rescoped by decision 6). The anonymous experience keeps names,
-balances, the settlement view and the payment QR for participants without
-accounts; nothing there changes. What must actually hide, and hide at the
-API, not only in the UI:
+balances, the settlement view and the payment QR; the QR only ever
+encodes the banker's account, so nothing there changes. What must
+actually hide, and hide at the API, not only in the UI:
 
 - receipts: `expense-attachments` requires authentication, with
   non-guessable or signed URLs on the bucket,
 - email addresses: never served to anonymous callers anywhere (REST,
   GraphQL, the slug API),
+- bank fields of everyone but the banker: served only to the owner
+  account, the banker's account and chata admins. The single screen that
+  uses them is the banker's refund view (the creditor cards in
+  `SettlementActions`), so this costs the anonymous flow nothing. The
+  one behavioural change: a banker with no account, who today opens
+  their own view anonymously to send refunds, must sign in (or ask a
+  chata admin) to see creditor accounts; the banker card shows a hint
+  saying so,
 - account holders: the locked-participants rule enforced server-side. A
-  participant whose account has signed in at least once has their bank
-  fields, balances and breakdown withheld from anonymous API responses,
-  exactly as the UI already pretends,
+  participant whose account has signed in at least once has their
+  balance and breakdown withheld from anonymous API responses, exactly
+  as the UI already pretends,
 - plumbing that makes the above hold: a shaped response from the slug API
   instead of raw documents, the same rules applied to GraphQL, and the
   playground closed in production.
 
 The policy's section 6 then says plainly: without signing in, a visitor
-with the link sees the trip, its participants, their balances and, for
-participants without an account, their bank details; a participant with
-an active account has their details hidden until they sign in; receipts
-and email addresses are never public. The Art. 14 notice (blocker 8)
-tells every participant that signing in once is how they hide their
-details.
+with the link sees the trip, its participants, their balances and the
+banker's payment details; other participants' bank details, receipts and
+email addresses are never public, and a participant with an active
+account has their balances hidden until they sign in. The Art. 14 notice
+(blocker 8) tells every participant that signing in once is how they
+hide their details.
 
 Acceptance test per PRD §3.3: an unauthenticated request to any API route
-or GraphQL query returns no receipt, no email, and no bank field, balance
-or breakdown belonging to a locked participant; the test fails if a
-future field re-exposes them.
+or GraphQL query returns no receipt, no email, no bank field of anyone
+but the chata's banker, and no balance or breakdown belonging to a locked
+participant; the test fails if a future field re-exposes them.
 
 ### 2. Disclose Paylibo in the recipient table (replacement deferred)
 
@@ -261,9 +275,10 @@ note on the Participants form or after "Prefill participants") with a
 copyable message containing the policy link. Low tech is fine; zero tech is
 not, because the legitimate-interest basis for participants leans on
 people actually being told. Under decision 6 this notice carries extra
-weight: it is also where a participant learns that their name, balance
-and bank details are visible to anyone with the link, and that signing in
-once is how they hide them. The copyable message must say so.
+weight: it is also where a participant learns that their name and balance
+are visible to anyone with the link, and that signing in once is how they
+hide them. The copyable message must say so, and the banker's version
+adds that their payment details are shown for settlement.
 
 ### 9. Rate limiting on public endpoints
 
@@ -362,18 +377,19 @@ the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
 
 ## Features at odds with the documents, accepted with eyes open
 
-- **Anonymous trip pages carry real names, balances and, for participants
-  without an account, bank details.** Kept deliberately (decisions 5 and
-  6): most participants will never sign in, and settlement has to work for
-  exactly those people. The compensating controls are the name-free
-  indexable surface (blocker 3), the hiding of receipts, emails and
-  account-holders' data (blocker 1), and the Art. 14 notice telling every
-  participant that one sign-in hides their details (blocker 8). Residual
-  risk is real and accepted: anyone with the link sees who was on the
-  trip, who owes what, and the account numbers of participants who never
-  signed in. If this ever becomes uncomfortable, the fallback designs
-  stay the same: a per-chata secret in the URL or sign-in-only trip
-  pages, both of which PRD §13.2 sketches.
+- **Anonymous trip pages carry real names, balances and the banker's
+  payment details.** Kept deliberately (decisions 5 and 6): most
+  participants will never sign in, and settlement has to work for exactly
+  those people. The compensating controls are the name-free indexable
+  surface (blocker 3), the hiding of receipts, emails, non-banker bank
+  fields and account-holders' data (blocker 1), and the Art. 14 notice
+  telling every participant that one sign-in hides their details
+  (blocker 8). Residual risk is real and accepted: anyone with the link
+  sees who was on the trip, who owes what, and the banker's account
+  number (invoice-grade information the banker consents to by taking the
+  role; the notice says so). If this ever becomes uncomfortable, the
+  fallback designs stay the same: a per-chata secret in the URL or
+  sign-in-only trip pages, both of which PRD §13.2 sketches.
 - **Receipts can smuggle in Art. 9 data.** A pharmacy receipt is health
   data. The terms forbid uploading such receipts (section 5), retention
   deletes receipts 12 months after settlement (blocker 5), and access
