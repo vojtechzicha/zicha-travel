@@ -75,6 +75,16 @@ decided further:
 11. Editorial: legal text stays as short as validity allows, and all
     user-facing wording follows the humanizer conventions before it
     ships.
+12. The "kdo přijede kdy" section moves from Informace to the Účastníci
+    tab, so the indexable Informace render loses it along with the other
+    names and signed-in users find the arrival groups with the
+    participants. Účastníci is noindexed and already shows names to
+    anonymous viewers, so the section may render there for every viewer;
+    nothing new leaks.
+13. The banker is expected to hold an account: seeing creditor accounts
+    for refunds requires the banker (or an admin) to sign in, and the
+    admin panel nudges toward the existing "Create account from email"
+    flow when a banker without a linked account is picked.
 
 ## Blockers: the documents are false until these are fixed
 
@@ -113,10 +123,12 @@ actually hide, and hide at the API, not only in the UI:
   account, the banker's account and chata admins. The single screen that
   uses them is the banker's refund view (the creditor cards in
   `SettlementActions`), so this costs the anonymous flow nothing. The
-  one behavioural change: a banker with no account, who today opens
-  their own view anonymously to send refunds, must sign in (or ask a
-  chata admin) to see creditor accounts; the banker card shows a hint
-  saying so,
+  one behavioural change, accepted as decision 13: a banker with no
+  account, who today opens their own view anonymously to send refunds,
+  must sign in (or ask a chata admin) to see creditor accounts. The
+  banker card shows a hint saying so, and the admin banker field nudges
+  toward "Create account from email" when the picked banker has no
+  linked account,
 - account holders: the locked-participants rule enforced server-side. A
   participant whose account has signed in at least once has their
   balance and breakdown withheld from anonymous API responses, exactly
@@ -164,11 +176,13 @@ Reality: no `robots.txt`, no `noindex` header or meta tag anywhere; chata
 pages and the finance overview are crawlable, and the wildcard
 `*.zicha.travel` routing means new subdomains appear without a deploy.
 
-Work (rescoped by decision 7): the homepage chata list and the chata
-page's default Informace render are deliberately indexable; to make that
-safe, the indexable render carries no participant names (counts and
+Work (rescoped by decisions 7 and 12): the homepage chata list and the
+chata page's default Informace render are deliberately indexable; to make
+that safe, the indexable render carries no participant names (counts and
 anonymous phrasing instead; names stay one click away on the noindexed
-views, and signed-in viewers see them everywhere). Organizace, Účastníci,
+views, and signed-in viewers see them everywhere). The "kdo přijede kdy"
+arrival groups move from Informace to the Účastníci tab rather than being
+stripped in place. Organizace, Účastníci,
 Finance and Přehled remain anonymous-readable but carry noindex; they are
 query-param views of the chata route, so the noindex metadata has to key
 off the view rather than the path. Ship a `robots.txt`, apply the headers
