@@ -2,12 +2,7 @@
 
 zicha.travel
 
-Effective from: [fill in at publication]
-
-> **Pre-publication note (delete before release):** Before these terms go
-> live, the blocking items in `docs/legal/compliance-gaps.md` must be done,
-> in particular the place where a user accepts them when an account is
-> created.
+Effective from: 16 August 2026
 
 ## 1. What zicha.travel is and who runs it
 
@@ -23,7 +18,7 @@ circle of people; the scope of warranties in section 9 matches that.
 These terms are a contract between you and us. By using the service (and,
 for an account, by creating one) you accept them. Personal data processing
 is described in the separate
-[privacy policy](./privacy-policy.en.md); these terms build on it.
+[privacy policy](/soukromi); these terms build on it.
 
 ## 2. Definitions
 

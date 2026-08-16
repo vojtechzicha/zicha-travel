@@ -90,7 +90,9 @@
     "cardRefundedOverpayment": "Overpayment returned:",
     "cardFairShare": "Fair share:",
     "cardPlannedFairShare": "Planned fair share:",
-    "cardResult": "Result:"
+    "cardResult": "Result:",
+    "hiddenLocked": "{count, plural, one {One participant's finances are} other {{count} participants' finances are}} behind sign-in, so the sums may not add up.",
+    "hiddenLockedCta": "Sign in"
   },
   "settlement": {
     "copy": "Copy",

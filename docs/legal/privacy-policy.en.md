@@ -2,12 +2,7 @@
 
 zicha.travel
 
-Effective from: [fill in at publication]
-
-> **Pre-publication note (delete before release):** This document describes a
-> state that has to exist first. Before it goes live, the items marked as
-> blockers in `docs/legal/compliance-gaps.md` must be done. Publishing it
-> earlier would make it a lie.
+Effective from: 16 August 2026
 
 ## 1. Who the controller is
 
@@ -111,19 +106,28 @@ Microsoft account when they sign in with Microsoft.
 
 A chata's page is available to anyone who knows its address. We expect the
 group to share the address among themselves; the pages are not secret,
-though, which is why we mark them so that search engines do not index them.
+though. For search engines the surface is split: the homepage and the
+trip's basic information, which carry no names, may be indexed; the tabs
+with names and finances (Organization, Participants, Finance, Overview)
+are marked so that search engines do not index them.
 
-Without signing in, a visitor can see: the trip's name and dates,
-participant names, the program, bed and car assignments, expenses and their
-amounts, advances and the resulting settlement. Names of participants whose
-account has already been used to sign in are not shown to anonymous
-visitors in the finance detail.
+Without signing in, a visitor with the link can see: the trip's name and
+dates, participant names, the program, bed and car assignments, expenses
+and their amounts, advances, the resulting settlement (who sends whom how
+much) and the banker's payment details, so that paying by QR code works.
+The finance detail of a participant whose account has already been used
+to sign in is not shown to anonymous visitors: signing in once is
+therefore how you hide your own breakdown and balance. Your name stays
+with the trip either way.
 
-Without signing in, a visitor cannot see: anyone's bank details, receipts,
-email addresses, the "Keys and Wi-Fi" section, or expenses waiting for
-confirmation. A participant's bank details are visible only to that
-participant (through their account), the banker and the admins of that
-chata; receipts only to signed-in members of that chata.
+Without signing in, a visitor can never see: anyone's bank details except
+the banker's, receipts, email addresses, the "Keys and Wi-Fi" section, or
+expenses waiting for confirmation. A participant's bank details are
+visible only to that participant (through their account), the signed-in
+banker and the admins of that chata; the banker's bank details are public
+because the anonymous QR settlement cannot work without them (the banker
+takes that on with the role). Receipts are visible to signed-in users
+only.
 
 A chata's admins see all of that chata's data. As the operator we have
 access to everything, but we use it only to run the service, provide
@@ -141,6 +145,7 @@ The service runs on these processors and recipients:
 | PostHog | anonymous usage statistics | EU (Frankfurt) |
 | Cloudflare | bot protection on public forms (Turnstile) | EU/US |
 | Microsoft | Microsoft sign-in, if you use it | EU/US |
+| Paylibo | generating the settlement payment QR code: the recipient's account number, amount and payment message, plus the IP address and browser of anyone who views the QR | EU (CZ) |
 
 In addition, when the trip's weather forecast is shown, your browser fetches
 data from Open-Meteo (which learns your IP address; none of your data is

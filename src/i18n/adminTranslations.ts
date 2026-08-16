@@ -91,8 +91,19 @@ const en = {
     rightsHint:
       'GDPR rights actions. Record the request itself under System → Data requests, so the one-month deadline has evidence.',
 
+    // Art14NoticeBox (Participants)
+    art14Title: 'Tell them they are here',
+    art14Hint:
+      'GDPR asks that people entered by somebody else actually learn about it. Send {{name}} this message (the group chat is fine). It also explains that one sign-in hides their finance detail.',
+    art14Show: 'Show message to copy',
+    art14Hide: 'Hide',
+    art14Copy: 'Copy message',
+    art14Copied: 'Copied ✓',
+
     // CreateAccountButton (Participants)
     createAccountOpen: 'Create account from email...',
+    createAccountAdultsOnly:
+      'Accounts are for adults only (terms of use, section 4). Children are entered as participants without an account; a parent pays for them.',
     saveParticipantFirst: 'Save the participant first.',
     createAccountCreating: 'Creating...',
     createAccountSubmit: 'Create & link',
@@ -228,8 +239,19 @@ const cs: typeof en = {
     rightsHint:
       'Akce pro práva subjektů údajů (GDPR). Samotnou žádost zaznamenejte v Systém → Žádosti o údaje, ať má měsíční lhůta doklad.',
 
+    // Art14NoticeBox (Participants)
+    art14Title: 'Dejte vědět, že tu je',
+    art14Hint:
+      'GDPR počítá s tím, že se člověk zapsaný někým jiným o zápisu dozví. Pošlete {{name}} tuhle zprávu (stačí skupinová konverzace party). Vysvětluje i to, že jedno přihlášení schová detail financí.',
+    art14Show: 'Zobrazit zprávu ke zkopírování',
+    art14Hide: 'Skrýt',
+    art14Copy: 'Zkopírovat zprávu',
+    art14Copied: 'Zkopírováno ✓',
+
     // CreateAccountButton (Participants)
     createAccountOpen: 'Vytvořit účet z e-mailu…',
+    createAccountAdultsOnly:
+      'Účet smí mít jen zletilá osoba (podmínky užití, kapitola 4). Děti se zapisují jako účastníci bez účtu; platí za ně rodič.',
     saveParticipantFirst: 'Nejdřív účastníka uložte.',
     createAccountCreating: 'Vytváření…',
     createAccountSubmit: 'Vytvořit a propojit',

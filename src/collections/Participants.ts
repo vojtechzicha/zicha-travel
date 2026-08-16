@@ -527,6 +527,19 @@ export const Participants: CollectionConfig = {
       },
     },
     {
+      // Art. 14 notice nudge (blocker 8): copyable message for the group
+      // chat telling the participant they are in the system and what one
+      // sign-in hides
+      name: 'art14Notice',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/collections/Participants/components/Art14NoticeBox#Art14NoticeBox',
+        },
+        condition: (data) => Boolean(data?.id),
+      },
+    },
+    {
       // Data-subject rights actions (blocker 6): export bundle + anonymize
       name: 'rightsActions',
       type: 'ui',

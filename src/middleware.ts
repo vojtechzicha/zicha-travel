@@ -83,7 +83,7 @@ export async function middleware(request: NextRequest) {
     // Block access to other chatas: /{any-slug} → redirect to /
     // Match paths that look like chata slugs (lowercase letters, numbers, hyphens)
     // but not special paths like /admin, /api, /login etc.
-    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi']
+    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky']
     if (pathname.match(/^\/[a-z0-9-]+$/i) && !SITE_PATHS.includes(pathname)) {
       return NextResponse.redirect(new URL('/', request.url))
     }

@@ -6,6 +6,8 @@
     "tagline": "– chata trips together: planning, info and expenses",
     "version": "version {version}",
     "help": "Help",
+    "privacyPolicy": "Privacy",
+    "terms": "Terms of use",
     "privacySettings": "Privacy settings",
     "admin": "Admin",
     "signOut": "Sign out",

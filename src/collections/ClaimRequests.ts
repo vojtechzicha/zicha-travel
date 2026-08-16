@@ -292,17 +292,24 @@ export const ClaimRequests: CollectionConfig = {
         let participantId: unknown
         let returnTo: unknown
         let turnstileToken: unknown
+        let adult: unknown
         try {
           const body = await req.json?.()
           email = body?.email
           participantId = body?.participantId
           returnTo = body?.returnTo
           turnstileToken = body?.turnstileToken
+          adult = body?.adult
         } catch {
           // fall through to validation
         }
         if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
           return Response.json({ error: 'A valid email is required' }, { status: 400 })
+        }
+        // Only adults may hold an account (terms section 4, compliance
+        // item 22) — the checkbox is affirmed client-side and enforced here
+        if (adult !== true) {
+          return Response.json({ error: 'adult-confirmation-required' }, { status: 400 })
         }
         if (typeof participantId !== 'number' && typeof participantId !== 'string') {
           return Response.json({ error: 'Missing participantId' }, { status: 400 })

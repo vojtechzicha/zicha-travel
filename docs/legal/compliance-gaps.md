@@ -1,6 +1,15 @@
 # What must change before the legal documents are true
 
-**Status:** the gate for publishing the four documents in this directory
+**Status:** IMPLEMENTED 2026-08-16 — every blocker below landed, the four
+documents are re-edited to the round-two decisions, published at
+`/soukromi` and `/podminky` (effective 2026-08-16), and the paperwork
+lives in this directory (`zaznamy-o-zpracovani.md`, `balancni-test.md`,
+`bezpecnost-a-incidenty.md`, `zpracovatele-a-predavani.md`, `dpia.md`,
+`inventar-odchozich-volani.md`, `runbook.md`). The items only a human
+with dashboard access can finish (Supabase region/backups/bucket, DPA
+checkboxes, one-off `pnpm backgrounds:selfhost` run) are collected as
+the checklist at the top of `runbook.md`. This file stays as the record
+of what was decided and why.
 **Date:** 2026-08-16
 **Relates to:** `docs/PRD-gdpr.md` (findings and open decisions), the privacy
 policy and terms of use in `docs/legal/`
