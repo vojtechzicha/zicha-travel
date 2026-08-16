@@ -599,6 +599,18 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 ### Production
 - **Supabase PostgreSQL** (v17)
 - Connection configured in `.env` via `DATABASE_URI`
+- **Row-Level Security is ON for every table in `public`** (no policies):
+  Supabase's auto-generated Data API (PostgREST) would otherwise let anyone
+  with the anon key read/write all tables, bypassing Payload's access
+  control entirely — the app only ever talks to Postgres over
+  `DATABASE_URI`, never through that API. Enforced idempotently on every
+  deploy by `enableRowLevelSecurity()` in
+  `scripts/migrate-payer-polymorphic.mjs` (runs after the DDL, so tables a
+  deploy creates are covered by that same deploy). Payload is unaffected
+  because it connects as the table owner and owners bypass RLS (never add
+  FORCE ROW LEVEL SECURITY). Belt and braces: the Data API can also be
+  disabled outright in the Supabase dashboard (Settings → API) — nothing
+  in this project uses it
 
 ### Local Development
 - **Docker Compose PostgreSQL 16** on port 5433

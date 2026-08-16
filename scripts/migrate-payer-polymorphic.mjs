@@ -779,6 +779,32 @@ async function backfillExpenseApproval() {
   }
 }
 
+/**
+ * Supabase exposes every table in the public schema through its
+ * auto-generated Data API (PostgREST) with the public anon key — a path
+ * that bypasses Payload's access control entirely, since the app only ever
+ * talks to Postgres directly over DATABASE_URI. Enabling RLS with NO
+ * policies denies the API roles (anon/authenticated) everything, while
+ * Payload is unaffected: it connects as the table owner, and owners bypass
+ * RLS unless FORCE is set (deliberately not set here). Tables are
+ * enumerated at run time, so a table added by a future deploy gets covered
+ * by the same deploy that creates it. Harmless on local Docker Postgres
+ * (no PostgREST there, and the same owner-bypass applies).
+ */
+async function enableRowLevelSecurity() {
+  const tables = await client.query(`
+    SELECT c.relname AS name
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity`)
+  for (const { name } of tables.rows) {
+    await client.query(`ALTER TABLE public."${name.replaceAll('"', '""')}" ENABLE ROW LEVEL SECURITY`)
+  }
+  if (tables.rowCount > 0) {
+    console.log(`RLS: enabled on ${tables.rowCount} table(s)`)
+  }
+}
+
 async function auto() {
   await migrateUserRoles()
   await migrateBankerBanking()
@@ -793,6 +819,9 @@ async function auto() {
   // Always ensure the new tables exist — on an already-migrated database
   // every statement is IF NOT EXISTS and does nothing
   await client.query(NEW_SCHEMA_DDL)
+
+  // Runs after the DDL so tables created this deploy are covered too
+  await enableRowLevelSecurity()
 
   if (!oldExpenses && !oldPrepayments) {
     // Steady state (every normal deploy): the payer refs are already in
