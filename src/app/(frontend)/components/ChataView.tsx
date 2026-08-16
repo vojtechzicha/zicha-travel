@@ -272,7 +272,17 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
           <Header
             chataName={chata.name}
             location={chata.location}
-            bankerName={typeof chata.banker === 'object' && chata.banker ? chata.banker.name : undefined}
+            // The banker's name is a participant name too: the anonymous
+            // Informace render is indexable and must be name-free (compliance
+            // blocker 3), so anonymous viewers only see it on the noindexed
+            // views. Signed-in viewers see it everywhere, as before.
+            bankerName={
+              (data.viewer?.authenticated || activeView !== 'information') &&
+              typeof chata.banker === 'object' &&
+              chata.banker
+                ? chata.banker.name
+                : undefined
+            }
             currentView={headerView}
             onViewChange={handleViewChange}
             showInformationTab={hasInformation}

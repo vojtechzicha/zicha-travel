@@ -24,10 +24,19 @@ import {
 } from '@/lib/chataSelection'
 import { computeChataStats } from '@/utils/chataStatsBatch'
 import { resolveChataIdentities } from '@/lib/chataIdentity'
+import {
+  isIndexableChataRender,
+  NOINDEX_FOLLOW,
+  type ChataRenderParams,
+} from '@/lib/chataSeo'
 import type { Chata, Participant } from '@/payload-types'
 import './styles.css'
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<ChataRenderParams>
+}): Promise<Metadata> {
   const headersList = await headers()
   const matchedSlug = headersList.get('x-matched-chata-slug')
   const t = await getTranslations('chata.meta')
@@ -35,6 +44,13 @@ export async function generateMetadata(): Promise<Metadata> {
   if (matchedSlug) {
     const chata = await fetchChataBySlug(matchedSlug)
     if (chata) {
+      // Single-chata mode serves the chata page at "/" — apply the same
+      // per-view indexing split as the /[chataSlug] route (blocker 3):
+      // only the default name-free Informace render is indexable.
+      const indexable = isIndexableChataRender(
+        await searchParams,
+        chata.informationEnabled === true,
+      )
       return {
         title: { absolute: chata.name },
         description: t('chataDescription', { name: chata.name, location: chata.location }),
@@ -42,10 +58,12 @@ export async function generateMetadata(): Promise<Metadata> {
           title: chata.name,
           description: t('ogDescription', { location: chata.location }),
         },
+        ...(indexable ? {} : { robots: NOINDEX_FOLLOW }),
       }
     }
   }
 
+  // Multi-chata homepage: deliberately indexable (name-free chata list)
   return {
     title: t('selectTitle'),
     description: t('selectDescription'),
@@ -178,7 +196,12 @@ export default async function HomePage() {
       dateRangeShort: rangeStart ? formatDateRangeShort(rangeStart, rangeEnd, locale) : null,
       monthYear: archiveDate ? formatMonthYear(archiveDate, locale) : null,
       year: chataYear(chata),
-      participantNames,
+      // The homepage is indexable and its anonymous render must carry no
+      // participant names (compliance blocker 3, decision 7) — names would
+      // otherwise land in the serialized client-component props even where
+      // the UI only shows a count. Anonymous visitors get the count alone.
+      participantNames: user ? participantNames : [],
+      participantCount: participantNames.length,
       isOwn: ownNames.length > 0,
       viewerFlow: user ? viewerFlow(stats, ownNames) : null,
       viewerCost: user ? viewerCost(stats, ownNames) : null,

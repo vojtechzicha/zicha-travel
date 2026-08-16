@@ -13,6 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t('decide.metaTitle'),
     description: t('decide.metaDescription'),
+    // Signed-link page — never index (also disallowed in robots.txt)
+    robots: { index: false, follow: false },
   }
 }
 

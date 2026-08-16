@@ -51,8 +51,14 @@ export interface HomeChataItem {
   monthYear: string | null
   /** grouping year for the picker */
   year: number | null
-  /** all participant names (viewer's own first) — avatars + count */
+  /**
+   * Participant names (viewer's own first) — the avatar stack. Empty for
+   * anonymous viewers: the homepage is indexable and its anonymous render
+   * carries no names, only `participantCount` (compliance blocker 3).
+   */
   participantNames: string[]
+  /** headcount for the anonymous "8 účastníků" chip */
+  participantCount: number
   /** the viewer has a linked participant in this chata */
   isOwn: boolean
   /**
@@ -342,10 +348,10 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
                     {chata.dateRangeLong}
                   </span>
                 )}
-                {!viewer.authenticated && chata.participantNames.length > 0 && (
+                {!viewer.authenticated && chata.participantCount > 0 && (
                   <span className="flex items-center gap-1.5">
                     <Users size={14} />
-                    {t('participantCount', { count: chata.participantNames.length })}
+                    {t('participantCount', { count: chata.participantCount })}
                   </span>
                 )}
                 {isLive && chata.viewerCost !== null && chata.viewerCost > 0 && (

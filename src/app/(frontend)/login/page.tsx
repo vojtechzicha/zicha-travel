@@ -12,6 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t('login.metaTitle'),
     description: t('login.metaDescription'),
+    // Also disallowed in robots.txt — noindex covers URLs already indexed
+    robots: { index: false, follow: true },
   }
 }
 

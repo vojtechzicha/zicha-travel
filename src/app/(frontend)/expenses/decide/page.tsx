@@ -15,6 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t('expenseDecide.metaTitle'),
     description: t('expenseDecide.metaDescription'),
+    // Signed-link page — never index (also disallowed in robots.txt)
+    robots: { index: false, follow: false },
   }
 }
 
