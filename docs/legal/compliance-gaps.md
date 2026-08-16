@@ -75,11 +75,11 @@ decided further:
 11. Editorial: legal text stays as short as validity allows, and all
     user-facing wording follows the humanizer conventions before it
     ships.
-12. The "kdo přijede kdy" section moves from Informace to the Účastníci
-    tab, so the indexable Informace render loses it along with the other
-    names and signed-in users find the arrival groups with the
-    participants. Účastníci is noindexed and already shows names to
-    anonymous viewers, so the section may render there for every viewer;
+12. The "kdo přijede kdy" section stays on Informace for signed-in
+    viewers exactly as today; only the anonymous (and thus indexable)
+    render drops it, along with the other names. The section additionally
+    renders on the Účastníci tab, which is noindexed and already shows
+    names to anonymous viewers, so it stays reachable without sign-in and
     nothing new leaks.
 13. The banker is expected to hold an account: seeing creditor accounts
     for refunds requires the banker (or an admin) to sign in, and the
@@ -181,8 +181,9 @@ chata page's default Informace render are deliberately indexable; to make
 that safe, the indexable render carries no participant names (counts and
 anonymous phrasing instead; names stay one click away on the noindexed
 views, and signed-in viewers see them everywhere). The "kdo přijede kdy"
-arrival groups move from Informace to the Účastníci tab rather than being
-stripped in place. Organizace, Účastníci,
+arrival groups stay on Informace for signed-in viewers, leave the
+anonymous render, and additionally appear on the Účastníci tab so they
+remain reachable without sign-in. Organizace, Účastníci,
 Finance and Přehled remain anonymous-readable but carry noindex; they are
 query-param views of the chata route, so the noindex metadata has to key
 off the view rather than the path. Ship a `robots.txt`, apply the headers
