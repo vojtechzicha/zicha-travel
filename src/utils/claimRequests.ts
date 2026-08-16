@@ -156,7 +156,8 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
         `,
       })
     } catch (err) {
-      payload.logger.error({ err, admin: admin.email }, 'Failed to send claim notification')
+      // admin id only — email addresses do not belong in logs (blocker 4)
+      payload.logger.error({ err, admin: admin.id }, 'Failed to send claim notification')
     }
   }
 }

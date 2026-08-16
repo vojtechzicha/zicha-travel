@@ -184,15 +184,16 @@ export async function GET(
         : { enabled: false },
     }
 
-    // Build contacts map for participants with banking info
-    participantsResult.docs.forEach((p) => {
-      if (p.accountNumber && p.iban) {
-        response.config.contacts[p.name] = {
-          number: p.accountNumber,
-          iban: p.iban,
-        }
+    // Contacts: this export is anonymous, so only the banker's own account
+    // may appear (compliance blocker 1 — non-banker bank fields are not
+    // public). The banker's details are already in config.account; the map
+    // repeats them under their name for legacy-format compatibility.
+    if (banker?.name && bankerAccount?.accountNumber && bankerAccount?.iban) {
+      response.config.contacts[banker.name] = {
+        number: bankerAccount.accountNumber,
+        iban: bankerAccount.iban,
       }
-    })
+    }
 
     // Add statistics if available
     const chataWithStats = chata as { _stats?: unknown }

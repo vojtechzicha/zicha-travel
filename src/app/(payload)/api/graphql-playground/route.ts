@@ -1,7 +1,14 @@
-/* THIS FILE WAS GENERATED AUTOMATICALLY BY PAYLOAD. */
-/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
+/* Based on the Payload-generated route, with one change: the playground is
+ * not served on production deployments (compliance blocker 1 — the GraphQL
+ * API carries personal data and the playground has no business being
+ * routable in production). */
 import config from '@payload-config'
 import '@payloadcms/next/css'
 import { GRAPHQL_PLAYGROUND_GET } from '@payloadcms/next/routes'
 
-export const GET = GRAPHQL_PLAYGROUND_GET(config)
+const playgroundHandler = GRAPHQL_PLAYGROUND_GET(config)
+
+export const GET =
+  process.env.NODE_ENV === 'production'
+    ? () => new Response('Not found', { status: 404 })
+    : playgroundHandler

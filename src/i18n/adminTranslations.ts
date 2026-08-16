@@ -74,6 +74,9 @@ const en = {
     bankerPaymentsGoToPrefix: 'Payments go to ',
     bankerPaymentsGoToSuffix: "'s own account:",
     bankerEditOnParticipant: 'Edit on the participant →',
+    bankerNeedsAccountHint:
+      'The banker has no linked user account. Creditor account numbers are shown only to signed-in bankers and admins, so without an account they cannot see where to send refunds. Use "Create account from email..." on the participant.',
+    bankerNeedsAccountCta: 'Open the participant →',
 
     // CreateAccountButton (Participants)
     createAccountOpen: 'Create account from email...',
@@ -195,6 +198,9 @@ const cs: typeof en = {
     bankerPaymentsGoToPrefix: 'Platby jdou na vlastní účet účastníka „',
     bankerPaymentsGoToSuffix: '“:',
     bankerEditOnParticipant: 'Upravit u účastníka →',
+    bankerNeedsAccountHint:
+      'Pokladník nemá propojený uživatelský účet. Čísla účtů věřitelů se zobrazují jen přihlášeným pokladníkům a správcům – bez účtu neuvidí, kam posílat vratky. Použijte „Vytvořit účet z e-mailu…“ u účastníka.',
+    bankerNeedsAccountCta: 'Otevřít účastníka →',
 
     // CreateAccountButton (Participants)
     createAccountOpen: 'Vytvořit účet z e-mailu…',

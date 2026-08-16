@@ -19,28 +19,33 @@ interface DomainInfo {
   }
 }
 
+// Debug logging is OPT-IN (set DEBUG_MIDDLEWARE=1): a log line for every
+// request is a request log, and the policy promises we do not keep our own
+// request logs with visitor data (compliance blocker 4).
+const debugLog = (...args: unknown[]): void => {
+  if (process.env.DEBUG_MIDDLEWARE) console.log('[Middleware]', ...args)
+}
+
 async function getDomainInfo(hostname: string, origin: string): Promise<DomainInfo> {
   const cached = domainCache.get(hostname)
   if (cached && cached.expires > Date.now()) {
-    console.log('[Middleware] Cache hit for:', hostname, cached.data)
     return cached.data
   }
 
   try {
     const url = `${origin}/api/domains/${encodeURIComponent(hostname)}`
-    console.log('[Middleware] Fetching:', url)
+    debugLog('Fetching:', url)
     const response = await fetch(url)
-    console.log('[Middleware] Response status:', response.status)
+    debugLog('Response status:', response.status)
     if (!response.ok) {
-      console.log('[Middleware] Response not OK')
       return { found: false }
     }
     const data = await response.json()
-    console.log('[Middleware] Domain info:', data)
+    debugLog('Domain info:', data)
     domainCache.set(hostname, { data, expires: Date.now() + CACHE_TTL })
     return data
   } catch (error) {
-    console.log('[Middleware] Error:', error)
+    debugLog('Error:', error)
     return { found: false }
   }
 }
@@ -65,7 +70,7 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host')?.split(':')[0] || ''
   const pathname = request.nextUrl.pathname
 
-  console.log('[Middleware] Request:', hostname, pathname)
+  debugLog('Request:', hostname, pathname)
 
   // Call existing domain resolution API (with cache), targeting this
   // deployment's own origin.

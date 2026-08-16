@@ -25,9 +25,10 @@ export async function sendAppEmail(
     const previewTo = process.env.EMAIL_PREVIEW_TO
     const previewSubject = `[preview → ${to}] ${subject}`
     if (!previewTo) {
+      // No recipient or subject in the log line — both can carry personal
+      // data (addresses, participant names). Compliance blocker 4.
       payload.logger.info(
-        { to, subject },
-        'Preview deployment without EMAIL_PREVIEW_TO — email suppressed (logged only)',
+        'Preview deployment without EMAIL_PREVIEW_TO — email suppressed (not sent)',
       )
       return { mode: 'logged', to }
     }

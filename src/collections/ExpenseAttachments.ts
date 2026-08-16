@@ -21,9 +21,11 @@ export const ExpenseAttachments: CollectionConfig = {
     group: { en: 'System', cs: 'Systém' },
   },
   access: {
-    // Public read access for API consumption (consistent with all other
-    // collections - attachment files are publicly readable by URL)
-    read: () => true,
+    // Receipts are for signed-in eyes only (compliance blocker 1): reading
+    // the documents AND the file route (/api/expense-attachments/file/...)
+    // requires an authenticated account. The slug API additionally strips
+    // attachments from expenses it ships to anonymous viewers.
+    read: ({ req: { user } }) => Boolean(user),
     // Any signed-in account may upload a receipt — frontend users attach
     // them while authoring expenses (see lib/expenseAuthoring). Managing
     // existing attachment documents stays admin-only; the frontend only

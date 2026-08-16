@@ -17,6 +17,7 @@ const toId = (value: unknown): string | null => {
 type Resolved = {
   name: string
   account: { accountNumber: string; iban: string } | null
+  hasUserAccount: boolean
 }
 
 /**
@@ -48,6 +49,7 @@ export const BankerAccountSummary: React.FC = () => {
         setResolved({
           name: participant?.name ?? '',
           account: resolveBankAccount(participant?.accountNumber, participant?.iban),
+          hasUserAccount: participant?.account != null,
         })
       } catch (error) {
         console.error('Error loading banker banking info:', error)
@@ -96,6 +98,15 @@ export const BankerAccountSummary: React.FC = () => {
           </div>
           <a href={editHref}>{t('zicha:bankerEditOnParticipant')}</a>
         </>
+      )}
+      {/* Creditor accounts are shown only to signed-in bankers and admins —
+          a banker without a linked user account cannot see them for refunds
+          (controller decision 13), so nudge toward "Create account from
+          email" on the participant form. */}
+      {!resolved.hasUserAccount && (
+        <div style={{ marginTop: '6px', color: 'var(--theme-elevation-600)' }}>
+          {t('zicha:bankerNeedsAccountHint')} <a href={editHref}>{t('zicha:bankerNeedsAccountCta')}</a>
+        </div>
       )}
     </div>
   )

@@ -1,11 +1,71 @@
 import crypto from 'crypto'
-import type { CollectionConfig, PayloadRequest, Where } from 'payload'
+import type { CollectionConfig, FieldAccess, PayloadRequest, Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
-import { adminRoleOnly, canManageChata, chataScopedAccess } from '../lib/access'
+import { adminRoleOnly, canManageChata, chataScopedAccess, isSuperadmin } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 
 const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
+
+// Who may READ a participant's bank fields (compliance blocker 1, controller
+// decisions 6 and 13): the chata's admins, the owner account, the banker's
+// account — and everyone for the BANKER's own fields, because the anonymous
+// QR settlement needs them. Enforced here at the field level so REST and
+// GraphQL obey it; the slug API applies the same rule via lib/privacyScrub.
+// Lookups are cached per request (list views read many rows per chata).
+const bankFieldReadAccess: FieldAccess = async ({ req, doc }) => {
+  if (isSuperadmin(req.user)) return true
+  if (!doc) return false
+  const chataId = doc.chata != null ? refId(doc.chata) : null
+  if (chataId == null) return false
+  if (canManageChata(req.user, chataId)) return true
+
+  const cache = req.context as Record<string, unknown>
+  const bankerKey = `zt:bankerOf:${chataId}`
+  let bankerId = cache[bankerKey] as string | null | undefined
+  if (bankerId === undefined) {
+    try {
+      const chata = await req.payload.findByID({
+        collection: 'chatas',
+        id: chataId,
+        depth: 0,
+        overrideAccess: true,
+        context: { triggerAfterRead: false },
+      })
+      bankerId = chata?.banker != null ? refId(chata.banker) : null
+    } catch {
+      bankerId = null
+    }
+    cache[bankerKey] = bankerId
+  }
+
+  // the banker's own account is public — the anonymous settlement QR needs it
+  if (bankerId != null && String(doc.id) === bankerId) return true
+  if (!req.user) return false
+  // the owner account sees their own fields
+  if (doc.account != null && refId(doc.account) === String(req.user.id)) return true
+  // the banker's account sees every creditor's fields (refund view)
+  if (bankerId != null) {
+    const accountKey = `zt:bankerAccountOf:${chataId}`
+    let bankerAccount = cache[accountKey] as string | null | undefined
+    if (bankerAccount === undefined) {
+      try {
+        const banker = await req.payload.findByID({
+          collection: 'participants',
+          id: bankerId,
+          depth: 0,
+          overrideAccess: true,
+        })
+        bankerAccount = banker?.account != null ? refId(banker.account) : null
+      } catch {
+        bankerAccount = null
+      }
+      cache[accountKey] = bankerAccount
+    }
+    if (bankerAccount != null && bankerAccount === String(req.user.id)) return true
+  }
+  return false
+}
 
 export const Participants: CollectionConfig = {
   slug: 'participants',
@@ -340,6 +400,9 @@ export const Participants: CollectionConfig = {
         {
           name: 'accountNumber',
           type: 'text',
+          access: {
+            read: bankFieldReadAccess,
+          },
           admin: {
             description: {
               en: 'Account number in Czech format (e.g., "123456/0100") - only needed for creditors',
@@ -358,6 +421,9 @@ export const Participants: CollectionConfig = {
         {
           name: 'iban',
           type: 'text',
+          access: {
+            read: bankFieldReadAccess,
+          },
           admin: {
             description: {
               en: 'Full IBAN for QR code generation - only needed for creditors',

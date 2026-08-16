@@ -100,6 +100,8 @@
     "nobodyToPay": "Nikomu nezaplatit",
     "payCash": "Zaplatit hotově",
     "noBankDetails": "Účastník nemá vyplněné bankovní údaje",
+    "accountsBehindLogin": "Čísla účtů vidí jen přihlášený pokladník a správci chaty.",
+    "accountsBehindLoginCta": "Přihlásit se",
     "qrMessage": "Vyrovnani - {name}",
     "manualEntry": "Pro ruční zadání",
     "accountNumber": "Číslo účtu",

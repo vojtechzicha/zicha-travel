@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { canManageChata, refId } from '@/lib/access'
-import { maskEmail, type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
+import { type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
+import {
+  deepScrubParticipants,
+  scrubLockedStats,
+  stripExpenseAttachments,
+} from '@/lib/privacyScrub'
+import { bankFieldVisibilityFor, findLockedParticipants } from '@/utils/participantPrivacy'
 import { isCountedExpense, normalizePayer, payerAccountIds } from '@/lib/expenseAuthoring'
 import type { ViewerClaim } from '@/lib/claimRequests'
 import {
@@ -222,30 +228,40 @@ export async function GET(
     // Locked participants: account owner has an ACTIVE account (lastLoginAt
     // set). Shipped with a masked email so the anonymous selector can show
     // "sign in as d***.n***@g***.com" instead of silently hiding people.
-    const accountIds = [
-      ...new Set(
-        participantsResult.docs
-          .filter((p: any) => p.account != null)
-          .map((p: any) => refId(p.account)),
-      ),
-    ]
-    const accountUsers = new Map<string, { email: string; lastLoginAt?: string | null }>()
-    if (accountIds.length > 0) {
-      const usersResult = await payload.find({
-        collection: 'users',
-        where: { id: { in: accountIds } },
-        limit: 1000,
-        depth: 0,
-        overrideAccess: true,
-      })
-      usersResult.docs.forEach((u: any) => accountUsers.set(String(u.id), u))
-    }
-    const locked: LockedParticipant[] = participantsResult.docs.flatMap((p: any) => {
-      if (p.account == null) return []
-      const account = accountUsers.get(refId(p.account))
-      if (!account?.lastLoginAt) return []
-      return [{ id: p.id, maskedEmail: maskEmail(account.email) }]
+    const lockedInfo = await findLockedParticipants(payload, participantsResult.docs)
+    const locked: LockedParticipant[] = lockedInfo.map(({ id, maskedEmail }) => ({
+      id,
+      maskedEmail,
+    }))
+
+    // Server-side privacy scrubbing (compliance blocker 1). Non-banker bank
+    // fields go only to the owner, the banker's account and chata admins;
+    // populated user accounts are flattened back to ids everywhere (depth-2
+    // population nests them inside the chata's banker/occupants/riders);
+    // receipts are for signed-in eyes; and a locked participant's balance
+    // and breakdown are withheld from viewers who could not open them in
+    // the UI anyway. The debtors/creditors settlement lists stay — "who
+    // owes what" is recorded as deliberately public in the compliance gate.
+    const bankVisibility = bankFieldVisibilityFor({
+      user,
+      chataId: chata.id,
+      bankerId: chata.banker != null ? refId(chata.banker) : null,
+      participants: participantsResult.docs,
     })
+    deepScrubParticipants(
+      [chata, participantsResult.docs, visibleExpenses, prepaymentsResult.docs, jointAccountsResult.docs],
+      bankVisibility,
+    )
+    if (!user) {
+      stripExpenseAttachments(visibleExpenses as unknown as Array<Record<string, unknown>>)
+    }
+    if (!viewer.canViewAll) {
+      const ownIds = new Set(viewer.linkedParticipantIds.map(String))
+      const hiddenNames = lockedInfo
+        .filter((l) => !ownIds.has(String(l.id)))
+        .map((l) => l.name)
+      scrubLockedStats(stats, hiddenNames)
+    }
 
     // Claim state for the "Jsi to ty?" flow (docs/PRD-claim.md): which
     // participants have a PENDING claim (ids only — no accounts or emails

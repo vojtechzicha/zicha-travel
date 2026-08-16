@@ -12,6 +12,8 @@ import {
 } from '../lib/expenseAuthoring'
 import { verifyExpenseDecideToken } from '../lib/expenseApproval'
 import { requestOrigin } from '../lib/auth/session'
+import { clientIp } from '../lib/turnstile'
+import { RATE_LIMITS, checkRateLimit, rateLimitResponse } from '../lib/rateLimit'
 import {
   bankerParticipant,
   chataOrigin,
@@ -340,6 +342,13 @@ export const Expenses: CollectionConfig = {
         if (action !== 'approve' && action !== 'reject') {
           return Response.json({ error: 'invalid' }, { status: 400 })
         }
+
+        // The emailed token is a credential — slow down guessing (blocker 9)
+        const decideCheck = checkRateLimit(
+          `expense-decide:ip:${clientIp(req.headers)}`,
+          RATE_LIMITS.decidePerIp,
+        )
+        if (!decideCheck.allowed) return rateLimitResponse(decideCheck)
 
         // Resolve the decider: the token names one, otherwise it is the
         // session user

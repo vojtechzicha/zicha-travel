@@ -32,6 +32,8 @@ interface SettlementActionsProps {
   creditors: Creditor[]
   debtors: Debtor[]
   participants: Participant[]
+  /** creditor bank fields were withheld from this viewer (not admin/banker) */
+  creditorAccountsHidden?: boolean
 }
 
 function CopyableRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
@@ -74,6 +76,7 @@ export function SettlementActions({
   creditors,
   debtors,
   participants,
+  creditorAccountsHidden = false,
 }: SettlementActionsProps) {
   const t = useTranslations('finance')
   const locale = useLocale() as AppLocale
@@ -144,6 +147,33 @@ export function SettlementActions({
                     creditorParticipant?.accountNumber,
                     creditorParticipant?.iban
                   )
+
+                  // Creditor accounts are served only to the banker's own
+                  // account and chata admins — an anonymous banker view gets
+                  // a sign-in hint instead of a misleading "pay cash" box
+                  if (!creditorBank?.accountNumber && creditorAccountsHidden) {
+                    return (
+                      <div
+                        key={creditor.name}
+                        className="bg-blue-50 dark:bg-sky-400/10 border-2 border-blue-300 dark:border-sky-400/40 rounded-xl p-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">
+                            {creditor.name}
+                          </span>
+                          <span className="font-bold text-green-600 dark:text-green-400">
+                            {formatCurrency(creditor.amount, locale)}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs text-blue-700 dark:text-sky-300">
+                          {t('settlement.accountsBehindLogin')}{' '}
+                          <a href="/login" className="underline underline-offset-2 font-medium">
+                            {t('settlement.accountsBehindLoginCta')}
+                          </a>
+                        </p>
+                      </div>
+                    )
+                  }
 
                   // No (usable) bank account info - simple payment instruction
                   if (!creditorBank?.accountNumber) {

@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import {
+  MAGIC_LINK_TTL_MINUTES,
   requestOrigin,
   sendMagicLink,
   sendSuperadminNotice,
 } from '@/lib/auth/magicLink'
 import { clientIp, verifyTurnstileToken } from '@/lib/turnstile'
+import {
+  MAGIC_LINK_RESEND_COOLDOWN_SECONDS,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from '@/lib/rateLimit'
 import { LOCALE_COOKIE, pickLocale } from '@/i18n/config'
 
 /**
@@ -34,12 +41,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'A valid email is required' }, { status: 400 })
   }
 
+  // Throttle before doing any work: per IP and per address (this endpoint
+  // emails an address supplied by the caller, so it must not be usable to
+  // mail-bomb somebody — compliance blocker 9)
+  const ip = clientIp(request.headers)
+  const normalizedEmail = email.trim().toLowerCase()
+  const ipCheck = checkRateLimit(`magic-link:ip:${ip}`, RATE_LIMITS.magicLinkPerIp)
+  if (!ipCheck.allowed) return rateLimitResponse(ipCheck) as NextResponse
+  const emailCheck = checkRateLimit(
+    `magic-link:email:${normalizedEmail}`,
+    RATE_LIMITS.magicLinkPerEmail,
+  )
+  if (!emailCheck.allowed) return rateLimitResponse(emailCheck) as NextResponse
+
   // Bot gate (no-op where Turnstile is not configured — local dev)
-  if (!(await verifyTurnstileToken(turnstileToken, clientIp(request.headers)))) {
+  if (!(await verifyTurnstileToken(turnstileToken, ip))) {
     return NextResponse.json({ error: 'captcha' }, { status: 403 })
   }
 
-  const normalizedEmail = email.trim().toLowerCase()
   const payload = await getPayload({ config })
 
   const users = await payload.find({
@@ -48,13 +67,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     limit: 1,
   })
 
-  // Always report success so the form cannot be used to probe for accounts
+  // Always report success so the form cannot be used to probe for accounts.
+  // (No log line — the submitted address is personal data and an unknown
+  // address is not an operational event. Compliance blocker 4.)
   if (users.docs.length === 0) {
-    payload.logger.info({ email: normalizedEmail }, 'Magic link requested for unknown email')
     return NextResponse.json({ ok: true })
   }
 
   const user = users.docs[0]
+
+  // Database-backed cooldown per address (survives serverless cold starts):
+  // a valid token issued moments ago means a link is already on its way —
+  // report success without sending another email.
+  const tokenExpires = user.loginTokenExpires ? Date.parse(user.loginTokenExpires) : null
+  if (tokenExpires != null && !Number.isNaN(tokenExpires)) {
+    const issuedAt = tokenExpires - MAGIC_LINK_TTL_MINUTES * 60 * 1000
+    if (Date.now() - issuedAt < MAGIC_LINK_RESEND_COOLDOWN_SECONDS * 1000) {
+      return NextResponse.json({ ok: true })
+    }
+  }
 
   // The requester IS the recipient, so their UI locale picks the email copy.
   const locale = pickLocale(

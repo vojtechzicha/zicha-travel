@@ -200,6 +200,14 @@ export function FinanceView({
   const canApproveAll =
     viewer.canViewAll ||
     (bankerId != null && viewer.linkedParticipantIds.includes(bankerId as number))
+
+  // Creditor bank fields ship only to chata admins and the banker's account
+  // (compliance blocker 1). When the viewer is neither, the banker card
+  // explains that signing in is what reveals the accounts (decision 13).
+  const creditorAccountsHidden = !(
+    viewer.canViewAll ||
+    (bankerId != null && viewer.linkedParticipantIds.includes(bankerId as number))
+  )
   const ownJointAccountIds = ownJointAccounts(
     viewer.linkedParticipantIds.map(String),
     jointAccounts,
@@ -474,6 +482,7 @@ export function FinanceView({
             prepayments={prepayments}
             expenses={expenses}
             showHeader={false}
+            creditorAccountsHidden={creditorAccountsHidden}
           />
         </section>
       </div>
