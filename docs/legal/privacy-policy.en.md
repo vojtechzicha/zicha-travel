@@ -205,7 +205,8 @@ to us first.
 | `payload-token` | keeps you signed in | 30 days (2 h for admins) | necessary for sign-in |
 | `zt_consent` | remembers your choice in the consent bar | 12 months | necessary, it is itself the record of consent |
 | `NEXT_LOCALE` | remembers the chosen language | 12 months | necessary, stored after your choice in the footer |
-| `oauth-return-to` | holds the return address during Microsoft sign-in | minutes, only while signing in | necessary |
+| `oauth-state` | random security code protecting Microsoft sign-in against forgery | 10 minutes | necessary |
+| `oauth-return-to` | holds the return address during Microsoft sign-in | 10 minutes, only while signing in | necessary |
 | `zt_login_evt` | one-shot "sign-in happened" marker for statistics, deleted immediately | seconds | necessary, technical |
 | `ph_*` | stable anonymous visitor identifier for statistics | 12 months | only with your consent |
 

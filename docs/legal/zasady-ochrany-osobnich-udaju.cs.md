@@ -198,7 +198,8 @@ nejdřív nám.
 | `payload-token` | drží vaše přihlášení | 30 dní (2 h pro správce) | nezbytná pro přihlášení |
 | `zt_consent` | pamatuje si vaši volbu v liště souhlasu | 12 měsíců | nezbytná, je sama záznamem souhlasu |
 | `NEXT_LOCALE` | pamatuje si zvolený jazyk | 12 měsíců | nezbytná, ukládá se po vaší volbě v patičce |
-| `oauth-return-to` | drží návratovou adresu během přihlášení přes Microsoft | minuty, jen po dobu přihlašování | nezbytná |
+| `oauth-state` | náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft před podvržením | 10 minut | nezbytná |
+| `oauth-return-to` | drží návratovou adresu během přihlášení přes Microsoft | 10 minut, jen po dobu přihlašování | nezbytná |
 | `zt_login_evt` | jednorázová značka „přihlášení proběhlo" pro statistiky, hned se maže | sekundy | nezbytná technická |
 | `ph_*` | stabilní anonymní identifikátor pro statistiky | 12 měsíců | jen s vaším souhlasem |
 

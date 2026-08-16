@@ -98,11 +98,17 @@ Policy claim (section 14): "We do not write personal data into application
 logs."
 
 Reality: `src/app/(payload)/api/auth/magic-link/request/route.ts` logs the
-submitted email address, including addresses with no account, and
+submitted email address, including addresses with no account;
+`src/utils/claimRequests.ts` logs the admin's email when a claim
+notification fails to send; `src/lib/email.ts` logs the recipient and
+subject on preview deployments without `EMAIL_PREVIEW_TO`; and
 `src/middleware.ts` logs hostnames and lookups on every request.
 
-Work: drop the email from the log line (log a hash or nothing), review the
-middleware logging, and make debug logging opt-in in production.
+Work: drop the emails from all of these log lines (log a hash or nothing),
+audit every remaining `payload.logger` and `console` call in the repository
+for personal data, review the middleware logging, and make debug logging
+opt-in in production. Going forward, no identifier belongs in a log line
+without a stated reason.
 
 ### 5. Build the retention jobs
 
@@ -194,45 +200,66 @@ Work: per-IP and per-address throttling on `magic-link/request`, claim
 registration and the decide endpoints. Without this, soften the policy
 sentence to Turnstile only; with it, the sentence stands.
 
+### 10. Self-host the external assets or disclose them
+
+Policy claim: neither Unsplash nor Google appears in the recipient table
+(section 7).
+
+Reality: the default Background row seeded by
+`src/scripts/seed-defaults.ts` points at `images.unsplash.com`, and the
+Backgrounds collection accepts external image URLs, so every visitor of a
+chata using such a background fetches from Unsplash. The frontend's own
+fallback is already self-hosted (`/bg/mountains-1920.avif` in
+`ThemeProvider.tsx`); the flow survives only through data. The admin panel
+also loads fonts from `fonts.googleapis.com`
+(`src/app/(payload)/custom.scss`), a pattern German case law has fined.
+
+Work: repoint the seeded default background at the self-hosted asset,
+replace any url-type Background rows in production that point outside the
+site with uploads, and self-host the two admin fonts. If an external
+background URL is ever kept deliberately, it goes into the recipient table
+first. This is a blocker because publishing with the flow live would make
+the recipient table false.
+
 ## Security work the policy's wording already assumes
 
 The policy's section 14 was written not to overclaim, but these belong to
 the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
 
-10. Security headers and a CSP (none are configured today).
-11. The `pnpm migrate-from-prod` workflow copies real names, emails and
+11. Security headers and a CSP (none are configured today).
+12. The `pnpm migrate-from-prod` workflow copies real names, emails and
     IBANs onto developer machines with no anonymization step. Either add
     an anonymizing variant or record the justification and handling rule.
     If kept as is, it also belongs in the Art. 30 record.
-12. A recorded backup story: whether Supabase PITR is on, backup lifetime
+13. A recorded backup story: whether Supabase PITR is on, backup lifetime
     and encryption. The policy's "backups overwrite themselves" (section
     10) must be checked against the actual Supabase settings and corrected
     if wrong.
-13. A one-page breach procedure naming who assesses and who notifies the
+14. A one-page breach procedure naming who assesses and who notifies the
     ÚOOÚ within 72 hours; the policy promises this in section 14.
-14. Stolen-session story: JWTs cannot be revoked before expiry and there is
+15. Stolen-session story: JWTs cannot be revoked before expiry and there is
     no "sign out everywhere". The policy does not claim otherwise, so this
     is not a blocker, but record the accepted risk.
 
 ## Paperwork with no code component
 
-15. Verify the Supabase project region is in the EU and record it. The
+16. Verify the Supabase project region is in the EU and record it. The
     policy's recipient table says "EU"; if the project sits elsewhere, the
     table is wrong and the transfer analysis changes.
-16. Records of processing (Art. 30). The small-organisation exemption does
+17. Records of processing (Art. 30). The small-organisation exemption does
     not apply (processing is not occasional, includes financial data).
-17. The legitimate-interest balancing test for participants-without-
+18. The legitimate-interest balancing test for participants-without-
     accounts, written down. It only survives once blockers 1 and 3 have
     landed, which is another reason they gate publication.
-18. Processor agreements: confirm DPAs exist with Supabase, Vercel, Resend,
+19. Processor agreements: confirm DPAs exist with Supabase, Vercel, Resend,
     PostHog and Cloudflare (standard online DPAs suffice) and note each
     provider's transfer mechanism (DPF membership or SCCs). Microsoft acts
     here as an independent controller for its own sign-in.
-19. The DPIA-not-required conclusion, recorded with reasons (no large-scale
+20. The DPIA-not-required conclusion, recorded with reasons (no large-scale
     processing, no systematic monitoring, no Art. 9 data by design),
     revisited if receipts start arriving with health data despite the
     terms.
-20. A maintained inventory of outbound calls (today: Supabase, Vercel,
+21. A maintained inventory of outbound calls (today: Supabase, Vercel,
     Resend, PostHog via the first-party proxy, Cloudflare Turnstile,
     Microsoft OAuth, Open-Meteo from the browser, Google links on click)
     and of client-side storage (cookies plus the localStorage keys
@@ -243,20 +270,11 @@ the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
 
 ## Smaller code items the documents assume
 
-21. Backgrounds are seeded from `images.unsplash.com`
-    (`src/scripts/seed-defaults.ts`), so visitors' browsers fetch from
-    Unsplash, which the policy does not disclose. Self-host the default
-    background (the Backgrounds collection already supports uploads) or add
-    Unsplash to the recipient table.
-22. The admin panel loads fonts from `fonts.googleapis.com`
-    (`src/app/(payload)/custom.scss`). Admin-only, but German case law has
-    fined exactly this pattern; self-hosting the two fonts is cheap and
-    removes the question.
-23. "Only adults may hold an account" (policy section 13, terms section 4)
+22. "Only adults may hold an account" (policy section 13, terms section 4)
     is enforced by nobody. A checkbox-level affirmation at claim
     registration and a note in the admin create-account flow is enough for
     a service this size.
-24. The terms' "we announce shutdown in advance by email" and the policy's
+23. The terms' "we announce shutdown in advance by email" and the policy's
     section 16 change-notification promise need nothing today, but note
     them wherever operational runbooks live, so a future shutdown or policy
     change actually follows them.
@@ -285,9 +303,9 @@ the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
 
 ## Suggested order
 
-Blockers 1 to 4 first (they stop ongoing disclosures and are small apart
-from 1), then 7 and 8 (publication), with 5, 6 and 9 landing in the same
-release or immediately after; the paperwork items are an evening of
+Blockers 1 to 4 and 10 first (they stop ongoing disclosures and, apart
+from 1, are small), then 7 and 8 (publication), with 5, 6 and 9 landing in
+the same release or immediately after; the paperwork items are an evening of
 writing that can run in parallel. This mirrors PRD §14 and keeps the gap
 between "documents published" and "documents true" at zero, which is the
 whole point of this file.
