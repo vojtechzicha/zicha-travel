@@ -39,15 +39,68 @@ decided:
    existing locked-participants rule). This is the recorded outcome of PRD
    §13.2.
 
+The controller reviewed the product-impact analysis on 2026-08-16 and
+decided further:
+
+6. Most participants will never sign in, so the finance view stays
+   anonymous-readable as it is today, names, balances, settlement and the
+   payment QR included. What hides behind sign-in: receipts, the data of
+   people who do have an account (the existing locked-participants rule,
+   enforced server-side instead of only in the UI), and every bank field
+   except the banker's. Investigation showed the only screen that renders
+   a non-banker participant's account is the banker's own refund view, so
+   those fields narrow to the owner, the banker and chata admins with no
+   loss to the anonymous flow; only the banker's account stays public,
+   because the anonymous QR settlement needs it. Creating an account is
+   thereby the opt-out: signing in once is what hides your finance
+   details (balance, breakdown, bank fields); the name itself stays with
+   the trip either way. Blocker 1 is rescoped accordingly, and the
+   policy describes this reality instead of a wall that does not exist.
+7. Search engines: the homepage chata list and the chata page's default
+   Informace render are indexable; to make that safe the indexable render
+   carries no participant names (counts instead; names stay one click
+   away on the other views). Organizace, Účastníci, Finance and Přehled
+   stay anonymous-readable but carry noindex. Blocker 3 is rescoped
+   accordingly.
+8. Retention stands as decided (decision 4), with an explicit admin "mark
+   settled" action starting the 12-month clock, not an automatic guess.
+9. Admins keep the paste-any-URL background convenience, but the server
+   fetches the image on save and stores a copy in the site's own storage,
+   so no visitor request ever reaches the external host. Blocker 10 is
+   rescoped accordingly.
+10. Paylibo stays for now. A previous attempt at generating the payment
+    QR locally produced codes that did not work, while Paylibo always
+    has. The replacement is deferred to its own project, and until it
+    lands the policy's recipient table must name Paylibo. Blocker 2 is
+    rescoped to disclosure.
+11. Editorial: legal text stays as short as validity allows, and all
+    user-facing wording follows the humanizer conventions before it
+    ships.
+12. The "kdo přijede kdy" section stays on Informace for signed-in
+    viewers exactly as today; only the anonymous (and thus indexable)
+    render drops it, along with the other names. The section additionally
+    renders on the Účastníci tab, which is noindexed and already shows
+    names to anonymous viewers, so it stays reachable without sign-in and
+    nothing new leaks.
+13. The banker is expected to hold an account: seeing creditor accounts
+    for refunds requires the banker (or an admin) to sign in, and the
+    admin panel nudges toward the existing "Create account from email"
+    flow when a banker without a linked account is picked.
+
 ## Blockers: the documents are false until these are fixed
 
 Each item names the claim it unblocks. Order follows risk, matching PRD
 §14.
 
-### 1. Take bank details, receipts and emails off the public API
+### 1. Hide receipts, emails, account-holders' data and non-banker bank fields
 
 Policy claim (section 6): "Without signing in, a visitor cannot see:
-anyone's bank details, receipts, email addresses."
+anyone's bank details, receipts, email addresses." Decision 6 adjusts the
+claim: the section must be rewritten to promise what the product actually
+hides (receipts, emails, the details of participants with an active
+account, and every bank field except the banker's), and to say openly
+that names, balances and the banker's payment details are visible to
+anyone with the link.
 
 Reality: `participants` (`src/collections/Participants.ts`), `expenses`,
 `prepayments`, `joint-accounts` and `expense-attachments`
@@ -58,16 +111,47 @@ regardless of viewer. GraphQL serves the same data with introspection on,
 and the playground is routable in production. The finance gating in
 `src/lib/financeAccess.ts` is UI-only, as CLAUDE.md says outright.
 
-Work: field-level or row-level access on bank fields (owner account, banker,
-chata admins only), authenticated access to `expense-attachments` and
-non-guessable or signed URLs on the bucket, a shaped response from the slug
-API instead of raw documents, the same rules applied to GraphQL, and the
-playground closed in production. Acceptance test per PRD §3.3: an
-unauthenticated request to any API route or GraphQL query returns no bank
-account number, IBAN, receipt or email, and the test fails if a future
-field re-exposes them.
+Work (rescoped by decision 6). The anonymous experience keeps names,
+balances, the settlement view and the payment QR; the QR only ever
+encodes the banker's account, so nothing there changes. What must
+actually hide, and hide at the API, not only in the UI:
 
-### 2. Replace the Paylibo QR code
+- receipts: `expense-attachments` requires authentication, with
+  non-guessable or signed URLs on the bucket,
+- email addresses: never served to anonymous callers anywhere (REST,
+  GraphQL, the slug API),
+- bank fields of everyone but the banker: served only to the owner
+  account, the banker's account and chata admins. The single screen that
+  uses them is the banker's refund view (the creditor cards in
+  `SettlementActions`), so this costs the anonymous flow nothing. The
+  one behavioural change, accepted as decision 13: a banker with no
+  account, who today opens their own view anonymously to send refunds,
+  must sign in (or ask a chata admin) to see creditor accounts. The
+  banker card shows a hint saying so, and the admin banker field nudges
+  toward "Create account from email" when the picked banker has no
+  linked account,
+- account holders: the locked-participants rule enforced server-side. A
+  participant whose account has signed in at least once has their
+  balance and breakdown withheld from anonymous API responses, exactly
+  as the UI already pretends,
+- plumbing that makes the above hold: a shaped response from the slug API
+  instead of raw documents, the same rules applied to GraphQL, and the
+  playground closed in production.
+
+The policy's section 6 then says plainly: without signing in, a visitor
+with the link sees the trip, its participants, their balances and the
+banker's payment details; other participants' bank details, receipts and
+email addresses are never public, and a participant with an active
+account has their balances hidden until they sign in. The Art. 14 notice
+(blocker 8) tells every participant that signing in once is how they
+hide their finance details.
+
+Acceptance test per PRD §3.3: an unauthenticated request to any API route
+or GraphQL query returns no receipt, no email, no bank field of anyone
+but the chata's banker, and no balance or breakdown belonging to a locked
+participant; the test fails if a future field re-exposes them.
+
+### 2. Disclose Paylibo in the recipient table (replacement deferred)
 
 Policy claim: Paylibo is absent from the recipient table (section 7).
 
@@ -75,11 +159,16 @@ Reality: `src/app/(frontend)/components/QRPayment.tsx` renders an `<img>`
 whose URL sends the creditor's bank account, amount and payment message to
 `api.paylibo.com`, along with the viewer's IP, on every settlement view.
 
-Work: generate the Czech payment QR (SPD format) locally, server-side or
-client-side, and drop the dependency. The format is a self-contained
-standard, so nothing needs to reach a third party.
+Work (rescoped by decision 10): keep Paylibo and make the documents true
+the other way round: add a Paylibo row to the recipient table (receives
+the recipient's account number, amount and payment message, plus each
+viewer's IP address and user agent) before publication. Because the
+settlement view stays anonymous-readable (decision 6), the row covers
+anonymous visitors' IPs too. Generating the SPD-format QR locally stays
+on the roadmap as its own project; when a working local generator lands,
+the row comes out again.
 
-### 3. Keep search engines out
+### 3. Index the homepage and a name-free Informace, noindex the rest
 
 Policy claim (section 6): "we mark them so that search engines do not index
 them."
@@ -88,9 +177,20 @@ Reality: no `robots.txt`, no `noindex` header or meta tag anywhere; chata
 pages and the finance overview are crawlable, and the wildcard
 `*.zicha.travel` routing means new subdomains appear without a deploy.
 
-Work: `X-Robots-Tag: noindex` (or equivalent metadata) on every page that
-renders personal data, on every host, plus a `robots.txt`. Verify on a
-chata subdomain, not just the apex.
+Work (rescoped by decisions 7 and 12): the homepage chata list and the
+chata page's default Informace render are deliberately indexable; to make
+that safe, the indexable render carries no participant names (counts and
+anonymous phrasing instead; names stay one click away on the noindexed
+views, and signed-in viewers see them everywhere). The "kdo přijede kdy"
+arrival groups stay on Informace for signed-in viewers, leave the
+anonymous render, and additionally appear on the Účastníci tab so they
+remain reachable without sign-in. Organizace, Účastníci,
+Finance and Přehled remain anonymous-readable but carry noindex; they are
+query-param views of the chata route, so the noindex metadata has to key
+off the view rather than the path. Ship a `robots.txt`, apply the headers
+on every host, and rewrite the policy sentence to describe this split
+instead of blanket noindex. Verify on a chata subdomain, not just the
+apex.
 
 ### 4. Stop logging email addresses
 
@@ -122,8 +222,9 @@ Work: a scheduled job (the existing `CRON_SECRET` cron pattern fits) that
 clears participants' bank fields and deletes receipt files 12 months after
 a chata's settlement, deletes accounts with `lastLoginAt` (or creation)
 older than 2 years including their relations, and deletes decided claim
-requests after 12 months. Define "settled" operationally (e.g. the trip
-ended and balances are within the 1 Kč threshold, or an admin marks it).
+requests after 12 months. Per decision 8, "settled" is an explicit admin
+action ("mark settled" on the chata) that starts the 12-month clock; do
+not guess it from balances.
 Add housekeeping for `payload-locked-documents`, `payload-preferences` and
 `payload-kv`.
 
@@ -169,8 +270,13 @@ Work: replace the `/soukromi` content with the privacy policy (per-locale
 allowlist next to `/soukromi`, link both from the footer, and show "by
 continuing you agree to the terms, here is how we handle data" with links
 on the login form, the claim dialog, the "I'm new here" registration and
-the admin's "Create account from email" flow. Fill in the effective dates
-and delete the pre-publication notes from all four documents.
+the admin's "Create account from email" flow. Before filling in the
+effective dates and deleting the pre-publication notes, re-edit the four
+documents to match the round-two decisions: the rewritten section 6
+public/hidden split (blocker 1), the Paylibo recipient row (blocker 2)
+and the indexable/noindexed split (blocker 3). Per decision 11, keep the
+text as short as validity allows and run every user-facing string through
+the humanizer conventions.
 
 ### 8. Give the Art. 14 notice a path
 
@@ -184,7 +290,13 @@ Work: a small nudge in the admin panel when participants are created (a
 note on the Participants form or after "Prefill participants") with a
 copyable message containing the policy link. Low tech is fine; zero tech is
 not, because the legitimate-interest basis for participants leans on
-people actually being told.
+people actually being told. Under decision 6 this notice carries extra
+weight: it is also where a participant learns that their name and balance
+are visible to anyone with the link, and that signing in once hides the
+balance and the other finance details, while the name stays with the trip
+(decision 12 keeps names on the noindexed views for every viewer). The
+copyable message must not promise more than that. The banker's version
+adds that their payment details are shown for settlement.
 
 ### 9. Rate limiting on public endpoints
 
@@ -214,12 +326,14 @@ fallback is already self-hosted (`/bg/mountains-1920.avif` in
 also loads fonts from `fonts.googleapis.com`
 (`src/app/(payload)/custom.scss`), a pattern German case law has fined.
 
-Work: repoint the seeded default background at the self-hosted asset,
-replace any url-type Background rows in production that point outside the
-site with uploads, and self-host the two admin fonts. If an external
-background URL is ever kept deliberately, it goes into the recipient table
-first. This is a blocker because publishing with the flow live would make
-the recipient table false.
+Work (rescoped by decision 9): keep the paste-any-URL field, but on save
+fetch the image server-side and store a copy in the site's own storage
+(size cap and content-type check on the fetch), so visitors never load
+from the external host. Repoint the seeded default background at the
+self-hosted asset, migrate existing url-type rows in production the same
+way, and self-host the two admin fonts. This stays a blocker because
+publishing with the flow live would make the recipient table false; once
+fetch-and-store lands, no new recipient row is needed.
 
 ## Security work the policy's wording already assumes
 
@@ -281,14 +395,19 @@ the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
 
 ## Features at odds with the documents, accepted with eyes open
 
-- **Anonymous trip pages carry real names, including children's.** Kept
-  deliberately (decision 5). The compensating controls are noindex
-  (blocker 3), the removal of bank data, receipts and emails from public
-  reach (blocker 1), and the existing rule that locked participants'
-  finance details hide from anonymous viewers. Residual risk stays: anyone
-  with the link sees who was on the trip and who owes what. If this ever
-  becomes uncomfortable, the fallback design is a per-chata secret in the
-  URL or sign-in-only trip pages, both of which PRD §13.2 sketches.
+- **Anonymous trip pages carry real names, balances and the banker's
+  payment details.** Kept deliberately (decisions 5 and 6): most
+  participants will never sign in, and settlement has to work for exactly
+  those people. The compensating controls are the name-free indexable
+  surface (blocker 3), the hiding of receipts, emails, non-banker bank
+  fields and account-holders' data (blocker 1), and the Art. 14 notice
+  telling every participant that one sign-in hides their finance details
+  (blocker 8). Residual risk is real and accepted: anyone with the link
+  sees who was on the trip, who owes what, and the banker's account
+  number (invoice-grade information the banker consents to by taking the
+  role; the notice says so). If this ever becomes uncomfortable, the
+  fallback designs stay the same: a per-chata secret in the URL or
+  sign-in-only trip pages, both of which PRD §13.2 sketches.
 - **Receipts can smuggle in Art. 9 data.** A pharmacy receipt is health
   data. The terms forbid uploading such receipts (section 5), retention
   deletes receipts 12 months after settlement (blocker 5), and access

@@ -228,7 +228,7 @@ transfer basis checked (SCCs / adequacy / DPF) where it is outside the EEA.
 
 | Recipient                  | What reaches it                                          | Notes |
 | -------------------------- | -------------------------------------------------------- | ----- |
-| **Paylibo** (`api.paylibo.com`) | **Creditor's bank account number, amount and payment message in a URL query string**, plus the viewer's IP — on every settlement view, as an `<img>` src (`src/app/(frontend)/components/QRPayment.tsx`) | The most objectionable flow in the product: bank details disclosed to an uncontracted third party and written into its access logs. **Avoidable** — the Czech payment QR is a self-contained standard. Removing this dependency is a requirement, not an option. |
+| **Paylibo** (`api.paylibo.com`) | **Creditor's bank account number, amount and payment message in a URL query string**, plus the viewer's IP — on every settlement view, as an `<img>` src (`src/app/(frontend)/components/QRPayment.tsx`) | The most objectionable flow in the product: bank details disclosed to an uncontracted third party and written into its access logs. **Avoidable** — the Czech payment QR is a self-contained standard. ~~Removing this dependency is a requirement, not an option.~~ **Superseded 2026-08-16** by `docs/legal/compliance-gaps.md` decision 10: a previous local generator produced codes banking apps rejected, so Paylibo stays for now, disclosed in the recipient table; removal remains on the roadmap as its own project. |
 | **Unsplash** (`images.unsplash.com`) | Every visitor's IP, for a background image | Avoidable by self-hosting the asset. |
 | **Cloudflare Turnstile** (`challenges.cloudflare.com`) | Visitor IP and browser signals on public forms | Present on the claim branch, not on `main`. Must be disclosed; assess what it stores client-side. |
 | **Microsoft** (OAuth)      | Identity of admins signing in                            | User-initiated and expected; disclose. |
@@ -353,7 +353,8 @@ Ordered by risk reduction per unit of work:
 1. **§3 access control** — bank details and receipts off the public API.
    Nothing else is defensible until this lands.
 2. **§4 no-index** and **§8 Paylibo removal** — both small, both stop an
-   ongoing disclosure.
+   ongoing disclosure. (Paylibo removal superseded 2026-08-16: kept and
+   disclosed instead, per `docs/legal/compliance-gaps.md` decision 10.)
 3. **§5 privacy notice** and the recipient list, which §8 makes writable.
 4. **§9 stop logging email addresses**, **§10.1 rate limiting**.
 5. **§6 rights machinery** and **§7 retention** — the largest builds, and
