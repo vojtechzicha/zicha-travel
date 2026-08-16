@@ -52,9 +52,10 @@ decided further:
    those fields narrow to the owner, the banker and chata admins with no
    loss to the anonymous flow; only the banker's account stays public,
    because the anonymous QR settlement needs it. Creating an account is
-   thereby the opt-out: signing in once is what hides your details.
-   Blocker 1 is rescoped accordingly, and the policy describes this
-   reality instead of a wall that does not exist.
+   thereby the opt-out: signing in once is what hides your finance
+   details (balance, breakdown, bank fields); the name itself stays with
+   the trip either way. Blocker 1 is rescoped accordingly, and the
+   policy describes this reality instead of a wall that does not exist.
 7. Search engines: the homepage chata list and the chata page's default
    Informace render are indexable; to make that safe the indexable render
    carries no participant names (counts instead; names stay one click
@@ -143,7 +144,7 @@ banker's payment details; other participants' bank details, receipts and
 email addresses are never public, and a participant with an active
 account has their balances hidden until they sign in. The Art. 14 notice
 (blocker 8) tells every participant that signing in once is how they
-hide their details.
+hide their finance details.
 
 Acceptance test per PRD §3.3: an unauthenticated request to any API route
 or GraphQL query returns no receipt, no email, no bank field of anyone
@@ -291,8 +292,10 @@ copyable message containing the policy link. Low tech is fine; zero tech is
 not, because the legitimate-interest basis for participants leans on
 people actually being told. Under decision 6 this notice carries extra
 weight: it is also where a participant learns that their name and balance
-are visible to anyone with the link, and that signing in once is how they
-hide them. The copyable message must say so, and the banker's version
+are visible to anyone with the link, and that signing in once hides the
+balance and the other finance details, while the name stays with the trip
+(decision 12 keeps names on the noindexed views for every viewer). The
+copyable message must not promise more than that. The banker's version
 adds that their payment details are shown for settlement.
 
 ### 9. Rate limiting on public endpoints
@@ -398,7 +401,7 @@ the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
   those people. The compensating controls are the name-free indexable
   surface (blocker 3), the hiding of receipts, emails, non-banker bank
   fields and account-holders' data (blocker 1), and the Art. 14 notice
-  telling every participant that one sign-in hides their details
+  telling every participant that one sign-in hides their finance details
   (blocker 8). Residual risk is real and accepted: anyone with the link
   sees who was on the trip, who owes what, and the banker's account
   number (invoice-grade information the banker consents to by taking the
