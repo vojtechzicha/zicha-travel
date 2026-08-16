@@ -198,7 +198,7 @@ Pplk. Sochora 27, 170 00 Praha 7,
 [www.uoou.gov.cz](https://www.uoou.gov.cz). We would appreciate you writing
 to us first.
 
-## 11. Cookies
+## 11. Cookies and other browser data
 
 | Cookie | Purpose | Lifetime | Consent |
 | --- | --- | --- | --- |
@@ -212,6 +212,23 @@ to us first.
 The sign-in, language and consent cookies cover the whole site including
 individual chata addresses (e.g. `lipno.zicha.travel`), so one decision
 applies everywhere and the bar does not ask again on every address.
+
+Besides cookies, the page keeps a few small things in your browser's
+storage (localStorage). They stay on your device, are never sent to the
+server, and are written only after you make a choice, so they need no
+consent:
+
+| Key | Purpose |
+| --- | --- |
+| `zt_theme` | your dark or light mode choice |
+| `chata-overview-mode` | your chosen overview layout (table or cards) |
+| `chata-selected-participant-*` | whose finances you last had open on a given chata, so the tab reopens the same way |
+
+With statistics consent, PostHog stores its anonymous identifier in
+localStorage as well as the cookie (keys `ph_*`); withdrawing consent
+deletes both. The Turnstile widget on public forms may keep its own
+technical data, needed to tell people from bots, inside its frame on the
+Cloudflare domain.
 
 ## 12. Usage statistics
 

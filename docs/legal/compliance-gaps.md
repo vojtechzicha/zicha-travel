@@ -234,9 +234,12 @@ the Art. 32 baseline it gestures at, and PRD §10 lists them as findings:
     terms.
 20. A maintained inventory of outbound calls (today: Supabase, Vercel,
     Resend, PostHog via the first-party proxy, Cloudflare Turnstile,
-    Microsoft OAuth, Open-Meteo from the browser, Google links on click),
-    with the rule that adding an endpoint updates the inventory and the
-    policy's recipient table.
+    Microsoft OAuth, Open-Meteo from the browser, Google links on click)
+    and of client-side storage (cookies plus the localStorage keys
+    `zt_theme`, `chata-overview-mode`, `chata-selected-participant-*` and
+    PostHog's `ph_*`, which the policy's section 11 discloses), with the
+    rule that adding an endpoint, cookie or storage key updates the
+    inventory and the policy.
 
 ## Smaller code items the documents assume
 

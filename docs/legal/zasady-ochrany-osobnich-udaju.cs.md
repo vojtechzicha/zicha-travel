@@ -191,7 +191,7 @@ u Úřadu pro ochranu osobních údajů, Pplk. Sochora 27, 170 00 Praha 7,
 [www.uoou.gov.cz](https://www.uoou.gov.cz). Budeme rádi, když napíšete
 nejdřív nám.
 
-## 11. Cookies
+## 11. Cookies a další data v prohlížeči
 
 | Cookie | K čemu slouží | Platnost | Souhlas |
 | --- | --- | --- | --- |
@@ -205,6 +205,22 @@ nejdřív nám.
 Přihlašovací, jazyková a souhlasová cookie platí pro celý web včetně adres
 jednotlivých chat (např. `lipno.zicha.travel`), takže jedno rozhodnutí platí
 všude a lišta se neptá na každé adrese znovu.
+
+Vedle cookies si stránka ukládá pár drobností do úložiště vašeho prohlížeče
+(localStorage). Zůstávají jen ve vašem zařízení, na server se neposílají a
+zapisují se až po vaší volbě, proto nevyžadují souhlas:
+
+| Klíč | K čemu slouží |
+| --- | --- |
+| `zt_theme` | zvolený tmavý nebo světlý režim |
+| `chata-overview-mode` | zvolené zobrazení přehledu (tabulka, nebo karty) |
+| `chata-selected-participant-*` | čí finance jste si na dané chatě naposledy otevřeli, aby se záložka otevřela stejně |
+
+Se souhlasem se statistikami si PostHog ukládá svůj anonymní identifikátor
+kromě cookie i do localStorage (klíče `ph_*`); odvoláním souhlasu se maže
+obojí. Widget Turnstile na veřejných formulářích si může ve svém rámu na
+doméně Cloudflare ukládat vlastní technická data potřebná k rozpoznání
+robotů.
 
 ## 12. Měření návštěvnosti
 
