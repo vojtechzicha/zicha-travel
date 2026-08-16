@@ -6,6 +6,7 @@ import { ApplyPaidByButton as ApplyPaidByButton_d80c45e9922dc0af2e0846ad9830e487
 import { CzechBankAccountField as CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249 } from '@/components/CzechBankAccountField'
 import { AccountNamePrefill as AccountNamePrefill_2b0e282239bc1a562386f134b277cf37 } from '@/collections/Participants/components/AccountNamePrefill'
 import { CreateAccountButton as CreateAccountButton_6a36a97f8b2ba30c3a9051dfda776bc0 } from '@/collections/Participants/components/CreateAccountButton'
+import { RightsActionsButtons as RightsActionsButtons_1178575d6c5bc6a8603fa3ed36c91220 } from '@/collections/Participants/components/RightsActionsButtons'
 import { WeightShareHint as WeightShareHint_63963a60997a410a90a159d982c94f8a } from '@/collections/Expenses/components/WeightShareHint'
 import { WeightsSumIndicator as WeightsSumIndicator_912a7196dce9ce4494e48dbd389777da } from '@/collections/Expenses/components/WeightsSumIndicator'
 import { PrefillWeightsButton as PrefillWeightsButton_9dd3ee44d151a88d7d109663a4769b69 } from '@/collections/Expenses/components/PrefillWeightsButton'
@@ -26,6 +27,7 @@ export const importMap = {
   "@/components/CzechBankAccountField#CzechBankAccountField": CzechBankAccountField_f2df3d51bcb1d9d7b0fb3b3d2b382249,
   "@/collections/Participants/components/AccountNamePrefill#AccountNamePrefill": AccountNamePrefill_2b0e282239bc1a562386f134b277cf37,
   "@/collections/Participants/components/CreateAccountButton#CreateAccountButton": CreateAccountButton_6a36a97f8b2ba30c3a9051dfda776bc0,
+  "@/collections/Participants/components/RightsActionsButtons#RightsActionsButtons": RightsActionsButtons_1178575d6c5bc6a8603fa3ed36c91220,
   "@/collections/Expenses/components/WeightShareHint#WeightShareHint": WeightShareHint_63963a60997a410a90a159d982c94f8a,
   "@/collections/Expenses/components/WeightsSumIndicator#WeightsSumIndicator": WeightsSumIndicator_912a7196dce9ce4494e48dbd389777da,
   "@/collections/Expenses/components/PrefillWeightsButton#PrefillWeightsButton": PrefillWeightsButton_9dd3ee44d151a88d7d109663a4769b69,

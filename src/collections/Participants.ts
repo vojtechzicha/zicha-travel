@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import type { CollectionConfig, FieldAccess, PayloadRequest, Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
+import { anonymizeParticipant, exportParticipantBundle } from '../utils/participantRights'
 import { adminRoleOnly, canManageChata, chataScopedAccess, isSuperadmin } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 
@@ -191,6 +192,60 @@ export const Participants: CollectionConfig = {
         })
 
         return Response.json({ userId, email: normalizedEmail, created, linked: true })
+      },
+    },
+    {
+      // Rights machinery (compliance blocker 6): one person's complete data
+      // bundle for an Art. 15 access/copy request — admin button on the
+      // participant form. Never leaks other people's rows.
+      path: '/:id/export-data',
+      method: 'get',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing participant id' }, { status: 400 })
+        }
+        let participant
+        try {
+          participant = await req.payload.findByID({ collection: 'participants', id, depth: 0 })
+        } catch {
+          return Response.json({ error: 'Participant not found' }, { status: 404 })
+        }
+        if (!canManageChata(req.user, refId(participant.chata))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const bundle = await exportParticipantBundle(req.payload, participant.id)
+        return Response.json(bundle)
+      },
+    },
+    {
+      // Rights machinery (compliance blocker 6): erasure that keeps the
+      // arithmetic — placeholder name, cleared contact/bank/assignment data,
+      // amounts and shares stay so the group's settlement still adds up.
+      path: '/:id/anonymize',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing participant id' }, { status: 400 })
+        }
+        let participant
+        try {
+          participant = await req.payload.findByID({ collection: 'participants', id, depth: 0 })
+        } catch {
+          return Response.json({ error: 'Participant not found' }, { status: 404 })
+        }
+        if (!canManageChata(req.user, refId(participant.chata))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const summary = await anonymizeParticipant(req.payload, participant.id)
+        return Response.json({ ok: true, ...summary })
       },
     },
   ],
@@ -469,6 +524,18 @@ export const Participants: CollectionConfig = {
             '@/collections/Participants/components/CreateAccountButton#CreateAccountButton',
           ],
         },
+      },
+    },
+    {
+      // Data-subject rights actions (blocker 6): export bundle + anonymize
+      name: 'rightsActions',
+      type: 'ui',
+      admin: {
+        components: {
+          Field:
+            '@/collections/Participants/components/RightsActionsButtons#RightsActionsButtons',
+        },
+        condition: (data) => Boolean(data?.id),
       },
     },
   ],

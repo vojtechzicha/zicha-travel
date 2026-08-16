@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { parseCookies } from 'payload'
 import jwt from 'jsonwebtoken'
 import { isAdminRole, isSuperadmin } from '../lib/access'
+import { cleanupDeletedUserReferences } from '../utils/userCleanup'
 
 const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
 
@@ -59,6 +60,18 @@ export const Users: CollectionConfig = {
     ],
   },
   hooks: {
+    // Deleting an account must not leave dangling references (compliance
+    // blocker 6): unlink participants, clear expense stamps, drop the
+    // account's own claim requests. Shared with the retention job.
+    afterDelete: [
+      async ({ id, req }) => {
+        try {
+          await cleanupDeletedUserReferences(req.payload, id as number)
+        } catch (err) {
+          req.payload.logger.error({ err, user: id }, 'User reference cleanup failed')
+        }
+      },
+    ],
     // Payload's own login op (local email+password strategy — the fallback
     // where Microsoft OAuth is not configured). The OAuth callback and
     // magic-link verify routes stamp lastLoginAt themselves.

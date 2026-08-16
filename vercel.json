@@ -4,6 +4,10 @@
     {
       "path": "/api/claim-requests/remind",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/retention",
+      "schedule": "0 4 * * *"
     }
   ]
 }

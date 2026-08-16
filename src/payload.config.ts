@@ -20,6 +20,7 @@ import { ExpenseAttachments } from './collections/ExpenseAttachments'
 import { Prepayments } from './collections/Prepayments'
 import { ClaimRequests } from './collections/ClaimRequests'
 import { JointAccounts } from './collections/JointAccounts'
+import { DataRequests } from './collections/DataRequests'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
 
@@ -72,6 +73,7 @@ export default buildConfig({
     Icons,
     Users,
     Media,
+    DataRequests,
   ],
   editor: lexicalEditor(),
   // Outgoing mail (magic-link logins). Gated on RESEND_API_KEY — without it

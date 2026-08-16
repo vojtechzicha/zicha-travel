@@ -78,6 +78,19 @@ const en = {
       'The banker has no linked user account. Creditor account numbers are shown only to signed-in bankers and admins, so without an account they cannot see where to send refunds. Use "Create account from email..." on the participant.',
     bankerNeedsAccountCta: 'Open the participant →',
 
+    // RightsActionsButtons (Participants)
+    rightsExport: 'Download data bundle (JSON)',
+    rightsExporting: 'Preparing export...',
+    rightsExportError: 'Export failed.',
+    rightsAnonymize: 'Anonymize participant...',
+    rightsAnonymizing: 'Anonymizing...',
+    rightsAnonymizeConfirm:
+      'Anonymize this participant? Name, declension forms, email link, bank details, pet flag and bed/car/transport assignments are cleared for good. Amounts and shares stay so the settlement still adds up. This cannot be undone.',
+    rightsAnonymizeDone: 'Done. The participant is now "{{name}}".',
+    rightsAnonymizeError: 'Anonymization failed.',
+    rightsHint:
+      'GDPR rights actions. Record the request itself under System → Data requests, so the one-month deadline has evidence.',
+
     // CreateAccountButton (Participants)
     createAccountOpen: 'Create account from email...',
     saveParticipantFirst: 'Save the participant first.',
@@ -201,6 +214,19 @@ const cs: typeof en = {
     bankerNeedsAccountHint:
       'Pokladník nemá propojený uživatelský účet. Čísla účtů věřitelů se zobrazují jen přihlášeným pokladníkům a správcům – bez účtu neuvidí, kam posílat vratky. Použijte „Vytvořit účet z e-mailu…“ u účastníka.',
     bankerNeedsAccountCta: 'Otevřít účastníka →',
+
+    // RightsActionsButtons (Participants)
+    rightsExport: 'Stáhnout balíček dat (JSON)',
+    rightsExporting: 'Připravuje se export…',
+    rightsExportError: 'Export se nezdařil.',
+    rightsAnonymize: 'Anonymizovat účastníka…',
+    rightsAnonymizing: 'Anonymizuje se…',
+    rightsAnonymizeConfirm:
+      'Anonymizovat tohoto účastníka? Jméno, skloňované tvary, propojení s účtem, bankovní údaje, údaj o zvířeti a přiřazení postele/auta/spoje se nenávratně smažou. Částky a podíly zůstanou, aby vyúčtování dál sedělo. Akci nelze vzít zpět.',
+    rightsAnonymizeDone: 'Hotovo. Účastník je nyní „{{name}}“.',
+    rightsAnonymizeError: 'Anonymizace se nezdařila.',
+    rightsHint:
+      'Akce pro práva subjektů údajů (GDPR). Samotnou žádost zaznamenejte v Systém → Žádosti o údaje, ať má měsíční lhůta doklad.',
 
     // CreateAccountButton (Participants)
     createAccountOpen: 'Vytvořit účet z e-mailu…',

@@ -588,6 +588,42 @@ CREATE INDEX IF NOT EXISTS expenses_payer_account_idx ON expenses USING btree (p
 
 -- (the data backfill for both columns runs after the payer migration, in
 -- backfillExpenseApproval() — expenses_rels is only populated by then)
+
+-- Compliance work (docs/legal/compliance-gaps.md). Additive only.
+-- Retention clock (blocker 5): the explicit admin "settled on" date; 12
+-- months later the retention cron clears bank fields and deletes receipts.
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS settled_at timestamp(3) with time zone;
+
+-- Data-subject request log (blocker 6): evidence for the policy's
+-- one-month answer promise. New table, mirrors the local dev push.
+DO $$ BEGIN
+  CREATE TYPE enum_data_requests_type AS ENUM('access', 'rectification', 'erasure', 'restriction', 'portability', 'objection', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE enum_data_requests_status AS ENUM('received', 'in-progress', 'done', 'refused');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE TABLE IF NOT EXISTS data_requests (
+  id serial PRIMARY KEY,
+  subject character varying NOT NULL,
+  type enum_data_requests_type NOT NULL,
+  received_at timestamp(3) with time zone NOT NULL,
+  status enum_data_requests_status DEFAULT 'received' NOT NULL,
+  resolved_at timestamp(3) with time zone,
+  note character varying,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS data_requests_updated_at_idx ON data_requests USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS data_requests_created_at_idx ON data_requests USING btree (created_at);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS data_requests_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_data_requests_fk
+    FOREIGN KEY (data_requests_id) REFERENCES data_requests(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_data_requests_id_idx
+  ON payload_locked_documents_rels USING btree (data_requests_id);
 `
 
 async function enumLabels(typeName) {

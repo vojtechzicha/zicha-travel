@@ -78,6 +78,7 @@ export interface Config {
     icons: Icon;
     users: User;
     media: Media;
+    'data-requests': DataRequest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -100,6 +101,7 @@ export interface Config {
     icons: IconsSelect<false> | IconsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'data-requests': DataRequestsSelect<false> | DataRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -145,6 +147,10 @@ export interface UserAuthOperations {
  */
 export interface Chata {
   id: number;
+  /**
+   * Set this when the trip is fully settled. 12 months later the retention job deletes participants’ bank details and receipts of this chata. Leave empty while money is still moving.
+   */
+  settledAt?: string | null;
   /**
    * Full name of the chata/trip (e.g., "Chaloupka pod Medem")
    */
@@ -656,7 +662,7 @@ export interface Background {
   isDefault?: boolean | null;
   type: 'url' | 'upload';
   /**
-   * External image URL (e.g., Unsplash)
+   * Image URL. An external http(s) image is downloaded on save and stored in the site’s own storage (the row switches to "Uploaded Image"); a relative URL (e.g. /bg/…) is served as-is.
    */
   url?: string | null;
   /**
@@ -943,6 +949,29 @@ export interface ClaimRequest {
   createdAt: string;
 }
 /**
+ * Log of GDPR data-subject requests (access, copy, rectification, erasure...). One row per request; the policy promises an answer within one month of receivedAt.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-requests".
+ */
+export interface DataRequest {
+  id: number;
+  /**
+   * Name or email of the person making the request
+   */
+  subject: string;
+  type: 'access' | 'rectification' | 'erasure' | 'restriction' | 'portability' | 'objection' | 'other';
+  receivedAt: string;
+  status: 'received' | 'in-progress' | 'done' | 'refused';
+  resolvedAt?: string | null;
+  /**
+   * How the request was verified and handled (export sent, anonymized, refused and why...)
+   */
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1009,6 +1038,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'data-requests';
+        value: number | DataRequest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1057,6 +1090,7 @@ export interface PayloadMigration {
  * via the `definition` "chatas_select".
  */
 export interface ChatasSelect<T extends boolean = true> {
+  settledAt?: T;
   name?: T;
   shortName?: T;
   location?: T;
@@ -1415,6 +1449,20 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-requests_select".
+ */
+export interface DataRequestsSelect<T extends boolean = true> {
+  subject?: T;
+  type?: T;
+  receivedAt?: T;
+  status?: T;
+  resolvedAt?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

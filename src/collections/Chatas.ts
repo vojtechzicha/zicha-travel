@@ -101,6 +101,29 @@ export const Chatas: CollectionConfig = {
     delete: superadminOnly,
   },
   fields: [
+    {
+      // Retention clock (controller decision 8): marking the trip settled is
+      // an EXPLICIT admin action, never guessed from balances. 12 months
+      // after this date the retention job clears the participants' bank
+      // details and deletes the receipts (docs/legal/compliance-gaps.md,
+      // blocker 5). Clearing the date stops the clock.
+      name: 'settledAt',
+      type: 'date',
+      label: { en: 'Settled on', cs: 'Vyúčtováno dne' },
+      admin: {
+        position: 'sidebar',
+        description: {
+          en:
+            'Set this when the trip is fully settled. 12 months later the retention job ' +
+            'deletes participants’ bank details and receipts of this chata. Leave empty ' +
+            'while money is still moving.',
+          cs:
+            'Nastavte, až je výlet úplně vyrovnaný. Za 12 měsíců retenční úloha smaže ' +
+            'bankovní údaje účastníků a účtenky této chaty. Dokud se peníze hýbou, nechte prázdné.',
+        },
+        date: { displayFormat: 'yyyy-MM-dd' },
+      },
+    },
     // Basic Information
     {
       name: 'name',
