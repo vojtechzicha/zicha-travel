@@ -539,8 +539,14 @@ decision record; the controller's decisions 1–13 there BIND future work):
   (admin roles only reported); decided claims after 12 months. Deleting
   a user cleans all references (`src/utils/userCleanup.ts`).
 - **Rights machinery** (`src/utils/participantRights.ts`): participant
-  form buttons export a per-person JSON bundle and anonymize in place
-  (identity out, arithmetic intact); received requests are logged in the
+  form buttons export a per-person JSON bundle (equal-split expenses
+  included — they carry no weight rows) and anonymize in place (identity
+  out, arithmetic intact). Anonymizing also DELETES the linked account,
+  since that is where the email lives; it is kept, and the admin told so,
+  only when the account owns participants on other trips or is an admin
+  account. User deletion cleans references in a **beforeDelete** hook
+  (`src/utils/userCleanup.ts`) — `claim_requests.user_id` is NOT NULL, so
+  an afterDelete pass would never run. Received requests are logged in the
   `data-requests` collection (System group).
 - **Art. 14 notice**: the participant form's "Dejte vědět, že tu je" box
   (Art14NoticeBox) gives admins a copyable Czech message; it must never

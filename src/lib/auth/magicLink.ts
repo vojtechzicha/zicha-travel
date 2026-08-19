@@ -72,8 +72,26 @@ export async function sendMagicLink(
   if (safePath !== '/') params.set('returnTo', safePath)
   const link = `${origin}/api/auth/magic-link/verify?${params.toString()}`
 
-  await sendAppEmail(payload, {
-    to: user.email,
-    ...magicLinkEmail(locale, { link, ttlMinutes: MAGIC_LINK_TTL_MINUTES }),
-  })
+  try {
+    await sendAppEmail(payload, {
+      to: user.email,
+      ...magicLinkEmail(locale, { link, ttlMinutes: MAGIC_LINK_TTL_MINUTES }),
+    })
+  } catch (err) {
+    // Delivery failed, so the token that was just stored is a link nobody
+    // will ever receive — and it would make the request route's resend
+    // cooldown swallow the user's immediate retry ("link sent", no email,
+    // stuck until the cooldown lapses). Clear it so a retry really sends.
+    await payload
+      .update({
+        collection: 'users',
+        id: user.id,
+        data: { loginToken: null, loginTokenExpires: null },
+        overrideAccess: true,
+      })
+      .catch(() => {
+        // the send failure below is the error worth surfacing
+      })
+    throw err
+  }
 }

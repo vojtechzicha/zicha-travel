@@ -594,6 +594,27 @@ CREATE INDEX IF NOT EXISTS expenses_payer_account_idx ON expenses USING btree (p
 -- months later the retention cron clears bank fields and deletes receipts.
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS settled_at timestamp(3) with time zone;
 
+-- claim_requests referential fix (blocker 6). Both columns were created
+-- NOT NULL with ON DELETE SET NULL, a combination PostgreSQL can never
+-- satisfy: deleting a user (or participant) that owns a claim request
+-- raises a NOT NULL violation and the delete fails outright. Deleting the
+-- claim row is what the cleanup does anyway — a link request without its
+-- requester or its participant means nothing — so the constraints become
+-- CASCADE. The application still cleans up in a Users beforeDelete hook;
+-- this is the belt-and-braces for direct SQL and for other delete paths.
+DO $$ BEGIN
+  ALTER TABLE claim_requests DROP CONSTRAINT IF EXISTS claim_requests_user_id_users_id_fk;
+  ALTER TABLE claim_requests
+    ADD CONSTRAINT claim_requests_user_id_users_id_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE claim_requests DROP CONSTRAINT IF EXISTS claim_requests_participant_id_participants_id_fk;
+  ALTER TABLE claim_requests
+    ADD CONSTRAINT claim_requests_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 -- Data-subject request log (blocker 6): evidence for the policy's
 -- one-month answer promise. New table, mirrors the local dev push.
 DO $$ BEGIN

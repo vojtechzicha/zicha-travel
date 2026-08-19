@@ -63,13 +63,21 @@ export const Users: CollectionConfig = {
     // Deleting an account must not leave dangling references (compliance
     // blocker 6): unlink participants, clear expense stamps, drop the
     // account's own claim requests. Shared with the retention job.
-    afterDelete: [
+    //
+    // This MUST run BEFORE the row goes: `claim_requests.user_id` is NOT
+    // NULL with ON DELETE SET NULL, so Postgres refuses to delete a user
+    // who has any claim request — an afterDelete hook would never be
+    // reached. The other references (participants.account, the expense
+    // stamps) are nullable, and the database clears them at delete time,
+    // which would leave an afterDelete pass nothing to find. Doing the
+    // work here makes the cleanup deterministic in both cases.
+    //
+    // Failure is deliberately NOT swallowed: an aborted delete that keeps
+    // the account intact beats a half-deleted one. The retention job logs
+    // it per user and retries on its next run.
+    beforeDelete: [
       async ({ id, req }) => {
-        try {
-          await cleanupDeletedUserReferences(req.payload, id as number)
-        } catch (err) {
-          req.payload.logger.error({ err, user: id }, 'User reference cleanup failed')
-        }
+        await cleanupDeletedUserReferences(req.payload, id as number)
       },
     ],
     // Payload's own login op (local email+password strategy — the fallback

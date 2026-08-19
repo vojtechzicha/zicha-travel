@@ -60,7 +60,21 @@ export const RightsActionsButtons: React.FC = () => {
         alert(t('zicha:errorPrefix', { message: data?.error || response.statusText }))
         return
       }
-      alert(t('zicha:rightsAnonymizeDone', { name: data.placeholderName }))
+      // Say what happened to the linked account: erasure is only complete
+      // when the account went too (it holds the email and login history)
+      const accountNote = data.accountDeleted
+        ? t('zicha:rightsAnonymizeAccountDeleted')
+        : data.accountKeptAdminRole
+          ? t('zicha:rightsAnonymizeAccountAdmin')
+          : data.accountKeptForOtherParticipants > 0
+            ? t('zicha:rightsAnonymizeAccountKept', {
+                count: String(data.accountKeptForOtherParticipants),
+              })
+            : ''
+      alert(
+        t('zicha:rightsAnonymizeDone', { name: data.placeholderName }) +
+          (accountNote ? `\n\n${accountNote}` : ''),
+      )
       window.location.reload()
     } catch {
       alert(t('zicha:rightsAnonymizeError'))

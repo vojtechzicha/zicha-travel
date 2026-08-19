@@ -9,6 +9,38 @@ import { refId } from '@/lib/access'
 const involvesParticipant = (value: unknown, participantId: string): boolean =>
   value != null && refId(value) === participantId
 
+/**
+ * Does this expense involve the participant at all? An equal-split expense
+ * ("rovným dílem") carries NO weight rows — calculateStats builds the
+ * shares from the chata's full participant list — so membership of the
+ * chata is what makes it theirs. Missing that case dropped the most
+ * common expense shape from the "complete" access bundle.
+ */
+export function expenseInvolvesParticipant(
+  expense: {
+    splitType?: string | null
+    weights?: Array<{ participant?: unknown }> | null
+    invitations?: Array<{ host?: unknown; guest?: unknown }> | null
+    payer?: unknown
+  },
+  participantId: string,
+): boolean {
+  if (expense.splitType === 'equal') return true
+  if ((expense.weights ?? []).some((w) => involvesParticipant(w.participant, participantId))) {
+    return true
+  }
+  if (
+    (expense.invitations ?? []).some(
+      (inv) =>
+        involvesParticipant(inv.host, participantId) ||
+        involvesParticipant(inv.guest, participantId),
+    )
+  ) {
+    return true
+  }
+  return payerMatches(expense.payer, participantId)
+}
+
 const payerMatches = (payer: unknown, participantId: string): boolean => {
   if (payer == null || typeof payer !== 'object') return involvesParticipant(payer, participantId)
   const poly = payer as { relationTo?: string; value?: unknown }
@@ -39,6 +71,18 @@ export async function exportParticipantBundle(payload: Payload, participantId: n
       context: { triggerAfterRead: false },
     })
     .catch(() => null)
+
+  // How many people the chata splits an equal expense between (the
+  // divisor for every `sharesEqually` row below)
+  const participantCount = (
+    await payload.find({
+      collection: 'participants',
+      where: { chata: { equals: chataId } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+  ).totalDocs
 
   const [expenses, prepayments, jointAccounts] = await Promise.all([
     payload.find({
@@ -73,7 +117,7 @@ export async function exportParticipantBundle(payload: Payload, participantId: n
       involvesParticipant(inv.host, pid),
     )
     const isPayer = payerMatches(e.payer, pid)
-    if (!weight && invitationsAsGuest.length === 0 && invitationsAsHost.length === 0 && !isPayer) {
+    if (!expenseInvolvesParticipant(e, pid)) {
       return []
     }
     return [
@@ -84,6 +128,11 @@ export async function exportParticipantBundle(payload: Payload, participantId: n
         splitType: e.splitType,
         isPlanned: e.isPlanned ?? false,
         isPayer,
+        // Equal split: no weight row exists, the cost is divided between
+        // all participants of the chata (count below), so the share is
+        // amount / equalSplitParticipants
+        sharesEqually: e.splitType === 'equal',
+        equalSplitParticipants: e.splitType === 'equal' ? participantCount : null,
         ownWeight: weight?.weight ?? null,
         invitedByHostId: invitationsAsGuest.map((inv) => Number(refId(inv.host))),
         hostsGuestIds: invitationsAsHost.map((inv) => Number(refId(inv.guest))),
@@ -196,13 +245,28 @@ export interface AnonymizeSummary {
   placeholderName: string
   assignmentsCleared: boolean
   accountDetached: boolean
+  /** the linked account was deleted along with the identity */
+  accountDeleted: boolean
+  /** account kept because it still owns this many participants elsewhere */
+  accountKeptForOtherParticipants: number
+  /** account kept because it is an admin/superadmin — needs a human */
+  accountKeptAdminRole: boolean
 }
 
 /**
  * Erasure with the recorded limit (policy section 10): identity goes,
- * arithmetic stays. Name and declension forms become a placeholder, email
- * link/bank fields/pet flag/assignments are cleared, amounts and shares
- * remain so settled trips still add up.
+ * arithmetic stays. Name and declension forms become a placeholder, bank
+ * fields/pet flag/assignments are cleared, amounts and shares remain so
+ * settled trips still add up.
+ *
+ * The LINKED ACCOUNT goes too, because it is where the identity actually
+ * lives — email, display name, login history — and the export bundle
+ * counts it as this person's data. Detaching it alone would report a
+ * successful erasure while leaving a working account with the person's
+ * email behind. Two cases keep the account and say so instead of
+ * pretending: it still owns participants on other trips (erasing it would
+ * silently strip those too), or it is an admin account (removing an
+ * operator's access is a human decision, same rule as the retention job).
  */
 export async function anonymizeParticipant(
   payload: Payload,
@@ -215,7 +279,8 @@ export async function anonymizeParticipant(
     depth: 0,
   })
   const placeholderName = `Anonymizovaný účastník ${participant.id}`
-  const accountDetached = participant.account != null
+  const accountId = participant.account != null ? refId(participant.account) : null
+  const accountDetached = accountId != null
 
   await payload.update({
     collection: 'participants',
@@ -286,5 +351,45 @@ export async function anonymizeParticipant(
     }
   }
 
-  return { placeholderName, assignmentsCleared, accountDetached }
+  // The linked account carries the identity (email, name, login history)
+  // and the export bundle treats it as this person's data — so erasure
+  // has to reach it, not just unlink it.
+  let accountDeleted = false
+  let accountKeptForOtherParticipants = 0
+  let accountKeptAdminRole = false
+  if (accountId != null) {
+    const stillLinked = await payload.find({
+      collection: 'participants',
+      where: { account: { equals: accountId } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    accountKeptForOtherParticipants = stillLinked.totalDocs
+    if (accountKeptForOtherParticipants === 0) {
+      const owner = await payload
+        .findByID({ collection: 'users', id: accountId, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      if (owner && owner.role !== 'user') {
+        accountKeptAdminRole = true
+        payload.logger.warn(
+          { user: owner.id, role: owner.role },
+          'Anonymize: linked account is an admin account and was kept for manual review',
+        )
+      } else if (owner) {
+        // the Users beforeDelete hook clears every remaining reference
+        await payload.delete({ collection: 'users', id: owner.id, overrideAccess: true })
+        accountDeleted = true
+      }
+    }
+  }
+
+  return {
+    placeholderName,
+    assignmentsCleared,
+    accountDetached,
+    accountDeleted,
+    accountKeptForOtherParticipants,
+    accountKeptAdminRole,
+  }
 }
