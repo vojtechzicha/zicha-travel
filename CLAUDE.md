@@ -505,6 +505,68 @@ Collections use `filterOptions` to limit relationship dropdowns:
 - Expenses show only participants from the same Chata
 - Bedroom occupants filtered by Chata
 
+## Compliance & GDPR (docs/legal/)
+
+The legal layer shipped 2026-08-16 (docs/legal/compliance-gaps.md is the
+decision record; the controller's decisions 1–13 there BIND future work):
+
+- **Published documents**: privacy policy at `/soukromi`, terms at
+  `/podminky` (both per-locale content modules, source of truth is the
+  markdown in `docs/legal/` — edit there first, mirror into the pages).
+  Footer links both; login + claim registration show accept-notes;
+  `/podminky` is in the middleware `SITE_PATHS` allowlist.
+- **Privacy at the API** (`src/lib/privacyScrub.ts`,
+  `src/utils/participantPrivacy.ts`): non-banker bank fields are served
+  only to the owner account, the banker's account and chata admins
+  (field-level access on Participants + deep scrub in the slug API — the
+  banker's own fields stay public for the anonymous settlement QR).
+  Receipts (`expense-attachments`) require authentication. Locked
+  participants' balances/breakdowns are withheld server-side from
+  non-admin responses (slug API + Chatas afterRead); debtors/creditors
+  settlement lists stay public BY RECORDED DECISION. Emails never leave
+  the server anonymously; GraphQL playground is closed in production.
+  Acceptance test: `tests/int/apiPrivacy.int.spec.ts`.
+- **Indexing split** (`src/lib/chataSeo.ts`, `app/robots.ts`): only the
+  homepage and the chata's canonical Informace render are indexable, and
+  the anonymous render of those carries NO participant names (counts
+  instead; ArrivalTimeline moves to the noindexed Účastníci tab for
+  anonymous viewers). Everything with a `view`/`participant` param is
+  noindex,follow.
+- **Retention** (`src/utils/retention.ts`, cron `GET /api/retention`,
+  daily via vercel.json + CRON_SECRET): 12 months after the chata's
+  explicit sidebar "Vyúčtováno dne" (`settledAt`) the job clears bank
+  fields and deletes receipts; dormant `user` accounts go after 2 years
+  (admin roles only reported); decided claims after 12 months. Deleting
+  a user cleans all references (`src/utils/userCleanup.ts`).
+- **Rights machinery** (`src/utils/participantRights.ts`): participant
+  form buttons export a per-person JSON bundle (equal-split expenses
+  included — they carry no weight rows) and anonymize in place (identity
+  out, arithmetic intact). Anonymizing also DELETES the linked account,
+  since that is where the email lives; it is kept, and the admin told so,
+  only when the account owns participants on other trips or is an admin
+  account. User deletion cleans references in a **beforeDelete** hook
+  (`src/utils/userCleanup.ts`) — `claim_requests.user_id` is NOT NULL, so
+  an afterDelete pass would never run. Received requests are logged in the
+  `data-requests` collection (System group).
+- **Art. 14 notice**: the participant form's "Dejte vědět, že tu je" box
+  (Art14NoticeBox) gives admins a copyable Czech message; it must never
+  promise more than decision 6 allows.
+- **Rate limits** (`src/lib/rateLimit.ts`): magic-link request (per IP +
+  per address + DB-backed resend cooldown), claim registration, both
+  decide endpoints. Accounts are adults-only: checkbox at claim
+  registration (enforced server-side) + note in the admin create flow.
+- **Self-hosted assets**: background URLs are fetched-and-stored on save
+  (`src/utils/selfHostImage.ts`; one-off `pnpm backgrounds:selfhost` for
+  legacy rows); admin fonts live in `public/fonts`. Security headers +
+  CSP in next.config.mjs — a new outbound endpoint means updating the
+  CSP AND `docs/legal/inventar-odchozich-volani.md` AND the policy's
+  recipient table in the same PR.
+- **Dev copies**: `pnpm migrate-from-prod` anonymizes by default;
+  `--keep-real-data` only for debugging that needs it (rule recorded in
+  `docs/legal/zaznamy-o-zpracovani.md`).
+- **Operational checklist** (Supabase region/backups/bucket-private, DPA
+  ticks, cron secret): `docs/legal/runbook.md`.
+
 ## Internationalization (i18n)
 
 The frontend and admin are bilingual **Czech + English** (next-intl on the

@@ -226,6 +226,9 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
 
   const [loginEmail, setLoginEmail] = useState('')
   const [registerEmail, setRegisterEmail] = useState('')
+  // Only adults may hold an account (terms section 4) — the affirmation is
+  // required and re-checked server-side (compliance item 22)
+  const [adultConfirmed, setAdultConfirmed] = useState(false)
   const [busy, setBusy] = useState<'login' | 'register' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
@@ -242,7 +245,11 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       : '/'
 
   const failureMessage = (code: string | undefined): string =>
-    code === 'captcha' ? t('claim.dialog.errors.captcha') : t('claim.dialog.errors.generic')
+    code === 'captcha'
+      ? t('claim.dialog.errors.captcha')
+      : code === 'rate-limited'
+        ? t('claim.dialog.errors.rate-limited')
+        : t('claim.dialog.errors.generic')
 
   const requestLoginLink = async () => {
     if (!loginEmail.trim() || captchaPending) return
@@ -273,7 +280,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
   }
 
   const register = async () => {
-    if (!registerEmail.trim() || captchaPending) return
+    if (!registerEmail.trim() || captchaPending || !adultConfirmed) return
     setBusy('register')
     setError(null)
     try {
@@ -285,6 +292,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
           participantId: participant.id,
           returnTo,
           turnstileToken: captchaToken,
+          adult: adultConfirmed,
         }),
       })
       if (!res.ok) {
@@ -423,7 +431,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
             <button
               type="button"
               onClick={register}
-              disabled={busy !== null || !registerEmail.trim() || captchaPending}
+              disabled={busy !== null || !registerEmail.trim() || captchaPending || !adultConfirmed}
               className="bg-primary hover:bg-primary-dark text-white text-[13px] font-bold px-3.5
                          py-2.5 rounded-xl shadow-md shadow-primary/30 transition-colors
                          disabled:opacity-60 flex-shrink-0"
@@ -431,7 +439,33 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
               {busy === 'register' ? t('claim.dialog.sending') : t('claim.dialog.register')}
             </button>
           </div>
+          {/* Adults-only affirmation (terms section 4, compliance item 22) */}
+          <label className="flex items-start gap-2 mt-2.5 text-[13px] text-gray-600 dark:text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={adultConfirmed}
+              onChange={(e) => setAdultConfirmed(e.target.checked)}
+              className="mt-0.5 accent-[var(--color-primary)]"
+            />
+            <span>{t('claim.dialog.adultConfirm')}</span>
+          </label>
         </div>
+
+        {/* Terms acceptance + privacy pointer (compliance blocker 7) */}
+        <p className="text-[12px] text-gray-500 dark:text-slate-400 mt-3">
+          {t.rich('claim.dialog.legalNote', {
+            terms: (chunks) => (
+              <a href="/podminky" className="underline underline-offset-2">
+                {chunks}
+              </a>
+            ),
+            privacy: (chunks) => (
+              <a href="/soukromi" className="underline underline-offset-2">
+                {chunks}
+              </a>
+            ),
+          })}
+        </p>
 
         {/* Visible bot check — this dialog can create accounts */}
         <TurnstileWidget onToken={setCaptchaToken} appearance="always" resetSignal={captchaReset} className="mt-3" />

@@ -12,6 +12,7 @@ import { referrerHost, track } from '@/lib/analytics'
 // under `login.errors.*` — anything else falls back to a generic message.
 const KNOWN_ERROR_CODES = [
   'captcha',
+  'rate-limited',
   'invalid_link',
   'expired_link',
   'oauth',
@@ -190,6 +191,22 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
       )}
 
       <p className="text-center text-gray-500 text-xs mt-6">{t('login.footnote')}</p>
+      {/* Terms acceptance + privacy pointer (compliance blocker 7): the
+          terms bind by use, so the sign-in moment says so with links */}
+      <p className="text-center text-gray-400 text-xs mt-2">
+        {t.rich('login.legalNote', {
+          terms: (chunks) => (
+            <a href="/podminky" className="underline underline-offset-2 hover:text-gray-600">
+              {chunks}
+            </a>
+          ),
+          privacy: (chunks) => (
+            <a href="/soukromi" className="underline underline-offset-2 hover:text-gray-600">
+              {chunks}
+            </a>
+          ),
+        })}
+      </p>
     </GlassCard>
   )
 }

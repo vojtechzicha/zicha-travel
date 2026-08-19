@@ -107,6 +107,14 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
     return buildExpenseRows(actualExpenses, payerLabels, stats)
   }, [actualExpenses, participants, stats])
 
+  // Locked participants' balances are withheld from anonymous responses
+  // server-side (compliance blocker 1) — their columns are simply missing
+  // from the stats. Say so instead of letting sums quietly stop adding up.
+  const hiddenCount = useMemo(
+    () => participants.filter((part) => !stats.participants[part.name]).length,
+    [participants, stats],
+  )
+
   const p = (name: string) => stats.participants[name]
   const paidRow = Object.fromEntries(names.map((n) => [n, p(n).paidExternal]))
   const prepayRows = PREPAYMENT_KINDS.map((kind) => ({
@@ -162,6 +170,15 @@ export function FinanceOverview({ chata, participants, expenses, stats, onBack }
           </button>
         </div>
       </div>
+
+      {hiddenCount > 0 && (
+        <p className="text-center text-[13px] text-white/80">
+          {t('overview.hiddenLocked', { count: hiddenCount })}{' '}
+          <a href="/login" className="underline underline-offset-2 text-white">
+            {t('overview.hiddenLockedCta')}
+          </a>
+        </p>
+      )}
 
       {/* Summary chips */}
       <div className="flex flex-wrap justify-center gap-2 text-[13px]">

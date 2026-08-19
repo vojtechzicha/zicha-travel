@@ -58,7 +58,6 @@ import {
   getTripPhase,
   navigateUrl,
   nightLabel,
-  nightlyCounts,
   personNights,
   presentOnNight,
   sleepingCapacity,
@@ -68,6 +67,7 @@ import {
   tripTotalDays,
   type TripPhase,
 } from '../utils/tripData'
+import { ArrivalTimeline } from './ArrivalTimeline'
 import {
   AccentCard,
   HintCard,
@@ -235,7 +235,6 @@ export function InformationView({
   const carsCount = (chata.sharedCars || []).length
   const hasPublicTransport = (chata.publicTransportOptions || []).length > 0
   const arrivalGroups = getArrivalGroups(chata, participants)
-  const counts = nightlyCounts(chata, participants)
   const navUrl = navigateUrl(chata)
   // Link back to this page from the calendar event. ChataView fetches its data
   // in an effect, so this only ever runs in the browser; guarded regardless.
@@ -335,7 +334,12 @@ export function InformationView({
     },
     {
       title: t('information.calendar.who'),
-      lines: [participants.map((p) => `${p.name}${petSuffix(p)}`).join(', ')],
+      // The name list lands in the calendar link's URL, which is part of the
+      // indexable anonymous render — signed-in viewers only (blocker 3);
+      // the headcount above stays for everyone.
+      lines: viewer.authenticated
+        ? [participants.map((p) => `${p.name}${petSuffix(p)}`).join(', ')]
+        : [],
     },
     {
       lines: [
@@ -762,9 +766,11 @@ export function InformationView({
       todayRows.push(
         <span key="arrivals">
           <strong className="font-semibold text-gray-900 dark:text-gray-100">
-            {t('information.todayArrives', {
-              names: arrivalsToday.map((p) => p.name + petSuffix(p)).join(', '),
-            })}
+            {viewer.authenticated
+              ? t('information.todayArrives', {
+                  names: arrivalsToday.map((p) => p.name + petSuffix(p)).join(', '),
+                })
+              : t('information.todayArrivesCount', { count: arrivalsToday.length })}
           </strong>
         </span>,
       )
@@ -987,83 +993,13 @@ export function InformationView({
       </div>
     ) : null
 
+  // Signed-in viewers only: the anonymous Informace render is indexable and
+  // must carry no participant names (blocker 3, decision 7). The section
+  // stays reachable without sign-in on the noindexed Účastníci tab
+  // (decision 12), which renders the same ArrivalTimeline for everyone.
   const arrivalsSection =
-    phase !== 'after' && arrivalGroups.length > 0 && nights > 0 ? (
-      <div>
-        <SheetHeading icon={Users} title={t('information.arrivalsTitle')} />
-        <div className="flex gap-1.5 items-center mb-2.5" aria-hidden="true">
-          <div className="flex-1" />
-          {Array.from({ length: nights }, (_, i) => (
-            <span
-              key={i}
-              className="w-6 text-center text-[11px] font-bold text-gray-400 dark:text-slate-500"
-            >
-              {nightLabel(chata, i + 1, locale)}
-            </span>
-          ))}
-        </div>
-        <div className="flex flex-col gap-2">
-          {arrivalGroups.map((group, idx) => {
-            const isMine = group.participants.some((p) =>
-              viewer.linkedParticipantIds.includes(p.id),
-            )
-            return (
-              <div key={idx} className="flex gap-1.5 items-center">
-                <div
-                  className={`flex-1 text-sm min-w-0 ${
-                    isMine
-                      ? 'font-semibold text-gray-900 dark:text-gray-100'
-                      : 'text-gray-700 dark:text-slate-300'
-                  }`}
-                >
-                  {group.participants
-                    .map(
-                      (p) =>
-                        p.name +
-                        petSuffix(p) +
-                        (viewer.linkedParticipantIds.includes(p.id)
-                          ? ` ${t('information.youSuffix')}`
-                          : ''),
-                    )
-                    .join(', ')}
-                </div>
-                {group.presence.map((present, nightIdx) => (
-                  <span
-                    key={nightIdx}
-                    className={`w-6 h-[15px] rounded ${
-                      present
-                        ? isMine
-                          ? 'bg-primary'
-                          : 'bg-primary-light/75'
-                        : 'bg-gray-100 border border-gray-200 dark:bg-white/[0.06] dark:border-white/10'
-                    }`}
-                  />
-                ))}
-              </div>
-            )
-          })}
-        </div>
-        {counts.length > 0 && (
-          <div className="flex gap-1.5 items-center mt-3 pt-2.5 border-t border-gray-100 dark:border-white/[0.07]">
-            <div className="flex-1 text-[13px] text-gray-500 dark:text-slate-400">
-              {t('information.sleepsTotal')}{' '}
-              {capacity > 0 && (
-                <span className="text-gray-400 dark:text-slate-500">
-                  {t('information.capacityNote', { count: capacity })}
-                </span>
-              )}
-            </div>
-            {counts.map((count, idx) => (
-              <span
-                key={idx}
-                className="w-6 text-center text-xs font-bold text-gray-500 dark:text-slate-400"
-              >
-                {count}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+    viewer.authenticated && phase !== 'after' && arrivalGroups.length > 0 && nights > 0 ? (
+      <ArrivalTimeline chata={chata} participants={participants} viewer={viewer} />
     ) : null
 
   const whoIsHereSection =
@@ -1074,26 +1010,36 @@ export function InformationView({
         return (
           <div>
             <SheetHeading icon={Users} title={t('information.whoIsHereTitle')} />
-            <div className="flex flex-wrap gap-1.5">
-              {present.map((p) => (
-                <PersonChip
-                  key={p.id}
-                  highlight={viewer.linkedParticipantIds.includes(p.id)}
-                >
-                  {p.name +
-                    petSuffix(p) +
-                    (viewer.linkedParticipantIds.includes(p.id)
-                      ? ` ${t('information.youSuffix')}`
-                      : '')}
-                </PersonChip>
-              ))}
-              {arrivalsToday.length > 0 && (
-                <PersonChip dashed>
-                  {arrivalsToday.map((p) => p.name + petSuffix(p)).join(', ')} ·{' '}
-                  {t('information.arrivingToday')}
-                </PersonChip>
-              )}
-            </div>
+            {viewer.authenticated ? (
+              <div className="flex flex-wrap gap-1.5">
+                {present.map((p) => (
+                  <PersonChip
+                    key={p.id}
+                    highlight={viewer.linkedParticipantIds.includes(p.id)}
+                  >
+                    {p.name +
+                      petSuffix(p) +
+                      (viewer.linkedParticipantIds.includes(p.id)
+                        ? ` ${t('information.youSuffix')}`
+                        : '')}
+                  </PersonChip>
+                ))}
+                {arrivalsToday.length > 0 && (
+                  <PersonChip dashed>
+                    {arrivalsToday.map((p) => p.name + petSuffix(p)).join(', ')} ·{' '}
+                    {t('information.arrivingToday')}
+                  </PersonChip>
+                )}
+              </div>
+            ) : (
+              // Anonymous (indexable) render: counts, no names — the names
+              // stay one click away on the noindexed Účastníci tab
+              <div className="text-sm text-gray-700 dark:text-slate-300">
+                {t('information.whoIsHereCount', { count: present.length })}
+                {arrivalsToday.length > 0 &&
+                  ` ${t('information.todayArrivesCount', { count: arrivalsToday.length })}.`}
+              </div>
+            )}
             {capacity > 0 && (
               <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-3">
                 {t('information.sleepsTonight', { count: present.length, capacity })}
@@ -1290,19 +1236,26 @@ export function InformationView({
     phase === 'after' && participants.length > 0 ? (
       <div>
         <SheetHeading icon={Users} title={t('information.whoWasTitle')} />
-        <div className="flex flex-wrap gap-1.5">
-          {[...participants]
-            .sort((a, b) => a.name.localeCompare(b.name, 'cs'))
-            .map((p) => (
-              <PersonChip key={p.id} highlight={viewer.linkedParticipantIds.includes(p.id)}>
-                {p.name +
-                  petSuffix(p) +
-                  (viewer.linkedParticipantIds.includes(p.id)
-                    ? ` ${t('information.youSuffix')}`
-                    : '')}
-              </PersonChip>
-            ))}
-        </div>
+        {viewer.authenticated ? (
+          <div className="flex flex-wrap gap-1.5">
+            {[...participants]
+              .sort((a, b) => a.name.localeCompare(b.name, 'cs'))
+              .map((p) => (
+                <PersonChip key={p.id} highlight={viewer.linkedParticipantIds.includes(p.id)}>
+                  {p.name +
+                    petSuffix(p) +
+                    (viewer.linkedParticipantIds.includes(p.id)
+                      ? ` ${t('information.youSuffix')}`
+                      : '')}
+                </PersonChip>
+              ))}
+          </div>
+        ) : (
+          // Anonymous (indexable) render: a count instead of the name chips
+          <p className="text-sm text-gray-700 dark:text-slate-300 m-0">
+            {t('information.whoWasCount', { count: participants.length })}
+          </p>
+        )}
       </div>
     ) : null
 
@@ -1414,26 +1367,34 @@ export function InformationView({
                       rundown lives in Organizace; only when expanded */}
                   {isExpanded && riders.length > 0 && (
                     <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-1.5">
-                      {t('information.ridersLabel')}{' '}
-                      {riders.map((p, i) => {
-                        const isMine = viewer.linkedParticipantIds.includes(p.id)
-                        return (
-                          <span key={p.id}>
-                            {i > 0 && ', '}
-                            <span
-                              className={
-                                isMine
-                                  ? 'font-semibold text-primary-dark dark:text-primary-light'
-                                  : undefined
-                              }
-                            >
-                              {p.name}
-                              {petSuffix(p)}
-                              {isMine && ` ${t('information.youSuffix')}`}
-                            </span>
-                          </span>
-                        )
-                      })}
+                      {viewer.authenticated ? (
+                        <>
+                          {t('information.ridersLabel')}{' '}
+                          {riders.map((p, i) => {
+                            const isMine = viewer.linkedParticipantIds.includes(p.id)
+                            return (
+                              <span key={p.id}>
+                                {i > 0 && ', '}
+                                <span
+                                  className={
+                                    isMine
+                                      ? 'font-semibold text-primary-dark dark:text-primary-light'
+                                      : undefined
+                                  }
+                                >
+                                  {p.name}
+                                  {petSuffix(p)}
+                                  {isMine && ` ${t('information.youSuffix')}`}
+                                </span>
+                              </span>
+                            )
+                          })}
+                        </>
+                      ) : (
+                        // Anonymous render stays name-free; the full rider
+                        // rundown lives on the noindexed Organizace tab
+                        t('information.ridersCount', { count: riders.length })
+                      )}
                     </div>
                   )}
                   {isExpanded && (

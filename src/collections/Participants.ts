@@ -1,11 +1,72 @@
 import crypto from 'crypto'
-import type { CollectionConfig, PayloadRequest, Where } from 'payload'
+import type { CollectionConfig, FieldAccess, PayloadRequest, Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
-import { adminRoleOnly, canManageChata, chataScopedAccess } from '../lib/access'
+import { anonymizeParticipant, exportParticipantBundle } from '../utils/participantRights'
+import { adminRoleOnly, canManageChata, chataScopedAccess, isSuperadmin } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 
 const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
+
+// Who may READ a participant's bank fields (compliance blocker 1, controller
+// decisions 6 and 13): the chata's admins, the owner account, the banker's
+// account — and everyone for the BANKER's own fields, because the anonymous
+// QR settlement needs them. Enforced here at the field level so REST and
+// GraphQL obey it; the slug API applies the same rule via lib/privacyScrub.
+// Lookups are cached per request (list views read many rows per chata).
+const bankFieldReadAccess: FieldAccess = async ({ req, doc }) => {
+  if (isSuperadmin(req.user)) return true
+  if (!doc) return false
+  const chataId = doc.chata != null ? refId(doc.chata) : null
+  if (chataId == null) return false
+  if (canManageChata(req.user, chataId)) return true
+
+  const cache = req.context as Record<string, unknown>
+  const bankerKey = `zt:bankerOf:${chataId}`
+  let bankerId = cache[bankerKey] as string | null | undefined
+  if (bankerId === undefined) {
+    try {
+      const chata = await req.payload.findByID({
+        collection: 'chatas',
+        id: chataId,
+        depth: 0,
+        overrideAccess: true,
+        context: { triggerAfterRead: false },
+      })
+      bankerId = chata?.banker != null ? refId(chata.banker) : null
+    } catch {
+      bankerId = null
+    }
+    cache[bankerKey] = bankerId
+  }
+
+  // the banker's own account is public — the anonymous settlement QR needs it
+  if (bankerId != null && String(doc.id) === bankerId) return true
+  if (!req.user) return false
+  // the owner account sees their own fields
+  if (doc.account != null && refId(doc.account) === String(req.user.id)) return true
+  // the banker's account sees every creditor's fields (refund view)
+  if (bankerId != null) {
+    const accountKey = `zt:bankerAccountOf:${chataId}`
+    let bankerAccount = cache[accountKey] as string | null | undefined
+    if (bankerAccount === undefined) {
+      try {
+        const banker = await req.payload.findByID({
+          collection: 'participants',
+          id: bankerId,
+          depth: 0,
+          overrideAccess: true,
+        })
+        bankerAccount = banker?.account != null ? refId(banker.account) : null
+      } catch {
+        bankerAccount = null
+      }
+      cache[accountKey] = bankerAccount
+    }
+    if (bankerAccount != null && bankerAccount === String(req.user.id)) return true
+  }
+  return false
+}
 
 export const Participants: CollectionConfig = {
   slug: 'participants',
@@ -131,6 +192,60 @@ export const Participants: CollectionConfig = {
         })
 
         return Response.json({ userId, email: normalizedEmail, created, linked: true })
+      },
+    },
+    {
+      // Rights machinery (compliance blocker 6): one person's complete data
+      // bundle for an Art. 15 access/copy request — admin button on the
+      // participant form. Never leaks other people's rows.
+      path: '/:id/export-data',
+      method: 'get',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing participant id' }, { status: 400 })
+        }
+        let participant
+        try {
+          participant = await req.payload.findByID({ collection: 'participants', id, depth: 0 })
+        } catch {
+          return Response.json({ error: 'Participant not found' }, { status: 404 })
+        }
+        if (!canManageChata(req.user, refId(participant.chata))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const bundle = await exportParticipantBundle(req.payload, participant.id)
+        return Response.json(bundle)
+      },
+    },
+    {
+      // Rights machinery (compliance blocker 6): erasure that keeps the
+      // arithmetic — placeholder name, cleared contact/bank/assignment data,
+      // amounts and shares stay so the group's settlement still adds up.
+      path: '/:id/anonymize',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const id = req.routeParams?.id as string | undefined
+        if (!id) {
+          return Response.json({ error: 'Missing participant id' }, { status: 400 })
+        }
+        let participant
+        try {
+          participant = await req.payload.findByID({ collection: 'participants', id, depth: 0 })
+        } catch {
+          return Response.json({ error: 'Participant not found' }, { status: 404 })
+        }
+        if (!canManageChata(req.user, refId(participant.chata))) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const summary = await anonymizeParticipant(req.payload, participant.id)
+        return Response.json({ ok: true, ...summary })
       },
     },
   ],
@@ -340,6 +455,9 @@ export const Participants: CollectionConfig = {
         {
           name: 'accountNumber',
           type: 'text',
+          access: {
+            read: bankFieldReadAccess,
+          },
           admin: {
             description: {
               en: 'Account number in Czech format (e.g., "123456/0100") - only needed for creditors',
@@ -358,6 +476,9 @@ export const Participants: CollectionConfig = {
         {
           name: 'iban',
           type: 'text',
+          access: {
+            read: bankFieldReadAccess,
+          },
           admin: {
             description: {
               en: 'Full IBAN for QR code generation - only needed for creditors',
@@ -403,6 +524,31 @@ export const Participants: CollectionConfig = {
             '@/collections/Participants/components/CreateAccountButton#CreateAccountButton',
           ],
         },
+      },
+    },
+    {
+      // Art. 14 notice nudge (blocker 8): copyable message for the group
+      // chat telling the participant they are in the system and what one
+      // sign-in hides
+      name: 'art14Notice',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/collections/Participants/components/Art14NoticeBox#Art14NoticeBox',
+        },
+        condition: (data) => Boolean(data?.id),
+      },
+    },
+    {
+      // Data-subject rights actions (blocker 6): export bundle + anonymize
+      name: 'rightsActions',
+      type: 'ui',
+      admin: {
+        components: {
+          Field:
+            '@/collections/Participants/components/RightsActionsButtons#RightsActionsButtons',
+        },
+        condition: (data) => Boolean(data?.id),
       },
     },
   ],

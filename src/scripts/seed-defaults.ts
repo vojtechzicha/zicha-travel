@@ -41,7 +41,10 @@ async function seedDefaults() {
         name: 'Default',
         isDefault: true,
         type: 'url',
-        url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2670&auto=format&fit=crop',
+        // Self-hosted copy of the old Unsplash default (compliance-gaps
+        // blocker 10) — a relative URL is served from public/ and skipped by
+        // the fetch-and-store hook.
+        url: '/bg/mountains-1920.avif',
       },
     })
     console.log('  Default background created')

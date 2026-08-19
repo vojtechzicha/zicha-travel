@@ -1,6 +1,22 @@
 #!/bin/bash
 set -e
 
+# Copies the production database into local Docker PostgreSQL.
+#
+# ANONYMIZED BY DEFAULT (compliance item 12): names, emails, bank details,
+# login tokens and claim/rights texts are scrambled after the restore, and
+# receipt files are not downloaded — real personal data has no business on
+# a developer machine. Pass --keep-real-data to skip the anonymization for
+# a production-debugging session; the justification and handling rule for
+# that mode are recorded in docs/legal/zaznamy-o-zpracovani.md (use it only
+# when a bug genuinely needs real data, delete the copy when done).
+ANONYMIZE=1
+for ARG in "$@"; do
+    case "$ARG" in
+        --keep-real-data) ANONYMIZE=0 ;;
+    esac
+done
+
 # Start local PostgreSQL if not already running (matching dev script behavior)
 WAS_RUNNING=$(docker compose ps -q postgres 2>/dev/null)
 docker compose up -d postgres
@@ -56,13 +72,59 @@ docker run --rm --network host postgres:17-alpine \
 
 echo "Database migration complete!"
 
-# 3. Sync uploaded files from production over public HTTP (files are
-# publicly readable by URL, like all data here). Downloads into the local
+# 3. Anonymize the local copy (default). Scrambles direct identifiers while
+# keeping ids, amounts and structure, so the app behaves identically.
+# Expense titles and prepayment notes stay as-is (they drive the journal
+# UI); that residual is recorded in docs/legal/zaznamy-o-zpracovani.md.
+if [ "$ANONYMIZE" = "1" ]; then
+    echo ""
+    echo "Anonymizing local copy (pass --keep-real-data to skip)..."
+    docker compose exec -T postgres psql -U payload -d payload <<'SQL'
+UPDATE participants SET
+  name = 'Účastník ' || id,
+  akuzativ = NULL,
+  vokativ = NULL,
+  account_number = CASE WHEN account_number IS NULL THEN NULL ELSE '000000/0100' END,
+  iban = CASE WHEN iban IS NULL THEN NULL ELSE 'CZ0001000000000000000000' END;
+UPDATE users SET
+  email = 'user' || id || '@example.test',
+  name = CASE WHEN name IS NULL THEN NULL ELSE 'Uživatel ' || id END,
+  vokativ = NULL,
+  login_token = NULL,
+  login_token_expires = NULL;
+UPDATE joint_accounts SET name = 'Společný účet ' || id;
+UPDATE claim_requests SET reason = NULL;
+UPDATE data_requests SET subject = 'Subjekt ' || id, note = NULL;
+-- "Klíče a Wi-Fi": the one deliberately non-public piece of chata data
+-- (passwords, key locations) — secrets have no debugging value locally.
+UPDATE chatas_private_info SET value = 'skryto';
+-- Free-text note on "výdaj za jiného plátce" — may talk about real people.
+UPDATE expenses SET approval_note = NULL;
+SQL
+    echo "Anonymization done."
+else
+    echo ""
+    echo "WARNING: --keep-real-data — the local copy holds real names, emails"
+    echo "and bank details. Use it only for the debugging task at hand and"
+    echo "delete it afterwards (docs/legal/zaznamy-o-zpracovani.md)."
+fi
+
+# 4. Sync uploaded files from production over public HTTP into the local
 # disk-storage folders (media/, expense-attachments/) that Payload uses
-# when S3_ENDPOINT is unset.
+# when S3_ENDPOINT is unset. Receipts require authentication since the
+# compliance work and are skipped in anonymized mode anyway — they ARE
+# personal data.
 SITE_URL="${PROD_SITE_URL:-https://zicha.travel}"
 
-for COLLECTION in media expense-attachments; do
+COLLECTIONS="media"
+if [ "$ANONYMIZE" = "0" ]; then
+    COLLECTIONS="media expense-attachments"
+    echo ""
+    echo "Note: expense-attachments listing/files require authentication now;"
+    echo "the receipt sync below may fail unless run with a session cookie."
+fi
+
+for COLLECTION in $COLLECTIONS; do
     echo ""
     echo "Syncing $COLLECTION files from $SITE_URL..."
     rm -rf "$COLLECTION"

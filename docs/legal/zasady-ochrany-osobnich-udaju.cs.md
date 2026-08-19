@@ -2,12 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: [doplnit při zveřejnění]
-
-> **Poznámka před zveřejněním (do vydání smazat):** Tento dokument popisuje
-> stav, který musí nejdřív nastat. Než se zveřejní, musí být hotové položky
-> označené jako blokující v `docs/legal/compliance-gaps.md`. Zveřejnit ho
-> dřív by znamenalo lhát.
+Účinnost od: 16. 8. 2026
 
 ## 1. Kdo je správce
 
@@ -107,18 +102,27 @@ jejich Microsoft účtu při přihlášení přes Microsoft.
 ## 6. Kdo vaše údaje vidí
 
 Stránka chaty je dostupná každému, kdo zná její adresu. Počítáme s tím, že
-adresu si parta posílá mezi sebou; stránky ale nejsou nijak tajné, proto je
-označujeme tak, aby je vyhledávače neindexovaly.
+adresu si parta posílá mezi sebou; stránky ale nejsou nijak tajné. Pro
+vyhledávače platí rozdělení: domovská stránka a základní informace o
+výletu, které nenesou žádná jména, indexované být mohou; záložky se jmény
+a financemi (Organizace, Účastníci, Finance, Přehled) označujeme tak, aby
+je vyhledávače neindexovaly.
 
-Bez přihlášení je vidět: název a termín výletu, jména účastníků, program,
-rozdělení postelí a aut, výdaje a jejich částky, zálohy a výsledné
-vyrovnání. Jména účastníků, jejichž účet už byl použit k přihlášení, se v
-detailu financí nepřihlášeným nezobrazují.
+Bez přihlášení návštěvník s odkazem vidí: název a termín výletu, jména
+účastníků, program, rozdělení postelí a aut, výdaje a jejich částky,
+zálohy, výsledné vyrovnání (kdo komu kolik posílá) a platební údaje
+pokladníka, aby fungovalo placení QR kódem. Detail financí účastníka,
+jehož účet už byl použit k přihlášení, se nepřihlášeným nezobrazuje:
+jedno přihlášení je tedy způsob, jak svůj rozpis a zůstatek schovat.
+Jméno u výletu zůstává v obou případech.
 
-Bez přihlášení naopak není vidět: bankovní spojení kohokoli z účastníků,
-účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi" a výdaje čekající na
-potvrzení. Bankovní spojení účastníka vidí jen on sám (přes svůj účet),
-pokladník a správci dané chaty; účtenky jen přihlášení členové dané chaty.
+Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě
+pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi" a výdaje
+čekající na potvrzení. Bankovní spojení účastníka vidí jen on sám (přes
+svůj účet), přihlášený pokladník a správci dané chaty; pokladníkovo
+bankovní spojení je veřejné, protože bez něj by nefungovalo anonymní
+vyrovnání (pokladník s tím svou rolí počítá). Účtenky vidí jen přihlášení
+uživatelé.
 
 Správci chaty vidí všechny údaje své chaty. My jako provozovatel máme
 přístup ke všemu, ale používáme ho jen k provozu, podpoře a plnění těchto
@@ -136,6 +140,7 @@ Provoz služby zajišťují tito zpracovatelé a příjemci:
 | PostHog | anonymní statistiky návštěvnosti | EU (Frankfurt) |
 | Cloudflare | ochrana veřejných formulářů před roboty (Turnstile) | EU/USA |
 | Microsoft | přihlášení přes Microsoft účet, pokud ho použijete | EU/USA |
+| Paylibo | generování platebního QR kódu u vyrovnání: číslo účtu příjemce, částka a zpráva platby, plus IP adresa a prohlížeč každého, kdo si QR zobrazí | EU (ČR) |
 
 Váš prohlížeč navíc při zobrazení předpovědi počasí u výletu stahuje data ze
 služby Open-Meteo (ta se dozví vaši IP adresu, žádné vaše údaje jí

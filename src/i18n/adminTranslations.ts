@@ -74,9 +74,41 @@ const en = {
     bankerPaymentsGoToPrefix: 'Payments go to ',
     bankerPaymentsGoToSuffix: "'s own account:",
     bankerEditOnParticipant: 'Edit on the participant →',
+    bankerNeedsAccountHint:
+      'The banker has no linked user account. Creditor account numbers are shown only to signed-in bankers and admins, so without an account they cannot see where to send refunds. Use "Create account from email..." on the participant.',
+    bankerNeedsAccountCta: 'Open the participant →',
+
+    // RightsActionsButtons (Participants)
+    rightsExport: 'Download data bundle (JSON)',
+    rightsExporting: 'Preparing export...',
+    rightsExportError: 'Export failed.',
+    rightsAnonymize: 'Anonymize participant...',
+    rightsAnonymizing: 'Anonymizing...',
+    rightsAnonymizeConfirm:
+      'Anonymize this participant? Name, declension forms, bank details, pet flag and bed/car/transport assignments are cleared for good, and the linked account is deleted with them unless it also belongs to participants on other trips. Amounts and shares stay so the settlement still adds up. This cannot be undone.',
+    rightsAnonymizeDone: 'Done. The participant is now "{{name}}".',
+    rightsAnonymizeAccountDeleted: 'The linked account was deleted too, so the email is gone.',
+    rightsAnonymizeAccountKept:
+      'The linked account was KEPT: it still owns {{count}} participant(s) on other trips, so deleting it would erase those as well. The email therefore still exists. Anonymize the other participants first, or delete the account by hand under System.',
+    rightsAnonymizeAccountAdmin:
+      'The linked account was KEPT because it is an admin account. Removing an operator\'s access is a manual decision. The email therefore still exists.',
+    rightsAnonymizeError: 'Anonymization failed.',
+    rightsHint:
+      'GDPR rights actions. Record the request itself under System → Data requests, so the one-month reply promise has evidence behind it.',
+
+    // Art14NoticeBox (Participants)
+    art14Title: 'Let them know they are in the system',
+    art14Hint:
+      'GDPR asks that people entered by somebody else actually learn about it. Send {{name}} this message (the group chat is fine). It also explains that one sign-in hides their finance detail.',
+    art14Show: 'Show message to copy',
+    art14Hide: 'Hide',
+    art14Copy: 'Copy message',
+    art14Copied: 'Copied ✓',
 
     // CreateAccountButton (Participants)
     createAccountOpen: 'Create account from email...',
+    createAccountAdultsOnly:
+      'Accounts are for adults only (terms of use, section 4). Enter children as participants without an account; a parent pays for them.',
     saveParticipantFirst: 'Save the participant first.',
     createAccountCreating: 'Creating...',
     createAccountSubmit: 'Create & link',
@@ -195,9 +227,41 @@ const cs: typeof en = {
     bankerPaymentsGoToPrefix: 'Platby jdou na vlastní účet účastníka „',
     bankerPaymentsGoToSuffix: '“:',
     bankerEditOnParticipant: 'Upravit u účastníka →',
+    bankerNeedsAccountHint:
+      'Pokladník nemá propojený uživatelský účet. Čísla účtů věřitelů se zobrazují jen přihlášeným pokladníkům a správcům – bez účtu neuvidí, kam posílat vratky. Použijte „Vytvořit účet z e-mailu…“ u účastníka.',
+    bankerNeedsAccountCta: 'Otevřít účastníka →',
+
+    // RightsActionsButtons (Participants)
+    rightsExport: 'Stáhnout balíček dat (JSON)',
+    rightsExporting: 'Připravuje se export…',
+    rightsExportError: 'Export se nezdařil.',
+    rightsAnonymize: 'Anonymizovat účastníka…',
+    rightsAnonymizing: 'Anonymizuje se…',
+    rightsAnonymizeConfirm:
+      'Anonymizovat tohoto účastníka? Jméno, skloňované tvary, bankovní údaje, údaj o zvířeti a přiřazení postele/auta/spoje se nenávratně smažou a spolu s nimi i propojený účet, pokud nepatří i účastníkům na jiných výletech. Částky a podíly zůstanou, aby vyúčtování dál sedělo. Akci nelze vzít zpět.',
+    rightsAnonymizeDone: 'Hotovo. Účastník je nyní „{{name}}“.',
+    rightsAnonymizeAccountDeleted: 'Propojený účet byl smazán také, e-mail je tedy pryč.',
+    rightsAnonymizeAccountKept:
+      'Propojený účet ZŮSTAL: je propojený i s účastníky na jiných výletech (počet: {{count}}) a smazáním byste vymazali i je. E-mail tedy stále existuje. Anonymizujte nejdřív ostatní účastníky, nebo účet smažte ručně v sekci Systém.',
+    rightsAnonymizeAccountAdmin:
+      'Propojený účet ZŮSTAL, protože jde o správcovský účet. Odebrání přístupu správci je ruční rozhodnutí. E-mail tedy stále existuje.',
+    rightsAnonymizeError: 'Anonymizace se nezdařila.',
+    rightsHint:
+      'Akce pro práva subjektů údajů (GDPR). Samotnou žádost zaznamenejte v Systém → Žádosti o údaje, ať má měsíční lhůta doklad.',
+
+    // Art14NoticeBox (Participants)
+    art14Title: 'Dejte vědět, že tu je',
+    art14Hint:
+      'GDPR počítá s tím, že se člověk zapsaný někým jiným o zápisu dozví. Pošlete tuhle zprávu, ať to {{name}} ví (stačí skupinová konverzace party). Vysvětluje i to, že jedno přihlášení schová detail financí.',
+    art14Show: 'Zobrazit zprávu ke zkopírování',
+    art14Hide: 'Skrýt',
+    art14Copy: 'Zkopírovat zprávu',
+    art14Copied: 'Zkopírováno ✓',
 
     // CreateAccountButton (Participants)
     createAccountOpen: 'Vytvořit účet z e-mailu…',
+    createAccountAdultsOnly:
+      'Účet smí mít jen zletilá osoba (podmínky užití, kapitola 4). Děti se zapisují jako účastníci bez účtu; platí za ně rodič.',
     saveParticipantFirst: 'Nejdřív účastníka uložte.',
     createAccountCreating: 'Vytváření…',
     createAccountSubmit: 'Vytvořit a propojit',

@@ -12,6 +12,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t('login.metaTitle'),
     description: t('login.metaDescription'),
+    // Also disallowed in robots.txt, which means crawlers never fetch the
+    // page and so never SEE this noindex — the meta is belt-and-braces for
+    // crawlers that ignore robots.txt, not a de-indexing path. Should a
+    // stray /login link ever get indexed, drop the robots.txt disallow so
+    // the noindex can actually be read (see the comment in app/robots.ts).
+    robots: { index: false, follow: true },
   }
 }
 

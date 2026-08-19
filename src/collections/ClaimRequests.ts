@@ -5,6 +5,7 @@ import { canManageChata, chataScopedAccess, isSuperadmin, refId } from '../lib/a
 import { autoApproveReason, verifyDecideToken } from '../lib/claimRequests'
 import { requestOrigin, sendMagicLink, sendSuperadminNotice } from '../lib/auth/magicLink'
 import { clientIp, verifyTurnstileToken } from '../lib/turnstile'
+import { RATE_LIMITS, checkRateLimit, rateLimitResponse } from '../lib/rateLimit'
 import {
   chataOrigin,
   notifyClaimDecisionMakers,
@@ -291,21 +292,42 @@ export const ClaimRequests: CollectionConfig = {
         let participantId: unknown
         let returnTo: unknown
         let turnstileToken: unknown
+        let adult: unknown
         try {
           const body = await req.json?.()
           email = body?.email
           participantId = body?.participantId
           returnTo = body?.returnTo
           turnstileToken = body?.turnstileToken
+          adult = body?.adult
         } catch {
           // fall through to validation
         }
         if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
           return Response.json({ error: 'A valid email is required' }, { status: 400 })
         }
+        // Only adults may hold an account (terms section 4, compliance
+        // item 22) — the checkbox is affirmed client-side and enforced here
+        if (adult !== true) {
+          return Response.json({ error: 'adult-confirmation-required' }, { status: 400 })
+        }
         if (typeof participantId !== 'number' && typeof participantId !== 'string') {
           return Response.json({ error: 'Missing participantId' }, { status: 400 })
         }
+
+        // Throttle: this endpoint creates accounts and sends email to a
+        // caller-supplied address (compliance blocker 9)
+        const registerIp = clientIp(req.headers)
+        const registerIpCheck = checkRateLimit(
+          `claim-register:ip:${registerIp}`,
+          RATE_LIMITS.claimPerIp,
+        )
+        if (!registerIpCheck.allowed) return rateLimitResponse(registerIpCheck)
+        const registerEmailCheck = checkRateLimit(
+          `magic-link:email:${email.trim().toLowerCase()}`,
+          RATE_LIMITS.magicLinkPerEmail,
+        )
+        if (!registerEmailCheck.allowed) return rateLimitResponse(registerEmailCheck)
 
         // Bot gate — this endpoint can CREATE accounts, so it gets the
         // visible Turnstile check (no-op where not configured — local dev)
@@ -434,6 +456,12 @@ export const ClaimRequests: CollectionConfig = {
         if (typeof token !== 'string' || (action !== 'approve' && action !== 'reject')) {
           return Response.json({ error: 'invalid' }, { status: 400 })
         }
+        // The token is the credential, so slow down guessing (blocker 9)
+        const decideCheck = checkRateLimit(
+          `claim-decide:ip:${clientIp(req.headers)}`,
+          RATE_LIMITS.decidePerIp,
+        )
+        if (!decideCheck.allowed) return rateLimitResponse(decideCheck)
         const secret = process.env.PAYLOAD_SECRET
         if (!secret) {
           return Response.json({ error: 'invalid' }, { status: 500 })

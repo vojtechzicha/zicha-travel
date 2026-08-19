@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { parseCookies } from 'payload'
 import jwt from 'jsonwebtoken'
 import { isAdminRole, isSuperadmin } from '../lib/access'
+import { cleanupDeletedUserReferences } from '../utils/userCleanup'
 
 const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
 
@@ -59,6 +60,27 @@ export const Users: CollectionConfig = {
     ],
   },
   hooks: {
+    // Deleting an account must not leave dangling references (compliance
+    // blocker 6): unlink participants, clear expense stamps, drop the
+    // account's own claim requests. Shared with the retention job.
+    //
+    // This MUST run BEFORE the row goes: `claim_requests.user_id` is NOT
+    // NULL with ON DELETE SET NULL, so Postgres refuses to delete a user
+    // who has any claim request — an afterDelete hook would never be
+    // reached. The other references (participants.account, the expense
+    // stamps) are nullable, and the database clears them at delete time,
+    // which would leave an afterDelete pass nothing to find. Doing the
+    // work here makes the cleanup deterministic in both cases.
+    //
+    // Failure is deliberately NOT swallowed: an aborted delete that keeps
+    // the account intact beats a half-deleted one. The retention job logs
+    // it per user and retries on its next run.
+    beforeDelete: [
+      async ({ id, req }) => {
+        // `req` joins the cleanup writes to the delete's transaction
+        await cleanupDeletedUserReferences(req.payload, id as number, req)
+      },
+    ],
     // Payload's own login op (local email+password strategy — the fallback
     // where Microsoft OAuth is not configured). The OAuth callback and
     // magic-link verify routes stamp lastLoginAt themselves.

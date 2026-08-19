@@ -90,7 +90,9 @@
     "cardRefundedOverpayment": "Overpayment returned:",
     "cardFairShare": "Fair share:",
     "cardPlannedFairShare": "Planned fair share:",
-    "cardResult": "Result:"
+    "cardResult": "Result:",
+    "hiddenLocked": "{count, plural, one {One participant's finances are} other {{count} participants' finances are}} behind sign-in, so the sums may not add up.",
+    "hiddenLockedCta": "Sign in"
   },
   "settlement": {
     "copy": "Copy",
@@ -100,6 +102,8 @@
     "nobodyToPay": "Nobody to pay",
     "payCash": "Pay in cash",
     "noBankDetails": "This participant has no bank details filled in",
+    "accountsBehindLogin": "Account numbers are visible only to the signed-in banker and chata admins.",
+    "accountsBehindLoginCta": "Sign in",
     "qrMessage": "Settlement - {name}",
     "manualEntry": "Manual entry",
     "accountNumber": "Account number",

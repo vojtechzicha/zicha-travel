@@ -39,6 +39,8 @@ interface PersonViewProps {
   prepayments: Prepayment[]
   expenses: Expense[]
   showHeader?: boolean
+  /** creditor bank fields were withheld from this viewer (not admin/banker) */
+  creditorAccountsHidden?: boolean
 }
 
 export function PersonView({
@@ -52,6 +54,7 @@ export function PersonView({
   prepayments,
   expenses,
   showHeader = true,
+  creditorAccountsHidden = false,
 }: PersonViewProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
   const [isPlannedBreakdownOpen, setIsPlannedBreakdownOpen] = useState(false)
@@ -421,6 +424,7 @@ export function PersonView({
             creditors={creditors}
             debtors={debtors}
             participants={allParticipants}
+            creditorAccountsHidden={creditorAccountsHidden}
           />
         </GlassCard>
       )}

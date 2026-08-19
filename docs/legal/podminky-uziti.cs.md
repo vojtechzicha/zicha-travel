@@ -2,12 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: [doplnit při zveřejnění]
-
-> **Poznámka před zveřejněním (do vydání smazat):** Než se podmínky
-> zveřejní, musí být hotové blokující položky z
-> `docs/legal/compliance-gaps.md`, zejména místo, kde s nimi uživatel při
-> založení účtu souhlasí.
+Účinnost od: 16. 8. 2026
 
 ## 1. Co je zicha.travel a kdo ho provozuje
 
@@ -22,7 +17,7 @@ tomu odpovídá i rozsah záruk v kapitole 9.
 
 Tyto podmínky jsou smlouvou mezi vámi a námi. Užíváním služby (a u účtu
 jeho založením) je přijímáte. Zpracování osobních údajů popisují samostatné
-[Zásady zpracování osobních údajů](./zasady-ochrany-osobnich-udaju.cs.md);
+[Zásady zpracování osobních údajů](/soukromi);
 tyto podmínky na ně navazují.
 
 ## 2. Pojmy

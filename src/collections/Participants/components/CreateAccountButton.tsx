@@ -72,7 +72,19 @@ export const CreateAccountButton: React.FC = () => {
   }
 
   return (
-    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+    <div style={{ marginTop: '0.5rem' }}>
+      {/* Only adults may hold an account (terms section 4, compliance
+          item 22) — remind the admin at the create moment */}
+      <div
+        style={{
+          fontSize: '0.75rem',
+          color: 'var(--theme-elevation-500)',
+          marginBottom: '0.35rem',
+        }}
+      >
+        {t('zicha:createAccountAdultsOnly')}
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
       <input
         type="email"
         placeholder="email@example.com"
@@ -104,6 +116,7 @@ export const CreateAccountButton: React.FC = () => {
       <Button buttonStyle="secondary" size="small" onClick={() => setOpen(false)} disabled={loading}>
         {t('zicha:cancel')}
       </Button>
+      </div>
     </div>
   )
 }

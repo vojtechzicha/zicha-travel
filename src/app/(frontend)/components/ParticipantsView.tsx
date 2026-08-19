@@ -17,6 +17,7 @@ import { anonymousViewer, type FinanceViewer, type LockedParticipant } from '@/l
 import type { ViewerClaim } from '@/lib/claimRequests'
 import { getTripNights, isTentativeTrip } from '../utils/participantHelpers'
 import { getBedAssignments } from '../utils/tripData'
+import { ArrivalTimeline } from './ArrivalTimeline'
 import { Sheet, StatStrip, StatusBadge } from './SheetUi'
 import {
   ClaimDialog,
@@ -245,6 +246,12 @@ export function ParticipantsView({
           )
         })}
       </div>
+
+      {/* "Kdo přijede kdy" for EVERY viewer: this tab is noindexed and shows
+          names to anonymous visitors by design, so the arrival groups stay
+          reachable without sign-in after leaving the anonymous Informace
+          render (compliance blocker 3, decision 12). */}
+      <ArrivalTimeline chata={chata} participants={participants} viewer={viewer} />
 
       {claimDialogFor && (
         <ClaimDialog

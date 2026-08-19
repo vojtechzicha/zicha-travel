@@ -36,7 +36,50 @@ const nextConfig = {
   // 308-redirect them and the beacons (POST) would be dropped.
   skipTrailingSlashRedirect: true,
   async headers() {
+    // Content-Security-Policy (compliance-gaps item 11). Every external
+    // endpoint named here must also appear in the outbound-calls inventory
+    // (docs/legal, compliance-gaps item 21) — adding a new outbound endpoint
+    // means updating BOTH the CSP and the inventory/policy.
+    //
+    // Known needs: Turnstile (script + iframe + its own connect calls),
+    // Open-Meteo (client-side weather fetch), Paylibo QR + legacy external
+    // backgrounds + S3 storage (img-src https:), PostHog rides the
+    // first-party /ingest proxy so connect-src 'self' covers it.
+    // 'unsafe-eval' only in development — Next.js dev tooling needs it.
+    const isDev = process.env.NODE_ENV === 'development'
+    // Receipt uploads go straight from the browser to the bucket
+    // (S3 clientUploads presigned URLs), so the storage origin must be a
+    // permitted connect target wherever S3 is configured.
+    const s3Origin = process.env.S3_ENDPOINT ? new URL(process.env.S3_ENDPOINT).origin : null
+    const csp = [
+      `default-src 'self'`,
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://challenges.cloudflare.com`,
+      `style-src 'self' 'unsafe-inline'`,
+      `img-src 'self' data: blob: https:`,
+      `font-src 'self' data:`,
+      `connect-src 'self' https://api.open-meteo.com https://challenges.cloudflare.com${s3Origin ? ` ${s3Origin}` : ''}`,
+      // posthog-js may spin up blob: web workers
+      `worker-src 'self' blob:`,
+      `frame-src https://challenges.cloudflare.com`,
+      `frame-ancestors 'self'`,
+      `base-uri 'self'`,
+      `form-action 'self'`,
+      `object-src 'none'`,
+    ].join('; ')
+
     return [
+      {
+        // Security headers on every response (compliance-gaps item 11).
+        source: '/(.*)',
+        headers: [
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Content-Security-Policy', value: csp },
+        ],
+      },
       {
         // Static site background — public/ files default to max-age=0, which
         // means a revalidation round-trip for a file that only changes when

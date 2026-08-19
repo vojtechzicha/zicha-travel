@@ -52,6 +52,20 @@ export async function Footer() {
           >
             {t('help')}
           </a>
+          {/* The privacy policy promises to be "linked in the footer of
+              every page" — these two links are that promise (blocker 7) */}
+          <a
+            href="/soukromi"
+            className="hover:text-white transition-colors underline underline-offset-2"
+          >
+            {t('privacyPolicy')}
+          </a>
+          <a
+            href="/podminky"
+            className="hover:text-white transition-colors underline underline-offset-2"
+          >
+            {t('terms')}
+          </a>
           {/* Reopens the consent banner — consent must be as easy to
               withdraw as to give. Hidden while analytics is off. */}
           {analyticsEnabled() && (
