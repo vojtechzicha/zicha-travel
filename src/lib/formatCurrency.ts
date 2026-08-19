@@ -51,26 +51,17 @@ export function formatDateWithDay(date: string | Date, locale?: AppLocale): stri
 }
 
 /**
- * Compact date + time, e.g. "5. 8. 14:32" / "05/08 14:32" — used in the
- * expense card's "added by you" footer
+ * Compact date, e.g. "5. 8." / "05/08" — used in the expense card's
+ * "added by you" footer. Deliberately date only: an expense carries just a
+ * day (the composer edits the date, the time of day is whatever the row
+ * happened to be stamped with), so showing a time would promise a precision
+ * nobody can set.
  */
-export function formatShortDateTime(date: string | Date, locale?: AppLocale): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  const day = new Intl.DateTimeFormat(intlTag(locale), {
-    day: 'numeric',
-    month: 'numeric',
-  }).format(d)
-  return `${day} ${formatTime(d, locale)}`
-}
-
-/**
- * Format time (HH:MM).
- */
-export function formatTime(date: string | Date, locale?: AppLocale): string {
+export function formatShortDate(date: string | Date, locale?: AppLocale): string {
   const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat(intlTag(locale), {
-    hour: '2-digit',
-    minute: '2-digit',
+    day: 'numeric',
+    month: 'numeric',
   }).format(d)
 }
 
