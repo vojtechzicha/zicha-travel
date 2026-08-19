@@ -184,11 +184,11 @@ export default function PrivacyContentEn() {
         <Section id="viditelnost" title="6. Who can see your data" icon={<Eye size={20} />}>
           <p>
             A chata&rsquo;s page is available to anyone who knows its address. We expect the
-            group to share the address among themselves; the pages are not secret, though. For
-            search engines the surface is split: the homepage and the trip&rsquo;s basic
-            information, which carry no names, may be indexed; the tabs with names and finances
-            (Organization, Participants, Finance, Overview) are marked so that search engines do
-            not index them.
+            group to share the address among themselves; the pages are not secret, though.
+            Search engines get only part of it: the homepage and the trip&rsquo;s basic
+            information carry no names and may be indexed, while the tabs with names and
+            finances (Organization, Participants, Finance, Overview) are marked so that search
+            engines do not index them.
           </p>
           <p>
             Without signing in, a visitor with the link can see: the trip&rsquo;s name and

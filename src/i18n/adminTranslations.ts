@@ -94,10 +94,10 @@ const en = {
       'The linked account was KEPT because it is an admin account. Removing an operator\'s access is a manual decision. The email therefore still exists.',
     rightsAnonymizeError: 'Anonymization failed.',
     rightsHint:
-      'GDPR rights actions. Record the request itself under System → Data requests, so the one-month deadline has evidence.',
+      'GDPR rights actions. Record the request itself under System → Data requests, so the one-month reply promise has evidence behind it.',
 
     // Art14NoticeBox (Participants)
-    art14Title: 'Tell them they are here',
+    art14Title: 'Let them know they are in the system',
     art14Hint:
       'GDPR asks that people entered by somebody else actually learn about it. Send {{name}} this message (the group chat is fine). It also explains that one sign-in hides their finance detail.',
     art14Show: 'Show message to copy',
@@ -108,7 +108,7 @@ const en = {
     // CreateAccountButton (Participants)
     createAccountOpen: 'Create account from email...',
     createAccountAdultsOnly:
-      'Accounts are for adults only (terms of use, section 4). Children are entered as participants without an account; a parent pays for them.',
+      'Accounts are for adults only (terms of use, section 4). Enter children as participants without an account; a parent pays for them.',
     saveParticipantFirst: 'Save the participant first.',
     createAccountCreating: 'Creating...',
     createAccountSubmit: 'Create & link',
@@ -242,7 +242,7 @@ const cs: typeof en = {
     rightsAnonymizeDone: 'Hotovo. Účastník je nyní „{{name}}“.',
     rightsAnonymizeAccountDeleted: 'Propojený účet byl smazán také, e-mail je tedy pryč.',
     rightsAnonymizeAccountKept:
-      'Propojený účet ZŮSTAL: patří ještě k {{count}} účastníkům na jiných výletech, smazáním byste vymazali i je. E-mail tedy stále existuje. Anonymizujte nejdřív ostatní účastníky, nebo účet smažte ručně v sekci Systém.',
+      'Propojený účet ZŮSTAL: je propojený i s účastníky na jiných výletech (počet: {{count}}) a smazáním byste vymazali i je. E-mail tedy stále existuje. Anonymizujte nejdřív ostatní účastníky, nebo účet smažte ručně v sekci Systém.',
     rightsAnonymizeAccountAdmin:
       'Propojený účet ZŮSTAL, protože jde o správcovský účet. Odebrání přístupu správci je ruční rozhodnutí. E-mail tedy stále existuje.',
     rightsAnonymizeError: 'Anonymizace se nezdařila.',
@@ -252,7 +252,7 @@ const cs: typeof en = {
     // Art14NoticeBox (Participants)
     art14Title: 'Dejte vědět, že tu je',
     art14Hint:
-      'GDPR počítá s tím, že se člověk zapsaný někým jiným o zápisu dozví. Pošlete {{name}} tuhle zprávu (stačí skupinová konverzace party). Vysvětluje i to, že jedno přihlášení schová detail financí.',
+      'GDPR počítá s tím, že se člověk zapsaný někým jiným o zápisu dozví. Pošlete tuhle zprávu, ať to {{name}} ví (stačí skupinová konverzace party). Vysvětluje i to, že jedno přihlášení schová detail financí.',
     art14Show: 'Zobrazit zprávu ke zkopírování',
     art14Hide: 'Skrýt',
     art14Copy: 'Zkopírovat zprávu',
