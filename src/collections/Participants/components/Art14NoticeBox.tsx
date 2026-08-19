@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, useDocumentInfo, useFormFields, useTranslation } from '@payloadcms/ui'
 import type {
   AdminTranslationKeys,

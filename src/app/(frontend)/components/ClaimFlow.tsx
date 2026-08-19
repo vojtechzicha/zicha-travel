@@ -245,7 +245,11 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
       : '/'
 
   const failureMessage = (code: string | undefined): string =>
-    code === 'captcha' ? t('claim.dialog.errors.captcha') : t('claim.dialog.errors.generic')
+    code === 'captcha'
+      ? t('claim.dialog.errors.captcha')
+      : code === 'rate-limited'
+        ? t('claim.dialog.errors.rate-limited')
+        : t('claim.dialog.errors.generic')
 
   const requestLoginLink = async () => {
     if (!loginEmail.trim() || captchaPending) return

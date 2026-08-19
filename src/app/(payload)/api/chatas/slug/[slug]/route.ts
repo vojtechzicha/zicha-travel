@@ -43,6 +43,10 @@ export async function GET(
       },
       limit: 1,
       depth: 2,
+      // This route computes (and viewer-scrubs) `stats` itself below; the
+      // Chatas afterRead hook would compute a second, anonymous `_stats`
+      // (plus its locked-participants queries) that nothing here consumes.
+      context: { triggerAfterRead: false },
     })
 
     if (chatasResult.docs.length === 0) {

@@ -7,7 +7,7 @@
 //   fields are cleared and the chata's receipts (expense attachments,
 //   files included) are deleted.
 // - accounts (role "user") with no login for 2 years (or never logged in
-//   and created 2+ years ago) are deleted; the Users afterDelete hook
+//   and created 2+ years ago) are deleted; the Users beforeDelete hook
 //   cleans up every reference. Dormant ADMIN accounts are only reported —
 //   removing an operator's access is a human decision.
 // - decided claim requests (approved/rejected/cancelled) go 12 months
@@ -29,18 +29,6 @@ export interface RetentionSummary {
   dormantAdminsFound: number
   decidedClaimsDeleted: number
   staleLocksDeleted: number
-}
-
-/** True when `date` lies at least `months` × 30 days before `now`. */
-export function isPastRetention(
-  date: string | Date | null | undefined,
-  months: number,
-  now: number,
-): boolean {
-  if (!date) return false
-  const t = typeof date === 'string' ? Date.parse(date) : date.getTime()
-  if (Number.isNaN(t)) return false
-  return now - t >= months * MONTH_MS
 }
 
 export async function runRetention(
@@ -155,7 +143,7 @@ export async function runRetention(
       continue
     }
     try {
-      // the Users afterDelete hook nulls/cleans every reference
+      // the Users beforeDelete hook nulls/cleans every reference
       await payload.delete({ collection: 'users', id: user.id, overrideAccess: true })
       summary.dormantUsersDeleted++
     } catch (err) {

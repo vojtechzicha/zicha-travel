@@ -77,7 +77,8 @@ export const Users: CollectionConfig = {
     // it per user and retries on its next run.
     beforeDelete: [
       async ({ id, req }) => {
-        await cleanupDeletedUserReferences(req.payload, id as number)
+        // `req` joins the cleanup writes to the delete's transaction
+        await cleanupDeletedUserReferences(req.payload, id as number, req)
       },
     ],
     // Payload's own login op (local email+password strategy — the fallback

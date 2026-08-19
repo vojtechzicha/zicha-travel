@@ -74,8 +74,8 @@ echo "Database migration complete!"
 
 # 3. Anonymize the local copy (default). Scrambles direct identifiers while
 # keeping ids, amounts and structure, so the app behaves identically.
-# Expense titles stay as-is (they drive the journal UI); that residual is
-# recorded in docs/legal/zaznamy-o-zpracovani.md.
+# Expense titles and prepayment notes stay as-is (they drive the journal
+# UI); that residual is recorded in docs/legal/zaznamy-o-zpracovani.md.
 if [ "$ANONYMIZE" = "1" ]; then
     echo ""
     echo "Anonymizing local copy (pass --keep-real-data to skip)..."
@@ -95,6 +95,11 @@ UPDATE users SET
 UPDATE joint_accounts SET name = 'Společný účet ' || id;
 UPDATE claim_requests SET reason = NULL;
 UPDATE data_requests SET subject = 'Subjekt ' || id, note = NULL;
+-- "Klíče a Wi-Fi": the one deliberately non-public piece of chata data
+-- (passwords, key locations) — secrets have no debugging value locally.
+UPDATE chatas_private_info SET value = 'skryto';
+-- Free-text note on "výdaj za jiného plátce" — may talk about real people.
+UPDATE expenses SET approval_note = NULL;
 SQL
     echo "Anonymization done."
 else

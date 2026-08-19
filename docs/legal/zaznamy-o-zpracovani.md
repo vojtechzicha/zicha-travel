@@ -53,11 +53,12 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 
 `pnpm migrate-from-prod` kopíruje produkční databázi na vývojový stroj.
 Výchozí režim je **anonymizovaný** (jména, e-maily, bankovní spojení,
-tokeny a texty žádostí se po obnově přepíší; účtenky se nestahují). Režim
+tokeny, texty žádostí, hodnoty „Klíče a Wi-Fi" a poznámky ke schválení
+výdaje se po obnově přepíší; účtenky se nestahují). Režim
 `--keep-real-data` je dovolen jen pro ladění chyby, která reálná data
 vyžaduje; kopie se po skončení práce maže. Zbytkové riziko: názvy výdajů
-mohou obsahovat jména („Oběd za Katku") a anonymizace je nepřepisuje —
-přijato, názvy jsou potřeba pro ladění deníku.
+a poznámky u záloh mohou obsahovat jména („Oběd za Katku") a anonymizace
+je nepřepisuje — přijato, názvy jsou potřeba pro ladění deníku.
 
 ## 5. Technická a organizační opatření (odkaz)
 

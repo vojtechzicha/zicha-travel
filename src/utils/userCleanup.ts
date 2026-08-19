@@ -1,11 +1,14 @@
 // Reference cleanup when a user account is deleted (compliance blocker 6):
 // deleting a user used to cascade nowhere — participants.account,
 // expenses.authoredBy/payerAccount/approvalDecidedBy and claim requests
-// kept pointing at the deleted row. Wired into the Users afterDelete hook
+// kept pointing at the deleted row. Wired into the Users beforeDelete hook
 // so the admin panel delete, the rights machinery and the retention job all
-// clean up the same way.
+// clean up the same way. The caller's `req` is threaded into every nested
+// operation so the cleanup joins the delete's transaction — a delete that
+// fails after the hook must roll the unlinking back too, or the account
+// would survive with its claims gone and its participants unlocked.
 
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { refId } from '@/lib/access'
 
 export interface UserCleanupSummary {
@@ -17,6 +20,7 @@ export interface UserCleanupSummary {
 export async function cleanupDeletedUserReferences(
   payload: Payload,
   userId: number | string,
+  req?: PayloadRequest,
 ): Promise<UserCleanupSummary> {
   const summary: UserCleanupSummary = {
     participantsUnlinked: 0,
@@ -31,6 +35,7 @@ export async function cleanupDeletedUserReferences(
     limit: 1000,
     depth: 0,
     overrideAccess: true,
+    req,
   })
   for (const participant of participants.docs) {
     await payload.update({
@@ -39,6 +44,7 @@ export async function cleanupDeletedUserReferences(
       data: { account: null },
       depth: 0,
       overrideAccess: true,
+      req,
     })
     summary.participantsUnlinked++
   }
@@ -57,6 +63,7 @@ export async function cleanupDeletedUserReferences(
     limit: 1000,
     depth: 0,
     overrideAccess: true,
+    req,
   })
   for (const expense of expenses.docs) {
     const data: Record<string, unknown> = {}
@@ -76,6 +83,7 @@ export async function cleanupDeletedUserReferences(
       data,
       depth: 0,
       overrideAccess: true,
+      req,
       // administrative cleanup, not a decision — no approval side effects
       context: { expenseDecision: true, skipExpenseApprovalEffects: true },
     })
@@ -90,12 +98,14 @@ export async function cleanupDeletedUserReferences(
     limit: 1000,
     depth: 0,
     overrideAccess: true,
+    req,
   })
   for (const claim of ownClaims.docs) {
     await payload.delete({
       collection: 'claim-requests',
       id: claim.id,
       overrideAccess: true,
+      req,
       context: { skipClaimSideEffects: true },
     })
     summary.claimsDeleted++
@@ -106,6 +116,7 @@ export async function cleanupDeletedUserReferences(
     limit: 1000,
     depth: 0,
     overrideAccess: true,
+    req,
   })
   for (const claim of decidedClaims.docs) {
     await payload.update({
@@ -114,6 +125,7 @@ export async function cleanupDeletedUserReferences(
       data: { decidedBy: null },
       depth: 0,
       overrideAccess: true,
+      req,
       context: { skipClaimSideEffects: true },
     })
   }
