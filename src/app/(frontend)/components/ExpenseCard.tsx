@@ -14,7 +14,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react'
-import { formatCurrency, formatShortDateTime } from '@/lib/formatCurrency'
+import { formatCurrency, formatShortDate } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { useAppTheme } from '../utils/useAppTheme'
 import { getPayerDisplay } from '@/lib/payerRef'
@@ -427,8 +427,8 @@ export function ExpenseCard({
           <div className="flex flex-col items-start gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between mt-2.5 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
             <span className="text-xs text-gray-400 dark:text-slate-500 max-w-full min-w-0 truncate">
               {t('expenseCard.addedByYou')}
-              {/* timestamp only where the icon buttons leave room (design 1b) */}
-              <span className="hidden lg:inline"> · {formatShortDateTime(expense.createdAt, locale)}</span>
+              {/* date only where the icon buttons leave room (design 1b) */}
+              <span className="hidden lg:inline"> · {formatShortDate(expense.createdAt, locale)}</span>
             </span>
             {/* Desktop: compact icon buttons */}
             <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
