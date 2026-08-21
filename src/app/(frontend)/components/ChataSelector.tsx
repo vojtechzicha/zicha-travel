@@ -420,7 +420,7 @@ function UpcomingCard({ chata, wide = false }: { chata: HomeChataItem; wide?: bo
             {chata.countdown}
           </div>
         )}
-        <div className="relative p-4 text-white flex items-center gap-2.5">
+        <div className="relative w-full p-4 text-white flex items-center gap-2.5">
           <IconBadge chata={chata} size={18} className="!rounded-[10px] !p-1.5 !shadow-md" />
           <div className="min-w-0">
             <div className="font-serif text-lg sm:text-[19px] font-black leading-snug [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">
