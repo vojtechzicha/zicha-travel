@@ -37,6 +37,11 @@ const isAbsoluteUrl = (value) => {
 
 const mustBeUrl = (value) => (isAbsoluteUrl(value) ? null : 'must be an absolute URL')
 
+const mustBeHttpsUrl = (value) => {
+  if (!isAbsoluteUrl(value)) return 'must be an absolute URL'
+  return new URL(value).protocol === 'https:' ? null : 'must be an https URL (Apple refuses http Return URLs)'
+}
+
 const mustBePostgres = (value) =>
   /^postgres(ql)?:\/\/.+@.+\/.+/.test(value)
     ? null
@@ -146,7 +151,7 @@ export const ENV_SPEC = [
     appliesTo: ['prod', 'preview'],
     description:
       'Fixed callback URL (/api/auth/callback/apple) registered as a Return URL on the Services ID. Must be https.',
-    check: mustBeUrl,
+    check: mustBeHttpsUrl,
   },
   {
     name: 'NEXT_PUBLIC_APPLE_AUTH_ENABLED',
@@ -437,6 +442,18 @@ export function validateEnv(env, environment = 'dev') {
         `${flag} is "true" but ${label} OAuth is not configured — the ${label} button will render and fail at sign-in. Blank the flag together with the ${prefix} secrets.`,
       )
     }
+  }
+  // Configured-but-invisible OAuth is a lockout, not a cosmetic problem: any
+  // configured provider disables Payload's local password strategy, and with
+  // no flag set the login screens render either no button at all or a dead
+  // password form — superadmins (whose magic links are refused) would have
+  // no working way in. Fail the build rather than deploy that state.
+  const anyOAuthConfigured = oauthPairs.some((pair) => pair.on)
+  const anyOAuthVisible = oauthPairs.some((pair) => present(env, pair.flag) === 'true')
+  if (anyOAuthConfigured && !anyOAuthVisible) {
+    errors.push(
+      'OAuth credentials are configured but no NEXT_PUBLIC_*_AUTH_ENABLED flag is "true" — local password login is disabled and no sign-in button would render, locking admins out. Enable at least one provider flag (or remove all OAuth credentials).',
+    )
   }
 
   const cookieDomain = present(env, 'SESSION_COOKIE_DOMAIN')
