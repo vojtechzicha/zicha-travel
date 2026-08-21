@@ -184,6 +184,13 @@ describe('tentative dates ("orientační termín")', () => {
       'červenec 2027 · termín upřesníme'
     )
   })
+
+  it('drops the note when the card carries a badge instead', () => {
+    expect(tentativeDateLabel(d('2027-07-01'), d('2027-07-31'), 10, 'cs', false)).toBe(
+      'červenec 2027 · 10 nocí'
+    )
+    expect(tentativeDateLabel(d('2027-07-01'), d('2027-07-31'), null, 'en', false)).toBe('July 2027')
+  })
 })
 
 describe('settlement (1 Kč threshold — see CLAUDE.md)', () => {

@@ -188,8 +188,17 @@ export default async function HomePage() {
           ? countdownLabel(daysUntil(rangeStart, today), locale)
           : null,
       untilLabel: status === 'live' && to ? untilLabel(to, locale) : null,
+      tentative,
+      // tentative cards say "termín upřesníme" via a badge in the countdown's
+      // corner, so the meta line carries only the window + night count
       dateRangeLong: tentative
-        ? tentativeDateLabel(rangeStart!, rangeEnd ?? rangeStart!, chata.tripPlannedNights, locale)
+        ? tentativeDateLabel(
+            rangeStart!,
+            rangeEnd ?? rangeStart!,
+            chata.tripPlannedNights,
+            locale,
+            false,
+          )
         : rangeStart
           ? formatDateRangeLong(rangeStart, rangeEnd, locale)
           : null,
