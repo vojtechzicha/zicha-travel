@@ -126,9 +126,9 @@ The item carries the project and the environment, as `<repo>-dev`,
 
 ```
 Development
-├── zicha-travel-dev        3 fields
-├── zicha-travel-preview   16 fields
-├── zicha-travel-prod      14 fields
+├── zicha-travel-dev        5 fields
+├── zicha-travel-preview   24 fields
+├── zicha-travel-prod      20 fields
 └── …-dev / …-prod for every other project
 ```
 
