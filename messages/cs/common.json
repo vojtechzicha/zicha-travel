@@ -24,5 +24,10 @@
     "allow": "Povolit",
     "essentialOnly": "Jen nezbytné",
     "morePrivacy": "Více o soukromí"
+  },
+  "updateHint": {
+    "message": "Aplikaci jsme aktualizovali. Načtěte prosím stránku znovu, ať máte novou verzi.",
+    "refresh": "Načíst znovu",
+    "dismiss": "Skrýt"
   }
 }

@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { Footer } from './components/Footer'
 import { ConsentBanner } from './components/ConsentBanner'
+import { UpdateHint } from './components/UpdateHint'
 import { AnalyticsProvider } from './components/AnalyticsProvider'
 import { analyticsEnabled, CONSENT_COOKIE, resolveConsent } from '@/lib/consent'
 import './styles.css'
@@ -62,6 +63,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <NextIntlClientProvider>
           <main className="flex-1">{children}</main>
           <Footer />
+          {/* Post-deploy refresh hint for long-lived tabs — renders nothing
+              until a newer build answers /api/version. */}
+          <UpdateHint />
           {/* Frontend route group only — /admin (its own route group) never
               sees the banner or the provider by construction. Both off
               without the PostHog key. */}
