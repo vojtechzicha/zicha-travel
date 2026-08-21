@@ -31,7 +31,7 @@ Features automatic expense splitting, QR payment codes (Czech banking), multi-do
 ## Prerequisites
 
 - Node.js 18.20+ or 20.9+
-- pnpm 9+
+- pnpm 10+ (no pinned version — whatever current pnpm you have installed)
 - Docker (for local PostgreSQL) — Podman with a `docker` shim works too
 - [1Password CLI](https://developer.1password.com/docs/cli/) (`op`), signed in
 

@@ -4,7 +4,6 @@
   "description": "Expense tracker for group trips and shared accommodations",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "vercel-build": "node scripts/check-env.mjs && node scripts/migrate-payer-polymorphic.mjs auto && pnpm build",
@@ -78,14 +77,6 @@
   },
   "engines": {
     "node": "^18.20.2 || >=20.9.0",
-    "pnpm": "^9 || ^10"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "sharp",
-      "esbuild",
-      "unrs-resolver",
-      "better-sqlite3"
-    ]
+    "pnpm": ">=10"
   }
 }
