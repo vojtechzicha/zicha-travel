@@ -38,8 +38,15 @@ export async function handleOAuthCallback(
   const returnUrl = returnTo ? safeReturnUrl(returnTo, origin) : null
   const errorPage = returnUrl ? new URL('/login', returnUrl).toString() : `${origin}/admin/login`
 
+  // Every redirect here is 303 See Other, never Next's default 307: Apple's
+  // callback arrives as a cross-site POST, and a 307 makes the browser
+  // re-POST to the destination — a cross-site POST does not carry the
+  // SameSite=Lax session cookie that was just set, so the page renders
+  // anonymous until a manual refresh. 303 forces the follow-up to be a GET,
+  // which top-level navigation attaches Lax cookies to. Harmless for the
+  // GET-based providers.
   const fail = (code: string): NextResponse => {
-    const response = NextResponse.redirect(`${errorPage}?error=${code}`)
+    const response = NextResponse.redirect(`${errorPage}?error=${code}`, 303)
     clearOAuthCookies(response)
     return response
   }
@@ -100,7 +107,7 @@ export async function handleOAuthCallback(
       user.role === 'user' ? (returnUrl ?? `${origin}/`) : (returnUrl ?? `${origin}/admin`)
 
     const { token, maxAge } = signSessionToken(user)
-    const response = NextResponse.redirect(destination)
+    const response = NextResponse.redirect(destination, 303)
     setSessionCookie(response, token, maxAge)
     setLoginEventCookie(response, provider.id)
     clearOAuthCookies(response)

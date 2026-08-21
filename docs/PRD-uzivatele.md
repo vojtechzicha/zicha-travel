@@ -116,6 +116,11 @@ a cross-site POST, so the state cookies for Apple's flow are SameSite=None),
 and https-only Return URLs — no localhost, which is why Apple exists only on
 preview and production.
 
+The callback's redirects are **303 See Other, never 307**: after Apple's
+POST a 307 makes the browser re-POST to the destination, and a cross-site
+POST does not carry the just-set SameSite=Lax session cookie — the landing
+page then renders anonymous until a manual refresh. 303 forces a GET.
+
 ### Sign out
 
 `GET /api/auth/logout?returnTo=/` clears the cookie (footer link).
