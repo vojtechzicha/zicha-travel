@@ -215,7 +215,7 @@ export async function notifyExpenseApprovers(payload: Payload, args: NotifyArgs)
         text:
           `${intro}\n\n${rules}\n\n` +
           `Potvrdit nebo zamítnout: ${decideUrl}\n\n` +
-          `Odkaz platí 14 dní a je určen jen vám. Výdaj najdete i v administraci pod „Výdaje“.`,
+          `Odkaz platí 14 dní a je určen jen tobě. Výdaj najdeš i v administraci pod „Výdaje“.`,
         html: `
           <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto;">
             <h2 style="color: #d97706;">zicha.travel</h2>
@@ -237,7 +237,7 @@ export async function notifyExpenseApprovers(payload: Payload, args: NotifyArgs)
               </a>
             </p>
             <p style="color: #78716c; font-size: 13px;">
-              Odkaz platí 14 dní a je určen jen vám. Výdaj najdete i v administraci pod „Výdaje“.
+              Odkaz platí 14 dní a je určen jen tobě. Výdaj najdeš i v administraci pod „Výdaje“.
             </p>
           </div>
         `,
@@ -280,7 +280,7 @@ export async function notifyExpenseAuthor(payload: Payload, args: DecisionArgs):
           `Od teď se počítá do vyrovnání: ${financeUrl}`
         : `${who} nepotvrdil(a) výdaj „${expense.title}“ za ${amount} (plátce ${payerName}).` +
           (reason ? ` Napsal(a) k tomu: „${reason}“` : '') +
-          `\n\nVýdaj se nikde nezobrazuje a do vyrovnání se nepočítá. Můžete ho zapsat znovu na sebe, nebo se domluvit s pokladníkem.`,
+          `\n\nVýdaj se nikde nezobrazuje a do vyrovnání se nepočítá. Můžeš ho zapsat znovu na sebe, nebo se domluvit s pokladníkem.`,
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2 style="color: #d97706;">zicha.travel</h2>
@@ -302,7 +302,7 @@ export async function notifyExpenseAuthor(payload: Payload, args: DecisionArgs):
                    </a>
                  </p>`
               : `<p style="color: #78716c; font-size: 13px;">
-                   Výdaj se nikde nezobrazuje a do vyrovnání se nepočítá. Můžete ho zapsat znovu na
+                   Výdaj se nikde nezobrazuje a do vyrovnání se nepočítá. Můžeš ho zapsat znovu na
                    sebe, nebo se domluvit s pokladníkem.
                  </p>`
           }

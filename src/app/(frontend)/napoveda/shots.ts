@@ -138,7 +138,7 @@ export const SHOTS = {
     width: 300,
     height: 262,
     alt: {
-      cs: 'Vlastní výdaj s patičkou „Přidali jste vy“ a odkazy Upravit a Smazat',
+      cs: 'Vlastní výdaj s patičkou „Přidáno tebou“ a odkazy Upravit a Smazat',
       en: 'Your own expense with the "Added by you" footer and Edit and Delete links',
     },
     variant: 'inline',

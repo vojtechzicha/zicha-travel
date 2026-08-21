@@ -7,13 +7,13 @@ import { Callout, HelpShell, List, NextPage, Screenshot, Section, Steps } from '
 export default function OrientaceContentCs() {
   return (
     <HelpShell
-      title="Kde co najdete"
-      lead="Od výběru chaty přes záložky až po pokoje a auta. Obrázky jsou z ukázkové chaty, vaše bude vypadat stejně."
+      title="Kde co najdeš"
+      lead="Od výběru chaty přes záložky až po pokoje a auta. Obrázky jsou z ukázkové chaty, tvoje bude vypadat stejně."
     >
       <div className="flex flex-col gap-6">
         <Section title="Výběr chaty" icon={<Compass size={20} />}>
           <p>
-            Pokud vede odkaz na hlavní adresu, přivítá vás seznam chat. Nahoře běží ty, které se
+            Pokud vede odkaz na hlavní adresu, přivítá tě seznam chat. Nahoře běží ty, které se
             právě konají, pod nimi chystané a nakonec archiv.
           </p>
           <Screenshot
@@ -23,7 +23,7 @@ export default function OrientaceContentCs() {
           <List
             items={[
               <>
-                U chystané chaty svítí odpočet ve dnech, u probíhající místo něj text, do kdy jste na
+                U chystané chaty svítí odpočet ve dnech, u probíhající místo něj text, do kdy jsi na
                 místě.
               </>,
               <>
@@ -31,7 +31,7 @@ export default function OrientaceContentCs() {
                 všechny.
               </>,
               <>
-                Klepnutím na kartu se dostanete dovnitř. Zpátky vede tlačítko „Změnit chatu“ v
+                Klepnutím na kartu se dostaneš dovnitř. Zpátky vede tlačítko „Změnit chatu“ v
                 hlavičce.
               </>,
             ]}
@@ -46,7 +46,7 @@ export default function OrientaceContentCs() {
         <Section title="Hlavička a záložky" icon={<Info size={20} />}>
           <p>
             Pod názvem chaty je místo a jméno pokladníka, tedy člověka, který drží společnou kasu.
-            Vedle sebe pak stojí záložky. Kolik jich uvidíte, záleží na tom, co správce chaty
+            Vedle sebe pak stojí záložky. Kolik jich uvidíš, záleží na tom, co správce chaty
             vyplnil: prázdné části se nezobrazují a Finance zůstávají vždycky.
           </p>
           <List
@@ -76,7 +76,7 @@ export default function OrientaceContentCs() {
             name="informace"
             caption="Příjezd a odjezd i se dnem v týdnu a délkou pobytu."
           />
-          <p>Pod termínem najdete podle toho, co je vyplněné:</p>
+          <p>Pod termínem najdeš podle toho, co je vyplněné:</p>
           <List
             items={[
               <>Popis místa, odkazy na web ubytování a fotogalerii.</>,
@@ -102,7 +102,7 @@ export default function OrientaceContentCs() {
           <Steps
             items={[
               <>
-                Klepněte na <strong>Zobrazit postele</strong> a pokoj se rozbalí.
+                Klepni na <strong>Zobrazit postele</strong> a pokoj se rozbalí.
               </>,
               <>
                 U každé postele je jméno člověka, který v ní spí. Volná místa jsou označená jako

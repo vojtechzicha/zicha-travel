@@ -76,7 +76,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      "Vyfotit účtenku"/"Zadat ručně" → co a kolik → kdo se dělí →
      shrnutí s pozváními) and desktop modal, opened from a fixed FAB
      ("Přidat výdaj") in the Finance view; own expense cards get a
-     "Přidali jste vy" footer with Upravit/Smazat (inline confirm).
+     "Přidáno tebou" footer with Upravit/Smazat (inline confirm).
      Split modes: rovným dílem / podíly / přesné částky (weights summing
      to the total; untouched rows auto-absorb the remainder,
      "dopočítáno"). Planned expenses ("zatím nezaplaceno", `isPlanned`) are
@@ -609,6 +609,22 @@ fallback.
   from `src/i18n/adminTranslations.ts`; user-visible `validate()` strings go
   through `pickValidationMessage(req, en, cs)` there. Admin Czech uses
   formal vykání (matches Payload's chrome); the frontend tyká.
+- **Czech formality (tykání/vykání) — binding rule**: ALL client-facing
+  Czech texts in the frontend use informal **tykání** — UI strings,
+  validation messages shown on the frontend, AND email notifications sent
+  to participants/users (magic-link, claim outcome, "Sedí to?" approval
+  emails, payment reminders, any future ones). ALL Czech texts in the
+  backend (admin panel: labels, descriptions, admin validation messages,
+  custom admin components) use formal **vykání**, matching Payload's own
+  chrome. When a text serves both audiences, the recipient decides:
+  written for a frontend account or participant → tykání; written for an
+  admin working in the admin panel → vykání.
+- **Humanizer gate — binding rule**: EVERY client-facing text — frontend
+  or backend/admin, Czech or English, UI strings, validation messages,
+  emails, help/prose pages — must go through the `/humanizer` skill before
+  it lands. Consult `/humanizer` FIRST, then write or edit the text to its
+  conventions. Refuse to add or edit any client-facing copy without having
+  consulted it in that session.
 - **Emails**: magic-link emails are bilingual
   (`src/lib/auth/magicLinkEmails.ts`), using the locale of the request that
   asked for the link; claim emails (`src/utils/claimRequests.ts`) stay

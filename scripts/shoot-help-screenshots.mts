@@ -149,8 +149,8 @@ async function anonymousShots(browser: Browser, ids: Ids) {
 
   // Finance: the participant selector, then one person's numbers
   await page.goto(`${SITE}/${SLUG}?view=finance`, { waitUntil: 'networkidle' })
-  await ready(page, 'text=Vyberte své jméno')
-  await shootElement(page, 'text=Kdo jste? >> xpath=../..', 'vyber-ucastnika.png')
+  await ready(page, 'text=Vyber svoje jméno')
+  await shootElement(page, 'text=Kdo jsi? >> xpath=../..', 'vyber-ucastnika.png')
 
   // Míša is a creditor: his panel shows the "dostaneš zpět" result
   const misa = ids.participants['Míša']
@@ -205,8 +205,8 @@ async function signedInShots(browser: Browser, ids: Ids) {
   await ready(page, 'text=Přidat výdaj')
   await shootViewport(page, 'prihlasene-finance.png')
 
-  // own expense card carries the "Přidali jste vy" footer
-  await shootElement(page, 'div.shadow-md:has-text("Přidali jste vy")', 'vlastni-vydaj.png')
+  // own expense card carries the "Přidáno tebou" footer
+  await shootElement(page, 'div.shadow-md:has-text("Přidáno tebou")', 'vlastni-vydaj.png')
 
   // desktop composer
   await page.locator('button[aria-label="Přidat výdaj"]').click()

@@ -134,7 +134,7 @@
     "hidePassengers": "Skrýt cestující",
     "equipment": "Náklad",
     "nightHeader": "Noc {night}",
-    "presentTooltip": "{name} – Noc {night}",
+    "presentTooltip": "{name} · Noc {night}",
     "absentTooltip": "{name} není přítomen/a",
     "wholeStay": "celý pobyt",
     "onlyNight": "jen noc {night}",

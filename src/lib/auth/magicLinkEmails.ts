@@ -1,8 +1,8 @@
 import type { AppLocale } from '@/i18n/config'
 
-// Bilingual copy for the magic-link login emails. The Czech wording is the
-// original copy, preserved verbatim; English is a natural translation of the
-// same content. HTML structure and inline styling are identical per locale –
+// Bilingual copy for the magic-link login emails. Czech tyká (client-facing
+// email, see CLAUDE.md); English is a natural translation of the same
+// content. HTML structure and inline styling are identical per locale,
 // only the copy differs.
 
 export type EmailContent = {
@@ -34,15 +34,15 @@ export function superadminNoticeEmail(locale: AppLocale): EmailContent {
   }
   return {
     subject: 'Přihlášení k zicha.travel',
-    text: 'Tento účet je superadmin – přihlašovací odkazy jsou pro něj vypnuté. Přihlaste se prosím přes Microsoft na /login nebo /admin.',
+    text: 'Tento účet je superadmin, přihlašovací odkazy jsou pro něj vypnuté. Přihlas se prosím přes Microsoft na /login nebo /admin.',
     html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2 style="color: #d97706;">zicha.travel</h2>
           <p>
-            Tento účet je <strong>superadmin</strong> – přihlašovací odkazy jsou pro něj z
+            Tento účet je <strong>superadmin</strong>, přihlašovací odkazy jsou pro něj z
             bezpečnostních důvodů vypnuté.
           </p>
-          <p>Přihlaste se prosím tlačítkem „Přihlásit se přes Microsoft“.</p>
+          <p>Přihlas se prosím tlačítkem „Přihlásit se přes Microsoft“.</p>
         </div>
       `,
   }
@@ -76,11 +76,11 @@ export function magicLinkEmail(
   }
   return {
     subject: 'Přihlášení k zicha.travel',
-    text: `Přihlaste se jedním kliknutím: ${link}\n\nOdkaz platí ${ttlMinutes} minut. Pokud jste o přihlášení nežádali, e-mail ignorujte.`,
+    text: `Přihlas se jedním kliknutím: ${link}\n\nOdkaz platí ${ttlMinutes} minut. Pokud jsi o přihlášení nežádal/a, e-mail ignoruj.`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
         <h2 style="color: #d97706;">zicha.travel</h2>
-        <p>Přihlaste se jedním kliknutím:</p>
+        <p>Přihlas se jedním kliknutím:</p>
         <p style="margin: 24px 0;">
           <a href="${link}"
              style="background: #d97706; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
@@ -88,7 +88,7 @@ export function magicLinkEmail(
           </a>
         </p>
         <p style="color: #78716c; font-size: 13px;">
-          Odkaz platí ${ttlMinutes} minut. Pokud jste o přihlášení nežádali, tento e-mail ignorujte.
+          Odkaz platí ${ttlMinutes} minut. Pokud jsi o přihlášení nežádal/a, tento e-mail ignoruj.
         </p>
       </div>
     `,

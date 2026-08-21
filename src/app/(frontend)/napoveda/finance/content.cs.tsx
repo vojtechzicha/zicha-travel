@@ -8,10 +8,10 @@ export default function FinanceContentCs() {
   return (
     <HelpShell
       title="Finance řádek po řádku"
-      lead="Vyberete jméno a uvidíte jednu obrazovku s pěti až sedmi čísly. Tady je, co každé z nich znamená."
+      lead="Vybereš jméno a uvidíš jednu obrazovku s pěti až sedmi čísly. Tady je, co každé z nich znamená."
     >
       <div className="flex flex-col gap-6">
-        <Section title="Nejdřív si vyberte jméno" icon={<UserSearch size={20} />}>
+        <Section title="Nejdřív si vyber jméno" icon={<UserSearch size={20} />}>
           <Screenshot
             name="vyber-ucastnika"
             caption="Výběr účastníka. Korunka označuje pokladníka, poznámka „bez účtu“ znamená, že si člověk ještě nepropojil přihlášení."
@@ -19,10 +19,10 @@ export default function FinanceContentCs() {
           <Steps
             items={[
               <>
-                Klepněte na své jméno. Když je lidí hodně, použijte pole <em>Hledat účastníka</em>.
+                Klepni na své jméno. Když je lidí hodně, použij pole <em>Hledat účastníka</em>.
               </>,
               <>
-                Výběr si prohlížeč zapamatuje, takže příště naskočíte rovnou na sebe. Změnit ho jde
+                Výběr si prohlížeč zapamatuje, takže příště naskočíš rovnou na sebe. Změnit ho jde
                 tlačítkem <strong>Změnit</strong> v pruhu se jménem.
               </>,
               <>
@@ -39,8 +39,8 @@ export default function FinanceContentCs() {
 
         <Section title="Souhrnný box: odkud se bere výsledek" icon={<Wallet size={20} />}>
           <p>
-            Barva boxu napovídá dřív než čísla. Zelená znamená, že jste na svém nebo dostáváte
-            zpátky, červená, že doplácíte, modrá patří pokladníkovi.
+            Barva boxu napovídá dřív než čísla. Zelená znamená, že jsi na svém nebo dostáváš
+            zpátky, červená, že doplácíš, modrá patří pokladníkovi.
           </p>
           <Screenshot
             name="finance-souhrn"
@@ -50,24 +50,24 @@ export default function FinanceContentCs() {
           <List
             items={[
               <>
-                <strong>Zaplaceno za ostatní</strong>: součet výdajů, které jste zaplatili vy. Když
-                platil společný účet, započítá se vám polovina (nebo díl podle počtu členů).
+                <strong>Zaplaceno za ostatní</strong>: součet výdajů, které jsi zaplatil/a ty. Když
+                platil společný účet, započítá se ti polovina (nebo díl podle počtu členů).
               </>,
               <>
-                <strong>Záloha</strong> a <strong>Doplatek</strong>: co jste poslali pokladníkovi.
-                Přičítá se vám to k dobru.
+                <strong>Záloha</strong> a <strong>Doplatek</strong>: co jsi poslal/a pokladníkovi.
+                Přičítá se ti to k dobru.
               </>,
               <>
-                <strong>Vrácený přeplatek</strong>: peníze, které vám pokladník už poslal zpátky.
+                <strong>Vrácený přeplatek</strong>: peníze, které ti pokladník už poslal zpátky.
                 Odečítá se.
               </>,
               <>
-                <strong>Tvá útrata (Fair Share)</strong>: součet vašich podílů ze všech výdajů. Tohle
-                je to, co vás chata reálně stojí. Číslo jde rozkliknout.
+                <strong>Tvá útrata (Fair Share)</strong>: součet tvých podílů ze všech výdajů. Tohle
+                je to, co tě chata reálně stojí. Číslo jde rozkliknout.
               </>,
               <>
                 <strong>Plánovaná útrata</strong>: žlutý řádek pro výdaje, které jsou zatím jen v
-                plánu. Vidíte, kam to spěje, ale k vyrovnání se zatím nepočítá.
+                plánu. Vidíš, kam to spěje, ale k vyrovnání se zatím nepočítá.
               </>,
               <>
                 <strong>Výsledek</strong> pod čárou: buď <em>Doplácíš</em>, nebo{' '}
@@ -80,7 +80,7 @@ export default function FinanceContentCs() {
         <Section title="Rozpad útraty" icon={<ListTree size={20} />}>
           <p>
             Klepnutím na řádek <strong>Tvá útrata</strong> se rozbalí seznam, ze kterého je vidět,
-            kolik z každého výdaje připadlo na vás.
+            kolik z každého výdaje připadlo na tebe.
           </p>
           <Screenshot
             name="finance-rozpad"
@@ -89,12 +89,12 @@ export default function FinanceContentCs() {
           <List
             items={[
               <>
-                U rovného dělení má každý jeden podíl. U vážených výdajů uvidíte třeba dva podíly, u
+                U rovného dělení má každý jeden podíl. U vážených výdajů uvidíš třeba dva podíly, u
                 přesných částek rovnou konkrétní sumu.
               </>,
               <>
-                Když váš podíl někdo převzal, je u položky poznámka, kdo vás pozval, a částka je
-                zelená. Když jste naopak platili za někoho vy, přičte se vám jeho podíl a je u toho
+                Když tvůj podíl někdo převzal, je u položky poznámka, kdo tě pozval, a částka je
+                zelená. Když jsi naopak platil/a za někoho ty, přičte se ti jeho podíl a je u toho
                 jeho jméno.
               </>,
               <>Plánované výdaje mají vlastní rozpad ve žlutém řádku pod tím.</>,
@@ -108,14 +108,14 @@ export default function FinanceContentCs() {
             <div className="flex flex-col gap-4 flex-1">
               <p>
                 Vlevo (na mobilu dole) běží seznam výdajů. Přepínač <strong>moje</strong> a{' '}
-                <strong>vše</strong> v jeho hlavičce mění, jestli koukáte jen na výdaje, které se
+                <strong>vše</strong> v jeho hlavičce mění, jestli koukáš jen na výdaje, které se
                 týkají vybraného člověka, nebo na celou chatu.
               </p>
               <List
                 items={[
                   <>Výdaje jsou seřazené od nejstaršího, tedy tak, jak přibývaly.</>,
                   <>
-                    Výdaje, které se vás netýkají, jsou v režimu <em>vše</em> vybledlé.
+                    Výdaje, které se tě netýkají, jsou v režimu <em>vše</em> vybledlé.
                   </>,
                   <>
                     Žlutě čárkovaný rámeček a značka <em>Plánovaný</em> znamenají výdaj, který se
@@ -157,10 +157,10 @@ export default function FinanceContentCs() {
         </Section>
 
         <Section title="Historie plateb" icon={<Banknote size={20} />}>
-          <Screenshot name="historie" caption="Pohyby mezi vámi a pokladníkem plus vaše platby." />
+          <Screenshot name="historie" caption="Pohyby mezi tebou a pokladníkem plus tvoje platby." />
           <p>
-            Poslední blok shrnuje, co se s vašimi penězi dělo: odeslané zálohy a doplatky, vrácené
-            přeplatky a výdaje, které jste zaplatili. Slouží ke kontrole, když si nejste jistí, jestli
+            Poslední blok shrnuje, co se s tvými penězi dělo: odeslané zálohy a doplatky, vrácené
+            přeplatky a výdaje, které jsi zaplatil/a. Slouží ke kontrole, když nemáš jistotu, jestli
             se něco započítalo.
           </p>
         </Section>
@@ -170,19 +170,19 @@ export default function FinanceContentCs() {
             name="vyrovnani"
             caption="Dlužník vidí QR kód, číslo účtu pokladníka, IBAN a částku. Každý údaj jde zkopírovat."
           />
-          <p>Podle toho, jak jste na tom, uvidíte jednu ze tří variant:</p>
+          <p>Podle toho, jak na tom jsi, uvidíš jednu ze tří variant:</p>
           <List
             items={[
               <>
-                <strong>Doplácíte</strong>: QR kód na přesnou částku a pod ním údaje k ručnímu
+                <strong>Doplácíš</strong>: QR kód na přesnou částku a pod ním údaje k ručnímu
                 zadání. Platí se pokladníkovi.
               </>,
               <>
-                <strong>Dostáváte zpět</strong>: jen informace, že vám pokladník pošle peníze, až se
-                vyberou dluhy. Nic dělat nemusíte.
+                <strong>Dostáváš zpět</strong>: jen informace, že ti pokladník pošle peníze, až se
+                vyberou dluhy. Nic dělat nemusíš.
               </>,
               <>
-                <strong>Jste vyrovnaní</strong>: potvrzení, že je hotovo.
+                <strong>Máš vyrovnáno</strong>: potvrzení, že je hotovo.
               </>,
             ]}
           />

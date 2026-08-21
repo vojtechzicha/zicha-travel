@@ -1,9 +1,9 @@
 {
   "meta": {
-    "description": "Společně na chatu – plánování, informace, finance"
+    "description": "Společně na chatu: plánování, informace, finance"
   },
   "footer": {
-    "tagline": "– společně na chatu: plánování, informace a finance",
+    "tagline": "· společně na chatu: plánování, informace a finance",
     "version": "verze {version}",
     "help": "Nápověda",
     "privacyPolicy": "Soukromí",
@@ -15,18 +15,18 @@
   },
   "error": {
     "title": "Něco se pokazilo",
-    "message": "Omlouváme se – něco na naší straně nezafungovalo. Zkuste to prosím znovu.",
+    "message": "Omlouváme se, něco na naší straně nezafungovalo. Zkus to prosím znovu.",
     "retry": "Zkusit znovu"
   },
   "consent": {
     "title": "Měření návštěvnosti",
-    "body": "Anonymní statistiky sbíráme vždy – bez cookies a bez toho, abychom věděli, kdo jste. Když povolíte cookies, uvidíme navíc, jestli se něco nedokončí nebo nerozbije, a budeme to umět spravit.",
+    "body": "Anonymní statistiky sbíráme vždy, bez cookies a bez toho, abychom věděli, kdo jsi. Když povolíš cookies, uvidíme navíc, jestli se něco nedokončí nebo nerozbije, a budeme to umět spravit.",
     "allow": "Povolit",
     "essentialOnly": "Jen nezbytné",
     "morePrivacy": "Více o soukromí"
   },
   "updateHint": {
-    "message": "Aplikaci jsme aktualizovali. Načtěte prosím stránku znovu, ať máte novou verzi.",
+    "message": "Aplikaci jsme aktualizovali. Načti prosím stránku znovu, ať máš novou verzi.",
     "refresh": "Načíst znovu",
     "dismiss": "Skrýt"
   }

@@ -1,8 +1,8 @@
 {
   "meta": {
     "selectTitle": "Pick a chata",
-    "selectDescription": "Chata trips together - planning, info and expenses",
-    "chataDescription": "{name} - {location} - planning, info and expenses",
+    "selectDescription": "Chata trips together: planning, info and expenses",
+    "chataDescription": "{name} · {location} · planning, info and expenses",
     "ogDescription": "Off to the chata together: {location}",
     "notFoundTitle": "Chata not found"
   },

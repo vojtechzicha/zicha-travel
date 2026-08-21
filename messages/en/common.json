@@ -1,9 +1,9 @@
 {
   "meta": {
-    "description": "Chata trips together – planning, info and expenses"
+    "description": "Chata trips together: planning, info and expenses"
   },
   "footer": {
-    "tagline": "– chata trips together: planning, info and expenses",
+    "tagline": "· chata trips together: planning, info and expenses",
     "version": "version {version}",
     "help": "Help",
     "privacyPolicy": "Privacy",

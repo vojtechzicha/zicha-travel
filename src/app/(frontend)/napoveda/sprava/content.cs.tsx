@@ -31,7 +31,7 @@ export default function SpravaContentCs() {
               </>,
               <>
                 Zaškrtávátka dál ve formuláři rozhodují, jestli se v aplikaci objeví Informace a
-                Organizace. Co nevyplníte, se nezobrazí.
+                Organizace. Co nevyplníš, se nezobrazí.
               </>,
               <>
                 Barva a pozadí chaty se nastavují ve stejném formuláři a mění vzhled celé stránky.
@@ -48,8 +48,8 @@ export default function SpravaContentCs() {
           <Steps
             items={[
               <>
-                Ve formuláři chaty použijte <strong>Prefill participants from previous chatas</strong>
-                , vyberte lidi z minulých akcí a potvrďte. Jména, která už v chatě jsou, se
+                Ve formuláři chaty použij <strong>Prefill participants from previous chatas</strong>
+                , vyber lidi z minulých akcí a potvrď. Jména, která už v chatě jsou, se
                 přeskočí.
               </>,
               <>
@@ -58,8 +58,8 @@ export default function SpravaContentCs() {
                 podle někoho z jiné chaty.
               </>,
               <>
-                Nakonec v chatě vyberte <strong>pokladníka</strong>. Po jeho zvolení se předvyplní
-                číslo účtu a IBAN, obojí jde přepsat. Když vyplníte jen jedno, aplikace dopočítá
+                Nakonec v chatě vyber <strong>pokladníka</strong>. Po jeho zvolení se předvyplní
+                číslo účtu a IBAN, obojí jde přepsat. Když vyplníš jen jedno, aplikace dopočítá
                 druhé.
               </>,
             ]}
@@ -79,7 +79,7 @@ export default function SpravaContentCs() {
             items={[
               <>
                 <strong>Akuzativ</strong> a <strong>Vokativ</strong> jsou tvary jména do vět jako
-                „Vojta zve Katku“. Když je nevyplníte, použije se základní tvar.
+                „Vojta zve Katku“. Když je nevyplníš, použije se základní tvar.
               </>,
               <>
                 <strong>Paid By</strong> říká, že podíly tohoto člověka trvale přebírá někdo jiný.
@@ -87,7 +87,7 @@ export default function SpravaContentCs() {
               </>,
               <>
                 Tlačítko <strong>Apply retroactively to existing expenses</strong> doplní totéž do
-                výdajů, které v chatě už jsou. Použijte ho po uložení změny.
+                výdajů, které v chatě už jsou. Použij ho po uložení změny.
               </>,
               <>
                 <strong>Account</strong> propojuje účastníka s přihlašovacím účtem. Tlačítkem{' '}
@@ -121,15 +121,15 @@ export default function SpravaContentCs() {
             ]}
           />
           <Callout tone="warn">
-            Aplikace nesleduje bankovní účet. Dokud přijatou platbu nezapíšete jako zálohu nebo
+            Aplikace nesleduje bankovní účet. Dokud přijatou platbu nezapíšeš jako zálohu nebo
             doplatek, zůstane dlužníkovi viset dluh.
           </Callout>
         </Section>
 
         <Section title="Žádosti o propojení" icon={<ShieldCheck size={20} />}>
           <p>
-            Když někdo klepne na „Jsi to ty?“, přijde vám e-mail s odkazem na rozhodovací stránku.
-            Odkaz platí sedm dní a patří jen vám.
+            Když někdo klepne na „Jsi to ty?“, přijde ti e-mail s odkazem na rozhodovací stránku.
+            Odkaz platí sedm dní a patří jen tobě.
           </p>
           <Screenshot
             name="claim-rozhodnuti"
@@ -149,7 +149,7 @@ export default function SpravaContentCs() {
                 v administraci v <em>Claim Requests</em>.
               </>,
               <>
-                Lidi, které aplikace zná z jiné chaty, propojí sama a vám nic nepřijde.
+                Lidi, které aplikace zná z jiné chaty, propojí sama a nic ti nepřijde.
               </>,
             ]}
           />

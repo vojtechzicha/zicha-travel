@@ -19,7 +19,7 @@ export interface FinanceViewer {
   authenticated: boolean
   email: string | null
   /** the signed-in user's id — matched against Expense.authoredBy to show
-   *  the "Přidali jste vy" footer with edit/delete on own expenses */
+   *  the "Přidáno tebou" footer with edit/delete on own expenses */
   userId: number | null
   /** superadmin, or admin with this chata assigned */
   canViewAll: boolean
