@@ -15,7 +15,11 @@
  * @property {string} name
  * @property {'server' | 'public'} scope     `public` is inlined into the browser bundle at build time.
  * @property {boolean} [required]            The app cannot start without it.
- * @property {('dev' | 'prod' | 'preview')[]} [appliesTo] Defaults to dev and prod.
+ * @property {('dev' | 'prod' | 'preview')[]} [appliesTo] Defaults to ALL of
+ *   dev, prod and preview — previews share production data, so an undeclared
+ *   variable must still be validated there (required flags, format checks,
+ *   the `[SENSITIVE]` placeholder). Narrow it only when a variable genuinely
+ *   has no meaning in an environment.
  *   `preview` has no template of its own: Vercel holds those values and
  *   1Password mirrors them in the `-preview` item.
  * @property {string} description
@@ -240,15 +244,22 @@ export const ENV_GROUPS = [
  */
 export const EXTERNAL_ENV = {
   platform: ['NODE_ENV', 'PORT', 'CI', 'VERCEL', 'VERCEL_ENV', 'VERCEL_GIT_COMMIT_SHA', 'NEXT_PUBLIC_VERCEL_ENV'],
-  scriptFlags: ['SITE', 'OUT', 'EMIT_ONLY', 'REVERT', 'SEED_SALT'],
+  // Computed by next.config.mjs at build time (from the git commit) and baked
+  // into the bundle — nobody ever sets it, so no template may list it.
+  derived: ['NEXT_PUBLIC_BUILD_ID'],
+  scriptFlags: ['SITE', 'OUT', 'EMIT_ONLY', 'REVERT', 'SEED_SALT', 'DEBUG_MIDDLEWARE'],
   // A 1Password service-account token in a generated .env would sit on every
   // dev machine — it belongs in the shell profile (docs/ENVIRONMENT.md).
   tooling: ['OP_SERVICE_ACCOUNT_TOKEN'],
 }
 
+const DEFAULT_APPLIES_TO = ['dev', 'prod', 'preview']
+
+const appliesTo = (spec, environment) => (spec.appliesTo ?? DEFAULT_APPLIES_TO).includes(environment)
+
 /** Variable names that belong in the template for the given environment. */
 export function envVarNames(environment) {
-  return ENV_SPEC.filter((spec) => (spec.appliesTo ?? ['dev', 'prod']).includes(environment)).map((s) => s.name)
+  return ENV_SPEC.filter((spec) => appliesTo(spec, environment)).map((s) => s.name)
 }
 
 /** The single definition of "is this variable set" — check-env.mjs uses it too. */
@@ -270,7 +281,7 @@ export function validateEnv(env, environment = 'dev') {
   const warnings = []
 
   for (const spec of ENV_SPEC) {
-    if (!(spec.appliesTo ?? ['dev', 'prod']).includes(environment)) continue
+    if (!appliesTo(spec, environment)) continue
     const value = present(env, spec.name)
     if (!value) {
       if (spec.required) errors.push(`${spec.name} is required. ${spec.description}`)

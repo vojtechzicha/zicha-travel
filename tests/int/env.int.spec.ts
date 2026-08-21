@@ -53,7 +53,7 @@ describe('env templates match the spec', () => {
 
   it('gives every variable at least one environment', () => {
     for (const spec of ENV_SPEC) {
-      expect(spec.appliesTo ?? ['dev', 'prod'], spec.name).not.toEqual([])
+      expect(spec.appliesTo ?? ['dev', 'prod', 'preview'], spec.name).not.toEqual([])
     }
   })
 
@@ -103,12 +103,7 @@ describe('env templates match the spec', () => {
     // stops a variable being added "in code alone" (docs/ENVIRONMENT.md).
     // One-directional on purpose: every read must be declared, but a spec
     // entry may be read indirectly (shell scripts, `op` tooling).
-    const known = new Set([
-      ...ENV_SPEC.map((s) => s.name),
-      ...EXTERNAL_ENV.platform,
-      ...EXTERNAL_ENV.scriptFlags,
-      ...EXTERNAL_ENV.tooling,
-    ])
+    const known = new Set([...ENV_SPEC.map((s) => s.name), ...Object.values(EXTERNAL_ENV).flat()])
     const files: string[] = []
     const walk = (dir: string) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -226,6 +221,20 @@ describe('validateEnv', () => {
     expect(validateEnv(valid, 'prod').errors.join(' ')).toContain('CRON_SECRET is required')
     expect(validateEnv(valid, 'preview').errors.join(' ')).toContain('CRON_SECRET is required')
     expect(validateEnv({ ...valid, CRON_SECRET: 'cron-secret' }, 'prod').errors).toEqual([])
+  })
+
+  it('still validates the shared variables on preview', () => {
+    // Previews share production data, so a spec with no explicit appliesTo
+    // must be checked there too. Before this default, a preview with a broken
+    // DATABASE_URI and a placeholder PAYLOAD_SECRET reported no errors at all
+    // as long as CRON_SECRET was set.
+    const errors = validateEnv(
+      { CRON_SECRET: 'cron-secret', DATABASE_URI: 'bad', PAYLOAD_SECRET: '[SENSITIVE]' },
+      'preview',
+    ).errors.join(' ')
+    expect(errors).toContain('DATABASE_URI')
+    expect(errors).toContain('PAYLOAD_SECRET')
+    expect(validateEnv({ ...valid, CRON_SECRET: 'cron-secret' }, 'preview').errors).toEqual([])
   })
 
   it('skips dev-only format checks for prod snapshots', () => {

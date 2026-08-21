@@ -261,8 +261,11 @@ Deliberately absent, and a test enforces it:
 
 - Platform-provided: `NODE_ENV`, `PORT`, `CI`, `VERCEL`, `VERCEL_ENV`,
   `VERCEL_GIT_COMMIT_SHA`, `NEXT_PUBLIC_VERCEL_ENV`.
+- Build-derived: `NEXT_PUBLIC_BUILD_ID` — computed by `next.config.mjs` from
+  the git commit and baked into the bundle for the post-deploy refresh hint.
 - One-off script flags: `SITE`, `OUT` (help screenshots), `EMIT_ONLY`,
-  `REVERT` (icon seeding), `SEED_SALT` (demo data). Pass them on the command
+  `REVERT` (icon seeding), `SEED_SALT` (demo data), `DEBUG_MIDDLEWARE`
+  (opt-in request logging in `src/middleware.ts`). Pass them on the command
   line for the run that needs them.
 
 `NEXT_PUBLIC_SITE_URL` is not among them either. Nothing reads it, because

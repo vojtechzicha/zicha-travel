@@ -30,7 +30,7 @@ export interface EnvGroupSpec {
 
 export const ENV_SPEC: EnvVarSpec[]
 export const ENV_GROUPS: EnvGroupSpec[]
-export const EXTERNAL_ENV: { platform: string[]; scriptFlags: string[]; tooling: string[] }
+export const EXTERNAL_ENV: { platform: string[]; derived: string[]; scriptFlags: string[]; tooling: string[] }
 
 export function envVarNames(environment: EnvEnvironment): string[]
 export function present(env: Record<string, string | undefined>, name: string): string
