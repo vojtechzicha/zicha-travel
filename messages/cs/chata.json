@@ -32,6 +32,7 @@
     "sectionNearest": "Nejbližší chata",
     "sectionPlanned": "Plánujeme",
     "sectionPast": "Proběhlo",
+    "tentativeBadge": "Termín upřesníme",
     "participantCount": "{count, plural, one {# účastník} few {# účastníci} other {# účastníků}}",
     "spentSoFar": "Tvá útrata zatím {amount}",
     "addExpense": "Přidat výdaj",

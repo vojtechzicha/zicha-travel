@@ -41,6 +41,12 @@ export interface HomeChataItem {
   status: 'live' | 'upcoming' | 'past'
   /** "Za 43 dní" — upcoming only */
   countdown: string | null
+  /**
+   * Tentative dates ("orientační termín"): the card shows a "Termín
+   * upřesníme" badge where fixed-date cards show the countdown, and
+   * `dateRangeLong` carries only the window + night count.
+   */
+  tentative: boolean
   /** "do neděle" — live only */
   untilLabel: string | null
   /** "5.–9. srpna 2026" */
@@ -325,6 +331,11 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
             <Clock size={15} />
             {chata.countdown}
           </div>
+        ) : chata.tentative ? (
+          <div className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center gap-2 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-4 py-2 text-white text-sm font-bold">
+            <CalendarDays size={15} />
+            {t('tentativeBadge')}
+          </div>
         ) : null}
 
         <div className="relative w-full p-5 sm:px-8 sm:py-7 text-white flex flex-col gap-3">
@@ -407,6 +418,7 @@ function HeroCard({ chata, viewer }: { chata: HomeChataItem; viewer: HomeViewer 
 // ─── upcoming ("Plánujeme") card ──────────────────────────────────────────
 
 function UpcomingCard({ chata, wide = false }: { chata: HomeChataItem; wide?: boolean }) {
+  const t = useTranslations('chata.chataSelector')
   return (
     <Link href={`/${chata.slug}`} className="block group">
       <div className="relative h-[170px] rounded-2xl overflow-hidden flex items-end shadow-[0_15px_35px_rgba(0,0,0,0.4)] transition-transform duration-200 group-hover:-translate-y-1">
@@ -415,18 +427,26 @@ function UpcomingCard({ chata, wide = false }: { chata: HomeChataItem; wide?: bo
           sizes={wide ? '(max-width: 1140px) 100vw, 1100px' : '(max-width: 640px) 100vw, 540px'}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
-        {chata.countdown && (
+        {/* tentative trips have no countdown (the window bounds no single day),
+            so the badge corner is free for "Termín upřesníme" */}
+        {chata.countdown ? (
           <div className="absolute top-3 right-3 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-3 py-1 text-white text-xs font-bold">
             {chata.countdown}
           </div>
-        )}
+        ) : chata.tentative ? (
+          <div className="absolute top-3 right-3 bg-white/15 border border-white/25 backdrop-blur-md rounded-full px-3 py-1 text-white text-xs font-bold">
+            {t('tentativeBadge')}
+          </div>
+        ) : null}
         <div className="relative w-full p-4 text-white flex items-center gap-2.5">
           <IconBadge chata={chata} size={18} className="!rounded-[10px] !p-1.5 !shadow-md" />
           <div className="min-w-0">
             <div className="font-serif text-lg sm:text-[19px] font-black leading-snug [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">
               {chata.name}
             </div>
-            <div className="text-white/85 text-[13px] truncate">
+            {/* wraps rather than truncates — the meta line must stay readable
+                whole even when the location + date window run long */}
+            <div className="text-white/85 text-[13px]">
               {chata.location}
               {chata.dateRangeLong ? ` • ${chata.dateRangeLong}` : ''}
             </div>

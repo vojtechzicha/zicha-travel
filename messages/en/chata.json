@@ -32,6 +32,7 @@
     "sectionNearest": "Next trip",
     "sectionPlanned": "Coming up",
     "sectionPast": "Past trips",
+    "tentativeBadge": "Dates to be confirmed",
     "participantCount": "{count, plural, one {# participant} other {# participants}}",
     "spentSoFar": "You've spent {amount} so far",
     "addExpense": "Add expense",

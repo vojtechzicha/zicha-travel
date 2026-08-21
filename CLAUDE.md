@@ -280,8 +280,10 @@ API payload, no new endpoints).
   keeps the chata in "upcoming" even mid-window. UI: hero shows a window
   box ("červenec 2027", full-month windows collapse via
   `tentativeWindowLabel`) with a "Termín upřesníme" badge instead of
-  countdown + arrival/departure; homepage cards show
-  `tentativeDateLabel` ("červenec 2027 · 10 nocí · termín upřesníme");
+  countdown + arrival/departure; homepage cards show the same "Termín
+  upřesníme" badge in the countdown's corner plus `tentativeDateLabel`
+  WITHOUT its note ("červenec 2027 · 10 nocí" — `includeNote: false`),
+  and the card meta line wraps instead of truncating as a fallback;
   calendar links, weather and per-night weekday labels are suppressed
   until the dates are fixed (untick the box + set real dates, planned
   nights is ignored afterwards). Label helpers live in

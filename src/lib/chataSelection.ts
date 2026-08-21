@@ -262,16 +262,19 @@ export function tentativeWindowLabel(
   return formatDateRangeLong(from, to, locale)
 }
 
-/** Card meta line: "červenec 2027 · 10 nocí · termín upřesníme". */
+/** Card meta line: "červenec 2027 · 10 nocí · termín upřesníme". Cards that
+ * carry a separate "Termín upřesníme" badge pass includeNote: false so the
+ * note isn't said twice. */
 export function tentativeDateLabel(
   from: string | Date,
   to: string | Date,
   plannedNights: number | null | undefined,
   locale: AppLocale = 'cs',
+  includeNote: boolean = true,
 ): string {
   const window = tentativeWindowLabel(from, to, locale)
   const nights = plannedNights && plannedNights > 0 ? nightsLabel(plannedNights, locale) : null
-  const note = locale === 'en' ? 'dates to be confirmed' : 'termín upřesníme'
+  const note = includeNote ? (locale === 'en' ? 'dates to be confirmed' : 'termín upřesníme') : null
   return [window, nights, note].filter(Boolean).join(' · ')
 }
 
