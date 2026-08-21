@@ -12,10 +12,12 @@ Features automatic expense splitting, QR payment codes (Czech banking), multi-do
    pnpm install
    ```
 
-2. Copy the example environment file:
+2. Generate the local environment file from the committed template. The
+   secrets come from 1Password, so nothing is copied between machines:
 
    ```bash
-   cp .env.example .env
+   op signin
+   pnpm env:pull
    ```
 
 3. Start the development server (auto-starts a Docker PostgreSQL instance):
@@ -30,7 +32,8 @@ Features automatic expense splitting, QR payment codes (Czech banking), multi-do
 
 - Node.js 18.20+ or 20.9+
 - pnpm 9+
-- Docker (for local PostgreSQL)
+- Docker (for local PostgreSQL) — Podman with a `docker` shim works too
+- [1Password CLI](https://developer.1password.com/docs/cli/) (`op`), signed in
 
 ## Development Commands
 
@@ -38,10 +41,23 @@ Features automatic expense splitting, QR payment codes (Czech banking), multi-do
 pnpm dev              # Start PostgreSQL + Next.js dev server
 pnpm db               # Start only PostgreSQL in background
 pnpm db:stop          # Stop PostgreSQL
+pnpm env:pull         # Regenerate .env from .env.tpl via 1Password
+pnpm env:check        # Validate the environment against scripts/env-spec.mjs
 pnpm build            # Build for production
 pnpm generate:types   # Generate TypeScript types from collections
 pnpm test             # Run integration and e2e tests
 ```
+
+## Configuration
+
+Every variable the code reads is declared in `scripts/env-spec.mjs` and
+mirrored by two committed templates — `.env.tpl` (local) and `.env.prod.tpl`
+(production). A test fails if they drift apart, and `pnpm env:check` runs at
+the start of the Vercel build so a variable added in code but never set in
+Vercel breaks the pull request's preview deployment rather than production.
+
+See **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** for the 1Password layout and
+the workflow for adding a variable.
 
 ## Languages
 
@@ -93,7 +109,9 @@ https://your-domain/api/auth/callback
 ```
 
 Set the environment variables in the Vercel project (Settings → Environment
-Variables → Production):
+Variables → Production), and mirror them into the `zicha-travel-prod` item in
+1Password (vault `Development`) so
+`pnpm env:pull:prod` can reproduce them:
 
 ```
 AZURE_CLIENT_ID=your-client-id
@@ -101,6 +119,10 @@ AZURE_CLIENT_SECRET=your-client-secret
 AZURE_REDIRECT_URI=https://your-domain/api/auth/callback
 NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true
 ```
+
+All three of `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` and `AZURE_REDIRECT_URI`
+must be set together — `getAuthConfig()` throws on the first sign-in attempt
+otherwise, and `pnpm env:check` fails the build before that can happen.
 
 > **Note:** After setting these secrets, the email/password login is disabled. Make sure you have at least one user in the Users collection with a matching Microsoft account email before enabling OAuth.
 

@@ -1,5 +1,9 @@
 #!/bin/bash
 set -e
+# Without pipefail, a failing pg_dump on the left of the restore pipe is
+# invisible: psql happily consumes the empty stream, the script reports success,
+# and the local database is left wiped instead of refreshed.
+set -o pipefail
 
 # Copies the production database into local Docker PostgreSQL.
 #
@@ -24,37 +28,62 @@ if [ -z "$WAS_RUNNING" ]; then
     trap 'docker compose down' EXIT
 fi
 
-# Load production DATABASE_URI from .env
-source .env
+# Resolve the PRODUCTION database URI.
+#
+# It is deliberately NOT taken from DATABASE_URI: since the .env/.env.prod
+# split, DATABASE_URI is the LOCAL database, and reading it here would have
+# this script dump localhost onto itself. Order of preference:
+#   1. PROD_DATABASE_URI exported for this run
+#   2. PROD_DATABASE_URI / PROD_SITE_URL filled in .env (the template declares
+#      both) — read via dotenv, NOT `source`-d: sourcing a generated file
+#      executes any $(…) or backtick that lands inside a generated secret
+#   3. 1Password, resolved on demand so prod credentials never sit on disk
+read_dotenv_var() {
+    node -e "require('dotenv').config({ path: '.env' }); process.stdout.write(process.env[process.argv[1]] || '')" "$1"
+}
+if [ -z "$PROD_DATABASE_URI" ] && [ -f .env ]; then
+    PROD_DATABASE_URI=$(read_dotenv_var PROD_DATABASE_URI)
+fi
+if [ -z "$PROD_SITE_URL" ] && [ -f .env ]; then
+    PROD_SITE_URL=$(read_dotenv_var PROD_SITE_URL)
+fi
+if [ -z "$PROD_DATABASE_URI" ]; then
+    if ! command -v op >/dev/null 2>&1; then
+        echo "ERROR: PROD_DATABASE_URI is not set and the 1Password CLI (op) is not installed." >&2
+        echo "       Install op, or export PROD_DATABASE_URI=postgresql://... for this run." >&2
+        exit 1
+    fi
+    echo "Reading the production database URI from 1Password..."
+    PROD_DATABASE_URI=$(op read "op://Development/zicha-travel-prod/DATABASE_URI") || {
+        echo "ERROR: could not read op://Development/zicha-travel-prod/DATABASE_URI (run 'op signin' first)." >&2
+        exit 1
+    }
+fi
 
-# Parse the DATABASE_URI to extract components
-# Format: postgresql://user:password@host:port/database
-# The password may contain @ so we need to handle it carefully
-PROD_DB_URI="$DATABASE_URI"
-
-# Extract user (everything after :// and before the first :)
-DB_USER=$(echo "$PROD_DB_URI" | sed -E 's|postgresql://([^:]+):.*|\1|')
-
-# Extract host:port/database (everything after the last @)
-HOST_PORT_DB=$(echo "$PROD_DB_URI" | sed -E 's|.*@([^@]+)$|\1|')
-
-# Extract password (everything between user: and @host)
-# This handles passwords containing @
-DB_PASS=$(echo "$PROD_DB_URI" | sed -E "s|postgresql://${DB_USER}:(.*)@${HOST_PORT_DB}|\1|")
-
-# Extract host
-DB_HOST=$(echo "$HOST_PORT_DB" | sed -E 's|([^:]+):.*|\1|')
-
-# Extract port
-DB_PORT=$(echo "$HOST_PORT_DB" | sed -E 's|[^:]+:([0-9]+)/.*|\1|')
-
-# Extract database name
-DB_NAME=$(echo "$HOST_PORT_DB" | sed -E 's|.*/(.+)$|\1|')
+# The URI goes to pg_dump whole. It used to be taken apart with sed and fed
+# back as PGPASSWORD plus flags, which fails on any password containing
+# percent-encoding: libpq decodes %XX inside a URI, but PGPASSWORD is taken
+# literally, so the encoded form reaches the server and authentication fails.
+# The Supabase password does contain percent-encoding.
+#
+# The values below are only echoed, never used to connect. Pure parameter
+# expansion, no regexes: a pattern that failed to match (e.g. the equally
+# valid postgres:// scheme, or a portless URI) would fall through and echo
+# the WHOLE URI, password included.
+USER_PASS="${PROD_DATABASE_URI#*://}"       # user:pass@host:port/db
+USER_PASS="${USER_PASS%%@*}"                # user:pass
+HOST_PORT_DB="${PROD_DATABASE_URI##*@}"     # host:port/db — never holds the password
+HOST_PORT="${HOST_PORT_DB%%/*}"             # host:port (or just host)
+DB_NAME="${HOST_PORT_DB#*/}"
+DB_NAME="${DB_NAME%%\?*}"                   # drop ?sslmode=… and friends
 
 echo "Connecting to production database..."
-echo "  Host: $DB_HOST"
-echo "  Port: $DB_PORT"
-echo "  User: $DB_USER"
+echo "  Host: ${HOST_PORT%%:*}"
+case "$HOST_PORT" in
+    *:*) echo "  Port: ${HOST_PORT##*:}" ;;
+    *)   echo "  Port: 5432 (default)" ;;
+esac
+echo "  User: ${USER_PASS%%:*}"
 echo "  Database: $DB_NAME"
 
 # 1. Reset local database
@@ -64,13 +93,45 @@ docker compose exec -T postgres psql -U payload -d postgres -c "DROP DATABASE IF
 docker compose exec -T postgres psql -U payload -d postgres -c "CREATE DATABASE payload;"
 
 # 2. Dump from production and restore to local using Docker (to match PostgreSQL version)
+#
+# The URI is handed over as an environment variable rather than on the command
+# line, where it would be readable by every other process on the machine.
 echo ""
 echo "Dumping production database and restoring to local..."
-docker run --rm --network host postgres:17-alpine \
-    sh -c "PGPASSWORD='$DB_PASS' pg_dump -h '$DB_HOST' -p '$DB_PORT' -U '$DB_USER' -d '$DB_NAME' --no-owner --no-acl" \
-    | docker compose exec -T postgres psql -U payload -d payload
+# psql keeps going after a failing statement and still exits 0, so a partial
+# restore would look identical to a full one. Capture its stderr and fail on
+# any ERROR other than the known-benign version skew (the PG17 pg_dump emits
+# SETs like transaction_timeout that the local PG16 doesn't recognize).
+# No EXIT trap here: the top of the script may already own it for
+# `docker compose down`, and a second trap would replace the first.
+PSQL_LOG=$(mktemp)
+docker run --rm --network host -e PROD_URI="$PROD_DATABASE_URI" postgres:17-alpine \
+    sh -c 'pg_dump "$PROD_URI" --no-owner --no-acl' \
+    | docker compose exec -T postgres psql -U payload -d payload 2>"$PSQL_LOG"
+# No `grep -q` in a pipe here: under pipefail its early exit can SIGPIPE the
+# producer and flip the pipeline status even when a real error WAS found.
+REAL_ERRORS=$(grep '^ERROR' "$PSQL_LOG" | grep -v 'unrecognized configuration parameter' || true)
+if [ -n "$REAL_ERRORS" ]; then
+    echo "ERROR: the restore hit failing statements — the local database is incomplete:" >&2
+    grep '^ERROR' "$PSQL_LOG" >&2
+    rm -f "$PSQL_LOG"
+    exit 1
+fi
+rm -f "$PSQL_LOG"
 
-echo "Database migration complete!"
+# A restore that silently produced nothing is worse than a failed one: the
+# local database would look fine and be empty.
+RESTORED_TABLES=$(docker compose exec -T postgres psql -U payload -d payload -tAc \
+    "select count(*) from information_schema.tables where table_schema='public'")
+RESTORED_TABLES="${RESTORED_TABLES//[!0-9]/}"
+# The explicit empty check matters: [ "" -lt 1 ] is a test(1) error, which an
+# `if` treats as FALSE — the guard would pass vacuously on garbage output.
+if [ -z "$RESTORED_TABLES" ] || [ "$RESTORED_TABLES" -lt 1 ]; then
+    echo "ERROR: the restore left the local database empty." >&2
+    exit 1
+fi
+
+echo "Database migration complete! ($RESTORED_TABLES tables)"
 
 # 3. Anonymize the local copy (default). Scrambles direct identifiers while
 # keeping ids, amounts and structure, so the app behaves identically.

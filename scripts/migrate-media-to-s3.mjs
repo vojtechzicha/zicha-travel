@@ -24,7 +24,8 @@
 //                    require HTTP 200 (e.g. https://zicha-travel.vercel.app)
 //   --overwrite      re-upload even when the object already exists
 //
-// Requires the S3_* vars from .env / .env.local (see .env.example):
+// Requires the S3_* vars from .env / .env.local (see .env.tpl and
+// docs/ENVIRONMENT.md):
 // S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY.
 // The bucket must already exist (Supabase Dashboard → Storage → New bucket,
 // public) — Supabase's S3 endpoint does not support CreateBucket.
@@ -61,7 +62,7 @@ const missing = ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCE
   (v) => !process.env[v],
 )
 if (missing.length) {
-  console.error(`ERROR: missing env vars: ${missing.join(', ')} (see .env.example)`)
+  console.error(`ERROR: missing env vars: ${missing.join(', ')} (see .env.tpl / docs/ENVIRONMENT.md)`)
   process.exit(1)
 }
 
