@@ -171,7 +171,8 @@ export default function SpravaContentEn() {
               <>Manages accounts and roles. Only they can change a role.</>,
               <>Takes care of icons, backgrounds and media.</>,
               <>
-                Signs in exclusively through Microsoft. If they request a link by email, an
+                Signs in exclusively through Microsoft, Google or Apple. If they request a link
+                by email, an
                 explanation arrives instead.
               </>,
             ]}

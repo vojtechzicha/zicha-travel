@@ -101,9 +101,9 @@ export default function TermsContentEn() {
           <p>
             An account is created for you by a chata admin, or through &ldquo;That&rsquo;s
             me&rdquo; (a claim request linking you to a participant name) or &ldquo;I&rsquo;m
-            new here&rdquo;. Sign-in uses a one-time link sent by email, or Microsoft; there is
-            no password with us, so protect your mailbox: whoever controls it controls your
-            account.
+            new here&rdquo;. Sign-in uses a one-time link sent by email, or Microsoft, Google or
+            Apple; there is no password with us, so protect your mailbox: whoever controls it
+            controls your account.
           </p>
           <p>
             An account is personal and only an adult may hold one. In a claim request, state

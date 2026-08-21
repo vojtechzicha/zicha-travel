@@ -1,23 +1,29 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { isOAuthConfigured } from '@/lib/auth/config'
-import { getAuthorizationUrl } from '@/lib/auth/microsoft'
+import { resolveProvider } from '@/lib/auth/providers'
 import { requestOrigin } from '@/lib/auth/magicLink'
 import { safeReturnUrl, sessionCookieDomain } from '@/lib/auth/session'
 
 export async function GET(request: NextRequest) {
-  if (!isOAuthConfigured()) {
+  // ?provider=microsoft|google|apple — missing or unknown falls back to the
+  // first configured provider, so pre-existing /api/auth/login links keep
+  // working as Microsoft.
+  const provider = resolveProvider(request.nextUrl.searchParams.get('provider'))
+  if (!provider) {
     return NextResponse.json({ error: 'OAuth not configured' }, { status: 404 })
   }
 
   const state = crypto.randomBytes(16).toString('hex')
-  const authUrl = getAuthorizationUrl(state)
+  const authUrl = provider.authorizationUrl(state)
 
   const cookieOptions = {
     httpOnly: true,
     path: '/',
-    sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    // Apple returns the callback as a cross-site POST (form_post), which a
+    // Lax cookie would not accompany — its flow needs SameSite=None, and
+    // None requires Secure (Apple only allows https callbacks anyway).
+    sameSite: provider.usesFormPost ? ('none' as const) : ('lax' as const),
+    secure: provider.usesFormPost || process.env.NODE_ENV === 'production',
     maxAge: 10 * 60, // 10 minutes
     // Shared across subdomains: the callback always lands on the apex
     // domain, but the flow may start on a chata subdomain

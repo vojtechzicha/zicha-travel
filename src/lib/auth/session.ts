@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken'
 import type { NextResponse } from 'next/server'
 
-// Session tokens for BOTH login flows (Microsoft OAuth and magic link) are
+// Session tokens for BOTH login flows (OAuth — Microsoft, Google or Apple —
+// and magic link) are
 // plain JWTs signed with PAYLOAD_SECRET and stored in the `payload-token`
 // cookie. The always-registered `app-jwt` auth strategy on the Users
 // collection (src/collections/Users.ts) verifies them, so the same session
@@ -62,7 +63,10 @@ export function setSessionCookie(response: NextResponse, token: string, maxAge: 
  * HttpOnly (the client must read it) and short-lived — it contains only
  * the method name, never who signed in.
  */
-export function setLoginEventCookie(response: NextResponse, method: 'magic-link' | 'microsoft'): void {
+export function setLoginEventCookie(
+  response: NextResponse,
+  method: 'magic-link' | 'microsoft' | 'google' | 'apple',
+): void {
   response.cookies.set('zt_login_evt', method, {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',

@@ -41,7 +41,8 @@ dopravy, podíly na výdajích, zálohy a vratky, členství ve společném úč
 výsledné vyrovnání (kdo komu kolik dluží).
 
 **O přihlášených uživatelích navíc:** e-mail účtu, čas posledního přihlášení,
-při přihlášení přes Microsoft identifikátor a e-mail z vašeho Microsoft účtu,
+při přihlášení přes Microsoft, Google nebo Apple identifikátor a e-mail
+z vašeho účtu u zvoleného poskytovatele,
 výdaje, které jste zadali, a žádosti o propojení se jménem účastníka včetně
 případného důvodu zamítnutí.
 
@@ -97,7 +98,7 @@ a odkaz na ně je v patičce každé stránky webu. Pokud si myslíte, že vás
 někdo zapsal neprávem, napište nám a záznam prověříme.
 
 Údaje o přihlášených uživatelích pocházejí od nich samotných, případně z
-jejich Microsoft účtu při přihlášení přes Microsoft.
+jejich účtu u Microsoftu, Googlu nebo Applu, pokud se přes něj přihlásí.
 
 ## 6. Kdo vaše údaje vidí
 
@@ -140,6 +141,8 @@ Provoz služby zajišťují tito zpracovatelé a příjemci:
 | PostHog | anonymní statistiky návštěvnosti | EU (Frankfurt) |
 | Cloudflare | ochrana veřejných formulářů před roboty (Turnstile) | EU/USA |
 | Microsoft | přihlášení přes Microsoft účet, pokud ho použijete | EU/USA |
+| Google | přihlášení přes Google účet, pokud ho použijete | EU/USA |
+| Apple | přihlášení přes Apple účet, pokud ho použijete | EU/USA |
 | Paylibo | generování platebního QR kódu u vyrovnání: číslo účtu příjemce, částka a zpráva platby, plus IP adresa a prohlížeč každého, kdo si QR zobrazí | EU (ČR) |
 
 Váš prohlížeč navíc při zobrazení předpovědi počasí u výletu stahuje data ze
@@ -152,7 +155,8 @@ chvíle Googlu nic neodchází.
 ## 8. Předávání mimo EU
 
 Data držíme v EU, kde to jde (databáze, soubory, statistiky). Někteří
-poskytovatelé (Vercel, Resend, Cloudflare, Microsoft) jsou americké firmy;
+poskytovatelé (Vercel, Resend, Cloudflare, Microsoft, Google, Apple) jsou
+americké firmy;
 předání je kryto rozhodnutím Evropské komise o odpovídající ochraně (Data
 Privacy Framework), případně standardními smluvními doložkami. Podrobnosti
 ke konkrétnímu poskytovateli vám na vyžádání pošleme.
@@ -203,8 +207,8 @@ nejdřív nám.
 | `payload-token` | drží vaše přihlášení | 30 dní (2 h pro správce) | nezbytná pro přihlášení |
 | `zt_consent` | pamatuje si vaši volbu v liště souhlasu | 12 měsíců | nezbytná, je sama záznamem souhlasu |
 | `NEXT_LOCALE` | pamatuje si zvolený jazyk | 12 měsíců | nezbytná, ukládá se po vaší volbě v patičce |
-| `oauth-state` | náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft před podvržením | 10 minut | nezbytná |
-| `oauth-return-to` | drží návratovou adresu během přihlášení přes Microsoft | 10 minut, jen po dobu přihlašování | nezbytná |
+| `oauth-state` | náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft, Google nebo Apple před podvržením | 10 minut | nezbytná |
+| `oauth-return-to` | drží návratovou adresu během přihlášení přes Microsoft, Google nebo Apple | 10 minut, jen po dobu přihlašování | nezbytná |
 | `zt_login_evt` | jednorázová značka „přihlášení proběhlo" pro statistiky, hned se maže | sekundy | nezbytná technická |
 | `ph_*` | stabilní anonymní identifikátor pro statistiky | 12 měsíců | jen s vaším souhlasem |
 

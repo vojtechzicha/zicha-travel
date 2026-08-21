@@ -62,9 +62,11 @@ key both analytics and the cookie banner disappear. Two values the app will
 not start without: `DATABASE_URI` and `PAYLOAD_SECRET`. Generate the second one
 with `openssl rand -base64 32`.
 
-Microsoft sign-in needs the four `AZURE_*` lines. Leave them blank and Payload
-falls back to email and password login, which is enough to get into the admin
-panel.
+Microsoft sign-in needs the four `AZURE_*` lines and Google sign-in the four
+`GOOGLE_*` ones. Leave them all blank and Payload falls back to email and
+password login, which is enough to get into the admin panel. Apple sign-in has
+no dev lines at all: Apple refuses http and localhost Return URLs, so that
+provider exists only on preview and production.
 
 ### With 1Password
 
@@ -124,9 +126,9 @@ The item carries the project and the environment, as `<repo>-dev`,
 
 ```
 Development
-├── zicha-travel-dev        3 fields
-├── zicha-travel-preview   16 fields
-├── zicha-travel-prod      14 fields
+├── zicha-travel-dev        5 fields
+├── zicha-travel-preview   24 fields
+├── zicha-travel-prod      20 fields
 └── …-dev / …-prod for every other project
 ```
 
@@ -152,9 +154,11 @@ Change the templates, that test and that script in the same commit.
 | `PAYLOAD_SECRET` | A fresh one, unrelated to production: `openssl rand -base64 32` |
 | `AZURE_CLIENT_ID` | Same Azure app registration as production |
 | `AZURE_CLIENT_SECRET` | Same Azure app registration as production |
+| `GOOGLE_CLIENT_ID` | Same Google Cloud OAuth client as production |
+| `GOOGLE_CLIENT_SECRET` | Same Google Cloud OAuth client as production |
 
-The Azure pair is duplicated from `zicha-travel-prod` on purpose, so that each
-item stays a self-contained snapshot of one environment.
+The Azure and Google pairs are duplicated from `zicha-travel-prod` on purpose,
+so that each item stays a self-contained snapshot of one environment.
 
 ### Item zicha-travel-prod
 
@@ -164,6 +168,12 @@ item stays a self-contained snapshot of one environment.
 | `PAYLOAD_SECRET` | Rotating this invalidates every session and every outstanding magic link, claim link and expense-approval link. |
 | `AZURE_CLIENT_ID` | Azure portal, app registration overview. Public: it appears in every OAuth redirect. |
 | `AZURE_CLIENT_SECRET` | Azure portal. Existing secrets cannot be read again; add a second one and update Vercel. |
+| `GOOGLE_CLIENT_ID` | Google Cloud Console, APIs & Services, Credentials, the OAuth client. Public. |
+| `GOOGLE_CLIENT_SECRET` | The same OAuth client. Readable again in the console. |
+| `APPLE_CLIENT_ID` | Apple Developer portal, the Services ID identifier (not the App ID). Public. |
+| `APPLE_TEAM_ID` | Apple Developer portal, top right (10 characters). Public. |
+| `APPLE_KEY_ID` | The "Sign in with Apple" key in Certificates, Identifiers & Profiles, Keys. |
+| `APPLE_PRIVATE_KEY` | The .p8 downloaded ONCE when that key is created, base64-encoded to one line: `base64 -i AuthKey_XXX.p8`. |
 | `RESEND_API_KEY` | Resend, API Keys. Existing keys cannot be read again either. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare, Turnstile, the widget. Public. |
 | `TURNSTILE_SECRET_KEY` | The same widget. Readable in the Cloudflare dashboard. |
@@ -189,9 +199,9 @@ both at the moment you create it.
 ### Item zicha-travel-preview
 
 Most of preview is production. One Vercel row covers both environments for the
-database, `PAYLOAD_SECRET`, the Azure pair, the S3 credentials and the PostHog
-key, so those values are identical by definition. Preview owns the rest
-separately:
+database, `PAYLOAD_SECRET`, the Azure pair, the Google pair, the Apple
+credentials, the S3 credentials and the PostHog key, so those values are
+identical by definition. Preview owns the rest separately:
 
 | Field | How preview differs |
 | --- | --- |
@@ -199,6 +209,8 @@ separately:
 | `EMAIL_FROM` | Not set in preview, so it falls back to `login@zicha.travel` from `payload.config.ts`, while production sends from `info-noreply@zicha.travel`. That fallback address has to stay verified in Resend or preview mail fails. |
 | `SESSION_COOKIE_DOMAIN` | Not set in preview, which is right: preview runs on hosts outside `zicha.travel`, and a `.zicha.travel` cookie would never reach them. |
 | `AZURE_REDIRECT_URI` | `https://preview.zicha.travel/api/auth/callback`, its own subdomain, so OAuth from a preview does not land on production. |
+| `GOOGLE_REDIRECT_URI` | `https://preview.zicha.travel/api/auth/callback/google`, same reasoning. |
+| `APPLE_REDIRECT_URI` | `https://preview.zicha.travel/api/auth/callback/apple`, same reasoning. |
 | Turnstile pair | Cloudflare's always-passes test widget (`1x00000000000000000000AA` with secret `1x0000000000000000000000000000000AA`), not the production widget. Documented public values rather than secrets. |
 | `CRON_SECRET` | Its own value, so a leaked preview secret cannot drive the production cron. |
 

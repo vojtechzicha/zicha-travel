@@ -31,7 +31,7 @@ export interface AnalyticsEvents {
   /** a pending "expense for somebody else" was confirmed or refused */
   expense_approval_decided: { action: 'approve' | 'reject'; from: 'card' | 'email' }
   expense_compose_abandoned: { step: number }
-  login_started: { method: 'magic-link' | 'microsoft' }
+  login_started: { method: 'magic-link' | 'microsoft' | 'google' | 'apple' }
   login_link_requested: Record<string, never>
   login_completed: { method: string }
   claim_started: Record<string, never>

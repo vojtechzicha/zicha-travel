@@ -246,9 +246,77 @@ describe('validateEnv', () => {
 
   it('warns when the Microsoft button is enabled without OAuth behind it', () => {
     // The reverse of the button-hidden warning, and the worse state: the
-    // button renders and getAuthConfig() throws on the first click.
+    // button renders and the provider throws on the first click.
     const { warnings } = validateEnv({ ...valid, NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED: 'true' })
     expect(warnings.join(' ')).toContain('the Microsoft button will render and fail')
+  })
+
+  it('fails when OAuth is configured but no provider button is enabled', () => {
+    // Any configured provider turns off the local password strategy; with no
+    // NEXT_PUBLIC_*_AUTH_ENABLED flag the login screens offer nothing that
+    // works — a lockout, so an error rather than a warning (Codex review).
+    const configured = {
+      ...valid,
+      AZURE_CLIENT_ID: 'id',
+      AZURE_CLIENT_SECRET: 'secret',
+      AZURE_REDIRECT_URI: 'https://zicha.travel/api/auth/callback',
+    }
+    expect(validateEnv(configured).errors.join(' ')).toContain('locking admins out')
+    // One visible provider is enough — even a different one than the
+    // configured pair is only the existing pairing warning, not a lockout.
+    expect(
+      validateEnv({ ...configured, NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED: 'true' }).errors,
+    ).toEqual([])
+    // No OAuth at all keeps the local password bootstrap: no error.
+    expect(validateEnv(valid).errors).toEqual([])
+  })
+
+  it('rejects a non-https APPLE_REDIRECT_URI — Apple refuses http Return URLs', () => {
+    const apple = {
+      ...valid,
+      CRON_SECRET: 'cron-secret',
+      APPLE_CLIENT_ID: 'travel.zicha.signin',
+      APPLE_TEAM_ID: 'TEAMID9999',
+      APPLE_KEY_ID: 'KEYID88888',
+      APPLE_PRIVATE_KEY: 'a'.repeat(32),
+      NEXT_PUBLIC_APPLE_AUTH_ENABLED: 'true',
+    }
+    expect(
+      validateEnv({ ...apple, APPLE_REDIRECT_URI: 'http://localhost:3000/api/auth/callback/apple' }, 'prod')
+        .errors.join(' '),
+    ).toContain('https')
+    expect(
+      validateEnv({ ...apple, APPLE_REDIRECT_URI: 'https://zicha.travel/api/auth/callback/apple' }, 'prod')
+        .errors,
+    ).toEqual([])
+  })
+
+  it('applies the button/backend pairing to Google and Apple too', () => {
+    const google = validateEnv({ ...valid, NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: 'true' })
+    expect(google.warnings.join(' ')).toContain('the Google button will render and fail')
+    const apple = validateEnv(
+      { ...valid, CRON_SECRET: 'cron-secret', NEXT_PUBLIC_APPLE_AUTH_ENABLED: 'true' },
+      'prod',
+    )
+    expect(apple.warnings.join(' ')).toContain('the Apple button will render and fail')
+  })
+
+  it('rejects a half-configured Google or Apple provider', () => {
+    const google = validateEnv({ ...valid, GOOGLE_CLIENT_ID: 'id' })
+    expect(google.errors.join(' ')).toContain('GOOGLE_CLIENT_SECRET')
+    const apple = validateEnv({ ...valid, CRON_SECRET: 'cron-secret', APPLE_CLIENT_ID: 'travel.zicha.signin' }, 'prod')
+    expect(apple.errors.join(' ')).toContain('APPLE_PRIVATE_KEY')
+  })
+
+  it('keeps Apple out of local dev — its callbacks cannot be http or localhost', () => {
+    // The Apple specs are prod+preview only, so .env.tpl must not declare
+    // them (the template test above enforces that side). The all-or-nothing
+    // group still applies everywhere: a half-set APPLE_* group is an error
+    // even in dev, because the code would read it there too.
+    const appleSpecs = ENV_SPEC.filter((spec) => spec.name.startsWith('APPLE_'))
+    expect(appleSpecs.length).toBe(5)
+    for (const spec of appleSpecs) expect(spec.appliesTo, spec.name).toEqual(['prod', 'preview'])
+    expect(validateEnv({ ...valid, APPLE_CLIENT_ID: 'alone' }).errors.join(' ')).toContain('Apple OAuth')
   })
 
   it('rejects the placeholder `vercel env pull` writes for sensitive variables', () => {

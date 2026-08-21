@@ -437,3 +437,18 @@ the same release or immediately after; the paperwork items are an evening of
 writing that can run in parallel. This mirrors PRD §14 and keeps the gap
 between "documents published" and "documents true" at zero, which is the
 whole point of this file.
+
+## Addendum 2026-08-21: Google and Apple sign-in
+
+Sign in with Google and Sign in with Apple joined Microsoft as OAuth
+providers (same mechanism: existing accounts only, matched by email, no
+account creation at the callback). Both act as independent controllers for
+their own sign-in, exactly as Microsoft does in item 19 above. Updated in
+the same change: the outbound-calls inventory (item 21 — accounts.google.com,
+oauth2.googleapis.com, appleid.apple.com), the processors/transfers record,
+the records of processing, both privacy-policy locales (data collected at
+sign-in, recipients table, US-transfer sentence, the oauth-state and
+oauth-return-to cookie rows) and both terms locales (section 4 sign-in
+methods), plus the published page modules of `/soukromi` and `/podminky`.
+No new decision was needed: decisions 1 to 13 already cover a sign-in
+provider that is an independent controller.

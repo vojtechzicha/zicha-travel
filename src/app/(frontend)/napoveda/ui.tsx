@@ -35,7 +35,7 @@ const HELP_PAGES_CS: HelpPageEntry[] = [
   {
     href: '/napoveda/ucet',
     title: 'Účet a přihlášení',
-    lead: 'Odkaz do e-mailu, Microsoft a propojení přes „Jsi to ty?“.',
+    lead: 'Odkaz do e-mailu, Microsoft, Google či Apple a propojení přes „Jsi to ty?“.',
   },
   {
     href: '/napoveda/prehled',
@@ -68,7 +68,7 @@ const HELP_PAGES_EN: HelpPageEntry[] = [
   {
     href: '/napoveda/ucet',
     title: 'Account and signing in',
-    lead: 'A link in your email, Microsoft, and linking via "Is that you?".',
+    lead: 'A link in your email, Microsoft, Google or Apple, and linking via "Is that you?".',
   },
   {
     href: '/napoveda/prehled',

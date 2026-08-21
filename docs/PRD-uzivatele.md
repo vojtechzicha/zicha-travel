@@ -4,8 +4,9 @@
 
 1. The **admin panel** is only for admin roles; admins are either
    **superadmins** (all chatas) or **admins of some chatas**.
-2. **Frontend users** sign in via **magic link** (email = username) and/or a
-   **Microsoft account** (Google later). A signed-in user is linked to a
+2. **Frontend users** sign in via **magic link** (email = username) and/or
+   OAuth with a **Microsoft, Google or Apple account**. A signed-in user is
+   linked to a
    participant and can only open chatas where they take part; the Finance
    view shows only *their* participant.
 3. **Anonymous visitors** only see finances of participants **without** an
@@ -88,17 +89,37 @@ cookie work across chata subdomains.
    sets the session cookie and redirects to `returnTo`.
 3. **Superadmins never sign in via magic link** — the request route replies
    with the generic ok but emails an explanation instead of a link, and the
-   verify route refuses superadmin tokens (`superadmin_microsoft` error).
-   Superadmins use Microsoft; the local email+password strategy exists only
-   where Microsoft OAuth is not configured (first-time setup fallback).
+   verify route refuses superadmin tokens (`superadmin_oauth` error).
+   Superadmins use OAuth (any provider); the local email+password strategy
+   exists only where no OAuth provider is configured (first-time setup
+   fallback).
 
-### Microsoft OAuth
+### OAuth (Microsoft, Google, Apple)
 
-`/api/auth/login?returnTo=/...` → Microsoft → `/api/auth/callback`. The
+`/api/auth/login?provider=<id>&returnTo=/...` → the provider → its fixed
+callback: `/api/auth/callback` (Microsoft — the original path, so the Azure
+registration needs no change), `/api/auth/callback/google`,
+`/api/auth/callback/apple`. A missing/unknown `provider` falls back to the
+first configured one (Microsoft first), so pre-existing links keep working.
+The provider registry lives in `src/lib/auth/providers.ts`; each provider
+(`microsoft.ts`, `google.ts`, `apple.ts`) implements the same interface and
+the callback handling is shared (`src/lib/auth/oauthCallback.ts`). The
 `oauth-return-to` cookie marks a frontend-initiated flow: errors then land on
 `/login?error=...` instead of `/admin/login?error=...`, and after login the
 user returns to `returnTo` (role `user` never lands in `/admin`). The account
-must already exist (`unauthorized` otherwise).
+must already exist (`unauthorized` otherwise) — the callback never creates
+users, so a "Hide My Email" Apple relay address simply fails as unauthorized.
+
+Apple specifics: no static client secret (a short-lived ES256 JWT signed with
+the `.p8` key stands in), `response_mode=form_post` (the callback arrives as
+a cross-site POST, so the state cookies for Apple's flow are SameSite=None),
+and https-only Return URLs — no localhost, which is why Apple exists only on
+preview and production.
+
+The callback's redirects are **303 See Other, never 307**: after Apple's
+POST a 307 makes the browser re-POST to the destination, and a cross-site
+POST does not carry the just-set SameSite=Lax session cookie — the landing
+page then renders anonymous until a manual refresh. 303 forces a GET.
 
 ### Sign out
 
@@ -106,28 +127,45 @@ must already exist (`unauthorized` otherwise).
 
 ## Preview environment (stable domain)
 
-Superadmins sign in ONLY with Microsoft — everywhere, previews included.
-Azure requires exact registered redirect URIs (no wildcards), so ephemeral
-`*.vercel.app` deployment URLs can never do OAuth. The solution is a stable
-preview domain pinned to a branch:
+Superadmins sign in ONLY with OAuth — everywhere, previews included. All
+three providers require exact registered redirect URIs (no wildcards), so
+ephemeral `*.vercel.app` deployment URLs can never do OAuth. The solution is
+a stable preview domain pinned to a branch:
 
 1. **Vercel** → Project → Settings → Domains → add `preview.zicha.travel`
    (DNS is automatic — the zone runs on Vercel nameservers; the explicit
    subdomain beats the `*.zicha.travel` wildcard) → edit the domain and set
    its **Git Branch** to the branch being previewed.
-2. **Microsoft Entra** → App registrations → the zicha.travel app →
-   Authentication → Web → add redirect URI
-   `https://preview.zicha.travel/api/auth/callback` (keep the production
-   one). Same client id/secret.
-3. **Vercel env vars scoped to Preview**: `AZURE_CLIENT_ID` /
-   `AZURE_CLIENT_SECRET` (same values), `AZURE_REDIRECT_URI` = the preview
-   callback above, `NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true`,
-   `EMAIL_PREVIEW_TO` + `RESEND_API_KEY`; leave `SESSION_COOKIE_DOMAIN`
-   UNSET in Preview (host-only cookie; never share `.zicha.travel` cookies
-   between preview and production).
+2. **Provider consoles** — register the preview callback alongside the
+   production one (same client/credentials everywhere):
+   - **Microsoft Entra** → App registrations → the zicha.travel app →
+     Authentication → Web → `https://preview.zicha.travel/api/auth/callback`.
+   - **Google Cloud Console** → APIs & Services → Credentials → the OAuth
+     client → Authorized redirect URIs →
+     `https://preview.zicha.travel/api/auth/callback/google` (plus
+     `http://localhost:3000/api/auth/callback/google` for local dev).
+   - **Apple Developer** → Certificates, Identifiers & Profiles → the
+     Services ID → Sign in with Apple → Return URLs →
+     `https://preview.zicha.travel/api/auth/callback/apple`. Apple refuses
+     http/localhost, so there is no local-dev entry.
+3. **Vercel env vars scoped to Preview**: the provider credentials (same
+   values as production), each `*_REDIRECT_URI` = its preview callback
+   above, the `NEXT_PUBLIC_*_AUTH_ENABLED=true` flags, `EMAIL_PREVIEW_TO` +
+   `RESEND_API_KEY`; leave `SESSION_COOKIE_DOMAIN` UNSET in Preview
+   (host-only cookie; never share `.zicha.travel` cookies between preview
+   and production).
 
 OAuth on previews works only via `preview.zicha.travel`; magic link (for
 non-superadmins) works on any URL.
+
+**Vercel deployment protection must stay OFF for this project** (disabled
+2026-08-21). Apple's callback is a cross-site POST (`form_post`), and the
+protection SSO cookie is SameSite=Lax, so protection intercepts that POST
+and replays it as a parameterless GET — Sign in with Apple then dies with
+`missing_params` on every protected deployment. Microsoft and Google
+survive protection (top-level GET callbacks), Apple never will. The site is
+public by design and preview mail is redirected, so open previews were
+judged acceptable.
 
 ## Email
 

@@ -98,9 +98,9 @@ export default function TermsContentCs() {
         <Section id="ucty" title="4. Účty" icon={<KeyRound size={20} />}>
           <p>
             Účet vám založí správce chaty, nebo vznikne přes „To jsem já“ (žádost o propojení se
-            jménem účastníka) či „Jsem tu poprvé“. Přihlašuje se jednorázovým odkazem na e-mail
-            nebo přes Microsoft; heslo u nás neexistuje, takže chraňte svou e-mailovou schránku,
-            kdo ovládá ji, ovládá váš účet.
+            jménem účastníka) či „Jsem tu poprvé“. Přihlašuje se jednorázovým odkazem na e-mail,
+            nebo přes Microsoft, Google či Apple; heslo u nás neexistuje, takže chraňte svou
+            e-mailovou schránku, kdo ovládá ji, ovládá váš účet.
           </p>
           <p>
             Účet je osobní a smí ho mít jen zletilá osoba. Při žádosti o propojení uvádějte jen

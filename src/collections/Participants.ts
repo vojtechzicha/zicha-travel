@@ -5,8 +5,9 @@ import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
 import { anonymizeParticipant, exportParticipantBundle } from '../utils/participantRights'
 import { adminRoleOnly, canManageChata, chataScopedAccess, isSuperadmin } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
+import { isOAuthConfigured } from '../lib/auth/config'
 
-const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
+const isOAuthEnabled = isOAuthConfigured()
 
 // Who may READ a participant's bank fields (compliance blocker 1, controller
 // decisions 6 and 13): the chata's admins, the owner account, the banker's

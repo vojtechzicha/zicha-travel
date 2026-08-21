@@ -12,8 +12,9 @@ import {
   runClaimDecisionSideEffects,
 } from '../utils/claimRequests'
 import { pickValidationMessage } from '../i18n/adminTranslations'
+import { isOAuthConfigured } from '../lib/auth/config'
 
-const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
+const isOAuthEnabled = isOAuthConfigured()
 
 const REMINDER_AFTER_DAYS = 3
 

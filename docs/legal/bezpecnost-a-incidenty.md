@@ -12,7 +12,7 @@ Datum: 2026-08-16. Pokrývá položky 11 a 13–15 z `compliance-gaps.md`.
   GraphQL playground v produkci zavřený.
 - RLS na všech tabulkách v `public` (Supabase Data API nic nevydá).
 - Administrace jen pro role správců, session 2 h; superadmin jen přes
-  Microsoft.
+  OAuth (Microsoft, Google nebo Apple).
 - Rate limiting + Turnstile na veřejných POST formulářích; cooldown na
   opakované přihlašovací e-maily.
 - Žádné osobní údaje v aplikačních lozích (blocker 4); ladicí logy

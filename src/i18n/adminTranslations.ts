@@ -15,6 +15,8 @@ const en = {
 
     // LoginView / BeforeLogin branding
     signInWithMicrosoft: 'Sign in with Microsoft',
+    signInWithGoogle: 'Sign in with Google',
+    signInWithApple: 'Sign in with Apple',
     email: 'Email',
     password: 'Password',
     signIn: 'Sign in',
@@ -22,11 +24,11 @@ const en = {
     invalidCredentials: 'Invalid email or password',
     loginFailed: 'Login failed. Please try again.',
     tagline: 'Group trips & shared expenses',
-    errOauth: 'Microsoft sign-in was cancelled or failed. Please try again.',
-    errUnauthorized: 'Your Microsoft account is not authorized. Contact the administrator.',
+    errOauth: 'Sign-in was cancelled or failed. Please try again.',
+    errUnauthorized: 'Your account is not authorized. Contact the administrator.',
     errMissingParams: 'Invalid OAuth response. Please try again.',
     errInvalidState: 'Session expired. Please try again.',
-    errNoEmail: 'Could not retrieve email from Microsoft. Please try again.',
+    errNoEmail: 'Could not retrieve an email address from the sign-in provider. Please try again.',
     errCallbackFailed: 'Sign-in failed. Please try again.',
     welcomeTitle: 'Welcome to zicha.travel',
     welcomeText: 'Manage your group trips and shared expenses with ease.',
@@ -116,7 +118,7 @@ const en = {
     createAccountCreating: 'Creating...',
     createAccountSubmit: 'Create & link',
     createAccountCreatedAlert:
-      'Account {{email}} created and linked. No email was sent - they can sign in via magic link or Microsoft.',
+      'Account {{email}} created and linked. No email was sent - they can sign in via magic link, or with Microsoft, Google or Apple.',
     createAccountLinkedAlert: 'Existing account {{email}} linked to this participant.',
     createAccountError: 'Error creating account',
 
@@ -168,6 +170,8 @@ const cs: typeof en = {
 
     // LoginView / BeforeLogin branding
     signInWithMicrosoft: 'Přihlásit se přes Microsoft',
+    signInWithGoogle: 'Přihlásit se přes Google',
+    signInWithApple: 'Přihlásit se přes Apple',
     email: 'E-mail',
     password: 'Heslo',
     signIn: 'Přihlásit se',
@@ -176,13 +180,13 @@ const cs: typeof en = {
     loginFailed: 'Přihlášení se nezdařilo. Zkuste to prosím znovu.',
     tagline: 'Skupinové výlety a společné výdaje',
     errOauth:
-      'Přihlášení přes Microsoft bylo zrušeno nebo se nezdařilo. Zkuste to prosím znovu.',
+      'Přihlášení bylo zrušeno nebo se nezdařilo. Zkuste to prosím znovu.',
     errUnauthorized:
-      'Váš účet Microsoft nemá oprávnění. Kontaktujte správce.',
+      'Váš účet nemá oprávnění. Kontaktujte správce.',
     errMissingParams: 'Neplatná odpověď OAuth. Zkuste to prosím znovu.',
     errInvalidState: 'Platnost relace vypršela. Zkuste to prosím znovu.',
     errNoEmail:
-      'Od Microsoftu se nepodařilo získat e-mail. Zkuste to prosím znovu.',
+      'Od přihlašovací služby se nepodařilo získat e-mail. Zkuste to prosím znovu.',
     errCallbackFailed: 'Přihlášení se nezdařilo. Zkuste to prosím znovu.',
     welcomeTitle: 'Vítejte na zicha.travel',
     welcomeText: 'Snadno spravujte skupinové výlety a společné výdaje.',
@@ -272,7 +276,7 @@ const cs: typeof en = {
     createAccountCreating: 'Vytváření…',
     createAccountSubmit: 'Vytvořit a propojit',
     createAccountCreatedAlert:
-      'Účet {{email}} byl vytvořen a propojen. Žádný e-mail nebyl odeslán – přihlásit se lze přihlašovacím odkazem nebo přes Microsoft.',
+      'Účet {{email}} byl vytvořen a propojen. Žádný e-mail nebyl odeslán – přihlásit se lze přihlašovacím odkazem nebo přes Microsoft, Google či Apple.',
     createAccountLinkedAlert:
       'Existující účet {{email}} byl propojen s tímto účastníkem.',
     createAccountError: 'Chyba při vytváření účtu',

@@ -50,8 +50,9 @@ export default function UcetContentCs() {
             ]}
           />
           <p>
-            Kdo má pracovní nebo školní Microsoft účet, může místo toho použít tlačítko{' '}
-            <strong>Přihlásit se přes Microsoft</strong>. Výsledek je stejný.
+            Kdo má účet u Microsoftu, Googlu nebo Applu, může místo toho použít tlačítko{' '}
+            <strong>Přihlásit se přes Microsoft</strong>, <strong>Google</strong> nebo{' '}
+            <strong>Apple</strong>. Výsledek je stejný, jen musí být účet vedený na stejný e-mail.
           </p>
           <Callout tone="warn">
             Nepřišel e-mail? Zkontroluj spam a to, jestli píšeš stejnou adresu, jakou má správce
@@ -71,7 +72,8 @@ export default function UcetContentCs() {
                 Klepni na <strong>Tohle jsem já</strong>. Otevře se okno se dvěma cestami.
               </>,
               <>
-                <strong>Už tu účet mám</strong>: přihlásíš se přes Microsoft nebo si necháš poslat
+                <strong>Už tu účet mám</strong>: přihlásíš se přes Microsoft, Google či Apple,
+                nebo si necháš poslat
                 odkaz. Po návratu se žádost odešle sama.
               </>,
               <>
@@ -129,7 +131,8 @@ export default function UcetContentCs() {
             ]}
           />
           <p>
-            Superadmin se přihlašuje výhradně přes Microsoft. Když si vyžádá odkaz e-mailem, místo
+            Superadmin se přihlašuje výhradně přes Microsoft, Google nebo Apple. Když si vyžádá
+            odkaz e-mailem, místo
             něj mu přijde vysvětlení.
           </p>
         </Section>

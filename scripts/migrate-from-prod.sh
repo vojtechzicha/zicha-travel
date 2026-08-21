@@ -162,7 +162,7 @@ UPDATE users SET
   login_token = NULL,
   login_token_expires = NULL;
 -- Superadmin accounts keep their real email and name: they belong to the
--- developer running this script, and Microsoft OAuth matches accounts by
+-- developer running this script, and OAuth sign-in matches accounts by
 -- email — scrambling it locks them out of their own local admin panel.
 -- Recorded in docs/legal/zaznamy-o-zpracovani.md section 4.
 UPDATE users SET

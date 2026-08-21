@@ -21,7 +21,8 @@ export const MAGIC_LINK_TTL_MINUTES = 15
 export { requestOrigin }
 
 /**
- * Superadmins must ALWAYS sign in with Microsoft — a magic link would let
+ * Superadmins must ALWAYS sign in with OAuth (Microsoft, Google or
+ * Apple) — a magic link would let
  * anyone with brief mailbox access take over the whole system. Email an
  * explanation instead of a login link (the caller still reports generic
  * success, so the form cannot be used to probe for accounts).

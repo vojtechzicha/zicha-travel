@@ -11,6 +11,8 @@ každého je co ověřit — zaškrtnout po kontrole.
 | PostHog | zpracovatel | anonymní statistiky | [ ] DPA (posthog.com/handbook/growth/sales/dpa) | EU hosting (Frankfurt) — data neopouštějí EU |
 | Cloudflare | zpracovatel | Turnstile signály prohlížeče | [ ] DPA (cloudflare.com/cloudflare-customer-dpa) | USA možné — DPF/SCC |
 | Microsoft | samostatný správce | přihlášení Microsoft účtem | — (vlastní podmínky Microsoftu) | dle Microsoftu (DPF) |
+| Google | samostatný správce | přihlášení Google účtem | — (vlastní podmínky Googlu) | dle Googlu (DPF) |
+| Apple | samostatný správce | přihlášení Apple účtem | — (vlastní podmínky Applu) | dle Applu (DPF) |
 | Paylibo | příjemce | číslo účtu příjemce, částka, zpráva, IP + prohlížeč při zobrazení QR | — (veřejné API bez smluvního vztahu; uvedeno v zásadách kap. 7) | ČR/EU |
 | Open-Meteo | příjemce | IP prohlížeče při načtení počasí | — (klientské volání, bez našich dat) | EU |
 

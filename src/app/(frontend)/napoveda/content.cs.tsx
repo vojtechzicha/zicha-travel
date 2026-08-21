@@ -211,7 +211,8 @@ export default function HelpContentCs() {
               </>,
               <>Stará se o ikony, pozadí a ostatní média.</>,
               <>
-                Přihlašuje se výhradně přes Microsoft. O přihlašovací odkaz e-mailem si říct může,
+                Přihlašuje se výhradně přes Microsoft, Google nebo Apple. O přihlašovací odkaz
+                e-mailem si říct může,
                 ale místo něj mu přijde vysvětlení.
               </>,
             ]}

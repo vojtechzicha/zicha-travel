@@ -9,11 +9,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return locale === 'en'
     ? {
         title: 'Account and signing in',
-        description: 'Sign-in links, Microsoft, and linking an account to a participant',
+        description: 'Sign-in links, Microsoft, Google and Apple, and linking an account to a participant',
       }
     : {
         title: 'Účet a přihlášení',
-        description: 'Přihlašovací odkaz, Microsoft a propojení účtu s účastníkem',
+        description: 'Přihlašovací odkaz, Microsoft, Google či Apple a propojení účtu s účastníkem',
       }
 }
 

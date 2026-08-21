@@ -35,7 +35,7 @@ export default async function LoginPage() {
     <div className="min-h-screen relative">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/80 backdrop-blur-sm z-0 pointer-events-none" />
       <div className="relative z-10 max-w-app mx-auto px-5 py-10 flex items-center justify-center min-h-screen">
-        <LoginCard microsoftEnabled={process.env.NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED === 'true'} />
+        <LoginCard />
       </div>
     </div>
   )

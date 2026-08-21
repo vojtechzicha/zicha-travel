@@ -180,9 +180,9 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Frontend users are linked from `Participant.account`; the Users form
      shows the links via a `participants` join field
    - Auth: always-registered `app-jwt` cookie strategy (JWT signed with
-     `PAYLOAD_SECRET`) shared by Microsoft OAuth AND magic-link logins;
-     local email+password strategy only exists where OAuth env vars are
-     unset (dev bootstrap). Magic-link state lives in hidden
+     `PAYLOAD_SECRET`) shared by OAuth (Microsoft, Google, Apple) AND
+     magic-link logins; local email+password strategy only exists where no
+     OAuth provider's env vars are set (dev bootstrap). Magic-link state lives in hidden
      `loginToken`/`loginTokenExpires` fields (sha256 hash, 15min TTL)
    - See `docs/PRD-uzivatele.md` for the full auth/roles design
 
@@ -377,8 +377,21 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 ### Auth flows (frontend)
 
 - `/login`: magic link (email → `POST /api/auth/magic-link/request` →
-  `GET .../verify`) and Microsoft OAuth (`/api/auth/login?returnTo=...`);
-  sign-out via `GET /api/auth/logout`. Accounts are created in admin
+  `GET .../verify`) and OAuth
+  (`/api/auth/login?provider=microsoft|google|apple&returnTo=...` — no/unknown
+  provider falls back to the first configured one, Microsoft first, so old
+  links keep working); sign-out via `GET /api/auth/logout`. Providers share
+  one interface (`src/lib/auth/provider.ts`, registry `providers.ts`,
+  callback logic `oauthCallback.ts`); callbacks: `/api/auth/callback`
+  (Microsoft — original path, Azure registration untouched),
+  `/api/auth/callback/google`, `/api/auth/callback/apple`. Apple has no
+  static client secret (short-lived ES256 JWT signed with the `.p8` key,
+  base64 in `APPLE_PRIVATE_KEY`), uses `response_mode=form_post` (callback
+  arrives as cross-site POST ⇒ its state cookies are SameSite=None) and
+  refuses http/localhost Return URLs, so Apple exists only on preview and
+  prod (env spec `appliesTo: ['prod','preview']`). Buttons are gated per
+  provider on `NEXT_PUBLIC_{MICROSOFT,GOOGLE,APPLE}_AUTH_ENABLED`
+  (frontend list in `components/oauthProviders.tsx`). Accounts are created in admin
   (participant → "Create account from email...",
   `POST /participants/:id/create-account`) or by the claim flow
   (`POST /api/claim-requests/register` — "Jsem tu poprvé", the magic-link
@@ -386,8 +399,8 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   person requests a login link themselves. A claim intent survives login
   via `?claim=<participantId>` in returnTo (`claimReturnTo`).
 - **Return target keeps the HOST, not just the path**: a sign-in usually
-  starts on a chata subdomain, but Microsoft always sends the callback to
-  the apex (`AZURE_REDIRECT_URI` is fixed in the app registration), so
+  starts on a chata subdomain, but every provider always sends the callback
+  to the apex (the `*_REDIRECT_URI`s are fixed in the app registrations), so
   `/api/auth/login` stores `oauth-return-to` as an absolute URL built from
   the request host and the callback redirects there. `safeReturnUrl` in
   `src/lib/auth/session.ts` validates it: only the deployment's own host
@@ -411,8 +424,9 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   invisible on `/login`, visible in the claim dialog. Gated on
   `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (both unset in
   local dev = disabled). Verification in `src/lib/turnstile.ts`. SUPERADMINS never magic-link —
-  they get an explanatory email instead and the verify route refuses them;
-  email+password stays available only while Microsoft OAuth is not
+  they get an explanatory email instead and the verify route refuses them
+  (`superadmin_oauth`) — superadmins sign in with OAuth only (any provider);
+  email+password stays available only while no OAuth provider is
   configured (first-time-setup fallback). Every login stamps
   `users.lastLoginAt` ("active account")
 - Email: Resend adapter gated on `RESEND_API_KEY`; ALL sends go through

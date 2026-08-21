@@ -2,9 +2,10 @@ import type { CollectionConfig } from 'payload'
 import { parseCookies } from 'payload'
 import jwt from 'jsonwebtoken'
 import { isAdminRole, isSuperadmin } from '../lib/access'
+import { isOAuthConfigured } from '../lib/auth/config'
 import { cleanupDeletedUserReferences } from '../utils/userCleanup'
 
-const isOAuthEnabled = !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET)
+const isOAuthEnabled = isOAuthConfigured()
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -18,14 +19,14 @@ export const Users: CollectionConfig = {
     defaultColumns: ['email', 'name', 'role'],
   },
   auth: {
-    // With Microsoft OAuth configured the local email+password strategy is
-    // disabled (production); without it (local dev) password login stays
-    // available for bootstrap.
+    // With any OAuth provider configured (Microsoft, Google or Apple) the
+    // local email+password strategy is disabled (production); without one
+    // (local dev) password login stays available for bootstrap.
     ...(isOAuthEnabled ? { disableLocalStrategy: { enableFields: true } } : {}),
     strategies: [
       {
         // Verifies the `payload-token` cookie JWTs that BOTH login flows
-        // (Microsoft OAuth callback and magic-link verify) sign with
+        // (the OAuth callbacks and magic-link verify) sign with
         // PAYLOAD_SECRET. Always registered — magic-link sessions must work
         // even where OAuth env vars are absent.
         name: 'app-jwt',
@@ -82,7 +83,7 @@ export const Users: CollectionConfig = {
       },
     ],
     // Payload's own login op (local email+password strategy — the fallback
-    // where Microsoft OAuth is not configured). The OAuth callback and
+    // where no OAuth provider is configured). The OAuth callbacks and
     // magic-link verify routes stamp lastLoginAt themselves.
     afterLogin: [
       async ({ req, user }) => {

@@ -19,7 +19,7 @@ export function superadminNoticeEmail(locale: AppLocale): EmailContent {
   if (locale === 'en') {
     return {
       subject: 'Sign in to zicha.travel',
-      text: 'This account is a superadmin, so login links are disabled for it. Please sign in with Microsoft at /login or /admin.',
+      text: 'This account is a superadmin, so login links are disabled for it. Please sign in with Microsoft, Google or Apple at /login or /admin.',
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2 style="color: #d97706;">zicha.travel</h2>
@@ -27,14 +27,14 @@ export function superadminNoticeEmail(locale: AppLocale): EmailContent {
             This account is a <strong>superadmin</strong>, so for security reasons login
             links are disabled for it.
           </p>
-          <p>Please use the "Sign in with Microsoft" button instead.</p>
+          <p>Please use one of the sign-in buttons (Microsoft, Google or Apple) instead.</p>
         </div>
       `,
     }
   }
   return {
     subject: 'Přihlášení k zicha.travel',
-    text: 'Tento účet je superadmin, přihlašovací odkazy jsou pro něj vypnuté. Přihlas se prosím přes Microsoft na /login nebo /admin.',
+    text: 'Tento účet je superadmin, přihlašovací odkazy jsou pro něj vypnuté. Přihlas se prosím přes Microsoft, Google nebo Apple na /login nebo /admin.',
     html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
           <h2 style="color: #d97706;">zicha.travel</h2>
@@ -42,7 +42,7 @@ export function superadminNoticeEmail(locale: AppLocale): EmailContent {
             Tento účet je <strong>superadmin</strong>, přihlašovací odkazy jsou pro něj z
             bezpečnostních důvodů vypnuté.
           </p>
-          <p>Přihlas se prosím tlačítkem „Přihlásit se přes Microsoft“.</p>
+          <p>Přihlas se prosím jedním z tlačítek Microsoft, Google nebo Apple.</p>
         </div>
       `,
   }

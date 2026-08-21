@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { Mail, Send } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
+import { enabledOAuthProviders, oauthLoginHref } from './oauthProviders'
 import { referrerHost, track } from '@/lib/analytics'
 
 // API error codes with a dedicated message in messages/{cs,en}/auth.json
@@ -19,12 +20,13 @@ const KNOWN_ERROR_CODES = [
   'unauthorized',
   'missing_params',
   'invalid_state',
-  'superadmin_microsoft',
+  'superadmin_oauth',
   'no_email',
   'callback_failed',
 ] as const
 
-export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
+export function LoginCard() {
+  const oauthProviders = enabledOAuthProviders()
   const t = useTranslations('auth')
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
@@ -170,23 +172,28 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
         </form>
       )}
 
-      {microsoftEnabled && !sent && (
+      {oauthProviders.length > 0 && !sent && (
         <>
           <div className="flex items-center gap-3 my-5 text-gray-400 text-sm">
             <div className="flex-1 h-px bg-gray-200" />
             {t('login.or')}
             <div className="flex-1 h-px bg-gray-200" />
           </div>
-          <a
-            href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
-            onClick={() => track('login_started', { method: 'microsoft' })}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl
-                       bg-white border border-gray-200 text-gray-800 font-semibold
-                       hover:bg-gray-50 transition-colors"
-          >
-            <MicrosoftIcon />
-            {t('login.microsoft')}
-          </a>
+          <div className="flex flex-col gap-2">
+            {oauthProviders.map((provider) => (
+              <a
+                key={provider.id}
+                href={oauthLoginHref(provider.id, returnTo)}
+                onClick={() => track('login_started', { method: provider.id })}
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl
+                           bg-white border border-gray-200 text-gray-800 font-semibold
+                           hover:bg-gray-50 transition-colors"
+              >
+                {provider.icon}
+                {t(`login.${provider.labelKey}`)}
+              </a>
+            ))}
+          </div>
         </>
       )}
 
@@ -208,16 +215,5 @@ export function LoginCard({ microsoftEnabled }: { microsoftEnabled: boolean }) {
         })}
       </p>
     </GlassCard>
-  )
-}
-
-function MicrosoftIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-    </svg>
   )
 }
