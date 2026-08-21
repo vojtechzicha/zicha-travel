@@ -696,6 +696,14 @@ previews per PR). The Fly.io era is over — the migration history lives in
 - DB migrations run automatically during the Vercel build: the
   `vercel-build` script executes `migrate:payer auto` (idempotent) before
   `next build`, against that deployment's own `DATABASE_URI` (prod or preview).
+- **Post-deploy refresh hint**: every build bakes a deterministic build id
+  (git commit via `VERCEL_GIT_COMMIT_SHA`, `computeBuildId()` in
+  next.config.mjs) into the client bundle AND the server; long-lived tabs
+  compare theirs against `GET /api/version` (public, no-store) on
+  focus/visibility + a 5-min interval and show a toast asking to refresh
+  when a newer build is live (`UpdateHint.tsx` in the frontend layout,
+  strings in `common.updateHint`). Dismiss is per server build; builds
+  without a commit fall back to `'unversioned'`, which disables the hint.
 - One-off backfill scripts: `pnpm migrate:media` (filled the Storage bucket
   from the then-live site over public HTTP; idempotent, kept for reference).
 

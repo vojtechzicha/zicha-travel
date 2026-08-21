@@ -24,5 +24,10 @@
     "allow": "Allow",
     "essentialOnly": "Essential only",
     "morePrivacy": "More about privacy"
+  },
+  "updateHint": {
+    "message": "We've updated the app. Refresh the page to get the new version.",
+    "refresh": "Refresh",
+    "dismiss": "Dismiss"
   }
 }

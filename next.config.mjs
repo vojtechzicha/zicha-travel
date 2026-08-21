@@ -1,3 +1,4 @@
+import { execSync } from 'child_process'
 import { withPayload } from '@payloadcms/next/withPayload'
 import createNextIntlPlugin from 'next-intl/plugin'
 
@@ -5,10 +6,42 @@ import createNextIntlPlugin from 'next-intl/plugin'
 // hostname middleware and /[chataSlug] routing stay untouched.
 const withNextIntl = createNextIntlPlugin()
 
+// Build id for the post-deploy refresh hint (see components/UpdateHint.tsx):
+// inlined into both the client bundle and the server route handlers via
+// `env`, so a long-lived tab can compare its own id against GET /api/version
+// and learn that a newer build has been deployed.
+//
+// Must be DETERMINISTIC — Next evaluates this config several times during one
+// build (main process + compiler workers), so a random id would come out
+// different in the client bundle, the server bundle and BUILD_ID, making
+// every fresh tab look stale. The git commit makes all evaluations agree and
+// gives every deploy of new code a new id. On Vercel the commit arrives via
+// VERCEL_GIT_COMMIT_SHA (no .git dir in the build); locally, git itself
+// answers. With neither (e.g. a tarball build) it falls back to a constant,
+// which disables the hint rather than misfiring.
+function computeBuildId() {
+  const vercelSha = process.env.VERCEL_GIT_COMMIT_SHA
+  if (vercelSha) return vercelSha.slice(0, 16)
+  try {
+    return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim()
+      .slice(0, 16)
+  } catch {
+    return 'unversioned'
+  }
+}
+
+const buildId = computeBuildId()
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Allow dev requests from custom domains
   allowedDevOrigins: [],
+  generateBuildId: () => buildId,
+  env: {
+    NEXT_PUBLIC_BUILD_ID: buildId,
+  },
   images: {
     // Cover photos are 2000px JPEGs served through the Payload media route,
     // which sends `max-age=0`. Everything that goes through next/image gets
