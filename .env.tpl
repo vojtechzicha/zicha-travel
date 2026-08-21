@@ -26,12 +26,24 @@ PAYLOAD_SECRET=op://Development/zicha-travel-dev/PAYLOAD_SECRET
 # -- Microsoft OAuth ----------------------------------------------------------
 # Same Azure app registration as production; only the callback differs, and
 # http://localhost:3000/api/auth/callback is already registered on it.
-# Blank all four to fall back to Payload's email+password bootstrap login.
+# Blank all four (and the Google four below) to fall back to Payload's
+# email+password bootstrap login.
 
 AZURE_CLIENT_ID=op://Development/zicha-travel-dev/AZURE_CLIENT_ID
 AZURE_CLIENT_SECRET=op://Development/zicha-travel-dev/AZURE_CLIENT_SECRET
 AZURE_REDIRECT_URI=http://localhost:3000/api/auth/callback
 NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true
+
+# -- Google OAuth -------------------------------------------------------------
+# Same Google Cloud OAuth client as production; the localhost callback is
+# registered on it alongside the production ones.
+# There are no APPLE_* lines here on purpose: Sign in with Apple refuses http
+# and localhost Return URLs, so that provider exists only on preview and prod.
+
+GOOGLE_CLIENT_ID=op://Development/zicha-travel-dev/GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=op://Development/zicha-travel-dev/GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback/google
+NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true
 
 # -- Outgoing email -----------------------------------------------------------
 # Empty API key = Payload logs magic-link emails to the dev-server console.

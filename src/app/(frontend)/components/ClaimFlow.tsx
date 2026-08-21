@@ -9,6 +9,7 @@ import { accusativeName } from '@/lib/czechNames'
 import { claimReturnTo } from '@/lib/claimRequests'
 import { track } from '@/lib/analytics'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
+import { enabledOAuthProviders, oauthLoginHref } from './oauthProviders'
 import { useAppTheme } from '../utils/useAppTheme'
 import type { AppLocale } from '@/i18n/config'
 import type { Participant } from '@/payload-types'
@@ -17,7 +18,8 @@ import type { Participant } from '@/payload-types'
 // - ClaimBanner: the main entry point under the finance header, plus the
 //   "waiting for admin" state with withdraw
 // - ClaimDialog: anonymous visitors pick a path (existing account via
-//   Microsoft / magic link, or first-timers registering by email); the
+//   OAuth (Microsoft/Google/Apple) or magic link, or first-timers
+//   registering by email); the
 //   claim intent rides in the login returnTo URL (?claim=<id>)
 // - ClaimResultModal: outcome of a signed-in submit (auto-approved /
 //   pending / error)
@@ -212,7 +214,7 @@ interface ClaimDialogProps {
 
 /**
  * "Propojit Katku Novákovou" — path choice for an anonymous visitor. Both
- * paths end in an email (magic link) or the Microsoft redirect; the claim
+ * paths end in an email (magic link) or an OAuth redirect; the claim
  * finishes automatically after login thanks to ?claim= in the returnTo.
  */
 export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProps) {
@@ -238,7 +240,7 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
   const [captchaReset, setCaptchaReset] = useState(0)
   const captchaPending = Boolean(turnstileSiteKey) && !captchaToken
 
-  const microsoftEnabled = process.env.NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED === 'true'
+  const oauthProviders = enabledOAuthProviders()
   const returnTo =
     typeof window !== 'undefined'
       ? claimReturnTo(window.location.pathname + window.location.search, participant.id)
@@ -378,17 +380,19 @@ export function ClaimDialog({ participant, chataName, onClose }: ClaimDialogProp
           <div className="font-bold text-gray-900 dark:text-gray-100 text-sm mb-2.5">
             {t('claim.dialog.existingAccount')}
           </div>
-          {microsoftEnabled && (
+          {oauthProviders.map((provider) => (
             <a
-              href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
+              key={provider.id}
+              href={oauthLoginHref(provider.id, returnTo)}
+              onClick={() => track('login_started', { method: provider.id })}
               className="flex items-center justify-center gap-2.5 border border-gray-300 dark:border-white/[0.15] rounded-xl
                          px-4 py-2.5 font-semibold text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50
                          dark:hover:bg-white/[0.06] transition-colors mb-2"
             >
-              <MicrosoftIcon />
-              {t('claim.dialog.microsoft')}
+              {provider.icon}
+              {t(`claim.dialog.${provider.labelKey}`)}
             </a>
-          )}
+          ))}
           <div className="flex gap-2">
             <input
               type="email"
@@ -544,16 +548,5 @@ export function ClaimResultModal({ outcome, participant, onClose }: ClaimResultM
         </button>
       </div>
     </ModalShell>
-  )
-}
-
-function MicrosoftIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-    </svg>
   )
 }

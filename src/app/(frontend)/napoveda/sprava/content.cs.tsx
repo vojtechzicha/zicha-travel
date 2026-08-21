@@ -162,7 +162,8 @@ export default function SpravaContentCs() {
               <>Spravuje účty a role. Roli může měnit jen on.</>,
               <>Stará se o ikony, pozadí a média.</>,
               <>
-                Přihlašuje se výhradně přes Microsoft. Když si vyžádá odkaz e-mailem, přijde mu
+                Přihlašuje se výhradně přes Microsoft, Google nebo Apple. Když si vyžádá odkaz
+                e-mailem, přijde mu
                 místo něj vysvětlení.
               </>,
             ]}

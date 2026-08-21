@@ -52,10 +52,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const user = users.docs[0]
 
-  // Defense in depth: superadmins never sign in via magic link (see the
-  // request route), so refuse any token that somehow exists for one
+  // Defense in depth: superadmins never sign in via magic link — OAuth
+  // only (see the request route) — so refuse any token that somehow
+  // exists for one
   if (user.role === 'superadmin') {
-    loginUrl.searchParams.set('error', 'superadmin_microsoft')
+    loginUrl.searchParams.set('error', 'superadmin_oauth')
     return NextResponse.redirect(loginUrl)
   }
 

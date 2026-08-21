@@ -45,7 +45,8 @@ policy. Even without an account, the rules apply:
 
 An account is created for you by a chata admin, or through "That's me" (a
 claim request linking you to a participant name) or "I'm new here". Sign-in
-uses a one-time link sent by email, or Microsoft; there is no password with
+uses a one-time link sent by email, or Microsoft, Google or Apple; there is
+no password with
 us, so protect your mailbox: whoever controls it controls your account.
 
 An account is personal and only an adult may hold one. In a claim request,

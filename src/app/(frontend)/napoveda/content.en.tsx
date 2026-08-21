@@ -224,7 +224,8 @@ export default function HelpContentEn() {
               </>,
               <>Takes care of icons, backgrounds and other media.</>,
               <>
-                Signs in exclusively through Microsoft. They can ask for a sign-in link by email,
+                Signs in exclusively through Microsoft, Google or Apple. They can ask for a
+                sign-in link by email,
                 but an explanation arrives instead.
               </>,
             ]}

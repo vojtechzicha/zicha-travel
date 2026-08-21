@@ -77,13 +77,82 @@ export const ENV_SPEC = [
     name: 'AZURE_REDIRECT_URI',
     scope: 'server',
     description:
-      'Fixed callback URL registered in Azure. getAuthConfig() THROWS when OAuth is on and this is missing.',
+      'Fixed callback URL registered in Azure. The provider THROWS when OAuth is on and this is missing.',
     check: mustBeUrl,
   },
   {
     name: 'NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED',
     scope: 'public',
     description: 'Literal "true" to show the Microsoft button on the login screens.',
+    check: (value) => (value === 'true' ? null : 'must be exactly "true" (or left empty)'),
+  },
+
+  // -- Google OAuth ---------------------------------------------------------
+  {
+    name: 'GOOGLE_CLIENT_ID',
+    scope: 'server',
+    description: 'Google Cloud OAuth client ID. Public: it appears in every OAuth redirect.',
+  },
+  {
+    name: 'GOOGLE_CLIENT_SECRET',
+    scope: 'server',
+    description: 'Google Cloud OAuth client secret for the same client.',
+  },
+  {
+    name: 'GOOGLE_REDIRECT_URI',
+    scope: 'server',
+    description:
+      'Fixed callback URL (/api/auth/callback/google) registered on the Google OAuth client.',
+    check: mustBeUrl,
+  },
+  {
+    name: 'NEXT_PUBLIC_GOOGLE_AUTH_ENABLED',
+    scope: 'public',
+    description: 'Literal "true" to show the Google button on the login screens.',
+    check: (value) => (value === 'true' ? null : 'must be exactly "true" (or left empty)'),
+  },
+
+  // -- Apple OAuth ----------------------------------------------------------
+  // Sign in with Apple refuses http and localhost callbacks, so this
+  // provider only exists on preview and production.
+  {
+    name: 'APPLE_CLIENT_ID',
+    scope: 'server',
+    appliesTo: ['prod', 'preview'],
+    description: 'Apple Services ID identifier (e.g. travel.zicha.signin), not the App ID.',
+  },
+  {
+    name: 'APPLE_TEAM_ID',
+    scope: 'server',
+    appliesTo: ['prod', 'preview'],
+    description: 'Apple Developer Team ID (10 characters, top right of the developer portal).',
+  },
+  {
+    name: 'APPLE_KEY_ID',
+    scope: 'server',
+    appliesTo: ['prod', 'preview'],
+    description: 'Key ID of the "Sign in with Apple" private key (.p8) from the developer portal.',
+  },
+  {
+    name: 'APPLE_PRIVATE_KEY',
+    scope: 'server',
+    appliesTo: ['prod', 'preview'],
+    description:
+      'The .p8 private key, base64-encoded to a single line (`base64 -i AuthKey_XXX.p8`); a raw PEM with "\\n" escapes works too.',
+  },
+  {
+    name: 'APPLE_REDIRECT_URI',
+    scope: 'server',
+    appliesTo: ['prod', 'preview'],
+    description:
+      'Fixed callback URL (/api/auth/callback/apple) registered as a Return URL on the Services ID. Must be https.',
+    check: mustBeUrl,
+  },
+  {
+    name: 'NEXT_PUBLIC_APPLE_AUTH_ENABLED',
+    scope: 'public',
+    appliesTo: ['prod', 'preview'],
+    description: 'Literal "true" to show the Apple button on the login screens.',
     check: (value) => (value === 'true' ? null : 'must be exactly "true" (or left empty)'),
   },
 
@@ -224,7 +293,17 @@ export const ENV_GROUPS = [
   {
     name: 'Microsoft OAuth',
     members: ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_REDIRECT_URI'],
-    note: 'getAuthConfig() throws on the first sign-in attempt otherwise',
+    note: 'the provider throws on the first sign-in attempt otherwise',
+  },
+  {
+    name: 'Google OAuth',
+    members: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI'],
+    note: 'the provider throws on the first sign-in attempt otherwise',
+  },
+  {
+    name: 'Apple OAuth',
+    members: ['APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY', 'APPLE_REDIRECT_URI'],
+    note: 'the provider throws on the first sign-in attempt otherwise',
   },
   {
     name: 'Cloudflare Turnstile',
@@ -320,19 +399,44 @@ export function validateEnv(env, environment = 'dev') {
     errors.push(`${group.name}: set all of these or none. Missing ${missing.join(', ')} — ${group.note}.`)
   }
 
-  const oauthOn = present(env, 'AZURE_CLIENT_ID') && present(env, 'AZURE_CLIENT_SECRET')
-  if (oauthOn && present(env, 'NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED') !== 'true') {
-    warnings.push(
-      'Microsoft OAuth is configured but NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED is not "true", so no sign-in button will be shown.',
-    )
-  }
-  // The reverse is the worse state, and the one .env.tpl makes likely (the
-  // flag is a literal "true" there while the Azure secrets are blankable):
-  // the button renders and getAuthConfig() throws on the first click.
-  if (!oauthOn && present(env, 'NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED') === 'true') {
-    warnings.push(
-      'NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED is "true" but Azure OAuth is not configured — the Microsoft button will render and fail at sign-in. Blank the flag together with the AZURE_* secrets.',
-    )
+  // Each OAuth provider pairs backend credentials with a public button flag.
+  // Off-by-one states are only warnings, but the flag-without-backend one is
+  // the worse of the two: the button renders and throws on the first click.
+  const oauthPairs = [
+    {
+      label: 'Microsoft',
+      flag: 'NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED',
+      prefix: 'AZURE_*',
+      on: present(env, 'AZURE_CLIENT_ID') && present(env, 'AZURE_CLIENT_SECRET'),
+    },
+    {
+      label: 'Google',
+      flag: 'NEXT_PUBLIC_GOOGLE_AUTH_ENABLED',
+      prefix: 'GOOGLE_*',
+      on: present(env, 'GOOGLE_CLIENT_ID') && present(env, 'GOOGLE_CLIENT_SECRET'),
+    },
+    {
+      label: 'Apple',
+      flag: 'NEXT_PUBLIC_APPLE_AUTH_ENABLED',
+      prefix: 'APPLE_*',
+      on:
+        present(env, 'APPLE_CLIENT_ID') &&
+        present(env, 'APPLE_TEAM_ID') &&
+        present(env, 'APPLE_KEY_ID') &&
+        present(env, 'APPLE_PRIVATE_KEY'),
+    },
+  ]
+  for (const { label, flag, prefix, on } of oauthPairs) {
+    if (on && present(env, flag) !== 'true') {
+      warnings.push(
+        `${label} OAuth is configured but ${flag} is not "true", so no ${label} sign-in button will be shown.`,
+      )
+    }
+    if (!on && present(env, flag) === 'true') {
+      warnings.push(
+        `${flag} is "true" but ${label} OAuth is not configured — the ${label} button will render and fail at sign-in. Blank the flag together with the ${prefix} secrets.`,
+      )
+    }
   }
 
   const cookieDomain = present(env, 'SESSION_COOKIE_DOMAIN')

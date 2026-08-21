@@ -246,9 +246,37 @@ describe('validateEnv', () => {
 
   it('warns when the Microsoft button is enabled without OAuth behind it', () => {
     // The reverse of the button-hidden warning, and the worse state: the
-    // button renders and getAuthConfig() throws on the first click.
+    // button renders and the provider throws on the first click.
     const { warnings } = validateEnv({ ...valid, NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED: 'true' })
     expect(warnings.join(' ')).toContain('the Microsoft button will render and fail')
+  })
+
+  it('applies the button/backend pairing to Google and Apple too', () => {
+    const google = validateEnv({ ...valid, NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: 'true' })
+    expect(google.warnings.join(' ')).toContain('the Google button will render and fail')
+    const apple = validateEnv(
+      { ...valid, CRON_SECRET: 'cron-secret', NEXT_PUBLIC_APPLE_AUTH_ENABLED: 'true' },
+      'prod',
+    )
+    expect(apple.warnings.join(' ')).toContain('the Apple button will render and fail')
+  })
+
+  it('rejects a half-configured Google or Apple provider', () => {
+    const google = validateEnv({ ...valid, GOOGLE_CLIENT_ID: 'id' })
+    expect(google.errors.join(' ')).toContain('GOOGLE_CLIENT_SECRET')
+    const apple = validateEnv({ ...valid, CRON_SECRET: 'cron-secret', APPLE_CLIENT_ID: 'travel.zicha.signin' }, 'prod')
+    expect(apple.errors.join(' ')).toContain('APPLE_PRIVATE_KEY')
+  })
+
+  it('keeps Apple out of local dev — its callbacks cannot be http or localhost', () => {
+    // The Apple specs are prod+preview only, so .env.tpl must not declare
+    // them (the template test above enforces that side). The all-or-nothing
+    // group still applies everywhere: a half-set APPLE_* group is an error
+    // even in dev, because the code would read it there too.
+    const appleSpecs = ENV_SPEC.filter((spec) => spec.name.startsWith('APPLE_'))
+    expect(appleSpecs.length).toBe(5)
+    for (const spec of appleSpecs) expect(spec.appliesTo, spec.name).toEqual(['prod', 'preview'])
+    expect(validateEnv({ ...valid, APPLE_CLIENT_ID: 'alone' }).errors.join(' ')).toContain('Apple OAuth')
   })
 
   it('rejects the placeholder `vercel env pull` writes for sensitive variables', () => {

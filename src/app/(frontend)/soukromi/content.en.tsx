@@ -99,8 +99,9 @@ export default function PrivacyContentEn() {
           </p>
           <p>
             <strong>About signed-in users, in addition:</strong> the account email, last login
-            time, and, when you sign in with Microsoft, the identifier and email from your
-            Microsoft account; the expenses you entered; and claim requests linking you to a
+            time, and, when you sign in with Microsoft, Google or Apple, the identifier and
+            email from your account with that provider; the expenses you entered; and claim
+            requests linking you to a
             participant name, including a rejection reason where one was given.
           </p>
           <p>
@@ -176,8 +177,8 @@ export default function PrivacyContentEn() {
             record.
           </p>
           <p>
-            Data about signed-in users comes from the users themselves, or from their Microsoft
-            account when they sign in with Microsoft.
+            Data about signed-in users comes from the users themselves, or from their
+            Microsoft, Google or Apple account when they sign in with one of them.
           </p>
         </Section>
 
@@ -261,6 +262,16 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5 pr-4">Microsoft sign-in, if you use it</td>
                   <td className="py-2.5">EU/US</td>
                 </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">Google</td>
+                  <td className="py-2.5 pr-4">Google sign-in, if you use it</td>
+                  <td className="py-2.5">EU/US</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">Apple</td>
+                  <td className="py-2.5 pr-4">Apple sign-in, if you use it</td>
+                  <td className="py-2.5">EU/US</td>
+                </tr>
                 <tr>
                   <td className="py-2.5 pr-4">Paylibo</td>
                   <td className="py-2.5 pr-4">
@@ -285,7 +296,8 @@ export default function PrivacyContentEn() {
         <Section id="mimo-eu" title="8. Transfers outside the EU" icon={<Globe size={20} />}>
           <p>
             We keep data in the EU where we can (database, files, statistics). Some providers
-            (Vercel, Resend, Cloudflare, Microsoft) are US companies; the transfer is covered by
+            (Vercel, Resend, Cloudflare, Microsoft, Google, Apple) are US companies; the
+            transfer is covered by
             the European Commission&rsquo;s adequacy decision (the Data Privacy Framework) or by
             standard contractual clauses. We will send you the details for a specific provider
             on request.
@@ -422,7 +434,8 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-state</td>
                   <td className="py-2.5 pr-4">
-                    random security code protecting Microsoft sign-in against forgery
+                    random security code protecting Microsoft, Google and Apple sign-in
+                    against forgery
                   </td>
                   <td className="py-2.5 pr-4">10 minutes</td>
                   <td className="py-2.5">necessary</td>
@@ -430,7 +443,7 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-return-to</td>
                   <td className="py-2.5 pr-4">
-                    holds the return address during Microsoft sign-in
+                    holds the return address during Microsoft, Google or Apple sign-in
                   </td>
                   <td className="py-2.5 pr-4">10 minutes, only while signing in</td>
                   <td className="py-2.5">necessary</td>

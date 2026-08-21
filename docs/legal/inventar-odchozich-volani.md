@@ -13,6 +13,8 @@ ve stejném PR.
 | Resend API | server (`lib/email.ts`) | e-maily |
 | Cloudflare `siteverify` | server (`lib/turnstile.ts`) | Turnstile token + IP |
 | Microsoft `login.microsoftonline.com` | server + redirect | OAuth výměna |
+| Google `accounts.google.com` + `oauth2.googleapis.com` | server + redirect | OAuth výměna |
+| Apple `appleid.apple.com` | server + redirect (callback přichází jako POST od Applu) | OAuth výměna |
 | PostHog EU | server-side jen přes rewrites `/ingest` | statistické události |
 
 ## Odchozí volání (prohlížeč návštěvníka)

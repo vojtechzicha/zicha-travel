@@ -27,15 +27,16 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 
 - **Subjekty:** uživatelé s účtem, správci.
 - **Údaje:** e-mail, zobrazované jméno, role, čas posledního přihlášení,
-  hash přihlašovacího tokenu (15 min), Microsoft identifikátor při OAuth;
+  hash přihlašovacího tokenu (15 min), identifikátor od poskytovatele
+  přihlášení (Microsoft, Google nebo Apple) při OAuth;
   žádosti o propojení včetně důvodu zamítnutí; žádosti subjektů údajů
   (kolekce Data Requests).
 - **Účel:** vedení účtu, přihlášení, propojení účastníků, doložení
   vyřízení žádostí.
 - **Základ:** plnění smlouvy (podmínky užití); u evidence žádostí právní
   povinnost/oprávněný zájem na doložitelnosti.
-- **Příjemci:** Supabase, Vercel, Resend (e-maily), Microsoft (vlastní
-  správce svého přihlášení).
+- **Příjemci:** Supabase, Vercel, Resend (e-maily), Microsoft, Google a
+  Apple (každý vlastní správce svého přihlášení).
 - **Výmaz:** účet 2 roky bez přihlášení (cron, včetně vazeb); rozhodnuté
   žádosti o propojení 12 měsíců po rozhodnutí.
 

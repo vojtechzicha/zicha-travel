@@ -29,11 +29,31 @@ PAYLOAD_SECRET=op://Development/zicha-travel-prod/PAYLOAD_SECRET
 # -- Microsoft OAuth ----------------------------------------------------------
 # The callback is fixed on the apex: Azure sends every sign-in here, whichever
 # chata subdomain it started from, and the callback redirects back afterwards.
+# Google and Apple below follow the same pattern on their own callback paths.
 
 AZURE_CLIENT_ID=op://Development/zicha-travel-prod/AZURE_CLIENT_ID
 AZURE_CLIENT_SECRET=op://Development/zicha-travel-prod/AZURE_CLIENT_SECRET
 AZURE_REDIRECT_URI=https://zicha.travel/api/auth/callback
 NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true
+
+# -- Google OAuth -------------------------------------------------------------
+
+GOOGLE_CLIENT_ID=op://Development/zicha-travel-prod/GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=op://Development/zicha-travel-prod/GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=https://zicha.travel/api/auth/callback/google
+NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true
+
+# -- Apple OAuth --------------------------------------------------------------
+# APPLE_CLIENT_ID is the Services ID identifier, not the App ID. The private
+# key is the .p8 from the developer portal, base64-encoded to a single line
+# (base64 -i AuthKey_XXX.p8) so it survives env-file round-trips.
+
+APPLE_CLIENT_ID=op://Development/zicha-travel-prod/APPLE_CLIENT_ID
+APPLE_TEAM_ID=op://Development/zicha-travel-prod/APPLE_TEAM_ID
+APPLE_KEY_ID=op://Development/zicha-travel-prod/APPLE_KEY_ID
+APPLE_PRIVATE_KEY=op://Development/zicha-travel-prod/APPLE_PRIVATE_KEY
+APPLE_REDIRECT_URI=https://zicha.travel/api/auth/callback/apple
+NEXT_PUBLIC_APPLE_AUTH_ENABLED=true
 
 # -- Outgoing email -----------------------------------------------------------
 # EMAIL_PREVIEW_TO is absent on purpose: it only does anything on PREVIEW

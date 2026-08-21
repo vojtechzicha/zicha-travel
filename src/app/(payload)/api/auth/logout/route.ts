@@ -9,7 +9,7 @@ import {
 /**
  * GET /api/auth/logout?returnTo=/...
  *
- * Clears the session cookie (works for both Microsoft OAuth and magic-link
+ * Clears the session cookie (works for both OAuth and magic-link
  * sessions) and sends the visitor back to the frontend.
  *
  * Without an explicit returnTo, they stay on the page they signed out from

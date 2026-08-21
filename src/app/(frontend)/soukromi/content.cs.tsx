@@ -98,8 +98,9 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             <strong>O přihlášených uživatelích navíc:</strong> e-mail účtu, čas posledního
-            přihlášení, při přihlášení přes Microsoft identifikátor a e-mail z vašeho Microsoft
-            účtu, výdaje, které jste zadali, a žádosti o propojení se jménem účastníka včetně
+            přihlášení, při přihlášení přes Microsoft, Google nebo Apple identifikátor a e-mail
+            z vašeho účtu u zvoleného poskytovatele, výdaje, které jste zadali, a žádosti o
+            propojení se jménem účastníka včetně
             případného důvodu zamítnutí.
           </p>
           <p>
@@ -175,7 +176,7 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             Údaje o přihlášených uživatelích pocházejí od nich samotných, případně z jejich
-            Microsoft účtu při přihlášení přes Microsoft.
+            účtu u Microsoftu, Googlu nebo Applu, pokud se přes něj přihlásí.
           </p>
         </Section>
 
@@ -259,6 +260,20 @@ export default function PrivacyContentCs() {
                   </td>
                   <td className="py-2.5">EU/USA</td>
                 </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">Google</td>
+                  <td className="py-2.5 pr-4">
+                    přihlášení přes Google účet, pokud ho použijete
+                  </td>
+                  <td className="py-2.5">EU/USA</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">Apple</td>
+                  <td className="py-2.5 pr-4">
+                    přihlášení přes Apple účet, pokud ho použijete
+                  </td>
+                  <td className="py-2.5">EU/USA</td>
+                </tr>
                 <tr>
                   <td className="py-2.5 pr-4">Paylibo</td>
                   <td className="py-2.5 pr-4">
@@ -281,7 +296,8 @@ export default function PrivacyContentCs() {
         <Section id="mimo-eu" title="8. Předávání mimo EU" icon={<Globe size={20} />}>
           <p>
             Data držíme v EU, kde to jde (databáze, soubory, statistiky). Někteří poskytovatelé
-            (Vercel, Resend, Cloudflare, Microsoft) jsou americké firmy; předání je kryto
+            (Vercel, Resend, Cloudflare, Microsoft, Google, Apple) jsou americké firmy;
+            předání je kryto
             rozhodnutím Evropské komise o odpovídající ochraně (Data Privacy Framework),
             případně standardními smluvními doložkami. Podrobnosti ke konkrétnímu poskytovateli
             vám na vyžádání pošleme.
@@ -415,8 +431,8 @@ export default function PrivacyContentCs() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-state</td>
                   <td className="py-2.5 pr-4">
-                    náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft před
-                    podvržením
+                    náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft, Google
+                    nebo Apple před podvržením
                   </td>
                   <td className="py-2.5 pr-4">10 minut</td>
                   <td className="py-2.5">nezbytná</td>
@@ -424,7 +440,7 @@ export default function PrivacyContentCs() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-return-to</td>
                   <td className="py-2.5 pr-4">
-                    drží návratovou adresu během přihlášení přes Microsoft
+                    drží návratovou adresu během přihlášení přes Microsoft, Google nebo Apple
                   </td>
                   <td className="py-2.5 pr-4">10 minut, jen po dobu přihlašování</td>
                   <td className="py-2.5">nezbytná</td>

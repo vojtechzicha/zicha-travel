@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { microsoftProvider } from '@/lib/auth/microsoft'
+import { googleProvider } from '@/lib/auth/google'
 import { handleOAuthCallback } from '@/lib/auth/oauthCallback'
 
-// Microsoft's registered redirect URI — the original callback path stays
-// unchanged so the Azure app registration needs no edit. Google and Apple
-// land on their own subpaths (./google, ./apple).
+// Google's registered redirect URI.
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl
-  return handleOAuthCallback(microsoftProvider, request, {
+  return handleOAuthCallback(googleProvider, request, {
     code: searchParams.get('code'),
     state: searchParams.get('state'),
     error: searchParams.get('error'),

@@ -45,7 +45,8 @@ pravidla:
 
 Účet vám založí správce chaty, nebo vznikne přes „To jsem já" (žádost o
 propojení se jménem účastníka) či „Jsem tu poprvé". Přihlašuje se
-jednorázovým odkazem na e-mail nebo přes Microsoft; heslo u nás neexistuje,
+jednorázovým odkazem na e-mail, nebo přes Microsoft, Google či Apple; heslo
+u nás neexistuje,
 takže chraňte svou e-mailovou schránku, kdo ovládá ji, ovládá váš účet.
 
 Účet je osobní a smí ho mít jen zletilá osoba. Při žádosti o propojení

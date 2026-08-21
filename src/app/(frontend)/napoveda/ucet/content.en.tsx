@@ -57,8 +57,10 @@ export default function UcetContentEn() {
             ]}
           />
           <p>
-            If you have a work or school Microsoft account, you can use the{' '}
-            <strong>Sign in with Microsoft</strong> button instead. The result is the same.
+            If you have a Microsoft, Google or Apple account, you can use the{' '}
+            <strong>Sign in with Microsoft</strong>, <strong>Google</strong> or{' '}
+            <strong>Apple</strong> button instead. The result is the same, as long as the
+            account uses the same email address.
           </p>
           <Callout tone="warn">
             No email arrived? Check your spam folder, and make sure you are typing the same
@@ -79,8 +81,8 @@ export default function UcetContentEn() {
                 Tap <strong>This is me</strong>. A dialog with two paths opens.
               </>,
               <>
-                <strong>I already have an account</strong>: sign in with Microsoft or have a link
-                sent to you. When you come back, the request submits itself.
+                <strong>I already have an account</strong>: sign in with Microsoft, Google or
+                Apple, or have a link sent to you. When you come back, the request submits itself.
               </>,
               <>
                 <strong>I&apos;m new here</strong>: leave your email and a verification link
@@ -139,7 +141,8 @@ export default function UcetContentEn() {
             ]}
           />
           <p>
-            The superadmin signs in exclusively through Microsoft. If they request a link by
+            The superadmin signs in exclusively through Microsoft, Google or Apple. If they
+            request a link by
             email, an explanation arrives instead.
           </p>
         </Section>

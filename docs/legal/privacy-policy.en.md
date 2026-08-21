@@ -42,8 +42,8 @@ public transport, expense shares, advances and refunds, joint account
 membership, and the resulting settlement (who owes whom how much).
 
 **About signed-in users, in addition:** the account email, last login time,
-and, when you sign in with Microsoft, the identifier and email from your
-Microsoft account; the expenses you entered; and claim requests linking you
+and, when you sign in with Microsoft, Google or Apple, the identifier and
+email from your account with that provider; the expenses you entered; and claim requests linking you
 to a participant name, including a rejection reason where one was given.
 
 **Receipts:** a photo or PDF of a receipt can be attached to an expense. A
@@ -100,7 +100,7 @@ you believe somebody entered you wrongly, write to us and we will look into
 the record.
 
 Data about signed-in users comes from the users themselves, or from their
-Microsoft account when they sign in with Microsoft.
+Microsoft, Google or Apple account when they sign in with one of them.
 
 ## 6. Who can see your data
 
@@ -145,6 +145,8 @@ The service runs on these processors and recipients:
 | PostHog | anonymous usage statistics | EU (Frankfurt) |
 | Cloudflare | bot protection on public forms (Turnstile) | EU/US |
 | Microsoft | Microsoft sign-in, if you use it | EU/US |
+| Google | Google sign-in, if you use it | EU/US |
+| Apple | Apple sign-in, if you use it | EU/US |
 | Paylibo | generating the settlement payment QR code: the recipient's account number, amount and payment message, plus the IP address and browser of anyone who views the QR | EU (CZ) |
 
 In addition, when the trip's weather forecast is shown, your browser fetches
@@ -157,7 +159,8 @@ We do not sell data to anyone and pass it to no one for advertising.
 ## 8. Transfers outside the EU
 
 We keep data in the EU where we can (database, files, statistics). Some
-providers (Vercel, Resend, Cloudflare, Microsoft) are US companies; the
+providers (Vercel, Resend, Cloudflare, Microsoft, Google, Apple) are US
+companies; the
 transfer is covered by the European Commission's adequacy decision (the
 Data Privacy Framework) or by standard contractual clauses. We will send
 you the details for a specific provider on request.
@@ -210,8 +213,8 @@ to us first.
 | `payload-token` | keeps you signed in | 30 days (2 h for admins) | necessary for sign-in |
 | `zt_consent` | remembers your choice in the consent bar | 12 months | necessary, it is itself the record of consent |
 | `NEXT_LOCALE` | remembers the chosen language | 12 months | necessary, stored after your choice in the footer |
-| `oauth-state` | random security code protecting Microsoft sign-in against forgery | 10 minutes | necessary |
-| `oauth-return-to` | holds the return address during Microsoft sign-in | 10 minutes, only while signing in | necessary |
+| `oauth-state` | random security code protecting Microsoft, Google and Apple sign-in against forgery | 10 minutes | necessary |
+| `oauth-return-to` | holds the return address during Microsoft, Google or Apple sign-in | 10 minutes, only while signing in | necessary |
 | `zt_login_evt` | one-shot "sign-in happened" marker for statistics, deleted immediately | seconds | necessary, technical |
 | `ph_*` | stable anonymous visitor identifier for statistics | 12 months | only with your consent |
 
