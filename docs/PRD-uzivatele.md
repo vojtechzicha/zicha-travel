@@ -153,6 +153,15 @@ a stable preview domain pinned to a branch:
 OAuth on previews works only via `preview.zicha.travel`; magic link (for
 non-superadmins) works on any URL.
 
+**Vercel deployment protection must stay OFF for this project** (disabled
+2026-08-21). Apple's callback is a cross-site POST (`form_post`), and the
+protection SSO cookie is SameSite=Lax, so protection intercepts that POST
+and replays it as a parameterless GET — Sign in with Apple then dies with
+`missing_params` on every protected deployment. Microsoft and Google
+survive protection (top-level GET callbacks), Apple never will. The site is
+public by design and preview mail is redirected, so open previews were
+judged acceptable.
+
 ## Email
 
 - Adapter: `@payloadcms/email-resend`, gated on `RESEND_API_KEY`
