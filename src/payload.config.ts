@@ -47,6 +47,10 @@ export default buildConfig({
         },
       },
       beforeDashboard: ['./components/admin/BeforeDashboard'],
+      // Way out of the admin, back to the public site. Relative href, so it
+      // follows whichever host the admin was opened on (localhost, preview,
+      // production, a chata subdomain).
+      afterNavLinks: ['./components/admin/BackToSiteLink'],
     },
   },
   // Bilingual admin panel: users pick English or Czech in their account

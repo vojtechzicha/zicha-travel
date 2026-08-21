@@ -6,6 +6,7 @@ import type {
   AdminTranslationKeys,
   AdminTranslationsObject,
 } from '@/i18n/adminTranslations'
+import { BackToSiteLink } from './BackToSiteLink'
 
 const isOAuthEnabled = process.env.NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED === 'true'
 
@@ -66,6 +67,7 @@ function OAuthLogin({ error }: { error: string | null }) {
           <MicrosoftIcon />
           {t('zicha:signInWithMicrosoft')}
         </a>
+        <BackToSiteLink variant="login" />
       </div>
     </div>
   )
@@ -224,6 +226,7 @@ function LocalLogin({ error }: { error: string | null }) {
             {loading ? t('zicha:signingIn') : t('zicha:signIn')}
           </button>
         </form>
+        <BackToSiteLink variant="login" />
       </div>
     </div>
   )
