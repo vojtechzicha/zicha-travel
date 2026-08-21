@@ -109,7 +109,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
   const accountNote =
     requesterLinkedElsewhere > 0
       ? 'účet už má propojené účastníky na jiných chatách'
-      : 'účet nový – zatím bez propojených účastníků'
+      : 'účet nový, zatím bez propojených účastníků'
   const othersNote =
     otherPending > 0
       ? `pozor, o účastníka žádá ještě ${otherPending} další žádost(i)`
@@ -130,7 +130,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
           `Na chatě ${chata.name} se k účastníkovi ${participant.name} hlásí účet ` +
           `${requester.email} (${accountNote}). Žádost z ${requestedAt} • ${othersNote}.\n\n` +
           `Schválit nebo zamítnout: ${decideUrl}\n\n` +
-          `Odkaz platí 7 dní a je určen jen vám. Žádosti najdete i v administraci pod „Claim Requests“.`,
+          `Odkaz platí 7 dní a je určen jen tobě. Žádosti najdeš i v administraci pod „Claim Requests“.`,
         html: `
           <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto;">
             <h2 style="color: #d97706;">zicha.travel</h2>
@@ -150,7 +150,7 @@ export async function notifyClaimDecisionMakers(payload: Payload, args: NotifyAr
               </a>
             </p>
             <p style="color: #78716c; font-size: 13px;">
-              Odkaz platí 7 dní a je určen jen vám. Žádosti najdete i v administraci pod „Claim Requests“.
+              Odkaz platí 7 dní a je určen jen tobě. Žádosti najdeš i v administraci pod „Claim Requests“.
             </p>
           </div>
         `,
@@ -294,7 +294,7 @@ export async function runClaimDecisionSideEffects(
       const financeUrl = chata ? chataFinanceUrl(chata) : 'https://zicha.travel'
       await sendAppEmail(payload, {
         to: requester.email,
-        subject: `Propojení schváleno – ${participant.name} je teď tvoje`,
+        subject: `Propojení schváleno: ${participant.name} je teď tvoje`,
         text:
           `Správce chaty ${chata?.name ?? ''} potvrdil, že účastník ${participant.name} jsi ty. ` +
           `Po přihlášení uvidíš svoje výdaje a vyrovnání: ${financeUrl}`,
@@ -318,11 +318,11 @@ export async function runClaimDecisionSideEffects(
     } else if (doc.status === 'rejected') {
       await sendAppEmail(payload, {
         to: requester.email,
-        subject: `Tohle bohužel nevyšlo – propojení s účastníkem ${participant.name}`,
+        subject: `Tohle bohužel nevyšlo: propojení s účastníkem ${participant.name}`,
         text:
           `Správce chaty ${chata?.name ?? ''} nepotvrdil propojení s účastníkem ${participant.name}.` +
           (doc.reason ? ` Napsal k tomu: „${doc.reason}“` : '') +
-          `\n\nPokud jde o nedorozumění, ozvěte se správci chaty nebo požádejte znovu.`,
+          `\n\nPokud jde o nedorozumění, ozvi se správci chaty nebo požádej znovu.`,
         html: `
           <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
             <h2 style="color: #d97706;">zicha.travel</h2>
@@ -333,7 +333,7 @@ export async function runClaimDecisionSideEffects(
               ${doc.reason ? `Napsal k tomu: <em>„${escapeHtml(doc.reason)}“</em>` : ''}
             </p>
             <p style="color: #78716c; font-size: 13px;">
-              Pokud jde o nedorozumění, ozvěte se správci chaty nebo požádejte znovu.
+              Pokud jde o nedorozumění, ozvi se správci chaty nebo požádej znovu.
             </p>
           </div>
         `,

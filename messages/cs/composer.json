@@ -11,11 +11,11 @@
   "close": "Zavřít",
   "currencySuffix": "Kč",
   "entry": {
-    "prompt": "Jak ho chcete zadat?",
+    "prompt": "Jak ho chceš zadat?",
     "photo": "Vyfotit účtenku",
-    "photoHint": "Částku a popis doplníte v dalším kroku",
+    "photoHint": "Částku a popis doplníš v dalším kroku",
     "manual": "Zadat ručně",
-    "manualHint": "Účtenku můžete přiložit kdykoli později"
+    "manualHint": "Účtenku můžeš přiložit kdykoli později"
   },
   "wizard": {
     "stepWhat": "Co a kolik",
@@ -25,19 +25,19 @@
   },
   "stepWhat": {
     "receiptAttached": "účtenka přiložena",
-    "titleLabel": "Co jste platili?",
+    "titleLabel": "Co jsi platil/a?",
     "titlePlaceholder": "např. Velký nákup potravin",
     "amountLabelMobile": "Kolik to stálo?",
     "amountLabel": "Částka",
     "dateLabelMobile": "Kdy?",
     "dateLabel": "Datum",
     "payerLabel": "Kdo platil?",
-    "refundToggle": "Byly vám vráceny peníze (vratka)",
+    "refundToggle": "Vrátili ti peníze (vratka)",
     "plannedToggle": "Zatím nezaplaceno (plánovaný výdaj)"
   },
   "payer": {
-    "you": "Vy",
-    "nameYou": "{name} (vy)",
+    "you": "Ty",
+    "nameYou": "{name} (ty)",
     "someoneElseLink": "Zaplatil to někdo jiný?",
     "someoneElseLabel": "Někdo jiný",
     "approvalOne": "Uložíme, ale nikde se neukáže a do vyrovnání se nepočítá, dokud to nepotvrdí {who}.",
@@ -52,12 +52,12 @@
     "modeShares": "Podíly",
     "modeAmounts": "Přesné částky",
     "selectShares": "Vybrat podíly",
-    "refundSharesOnly": "U vratky zadejte podíly",
+    "refundSharesOnly": "U vratky zadej podíly",
     "switchToAmounts": "Raději zadat přesné částky v Kč",
     "switchToShares": "Raději rozdělit na podíly",
     "headline": "{count, plural, one {Jediný účastník} few {Všichni # účastníci} other {Všech # účastníků}}",
     "perPerson": "na osobu",
-    "equalNudge": "Platí to jen část lidí, nebo nerovným dílem? Přepněte na „{label}“.",
+    "equalNudge": "Platí to jen část lidí, nebo nerovným dílem? Přepni na „{label}“.",
     "ariaIncluded": "Účastní se: {name}",
     "ariaFewerShares": "Méně podílů",
     "ariaMoreShares": "Více podílů",
@@ -74,38 +74,38 @@
     "subtitle": "hostitel zaplatí podíl pozvaného",
     "autoPrefix": "Automaticky:",
     "autoSuffixEdit": "(trvalé nastavení).",
-    "autoSuffixCreate": "– přidá se samo.",
-    "youPayFor": "platíte za {guest}",
+    "autoSuffixCreate": "(přidá se samo).",
+    "youPayFor": "platíš za {guest}",
     "hostPaysFor": "{host} platí za {guest}",
-    "youInvite": "Vy zvete {guest}",
+    "youInvite": "Ty zveš {guest}",
     "hostInvites": "{host} zve {guest}",
     "ariaRemove": "Odebrat pozvání",
     "ariaHost": "Hostitel pozvání",
     "hostPlaceholder": "Kdo zve…",
     "between": "zve",
     "ariaGuest": "Pozvaný",
-    "guestPlaceholder": "Vyberte…"
+    "guestPlaceholder": "Vyber…"
   },
   "attachments": {
     "title": "Účtenky",
     "ariaRemove": "Odebrat přílohu",
     "ariaAdd": "Přiložit účtenku",
     "receiptAlt": "účtenka",
-    "dropHere": "Přetáhněte sem fotky nebo PDF",
+    "dropHere": "Přetáhni sem fotky nebo PDF",
     "orPrefix": "…nebo",
-    "chooseFile": "vyberte soubor",
+    "chooseFile": "vyber soubor",
     "mobileHint": "· na mobilu jde rovnou vyfotit"
   },
   "summary": {
     "paidBy": "Platí",
     "willPay": "Zaplatí",
-    "editHint": "Výdaj můžete kdykoli upravit nebo smazat."
+    "editHint": "Výdaj můžeš kdykoli upravit nebo smazat."
   },
   "errors": {
     "fileTooLarge": "Soubor „{name}“ je příliš velký (max 4 MB).",
-    "uploadFailedRetry": "Nahrání účtenky se nepovedlo. Zkuste to znovu.",
+    "uploadFailedRetry": "Nahrání účtenky se nepovedlo. Zkus to znovu.",
     "uploadFailed": "Nahrání účtenky se nepovedlo.",
-    "saveFailedRetry": "Uložení výdaje se nepovedlo. Zkuste to znovu.",
+    "saveFailedRetry": "Uložení výdaje se nepovedlo. Zkus to znovu.",
     "saveFailed": "Uložení výdaje se nepovedlo."
   }
 }

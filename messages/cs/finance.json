@@ -34,16 +34,16 @@
     "receivedAdvance": "Přijatá záloha ({name})",
     "sentSupplement": "Odeslán doplatek ({name})",
     "sentAdvance": "Odeslána záloha ({name})",
-    "jointAccountSuffix": "– společný účet",
-    "jointAccountYourShare": "– společný účet, tvá část",
-    "jointAccountYourShareTotal": "– společný účet, tvá část (celkem {amount})",
+    "jointAccountSuffix": "· společný účet",
+    "jointAccountYourShare": "· společný účet, tvá část",
+    "jointAccountYourShareTotal": "· společný účet, tvá část (celkem {amount})",
     "received": "Přijato",
     "refunded": "Vráceno",
     "payment": "Platba",
     "noTransactions": "Žádné transakce."
   },
   "financeView": {
-    "overviewQuestion": "Nesedí vám čísla, nebo chcete vidět všechno najednou?",
+    "overviewQuestion": "Nesedí ti čísla, nebo chceš vidět všechno najednou?",
     "overviewLink": "Podrobný přehled všech účastníků →",
     "addExpense": "Přidat výdaj"
   },
@@ -110,8 +110,8 @@
     "iban": "IBAN",
     "amount": "Částka",
     "payBanker": "Zaplatit pokladníkovi",
-    "receiveFromBanker": "Máte dostat od pokladníka",
-    "bankerWillSend": "Pokladník vám pošle peníze po vyrovnání všech dluhů."
+    "receiveFromBanker": "Máš dostat od pokladníka",
+    "bankerWillSend": "Pokladník ti pošle peníze po vyrovnání všech dluhů."
   },
   "expenseCard": {
     "willPay": "Zaplatí <strong>{name}</strong>",
@@ -127,14 +127,14 @@
     "invites": "{host} zve {guest}",
     "receipt": "účtenka",
     "attachment": "příloha",
-    "addedByYou": "Přidali jste vy",
+    "addedByYou": "Přidáno tebou",
     "markPaid": "Už zaplaceno",
     "edit": "Upravit",
     "editExpense": "Upravit výdaj",
     "delete": "Smazat",
     "deleteExpense": "Smazat výdaj",
     "confirmDelete": "Opravdu smazat?",
-    "deleteFailed": "Smazání se nepovedlo. Zkuste to znovu.",
+    "deleteFailed": "Smazání se nepovedlo. Zkus to znovu.",
     "deleting": "Mažu…",
     "back": "Zpět",
     "close": "Zavřít",
@@ -149,7 +149,7 @@
       "rejectConfirm": "Zamítnout výdaj",
       "reasonPlaceholder": "Důvod (nepovinný, pošleme ho autorovi)",
       "deciding": "Ukládám…",
-      "decideFailed": "Uložení se nepovedlo. Zkuste to znovu.",
+      "decideFailed": "Uložení se nepovedlo. Zkus to znovu.",
       "rejectedNote": "Výdaj byl zamítnutý, do vyrovnání se nepočítá.",
       "rejectedWithReason": "Výdaj byl zamítnutý: „{reason}“. Do vyrovnání se nepočítá."
     }
@@ -159,7 +159,7 @@
     "mine": "moje",
     "all": "vše",
     "empty": "Zatím nejsou žádné výdaje.",
-    "loginHint": "Vlastní výdaje můžete přidávat po přihlášení.",
+    "loginHint": "Vlastní výdaje můžeš přidávat po přihlášení.",
     "signIn": "Přihlásit se"
   },
   "qrPayment": {

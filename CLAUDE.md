@@ -76,7 +76,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      "Vyfotit účtenku"/"Zadat ručně" → co a kolik → kdo se dělí →
      shrnutí s pozváními) and desktop modal, opened from a fixed FAB
      ("Přidat výdaj") in the Finance view; own expense cards get a
-     "Přidali jste vy" footer with Upravit/Smazat (inline confirm).
+     "Přidáno tebou" footer with Upravit/Smazat (inline confirm).
      Split modes: rovným dílem / podíly / přesné částky (weights summing
      to the total; untouched rows auto-absorb the remainder,
      "dopočítáno"). Planned expenses ("zatím nezaplaceno", `isPlanned`) are

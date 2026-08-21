@@ -1,8 +1,8 @@
 {
   "meta": {
-    "selectTitle": "Vyberte chatu",
-    "selectDescription": "Společně na chatu – plánování, informace, finance",
-    "chataDescription": "{name} – {location} – plánování, informace, finance",
+    "selectTitle": "Vyber si chatu",
+    "selectDescription": "Společně na chatu: plánování, informace, finance",
+    "chataDescription": "{name} · {location} · plánování, informace, finance",
     "ogDescription": "Společně na chatu: {location}",
     "notFoundTitle": "Chata nenalezena"
   },
@@ -22,12 +22,12 @@
   },
   "chataSelector": {
     "greeting": "Ahoj, {name}.",
-    "choosePrompt": "Vyberte si chatu.",
-    "subtitleLiveUpcoming": "Právě jsi na chatě – a další výjezdy se plánují.",
+    "choosePrompt": "Vyber si chatu.",
+    "subtitleLiveUpcoming": "Právě jsi na chatě a další výjezdy se plánují.",
     "subtitleLive": "Právě jsi na chatě.",
-    "subtitleUpcoming": "Tvoje chaty na jednom místě – nejbližší výjezd už se blíží.",
+    "subtitleUpcoming": "Tvoje chaty na jednom místě. Nejbližší výjezd už se blíží.",
     "subtitleDefault": "Tvoje chaty na jednom místě.",
-    "anonymousTagline": "Společně na chatu – plánování, informace a finance.",
+    "anonymousTagline": "Společně na chatu: plánování, informace a finance.",
     "sectionLive": "Právě probíhá",
     "sectionNearest": "Nejbližší chata",
     "sectionPlanned": "Plánujeme",
@@ -49,21 +49,21 @@
     "noChatas": "Zatím nejsou k dispozici žádné chaty.",
     "restrictedNote": "Zobrazují se jen chaty, kde jsi účastníkem. Chybí ti některá?",
     "restrictedContact": "Ozvi se pokladníkovi.",
-    "loginPrompt": "Jste účastník? Po přihlášení uvidíte své finance a vyrovnání.",
+    "loginPrompt": "Jsi účastník? Po přihlášení uvidíš své finance a vyrovnání.",
     "signIn": "Přihlásit se"
   },
   "participantSelector": {
-    "title": "Kdo jste?",
-    "subtitle": "Vyberte své jméno pro zobrazení vašich financí",
+    "title": "Kdo jsi?",
+    "subtitle": "Vyber svoje jméno a uvidíš své finance",
     "searchPlaceholder": "Hledat účastníka…",
-    "pendingClaimHint": "někdo už požádal – jste to vy? ozvěte se taky",
+    "pendingClaimHint": "někdo už požádal · jsi to ty? ozvi se taky",
     "noAccountHint": "bez účtu",
     "noMatch": "Žádný účastník neodpovídá hledání „{query}“",
     "allLocked": "Finance všech účastníků jsou přístupné po přihlášení.",
     "lockedDivider": "Přístupné po přihlášení",
-    "lockedTitle": "Pro zobrazení se přihlaste e-mailem {email}",
-    "lockedTapHint": "Klepnutím na zamčeného účastníka zobrazíte, jakým e-mailem se přihlásit.",
-    "lockedDetail": "Finance účastníka <n>{name}</n> uvidíte po přihlášení e-mailem <e>{email}</e>.",
+    "lockedTitle": "Pro zobrazení se přihlas e-mailem {email}",
+    "lockedTapHint": "Klepnutím na zamčeného účastníka zobrazíš, jakým e-mailem se přihlásit.",
+    "lockedDetail": "Finance účastníka <n>{name}</n> uvidíš po přihlášení e-mailem <e>{email}</e>.",
     "signIn": "Přihlásit se"
   },
   "selectedParticipantHeader": {
