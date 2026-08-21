@@ -42,6 +42,9 @@ const en = {
     guideUsersLabel: 'Users',
     guideUsersText: 'Manage admin accounts',
 
+    // BackToSiteLink (nav + login screen)
+    backToSite: 'Back to the site',
+
     // BeforeDashboard
     dashboardTagline:
       'Manage group trips and shared expenses. Track who paid what, calculate fair splits, and settle up with automatic balance calculations.',
@@ -194,6 +197,9 @@ const cs: typeof en = {
     guidePrepaymentsText: 'Záznam záloh a vratek',
     guideUsersLabel: 'Uživatelé',
     guideUsersText: 'Správa účtů správců',
+
+    // BackToSiteLink (nav + login screen)
+    backToSite: 'Zpět na web',
 
     // BeforeDashboard
     dashboardTagline:
