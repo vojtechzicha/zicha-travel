@@ -439,6 +439,14 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 - Frontend footer (`Footer.tsx` in the frontend layout): site info, version
   from `VERCEL_GIT_COMMIT_SHA` (package version in dev), sign in/out, a help
   link, an admin link and the Čeština/English `LanguageSwitcher`
+- The admin panel carries the mirror link back
+  (`src/components/admin/BackToSiteLink.tsx`, registered as `afterNavLinks`
+  and rendered on the custom login screen too). Its href is the relative
+  root on purpose: the admin answers on every host the deployment serves
+  (localhost, the preview URL, the apex, a chata subdomain), so `/` lands on
+  the public site of the same host. There is no base URL to build an
+  absolute link from — `NEXT_PUBLIC_SITE_URL` was removed because the host is
+  resolved per request
 - Help (`src/app/(frontend)/napoveda/`): static server components, linked
   from the footer. `/napoveda` is the hub (per-audience overview, math,
   glossary); the detail guides are `orientace`, `finance`, `vydaje`,

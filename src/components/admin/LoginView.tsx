@@ -6,6 +6,7 @@ import type {
   AdminTranslationKeys,
   AdminTranslationsObject,
 } from '@/i18n/adminTranslations'
+import { BackToSiteLink } from './BackToSiteLink'
 
 // One entry per provider whose public flag is on. Labels come from the
 // zicha admin translations; each button keeps its provider's brand look.
@@ -101,6 +102,7 @@ function OAuthLogin({ error }: { error: string | null }) {
             </a>
           ))}
         </div>
+        <BackToSiteLink variant="login" />
       </div>
     </div>
   )
@@ -259,6 +261,7 @@ function LocalLogin({ error }: { error: string | null }) {
             {loading ? t('zicha:signingIn') : t('zicha:signIn')}
           </button>
         </form>
+        <BackToSiteLink variant="login" />
       </div>
     </div>
   )
