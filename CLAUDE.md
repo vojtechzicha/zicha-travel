@@ -670,13 +670,46 @@ Available in `@layer utilities`:
 - `.max-w-app` - Max width container (1100px)
 - `.text-shadow-heading`, `.text-shadow-subheading` - Text shadows for headers
 
+## Environment configuration
+
+Config is **generated from committed templates**, never copied between
+machines. Full guide in `docs/ENVIRONMENT.md`.
+
+- `scripts/env-spec.mjs` is the single source of truth: every variable the
+  code reads, whether it is required, format checks, and all-or-nothing
+  groups (Azure OAuth, Turnstile, S3 — half-configuring any of them fails at
+  runtime in a much less obvious place). Plain `.mjs`, not `src/lib/*.ts`,
+  because `pnpm env:check` must run under bare Node in the Vercel build
+  before anything is compiled; `scripts/env-spec.d.mts` types it for the test
+- `.env.tpl` → `.env` (local) and `.env.prod.tpl` → `.env.prod` (production
+  reference) via `pnpm env:pull` / `env:pull:prod`, which run `op inject`
+  against 1Password vault `Development`, items `zicha-travel-dev`,
+  `zicha-travel-preview` and `zicha-travel-prod` (the preview item mirrors
+  prod except for mail, cookies, the OAuth callback, Turnstile's test widget
+  and its own `CRON_SECRET`). The vault is SHARED by every project on the machine —
+  it is an access boundary, not a namespace, so the ITEM carries the project
+  and the environment (`<repo>-dev` / `<repo>-prod`). Only real secrets are
+  `op://` refs; everything else is a literal so a template diff shows actual
+  config changes. Both generated files are gitignored
+- `op inject` resolves EVERY `op://` in the file, comments included — so a
+  commented-out reference breaks the pull. Comments name paths without the
+  scheme (`Development/zicha-travel-dev/FOO`)
+- **Adding a variable**: spec + both templates in the same commit
+  (`tests/int/env.int.spec.ts` fails until all three agree, which is what
+  stops an agent adding one to code alone), then the value into 1Password and
+  Vercel by hand. `pnpm env:check` in `vercel-build` fails the PR's own
+  preview deployment when the Vercel side is forgotten
+- `NEXT_PUBLIC_SITE_URL` was removed — nothing read it; multi-domain routing
+  resolves the host from the database. Platform vars (`VERCEL_*`, `NODE_ENV`,
+  …) and one-off script flags (`SITE`, `EMIT_ONLY`, `SEED_SALT`, …) are
+  deliberately absent from the templates, and a test enforces that
+
 ## Database
 
 Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ### Production
-- **Supabase PostgreSQL** (v17)
-- Connection configured in `.env` via `DATABASE_URI`
+- **Supabase PostgreSQL** (v17), pooled connection, set in Vercel
 - **Row-Level Security is ON for every table in `public`** (no policies):
   Supabase's auto-generated Data API (PostgREST) would otherwise let anyone
   with the anon key read/write all tables, bypassing Payload's access
@@ -692,8 +725,12 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
 
 ### Local Development
 - **Docker Compose PostgreSQL 16** on port 5433
-- Connection configured in `.env.local` (auto-loaded by Next.js, overrides `.env`)
-- Data can be synced from production using `pnpm migrate-from-prod`
+- `DATABASE_URI` in `.env` is a LITERAL pointing at that container — the
+  default must never be able to reach production. (It used to be the other
+  way round: `.env` held the prod URI and only `.env.local` shadowing it kept
+  dev off prod.)
+- Data can be synced from production using `pnpm migrate-from-prod`, which
+  resolves the prod URI from 1Password at run time instead of from `.env`
 
 ## Deployment
 
@@ -709,9 +746,10 @@ previews per PR). The Fly.io era is over — the migration history lives in
   (`...pooler.supabase.com:6543`) — required for serverless.
 - Media: **Supabase Storage** (S3-compatible) through `@payloadcms/storage-s3`,
   gated on `S3_ENDPOINT`; local dev without it falls back to disk.
-- DB migrations run automatically during the Vercel build: the
-  `vercel-build` script executes `migrate:payer auto` (idempotent) before
-  `next build`, against that deployment's own `DATABASE_URI` (prod or preview).
+- The `vercel-build` script runs `check-env.mjs` first (fails the build on a
+  missing or half-configured variable), then `migrate:payer auto`
+  (idempotent), then `next build`, against that deployment's own
+  `DATABASE_URI` (prod or preview).
 - **Post-deploy refresh hint**: every build bakes a deterministic build id
   (git commit via `VERCEL_GIT_COMMIT_SHA`, `computeBuildId()` in
   next.config.mjs) into the client bundle AND the server; long-lived tabs
@@ -726,6 +764,11 @@ previews per PR). The Fly.io era is over — the migration history lives in
 ## Development Commands
 
 ```bash
+# Environment (1Password -> .env). See docs/ENVIRONMENT.md
+pnpm env:pull         # Regenerate .env from .env.tpl
+pnpm env:pull:prod    # Write .env.prod from .env.prod.tpl (live prod secrets)
+pnpm env:check        # Validate against scripts/env-spec.mjs
+
 # Local development (auto-starts/stops Docker PostgreSQL)
 pnpm dev              # Start PostgreSQL + Next.js dev server (DB stops on Ctrl+C)
 pnpm db               # Start only PostgreSQL in background

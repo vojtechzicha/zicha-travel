@@ -4,10 +4,12 @@
   "description": "Expense tracker for group trips and shared accommodations",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "vercel-build": "node scripts/migrate-payer-polymorphic.mjs auto && pnpm build",
+    "vercel-build": "node scripts/check-env.mjs && node scripts/migrate-payer-polymorphic.mjs auto && pnpm build",
+    "env:pull": "op inject -i .env.tpl -o .env -f",
+    "env:pull:prod": "op inject -i .env.prod.tpl -o .env.prod -f",
+    "env:check": "node scripts/check-env.mjs",
     "db": "docker compose up -d postgres",
     "db:stop": "docker compose down",
     "dev": "WAS_RUNNING=$(docker compose ps -q postgres 2>/dev/null); docker compose up -d postgres && trap '[ -z \"$WAS_RUNNING\" ] && docker compose down' EXIT && cross-env NODE_OPTIONS=--no-deprecation next dev",
@@ -75,14 +77,6 @@
   },
   "engines": {
     "node": "^18.20.2 || >=20.9.0",
-    "pnpm": "^9 || ^10"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "sharp",
-      "esbuild",
-      "unrs-resolver",
-      "better-sqlite3"
-    ]
+    "pnpm": ">=10"
   }
 }

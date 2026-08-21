@@ -1,0 +1,21 @@
+# pnpm settings. This file, not package.json#pnpm, because pnpm 11+ no longer
+# reads that field.
+#
+# Build-script approval is declared TWICE on purpose: pnpm 11 reads
+# `allowBuilds` and ignores `onlyBuiltDependencies`; pnpm 10 — which Vercel
+# builds with, inferred from the lockfile (vercel.com/docs/package-managers) —
+# reads only the old spelling. Keep the two in sync: a package allowed in one
+# and not the other builds locally but not on Vercel, or the other way round.
+allowBuilds:
+  sharp: true
+  esbuild: true
+  unrs-resolver: true
+  '@parcel/watcher': false
+  '@swc/core': false
+  core-js: false
+
+# The pre-pnpm-11 spelling of the same allowlist, for pnpm 10.
+onlyBuiltDependencies:
+  - sharp
+  - esbuild
+  - unrs-resolver
