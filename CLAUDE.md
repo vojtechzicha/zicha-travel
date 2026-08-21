@@ -517,6 +517,15 @@ decision record; the controller's decisions 1–13 there BIND future work):
   markdown in `docs/legal/` — edit there first, mirror into the pages).
   Footer links both; login + claim registration show accept-notes;
   `/podminky` is in the middleware `SITE_PATHS` allowlist.
+  **The sync check goes BOTH ways**: the published pairs are
+  `zasady-ochrany-osobnich-udaju.cs.md`/`privacy-policy.en.md` →
+  `/soukromi` and `podminky-uziti.cs.md`/`terms-of-use.en.md` →
+  `/podminky` (Czech and English content modules of each page). ANY edit
+  under `docs/legal/` — including the internal records (zaznamy,
+  dpia, runbook…) — must be checked against what the published pair
+  promises; when a promise is touched, update the markdown AND both
+  locales' page modules in the same PR. Internal-only rules with no
+  public promise need no mirror, but say so explicitly in the PR.
 - **Privacy at the API** (`src/lib/privacyScrub.ts`,
   `src/utils/participantPrivacy.ts`): non-banker bank fields are served
   only to the owner account, the banker's account and chata admins

@@ -105,12 +105,17 @@ echo "Dumping production database and restoring to local..."
 # No EXIT trap here: the top of the script may already own it for
 # `docker compose down`, and a second trap would replace the first.
 PSQL_LOG=$(mktemp)
+# --exclude-schema=vault: Supabase Vault secrets must never land on a dev
+# machine. The exclusion doesn't cover the CREATE EXTENSION supabase_vault
+# statement itself (extensions aren't schema-scoped for pg_dump), so its
+# failure against the plain postgres image is filtered as benign below.
 docker run --rm --network host -e PROD_URI="$PROD_DATABASE_URI" postgres:17-alpine \
-    sh -c 'pg_dump "$PROD_URI" --no-owner --no-acl' \
+    sh -c 'pg_dump "$PROD_URI" --no-owner --no-acl --exclude-schema=vault' \
     | docker compose exec -T postgres psql -U payload -d payload 2>"$PSQL_LOG"
 # No `grep -q` in a pipe here: under pipefail its early exit can SIGPIPE the
 # producer and flip the pipeline status even when a real error WAS found.
-REAL_ERRORS=$(grep '^ERROR' "$PSQL_LOG" | grep -v 'unrecognized configuration parameter' || true)
+REAL_ERRORS=$(grep '^ERROR' "$PSQL_LOG" \
+    | grep -vE 'unrecognized configuration parameter|supabase_vault|relation "vault\.' || true)
 if [ -n "$REAL_ERRORS" ]; then
     echo "ERROR: the restore hit failing statements — the local database is incomplete:" >&2
     grep '^ERROR' "$PSQL_LOG" >&2
@@ -133,6 +138,12 @@ fi
 
 echo "Database migration complete! ($RESTORED_TABLES tables)"
 
+# Drop the S3-plugin-only column the prod schema carries: local dev runs disk
+# storage (S3_ENDPOINT unset), so Payload's dev push would otherwise stop on a
+# "delete prefix column" data-loss prompt after every prod sync.
+docker compose exec -T postgres psql -U payload -d payload \
+    -c "ALTER TABLE expense_attachments DROP COLUMN IF EXISTS prefix;"
+
 # 3. Anonymize the local copy (default). Scrambles direct identifiers while
 # keeping ids, amounts and structure, so the app behaves identically.
 # Expense titles and prepayment notes stay as-is (they drive the journal
@@ -148,11 +159,17 @@ UPDATE participants SET
   account_number = CASE WHEN account_number IS NULL THEN NULL ELSE '000000/0100' END,
   iban = CASE WHEN iban IS NULL THEN NULL ELSE 'CZ0001000000000000000000' END;
 UPDATE users SET
-  email = 'user' || id || '@example.test',
-  name = CASE WHEN name IS NULL THEN NULL ELSE 'Uživatel ' || id END,
-  vokativ = NULL,
   login_token = NULL,
   login_token_expires = NULL;
+-- Superadmin accounts keep their real email and name: they belong to the
+-- developer running this script, and Microsoft OAuth matches accounts by
+-- email — scrambling it locks them out of their own local admin panel.
+-- Recorded in docs/legal/zaznamy-o-zpracovani.md section 4.
+UPDATE users SET
+  email = 'user' || id || '@example.test',
+  name = CASE WHEN name IS NULL THEN NULL ELSE 'Uživatel ' || id END,
+  vokativ = NULL
+WHERE role <> 'superadmin';
 UPDATE joint_accounts SET name = 'Společný účet ' || id;
 UPDATE claim_requests SET reason = NULL;
 UPDATE data_requests SET subject = 'Subjekt ' || id, note = NULL;
