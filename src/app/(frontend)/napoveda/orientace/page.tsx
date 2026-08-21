@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
         description: 'Picking a chata, the tabs and the individual views of zicha.travel',
       }
     : {
-        title: 'Kde co najdete',
+        title: 'Kde co najdeš',
         description: 'Výběr chaty, záložky a jednotlivé pohledy v aplikaci zicha.travel',
       }
 }

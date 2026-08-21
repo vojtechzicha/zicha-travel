@@ -19,13 +19,13 @@ export interface HelpPageEntry {
 const HELP_PAGES_CS: HelpPageEntry[] = [
   {
     href: '/napoveda/orientace',
-    title: 'Kde co najdete',
+    title: 'Kde co najdeš',
     lead: 'Výběr chaty, záložky, informace o cestě, pokoje a auta.',
   },
   {
     href: '/napoveda/finance',
     title: 'Finance řádek po řádku',
-    lead: 'Co znamená každé číslo ve vašem přehledu a jak se vyrovnat.',
+    lead: 'Co znamená každé číslo ve tvém přehledu a jak se vyrovnat.',
   },
   {
     href: '/napoveda/vydaje',

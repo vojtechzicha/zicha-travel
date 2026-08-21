@@ -15,7 +15,7 @@ import {
 import { Callout, HelpShell, List, PageCards, Screenshot, Section } from './ui'
 
 const NAV = [
-  { href: '#prehled', label: 'Co kde najdete' },
+  { href: '#prehled', label: 'Co kde najdeš' },
   { href: '#bez-prihlaseni', label: 'Bez přihlášení' },
   { href: '#ucastnik', label: 'Účastník s účtem' },
   { href: '#spravce', label: 'Správce chaty' },
@@ -29,7 +29,7 @@ export default function HelpContentCs() {
     <HelpShell
       isHub
       title="Nápověda"
-      lead="Co v aplikaci zvládnete jako návštěvník bez účtu, jako přihlášený účastník a jako správce chaty."
+      lead="Co v aplikaci zvládneš jako návštěvník bez účtu, jako přihlášený účastník a jako správce chaty."
     >
       <nav className="flex flex-wrap justify-center gap-2 mb-8">
         {NAV.map((item) => (
@@ -54,9 +54,9 @@ export default function HelpContentCs() {
           </p>
           <p>
             Každá chata má vlastní adresu a vlastní účastníky. Data se mezi chatami nemíchají, jen
-            lidé se často opakují. Když se přihlásíte, na úvodní stránce uvidíte chaty, kterých se
-            účastníte, seřazené podle toho, jestli právě probíhají, teprve budou, nebo už jsou za
-            vámi.
+            lidé se často opakují. Když se přihlásíš, na úvodní stránce uvidíš chaty, kterých se
+            účastníš, seřazené podle toho, jestli právě probíhají, teprve budou, nebo už jsou za
+            tebou.
           </p>
         </Section>
 
@@ -68,7 +68,7 @@ export default function HelpContentCs() {
           <PageCards />
         </Section>
 
-        <Section id="prehled" title="Co kde najdete" icon={<BookOpen size={20} />}>
+        <Section id="prehled" title="Co kde najdeš" icon={<BookOpen size={20} />}>
           <p>
             Přepínač pod názvem chaty vede mezi jednotlivými pohledy. Některé se neukážou, pokud
             je správce chaty nevyplnil.
@@ -77,7 +77,7 @@ export default function HelpContentCs() {
             items={[
               <>
                 <strong>Informace</strong>: termín, místo, popis, fotky a doprava. U autobusových a
-                vlakových spojení je tlačítko, které vám cestu i s přestupy uloží do Google
+                vlakových spojení je tlačítko, které ti cestu i s přestupy uloží do Google
                 kalendáře.
               </>,
               <>
@@ -89,7 +89,7 @@ export default function HelpContentCs() {
                 v chatě víc než dva lidi.
               </>,
               <>
-                <strong>Finance</strong>: hlavní pohled na peníze. Vyberete jméno a uvidíte deník
+                <strong>Finance</strong>: hlavní pohled na peníze. Vybereš jméno a uvidíš deník
                 výdajů, útratu, zálohy a výsledek.
               </>,
               <>
@@ -99,7 +99,7 @@ export default function HelpContentCs() {
             ]}
           />
           <p className="text-sm text-gray-500">
-            Podrobně v návodu <a className="underline" href="/napoveda/orientace">Kde co najdete</a>.
+            Podrobně v návodu <a className="underline" href="/napoveda/orientace">Kde co najdeš</a>.
           </p>
         </Section>
 
@@ -110,21 +110,21 @@ export default function HelpContentCs() {
           </p>
           <Screenshot
             name="vyber-ucastnika"
-            caption="Ve financích si vyberete jméno a uvidíte stejná čísla, jaká vidí ten člověk sám."
+            caption="Ve financích si vybereš jméno a uvidíš stejná čísla, jaká vidí ten člověk sám."
           />
           <List
             items={[
               <>
-                Uvidíte útratu, zálohy, výsledek i návod, komu poslat kolik.
+                Uvidíš útratu, zálohy, výsledek i návod, komu poslat kolik.
               </>,
               <>
                 Jedna výjimka: kdo se do aplikace už aspoň jednou přihlásil, ten je ve výběru
                 zamčený. Jméno zůstane vidět šedivé a po klepnutí se ukáže zamaskovaný e-mail, aby
                 jeho majitel poznal, kterým účtem se má přihlásit.
               </>,
-              <>Vlastní výdaj přidat nejde. Deník výdajů vám místo toho nabídne přihlášení.</>,
+              <>Vlastní výdaj přidat nejde. Deník výdajů ti místo toho nabídne přihlášení.</>,
               <>
-                Když mezi jmény najdete sebe, otevřete si ho a pod hlavičkou se objeví nabídka „Jsi
+                Když mezi jmény najdeš sebe, otevři si ho a pod hlavičkou se objeví nabídka „Jsi
                 to ty?“. Odtud vede cesta k účtu.
               </>,
             ]}
@@ -137,26 +137,26 @@ export default function HelpContentCs() {
 
         <Section id="ucastnik" title="Účastník s účtem" icon={<UserCheck size={20} />}>
           <p>
-            Účet je e-mail a jednorázový přihlašovací odkaz. Žádné heslo si vymýšlet nemusíte.
-            Založí vám ho správce chaty, nebo si o propojení řeknete sami přes „Jsi to ty?“.
+            Účet je e-mail a jednorázový přihlašovací odkaz. Žádné heslo si vymýšlet nemusíš.
+            Založí ti ho správce chaty, nebo si o propojení řekneš přes „Jsi to ty?“.
           </p>
           <List
             items={[
               <>
-                Finance se otevřou rovnou na vašem jménu. Pokud na váš účet správce navěsil i děti
-                nebo partnera, přepínáte mezi nimi.
+                Finance se otevřou rovnou na tvém jménu. Pokud na tvůj účet správce navěsil i děti
+                nebo partnera, přepínáš mezi nimi.
               </>,
               <>
-                Vpravo dole přibude tlačítko <strong>Přidat výdaj</strong>. Na mobilu vás provede
+                Vpravo dole přibude tlačítko <strong>Přidat výdaj</strong>. Na mobilu tě provede
                 třemi kroky, na počítači je to jedno okno.
               </>,
               <>
-                Dělit se dá rovným dílem, na podíly, nebo přesnými částkami. Účtenku můžete
+                Dělit se dá rovným dílem, na podíly, nebo přesnými částkami. Účtenku můžeš
                 vyfotit rovnou z formuláře.
               </>,
               <>
-                Vlastní výdaje poznáte podle patičky „Přidali jste vy“ a můžete je upravit nebo
-                smazat. Na cizí nesáhnete.
+                Vlastní výdaje poznáš podle patičky „Přidáno tebou“ a můžeš je upravit nebo
+                smazat. Na cizí nesáhneš.
               </>,
             ]}
           />
@@ -220,8 +220,8 @@ export default function HelpContentCs() {
 
         <Section id="pocty" title="Jak se počítají peníze" icon={<Calculator size={20} />}>
           <p>
-            Každý výdaj má toho, kdo ho zaplatil, a rozdělení mezi účastníky. Součet vašich podílů
-            ze všech výdajů je vaše útrata. Proti ní stojí to, co jste sami zaplatili, a zálohy
+            Každý výdaj má toho, kdo ho zaplatil, a rozdělení mezi účastníky. Součet tvých podílů
+            ze všech výdajů je tvoje útrata. Proti ní stojí tvoje vlastní platby a zálohy
             poslané pokladníkovi.
           </p>
           <List
@@ -246,7 +246,7 @@ export default function HelpContentCs() {
             ]}
           />
           <p>
-            Na konci vyjde jedno číslo. Buď doplácíte, nebo dostáváte zpět. Rozdíly do jedné
+            Na konci vyjde jedno číslo. Buď doplácíš, nebo dostáváš zpět. Rozdíly do jedné
             koruny bere aplikace jako vyrovnané, ať se kvůli zaokrouhlení neposílají haléře.
           </p>
           <p className="text-sm text-gray-500">
@@ -286,7 +286,7 @@ export default function HelpContentCs() {
               ['Pozvání', 'Hostitel bere podíl svého hosta na sebe.'],
               [
                 'Propojení',
-                'Spojení účtu s účastníkem. Teprve po něm aplikace ví, kdo jste, a ukáže vám vaše finance rovnou.',
+                'Spojení účtu s účastníkem. Teprve po něm aplikace ví, kdo jsi, a ukáže ti tvoje finance rovnou.',
               ],
             ].map(([term, meaning]) => (
               <div key={term}>
@@ -299,14 +299,14 @@ export default function HelpContentCs() {
 
         <Section id="nesedi" title="Když něco nesedí" icon={<LifeBuoy size={20} />}>
           <p>
-            Nejdřív zkuste podrobný přehled pod financemi. Ukáže všechny výdaje a všechny lidi
+            Nejdřív zkus podrobný přehled pod financemi. Ukáže všechny výdaje a všechny lidi
             najednou, takže z něj bývá vidět, kde se čísla rozešla: chybějící účtenka, špatně
             nastavené podíly, zapomenutá záloha.
           </p>
           <p>
-            Svůj vlastní výdaj si opravíte sami. U všeho ostatního pomůže ten, kdo chatu zakládal.
-            Pokladníka, tedy člověka od společné kasy, máte v hlavičce vedle názvu chaty. Pokud
-            koukáte na finance někoho cizího a mělo by tam být vaše jméno, požádejte o propojení
+            Svůj vlastní výdaj si opravíš. U všeho ostatního pomůže ten, kdo chatu zakládal.
+            Pokladníka, tedy člověka od společné kasy, máš v hlavičce vedle názvu chaty. Pokud
+            koukáš na finance někoho cizího a mělo by tam být tvoje jméno, požádej o propojení
             přes „Jsi to ty?“.
           </p>
         </Section>

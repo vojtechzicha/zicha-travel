@@ -18,7 +18,7 @@ export default function VydajeContentCs() {
   return (
     <HelpShell
       title="Přidání a úprava výdaje"
-      lead="Zaplatili jste něco za partu? Zapište to sami, ať se to nemusí posílat pokladníkovi do zpráv."
+      lead="Zaplatil/a jsi něco za partu? Zapiš to, ať se to nemusí posílat pokladníkovi do zpráv."
     >
       <div className="flex flex-col gap-6">
         <Section title="Kdo může přidávat výdaje" icon={<Plus size={20} />}>
@@ -35,14 +35,14 @@ export default function VydajeContentCs() {
             <Screenshot name="mobil-tlacitko" caption="Na mobilu je z něj kolečko u palce." />
           </ScreenshotRow>
           <p>
-            Odkud výdaj zapíšete, se nikam nepromítá. Formulář je v obou případech stejný, jen
+            Odkud výdaj zapíšeš, se nikam nepromítá. Formulář je v obou případech stejný, jen
             jinak poskládaný.
           </p>
         </Section>
 
         <Section title="Na mobilu: tři kroky" icon={<Smartphone size={20} />}>
           <p>
-            Po klepnutí vyjede zespodu nabídka, jak chcete začít. Účtenka rovnou otevře fotoaparát,
+            Po klepnutí vyjede zespodu nabídka, jak chceš začít. Účtenka rovnou otevře fotoaparát,
             ruční zadání jde přímo na formulář.
           </p>
           <ScreenshotRow>
@@ -55,9 +55,9 @@ export default function VydajeContentCs() {
             items={[
               <>
                 <strong>Co a kolik.</strong> Název výdaje, částka a datum. Přepínač{' '}
-                <em>Byly vám vráceny peníze</em> použijte, když jde o vratku, třeba když vám hospoda
-                něco vrátila. Pokud patříte do společného účtu, vyberete tu i to, jestli jste platili
-                vy, nebo účet.
+                <em>Vrátili ti peníze</em> použij, když jde o vratku, třeba když ti hospoda
+                něco vrátila. Pokud patříš do společného účtu, vybereš tu i to, jestli jsi platil/a
+                ty, nebo účet.
               </>,
               <>
                 <strong>Kdo se dělí.</strong> Ve výchozím stavu se dělí všichni rovným dílem a
@@ -71,7 +71,7 @@ export default function VydajeContentCs() {
             ]}
           />
           <p>
-            Nahoře běží pruh se třemi díly, takže je vidět, kde jste. Šipkou vlevo se vracíte o krok
+            Nahoře běží pruh se třemi díly, takže je vidět, kde jsi. Šipkou vlevo se vracíš o krok
             zpět, <em>Zrušit</em> zahodí rozdělanou práci.
           </p>
         </Section>
@@ -99,18 +99,18 @@ export default function VydajeContentCs() {
             />
             <Screenshot
               name="deleni-castky"
-              caption="Přesné částky: co nevyplníte, aplikace dopočítá a označí."
+              caption="Přesné částky: co nevyplníš, aplikace dopočítá a označí."
             />
           </ScreenshotRow>
           <List
             items={[
               <>
                 <strong>Podíly</strong> se hodí, když někdo spotřeboval víc. Odškrtnutím políčka
-                člověka z výdaje úplně vyřadíte.
+                člověka z výdaje úplně vyřadíš.
               </>,
               <>
-                <strong>Přesné částky</strong> použijte, když máte účtenku položku po položce.
-                Vyplňte, co víte, zbytek se rovnoměrně rozpočítá mezi ostatní a je u nich napsáno{' '}
+                <strong>Přesné částky</strong> použij, když máš účtenku položku po položce.
+                Vyplň, co víš, zbytek se rovnoměrně rozpočítá mezi ostatní a je u nich napsáno{' '}
                 <em>dopočítáno</em>.
               </>,
               <>
@@ -130,7 +130,7 @@ export default function VydajeContentCs() {
             items={[
               <>Fotka se před odesláním zmenší přímo v prohlížeči, takže nahrání netrvá věčnost.</>,
               <>Na kartě výdaje se pak zobrazí jako malý náhled, který se dá otevřít přes celou obrazovku.</>,
-              <>Přiloženou účtenku můžete kdykoli odebrat křížkem.</>,
+              <>Přiloženou účtenku můžeš kdykoli odebrat křížkem.</>,
             ]}
           />
         </Section>
@@ -145,16 +145,16 @@ export default function VydajeContentCs() {
           <List
             items={[
               <>
-                Až peníze opravdu odejdou, klepněte na kartě na <strong>Už zaplaceno</strong>. Otevře
+                Až peníze opravdu odejdou, klepni na kartě na <strong>Už zaplaceno</strong>. Otevře
                 se souhrn výdaje, kde ještě jde opravit částku podle skutečnosti a přifotit účtenku.
               </>,
               <>
-                Datum se přitom přepíše na dnešek, tedy na den, kdy se platilo. Ručně ho můžete
+                Datum se přitom přepíše na dnešek, tedy na den, kdy se platilo. Ručně ho můžeš
                 změnit zpátky.
               </>,
               <>
                 Zpátky to nejde. Jakmile je výdaj zaplacený, přepínač v úpravě už není, aby ho
-                nikdo omylem nevrátil mezi plány. Když se spletete, výdaj smažte a zadejte znovu.
+                nikdo omylem nevrátil mezi plány. Když se spleteš, výdaj smaž a zadej znovu.
               </>,
               <>
                 Cizí plánované výdaje, třeba ty od správce chaty, přepnout nejde. Ty zůstávají na
@@ -172,8 +172,8 @@ export default function VydajeContentCs() {
           <List
             items={[
               <>
-                Růžový pruh <em>Automaticky</em> se objeví, když už máte trvale nastavené, že za
-                někoho platíte, třeba za dítě. To se přidá samo a nemusíte na to myslet.
+                Růžový pruh <em>Automaticky</em> se objeví, když už máš trvale nastavené, že za
+                někoho platíš, třeba za dítě. To se přidá samo a nemusíš na to myslet.
               </>,
               <>Jeden hostitel může pozvat víc lidí, každého ale jen jednou za výdaj.</>,
               <>
@@ -227,23 +227,23 @@ export default function VydajeContentCs() {
           <div className="flex flex-col md:flex-row gap-6 items-start">
             <Screenshot
               name="vlastni-vydaj"
-              caption="Vlastní výdaj poznáte podle patičky s odkazy Upravit a Smazat."
+              caption="Vlastní výdaj poznáš podle patičky s odkazy Upravit a Smazat."
             />
             <div className="flex flex-col gap-4 flex-1">
               <p>
-                Výdaje, které jste zapsali vy, mají v deníku patičku <em>Přidali jste vy</em>. Odtud
+                Výdaje, které jsi zapsal/a ty, mají v deníku patičku <em>Přidáno tebou</em>. Odtud
                 se otevře stejný formulář jako při zakládání, jen s vyplněnými hodnotami.
               </p>
               <List
                 items={[
                   <>Smazání se ptá na potvrzení přímo na kartě, žádné vyskakovací okno.</>,
                   <>
-                    Cizí výdaje upravit nejde. Když je v nich chyba, řekněte si autorovi nebo správci
-                    chaty. Výjimkou je výdaj, který někdo zapsal za vás: ten je i váš, takže ho
-                    můžete opravit i smazat.
+                    Cizí výdaje upravit nejde. Když je v nich chyba, řekni si autorovi nebo správci
+                    chaty. Výjimkou je výdaj, který někdo zapsal za tebe: ten je i tvůj, takže ho
+                    můžeš opravit i smazat.
                   </>,
                   <>
-                    Chatu u výdaje změnit nelze. Plátcem může být vaše jméno, váš společný účet, a
+                    Chatu u výdaje změnit nelze. Plátcem může být tvoje jméno, tvůj společný účet, a
                     po potvrzení i někdo jiný.
                   </>,
                 ]}

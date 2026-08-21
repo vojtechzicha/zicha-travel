@@ -8,17 +8,17 @@ export default function UcetContentCs() {
   return (
     <HelpShell
       title="Účet a přihlášení"
-      lead="Účet je jenom e-mail a odkaz, který si necháte poslat. Žádné heslo si vymýšlet nebudete."
+      lead="Účet je jenom e-mail a odkaz, který si necháš poslat. Žádné heslo si vymýšlet nebudeš."
     >
       <div className="flex flex-col gap-6">
-        <Section title="K čemu vám účet je" icon={<UserCheck size={20} />}>
+        <Section title="K čemu ti účet je" icon={<UserCheck size={20} />}>
           <p>Bez přihlášení se dá projít celá chata. Účet přidává tři věci:</p>
           <List
             items={[
-              <>Finance se otevřou rovnou na vašem jménu, nemusíte se hledat v seznamu.</>,
-              <>Můžete přidávat vlastní výdaje a své vlastní pak i upravovat a mazat.</>,
+              <>Finance se otevřou rovnou na tvém jménu, nemusíš se hledat v seznamu.</>,
+              <>Můžeš přidávat vlastní výdaje a své vlastní pak i upravovat a mazat.</>,
               <>
-                Vaše čísla zmizí anonymním návštěvníkům ze seznamu. Vaše jméno u nich zůstane, ale
+                Tvoje čísla zmizí anonymním návštěvníkům ze seznamu. Tvoje jméno u nich zůstane, ale
                 zešedne.
               </>,
             ]}
@@ -37,15 +37,15 @@ export default function UcetContentCs() {
           <Steps
             items={[
               <>
-                Otevřete <strong>Přihlásit se</strong> v patičce stránky.
+                Otevři <strong>Přihlásit se</strong> v patičce stránky.
               </>,
               <>
-                Zadejte e-mail a odešlete. Odpověď je vždycky stejná, aplikace nikomu neprozradí,
+                Zadej e-mail a odešli ho. Odpověď je vždycky stejná, aplikace nikomu neprozradí,
                 jestli k tomu e-mailu účet existuje.
               </>,
               <>
-                Ve schránce najděte zprávu a klepněte na odkaz. Tím jste uvnitř a vracíte se tam,
-                odkud jste odešli.
+                Ve schránce najdi zprávu a klepni na odkaz. Tím jsi uvnitř a vracíš se tam,
+                odkud jsi odešel/odešla.
               </>,
             ]}
           />
@@ -54,40 +54,40 @@ export default function UcetContentCs() {
             <strong>Přihlásit se přes Microsoft</strong>. Výsledek je stejný.
           </p>
           <Callout tone="warn">
-            Nepřišel e-mail? Zkontrolujte spam a to, jestli píšete stejnou adresu, jakou má správce
-            chaty u vašeho jména. Účet, který nikdo nezaložil, žádný odkaz nedostane.
+            Nepřišel e-mail? Zkontroluj spam a to, jestli píšeš stejnou adresu, jakou má správce
+            chaty u tvého jména. Účet, který nikdo nezaložil, žádný odkaz nedostane.
           </Callout>
         </Section>
 
         <Section title="Propojení: „Jsi to ty?“" icon={<ShieldQuestion size={20} />}>
           <p>
-            Když si otevřete ve financích své jméno a ještě k němu nemáte účet, objeví se pod
+            Když si otevřeš ve financích své jméno a ještě k němu nemáš účet, objeví se pod
             hlavičkou tenhle pruh.
           </p>
           <Screenshot name="jsi-to-ty" caption="Nabídka propojení u vybraného účastníka." />
           <Steps
             items={[
               <>
-                Klepněte na <strong>Tohle jsem já</strong>. Otevře se okno se dvěma cestami.
+                Klepni na <strong>Tohle jsem já</strong>. Otevře se okno se dvěma cestami.
               </>,
               <>
-                <strong>Už tu účet mám</strong>: přihlásíte se přes Microsoft nebo si necháte poslat
+                <strong>Už tu účet mám</strong>: přihlásíš se přes Microsoft nebo si necháš poslat
                 odkaz. Po návratu se žádost odešle sama.
               </>,
               <>
-                <strong>Jsem tu poprvé</strong>: necháte e-mail, přijde ověřovací odkaz. Klepnutí na
+                <strong>Jsem tu poprvé</strong>: necháš e-mail, přijde ověřovací odkaz. Klepnutí na
                 něj je zároveň ověření adresy a první přihlášení.
               </>,
               <>
-                Správce chaty dostane e-mail a rozhodne. Jakmile potvrdí, přijde vám zpráva a
-                účastník je váš.
+                Správce chaty dostane e-mail a rozhodne. Jakmile potvrdí, přijde ti zpráva a
+                účastník je tvůj.
               </>,
             ]}
           />
           <List
             items={[
               <>
-                Když už vás aplikace zná z jiné chaty, propojení proběhne rovnou a nikdo nic
+                Když už tě aplikace zná z jiné chaty, propojení proběhne rovnou a nikdo nic
                 neschvaluje.
               </>,
               <>
@@ -103,17 +103,17 @@ export default function UcetContentCs() {
           />
           <Callout>
             Propojit jde jen jméno, které ještě nikomu nepatří. U lidí, kteří se už přihlásili,
-            nabídka nesvítí. Další jméno na svůj účet (partner, děti) vám přidá správce chaty.
+            nabídka nesvítí. Další jméno na svůj účet (partner, děti) ti přidá správce chaty.
           </Callout>
         </Section>
 
         <Section title="Co se změní po přihlášení" icon={<Sparkles size={20} />}>
           <List
             items={[
-              <>Na úvodní stránce vidíte jen chaty, kterých se účastníte, a u nich svůj zůstatek.</>,
+              <>Na úvodní stránce vidíš jen chaty, kterých se účastníš, a u nich svůj zůstatek.</>,
               <>Ve financích se přeskočí výběr jména.</>,
               <>Přibude tlačítko pro přidání výdaje.</>,
-              <>V patičce se místo přihlášení ukazuje váš e-mail a odhlášení.</>,
+              <>V patičce se místo přihlášení ukazuje tvůj e-mail a odhlášení.</>,
             ]}
           />
         </Section>
@@ -137,10 +137,10 @@ export default function UcetContentCs() {
         <Section title="Odkud se účty berou" icon={<KeyRound size={20} />}>
           <List
             items={[
-              <>Buď si o propojení řeknete sami přes „Jsi to ty?“.</>,
+              <>Buď si o propojení řekneš přes „Jsi to ty?“.</>,
               <>
-                Nebo vám účet založí správce chaty z vaší e-mailové adresy. V tu chvíli vám nic
-                nepřijde. První zpráva dorazí, až o přihlášení požádáte.
+                Nebo ti účet založí správce chaty z tvé e-mailové adresy. V tu chvíli ti nic
+                nepřijde. První zpráva dorazí, až o přihlášení požádáš.
               </>,
             ]}
           />

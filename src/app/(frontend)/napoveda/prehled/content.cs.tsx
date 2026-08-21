@@ -8,12 +8,12 @@ export default function PrehledContentCs() {
   return (
     <HelpShell
       title="Podrobný přehled a výpočty"
-      lead="Když někomu čísla nesedí, otevřete tabulku, kde je vidět všechno najednou. A tady je i výpočet, který za ní stojí."
+      lead="Když někomu čísla nesedí, otevři tabulku, kde je vidět všechno najednou. A tady je i výpočet, který za ní stojí."
     >
       <div className="flex flex-col gap-6">
-        <Section title="Kde přehled najdete" icon={<Table2 size={20} />}>
+        <Section title="Kde přehled najdeš" icon={<Table2 size={20} />}>
           <p>
-            Ve Financích pod obsahem je řádek „Nesedí vám čísla, nebo chcete vidět všechno
+            Ve Financích pod obsahem je řádek „Nesedí ti čísla, nebo chceš vidět všechno
             najednou?“ a v něm odkaz <strong>Podrobný přehled všech účastníků</strong>. Otevřený je
             komukoli, i bez přihlášení.
           </p>
@@ -54,10 +54,10 @@ export default function PrehledContentCs() {
           </p>
         </Section>
 
-        <Section title="Odkud se bere váš podíl" icon={<Calculator size={20} />}>
+        <Section title="Odkud se bere tvůj podíl" icon={<Calculator size={20} />}>
           <p>
-            Každý výdaj se rozpustí mezi lidi jedním ze tří způsobů. Součet všech vašich podílů je
-            vaše útrata.
+            Každý výdaj se rozpustí mezi lidi jedním ze tří způsobů. Součet všech tvých podílů je
+            tvoje útrata.
           </p>
           <Steps
             items={[
@@ -124,16 +124,16 @@ export default function PrehledContentCs() {
           <List
             items={[
               <>
-                Projděte řádek po řádku sloupec <strong>Σ kontrola</strong>. Kde součet neodpovídá
+                Projdi řádek po řádku sloupec <strong>Σ kontrola</strong>. Kde součet neodpovídá
                 ceně výdaje, je špatně zadané rozdělení.
               </>,
-              <>Zkontrolujte, jestli chybí zapsaná záloha nebo účtenka, kterou někdo zaplatil bokem.</>,
+              <>Zkontroluj, jestli chybí zapsaná záloha nebo účtenka, kterou někdo zaplatil bokem.</>,
               <>
                 Plánované výdaje se do vyrovnání nepočítají. Jestli už je zaplaceno, potvrdí to autor
                 výdaje tlačítkem <em>Už zaplaceno</em> na kartě, u ostatních přepne výdaj správce
                 chaty.
               </>,
-              <>Svůj vlastní výdaj opravíte sami, u ostatních pomůže správce chaty.</>,
+              <>Svůj vlastní výdaj opravíš, u ostatních pomůže správce chaty.</>,
             ]}
           />
         </Section>
