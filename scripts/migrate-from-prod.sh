@@ -159,11 +159,17 @@ UPDATE participants SET
   account_number = CASE WHEN account_number IS NULL THEN NULL ELSE '000000/0100' END,
   iban = CASE WHEN iban IS NULL THEN NULL ELSE 'CZ0001000000000000000000' END;
 UPDATE users SET
-  email = 'user' || id || '@example.test',
-  name = CASE WHEN name IS NULL THEN NULL ELSE 'Uživatel ' || id END,
-  vokativ = NULL,
   login_token = NULL,
   login_token_expires = NULL;
+-- Superadmin accounts keep their real email and name: they belong to the
+-- developer running this script, and Microsoft OAuth matches accounts by
+-- email — scrambling it locks them out of their own local admin panel.
+-- Recorded in docs/legal/zaznamy-o-zpracovani.md section 4.
+UPDATE users SET
+  email = 'user' || id || '@example.test',
+  name = CASE WHEN name IS NULL THEN NULL ELSE 'Uživatel ' || id END,
+  vokativ = NULL
+WHERE role <> 'superadmin';
 UPDATE joint_accounts SET name = 'Společný účet ' || id;
 UPDATE claim_requests SET reason = NULL;
 UPDATE data_requests SET subject = 'Subjekt ' || id, note = NULL;
