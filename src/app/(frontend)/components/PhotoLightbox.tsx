@@ -83,7 +83,6 @@ export function PhotoLightbox({ photos, index, onClose, onNavigate }: PhotoLight
           </div>
         </>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={photo.url}
         alt={photo.alt || ''}

@@ -36,6 +36,11 @@ const buildId = computeBuildId()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Linting runs as its own pipeline step (`pnpm lint` in vercel-build, with
+  // --max-warnings 0) — don't lint a second time inside `next build`.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Allow dev requests from custom domains
   allowedDevOrigins: [],
   generateBuildId: () => buildId,

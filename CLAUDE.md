@@ -703,6 +703,30 @@ Available in `@layer utilities`:
 - `.max-w-app` - Max width container (1100px)
 - `.text-shadow-heading`, `.text-shadow-subheading` - Text shadows for headers
 
+## Linting — binding rules
+
+ESLint 9 flat config in `eslint.config.mjs` (Next core-web-vitals +
+TypeScript presets, a few rules deliberately off with the reason commented
+in the config). `pnpm lint` runs `eslint --max-warnings 0 .` and is part of
+the pipeline: `vercel-build` runs it before the migration + build (a lint
+problem fails the PR's own preview deployment), and `pnpm test` runs it
+first too.
+
+- **Zero warnings, zero errors — always.** `--max-warnings 0` means a
+  warning IS a failure. No lint problem may be left in the tree, even in
+  code untouched by the current change: whoever's change turns the light
+  red fixes it, never ships around it.
+- **No suppression comments.** `eslint-disable`, `eslint-disable-next-line`
+  and `@ts-ignore`-style escapes are highly unwelcome. Fix the code, not
+  the report. If a rule genuinely misfires for a whole legitimate pattern,
+  the honest move is changing or removing the rule in `eslint.config.mjs`
+  (with a comment saying why) — discuss it with the user first; never a
+  one-off suppression. The handful of pre-existing
+  `react-hooks/exhaustive-deps` disables (intentional mount-only effects)
+  are grandfathered, not a precedent.
+- **Rule changes are config changes**: keep the "either enforced or absent"
+  shape — no downgrading a rule to `warn` to park violations.
+
 ## Environment configuration
 
 Config is **generated from committed templates**, never copied between

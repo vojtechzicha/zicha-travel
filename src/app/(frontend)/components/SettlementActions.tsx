@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
 import type { AppLocale } from '@/i18n/config'
-import type { Participant, Chata } from '@/payload-types'
+import type { Participant } from '@/payload-types'
 
 interface Creditor {
   name: string

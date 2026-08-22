@@ -1144,7 +1144,6 @@ export function ExpenseComposer({
       {existingAttachments.map((att) => (
         <div key={`ex-${att.id}`} className={`relative ${size} flex-shrink-0`}>
           {att.mimeType?.startsWith('image/') && att.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={att.url}
               alt={att.alt || att.filename || t('attachments.receiptAlt')}
@@ -1170,7 +1169,6 @@ export function ExpenseComposer({
       {newFiles.map((nf) => (
         <div key={nf.key} className={`relative ${size} flex-shrink-0`}>
           {nf.previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={nf.previewUrl}
               alt={nf.file.name}

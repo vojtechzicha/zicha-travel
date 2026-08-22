@@ -169,7 +169,6 @@ export function DecideExpenseCard({
                   className="block w-14 h-14 rounded-md overflow-hidden border border-gray-200 hover:border-primary transition-colors"
                   title={att.label}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={att.url}
                     alt={att.label}
