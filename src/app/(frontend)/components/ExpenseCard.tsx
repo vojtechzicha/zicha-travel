@@ -317,7 +317,6 @@ export function ExpenseCard({
                   className="block w-10 h-10 rounded-md overflow-hidden border border-gray-200 dark:border-white/[0.12] hover:border-primary dark:hover:border-primary-light transition-colors"
                   title={att.alt || att.filename || t('expenseCard.receipt')}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={att.url!}
                     alt={att.alt || att.filename || t('expenseCard.receipt')}
@@ -539,7 +538,6 @@ export function ExpenseCard({
               >
                 <X size={28} />
               </button>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={lightboxAttachment.url!}
                 alt={lightboxAttachment.alt || lightboxAttachment.filename || t('expenseCard.receipt')}

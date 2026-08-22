@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "vercel-build": "node scripts/check-env.mjs && node scripts/migrate-payer-polymorphic.mjs auto && pnpm build",
+    "vercel-build": "node scripts/check-env.mjs && pnpm lint && node scripts/migrate-payer-polymorphic.mjs auto && pnpm build",
     "env:pull": "op inject -i .env.tpl -o .env -f",
     "env:pull:prod": "op inject -i .env.prod.tpl -o .env.prod -f",
     "env:check": "node scripts/check-env.mjs",
@@ -22,10 +22,10 @@
     "help:shots": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/shoot-help-screenshots.mts",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
-    "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
+    "lint": "eslint --max-warnings 0 .",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "test": "pnpm run test:int && pnpm run test:e2e",
+    "test": "pnpm lint && pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --no-experimental-strip-types\" pnpm exec playwright test",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
@@ -57,6 +57,8 @@
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
+    "@eslint/compat": "^2.1.0",
+    "@eslint/eslintrc": "^3.3.6",
     "@playwright/test": "1.56.1",
     "@testing-library/react": "16.3.0",
     "@types/jsonwebtoken": "^9.0.10",

@@ -90,7 +90,7 @@ export function OrganizationView({
   const totalNights = getTripNights(chata)
   const tonight = tonightNumber(chata)
   const rooms = chata.rooms || []
-  const sharedCars = chata.sharedCars || []
+  const sharedCars = useMemo(() => chata.sharedCars || [], [chata.sharedCars])
   const capacity = sleepingCapacity(chata)
   const myIds = viewer.linkedParticipantIds
 
@@ -100,6 +100,14 @@ export function OrganizationView({
   )
   const carAssignments = useMemo(() => getCarAssignments(chata), [chata])
   const transportAssignments = useMemo(() => getTransportAssignments(chata), [chata])
+  // People riding public transport have a seat too — they don't belong in
+  // the "no car yet" list.
+  const withoutCar = useMemo(() => {
+    if (!hasCars || sharedCars.length === 0) return []
+    return participants.filter(
+      (p) => !carAssignments.has(p.id) && !transportAssignments.has(p.id),
+    )
+  }, [hasCars, sharedCars, participants, carAssignments, transportAssignments])
   const me = participants.find((p) => myIds.includes(p.id)) ?? null
   const myBed = me ? bedAssignments.get(me.id) : undefined
   const myCar = me ? carAssignments.get(me.id) : undefined
@@ -397,15 +405,6 @@ export function OrganizationView({
     ) : null
 
   // ── cars ──
-  // People riding public transport have a seat too — they don't belong in
-  // the "no car yet" list.
-  const withoutCar = useMemo(() => {
-    if (!hasCars || sharedCars.length === 0) return []
-    return participants.filter(
-      (p) => !carAssignments.has(p.id) && !transportAssignments.has(p.id),
-    )
-  }, [hasCars, sharedCars.length, participants, carAssignments, transportAssignments])
-
   const carsSection =
     hasCars && sharedCars.length > 0 ? (
       <div>

@@ -184,7 +184,7 @@ export function calculateStats(
     })
 
     // Calculate cost shares
-    let weights: Record<string, number> = {}
+    const weights: Record<string, number> = {}
 
     if (expense.splitType === 'equal') {
       // Equal split among all participants

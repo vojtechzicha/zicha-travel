@@ -1,7 +1,7 @@
 import type { CollectionConfig, PayloadRequest } from 'payload'
 import type { Chata } from '../payload-types'
 import { afterReadHook } from './Chatas/hooks/afterRead'
-import { canManageChata, ownChataAccess, refId, superadminOnly } from '../lib/access'
+import { canManageChata, ownChataAccess, superadminOnly } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 
 export const Chatas: CollectionConfig = {

@@ -8,7 +8,6 @@ import {
   linkedParticipantIds,
   needsApproval,
   normalizePayer,
-  payerAccountIds,
 } from '../lib/expenseAuthoring'
 import { verifyExpenseDecideToken } from '../lib/expenseApproval'
 import { requestOrigin } from '../lib/auth/session'

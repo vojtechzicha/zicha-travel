@@ -1,6 +1,7 @@
-import { dirname } from 'path'
+import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { FlatCompat } from '@eslint/eslintrc'
+import { includeIgnoreFile } from '@eslint/compat'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -9,15 +10,37 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 })
 
+// Lint policy: zero warnings, zero errors, always (`pnpm lint` runs with
+// --max-warnings 0 and is part of vercel-build). A rule is either enforced or
+// absent — no violations left in the tree, no suppression comments. Rules
+// below are switched off only where this codebase made a deliberate contrary
+// decision; each one says why.
 const eslintConfig = [
+  // Flat-config ESLint doesn't read .gitignore on its own — without this it
+  // would traverse untracked local checkouts (/zicha-travel-legacy, build
+  // artifacts, …) and fail lint on files that aren't part of the repo.
+  includeIgnoreFile(resolve(__dirname, '.gitignore')),
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     rules: {
-      '@typescript-eslint/ban-ts-comment': 'warn',
-      '@typescript-eslint/no-empty-object-type': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Multi-host app: many `<a>` targets are deliberate full-page
+      // navigations (API routes like /api/auth/logout, the admin panel's
+      // BackToSiteLink, cross-subdomain paths resolved by the middleware).
+      // The rule can't tell those from client-navigable pages.
+      '@next/next/no-html-link-for-pages': 'off',
+      // Receipts/backgrounds are served as originals on purpose (S3
+      // clientUploads bypasses the server; no imageSizes) — see CLAUDE.md,
+      // ExpenseAttachments.
+      '@next/next/no-img-element': 'off',
+      // Payload's depth-0 polymorphic reads make `any` sometimes the honest
+      // type; at error level this rule breeds `as unknown as X` casts, which
+      // are no safer.
+      '@typescript-eslint/no-explicit-any': 'off',
+      // Apostrophes and quotes are fine in bilingual prose pages; only flag
+      // the characters that signal real JSX mistakes.
+      'react/no-unescaped-entities': ['error', { forbid: ['>', '}'] }],
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         {
           vars: 'all',
           args: 'after-used',
@@ -31,7 +54,8 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/'],
+    // Tracked generated files (.gitignore covers the untracked rest)
+    ignores: ['src/payload-types.ts', 'src/app/(payload)/admin/importMap.js'],
   },
 ]
 
