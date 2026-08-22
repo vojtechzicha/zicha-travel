@@ -1,6 +1,7 @@
-import { dirname } from 'path'
+import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { FlatCompat } from '@eslint/eslintrc'
+import { includeIgnoreFile } from '@eslint/compat'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -15,6 +16,10 @@ const compat = new FlatCompat({
 // below are switched off only where this codebase made a deliberate contrary
 // decision; each one says why.
 const eslintConfig = [
+  // Flat-config ESLint doesn't read .gitignore on its own — without this it
+  // would traverse untracked local checkouts (/zicha-travel-legacy, build
+  // artifacts, …) and fail lint on files that aren't part of the repo.
+  includeIgnoreFile(resolve(__dirname, '.gitignore')),
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     rules: {
@@ -49,16 +54,8 @@ const eslintConfig = [
     },
   },
   {
-    ignores: [
-      '.next/',
-      '.vercel/',
-      'node_modules/',
-      'media/',
-      // Generated files
-      'src/payload-types.ts',
-      'src/app/(payload)/admin/importMap.js',
-      'next-env.d.ts',
-    ],
+    // Tracked generated files (.gitignore covers the untracked rest)
+    ignores: ['src/payload-types.ts', 'src/app/(payload)/admin/importMap.js'],
   },
 ]
 
