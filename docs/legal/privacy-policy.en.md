@@ -20,7 +20,9 @@ They are not separate controllers; the responsibility towards you is ours.
 zicha.travel is a private, free app for groups of friends and families who
 travel to chatas together and want to split shared expenses fairly. It is
 not a public service: a chata is created by its admin, who enters the
-participants personally.
+participants personally. The planning phase is the one exception: while the
+group is voting on the date and the place, you can join the trip yourself
+through the vote form.
 
 We process data about four groups of people:
 
@@ -28,7 +30,8 @@ We process data about four groups of people:
   them have no account, and many did not know about the entry until the
   admin told them. That is what section 5 is for,
 - **signed-in users**, people with an account (participants who had an
-  account created for them, or who claimed their name through "That's me"),
+  account created for them, who claimed their name through "That's me", or
+  who joined by voting while the trip was being planned),
 - **chata admins** and site administrators,
 - **visitors** to the pages, including anonymous ones.
 
@@ -39,7 +42,9 @@ chata admin entered one), bank account number or IBAN for settlement,
 whether they bring a pet, the "someone else pays for them" link (typically a
 parent paying for a child), room and bed assignment, seat in a car or on
 public transport, expense shares, advances and refunds, joint account
-membership, and the resulting settlement (who owes whom how much).
+membership, and the resulting settlement (who owes whom how much). When the
+trip was put to a vote, this also includes the vote: which dates work for
+the participant and which places they like.
 
 **About signed-in users, in addition:** the account email, last login time,
 and, when you sign in with Microsoft, Google or Apple, the identifier and
@@ -99,8 +104,10 @@ in the group chat), and the policy is linked in the footer of every page. If
 you believe somebody entered you wrongly, write to us and we will look into
 the record.
 
-Data about signed-in users comes from the users themselves, or from their
-Microsoft, Google or Apple account when they sign in with one of them.
+Data about signed-in users, and about participants who joined by voting
+while the trip was being planned, comes from those people themselves, or
+from their Microsoft, Google or Apple account when they sign in with one of
+them.
 
 ## 6. Who can see your data
 
@@ -121,8 +128,10 @@ therefore how you hide your own breakdown and balance. Your name stays
 with the trip either way.
 
 Without signing in, a visitor can never see: anyone's bank details except
-the banker's, receipts, email addresses, the "Keys and Wi-Fi" section, or
-expenses waiting for confirmation. A participant's bank details are
+the banker's, receipts, email addresses, the "Keys and Wi-Fi" section,
+expenses waiting for confirmation, or planning votes (who joined and what
+suits them); votes are visible only to the chata's signed-in participants
+and its admins. A participant's bank details are
 visible only to that participant (through their account), the signed-in
 banker and the admins of that chata; the banker's bank details are public
 because the anonymous QR settlement cannot work without them (the banker
@@ -174,6 +183,7 @@ you the details for a specific provider on request.
 | receipts | deleted within 12 months of the trip being settled |
 | an account with no login for 2 years | deleted, including its links |
 | claim requests, including rejection reasons | deleted within 12 months of the decision |
+| planning votes | part of the trip record, for as long as the service runs |
 | login links (tokens) | valid for 15 minutes, then void |
 | raw statistics events | 12 months, then only aggregate numbers |
 | hosting operational logs | short-term, per the provider's settings |

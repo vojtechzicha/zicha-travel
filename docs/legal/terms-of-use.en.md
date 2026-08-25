@@ -43,8 +43,9 @@ policy. Even without an account, the rules apply:
 
 ## 4. Accounts
 
-An account is created for you by a chata admin, or through "That's me" (a
-claim request linking you to a participant name) or "I'm new here". Sign-in
+An account is created for you by a chata admin, through "That's me" (a
+claim request linking you to a participant name), through "I'm new here",
+or by voting while a trip is being planned. Sign-in
 uses a one-time link sent by email, or Microsoft, Google or Apple; there is
 no password with
 us, so protect your mailbox: whoever controls it controls your account.

@@ -2,7 +2,7 @@
 
 Expense tracker for group trips and shared accommodations. Built with Payload CMS, Next.js, and PostgreSQL.
 
-Features automatic expense splitting, QR payment codes (Czech banking), multi-domain routing, a bilingual Czech/English interface, and a mobile-friendly glass-morphism UI.
+Features automatic expense splitting, QR payment codes (Czech banking), a pre-trip planning phase where the group votes on dates and accommodation, multi-domain routing, a bilingual Czech/English interface, and a mobile-friendly glass-morphism UI.
 
 ## Quick Start
 

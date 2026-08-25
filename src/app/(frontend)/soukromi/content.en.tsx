@@ -64,6 +64,8 @@ export default function PrivacyContentEn() {
             zicha.travel is a private, free app for groups of friends and families who travel to
             chatas together and want to split shared expenses fairly. It is not a public
             service: a chata is created by its admin, who enters the participants personally.
+            The planning phase is the one exception: while the group is voting on the date and
+            the place, you can join the trip yourself through the vote form.
           </p>
           <p>We process data about four groups of people:</p>
           <List
@@ -75,8 +77,8 @@ export default function PrivacyContentEn() {
               </>,
               <>
                 <strong>signed-in users</strong>, people with an account (participants who had
-                an account created for them, or who claimed their name through &ldquo;That&rsquo;s
-                me&rdquo;),
+                an account created for them, who claimed their name through &ldquo;That&rsquo;s
+                me&rdquo;, or who joined by voting while the trip was being planned),
               </>,
               <>
                 <strong>chata admins</strong> and site administrators,
@@ -95,7 +97,9 @@ export default function PrivacyContentEn() {
             they bring a pet, the &ldquo;someone else pays for them&rdquo; link (typically a
             parent paying for a child), room and bed assignment, seat in a car or on public
             transport, expense shares, advances and refunds, joint account membership, and the
-            resulting settlement (who owes whom how much).
+            resulting settlement (who owes whom how much). When the trip was put to a vote,
+            this also includes the vote: which dates work for the participant and which places
+            they like.
           </p>
           <p>
             <strong>About signed-in users, in addition:</strong> the account email, last login
@@ -177,7 +181,8 @@ export default function PrivacyContentEn() {
             record.
           </p>
           <p>
-            Data about signed-in users comes from the users themselves, or from their
+            Data about signed-in users, and about participants who joined by voting while the
+            trip was being planned, comes from those people themselves, or from their
             Microsoft, Google or Apple account when they sign in with one of them.
           </p>
         </Section>
@@ -203,7 +208,9 @@ export default function PrivacyContentEn() {
           <p>
             Without signing in, a visitor can never see: anyone&rsquo;s bank details except the
             banker&rsquo;s, receipts, email addresses, the &ldquo;Keys and Wi-Fi&rdquo; section,
-            or expenses waiting for confirmation. A participant&rsquo;s bank details are visible
+            expenses waiting for confirmation, or planning votes (who joined and what suits
+            them); votes are visible only to the chata&rsquo;s signed-in participants and its
+            admins. A participant&rsquo;s bank details are visible
             only to that participant (through their account), the signed-in banker and the
             admins of that chata; the banker&rsquo;s bank details are public because the
             anonymous QR settlement cannot work without them (the banker takes that on with the
@@ -337,6 +344,10 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">claim requests, including rejection reasons</td>
                   <td className="py-2.5">deleted within 12 months of the decision</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">planning votes</td>
+                  <td className="py-2.5">part of the trip record, for as long as the service runs</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">login links (tokens)</td>

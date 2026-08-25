@@ -44,7 +44,8 @@ pravidla:
 ## 4. Účty
 
 Účet vám založí správce chaty, nebo vznikne přes „To jsem já" (žádost o
-propojení se jménem účastníka) či „Jsem tu poprvé". Přihlašuje se
+propojení se jménem účastníka), přes „Jsem tu poprvé", anebo hlasováním při
+plánování výletu. Přihlašuje se
 jednorázovým odkazem na e-mail, nebo přes Microsoft, Google či Apple; heslo
 u nás neexistuje,
 takže chraňte svou e-mailovou schránku, kdo ovládá ji, ovládá váš účet.

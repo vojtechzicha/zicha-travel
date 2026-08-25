@@ -99,9 +99,10 @@ export default function TermsContentEn() {
 
         <Section id="ucty" title="4. Accounts" icon={<KeyRound size={20} />}>
           <p>
-            An account is created for you by a chata admin, or through &ldquo;That&rsquo;s
-            me&rdquo; (a claim request linking you to a participant name) or &ldquo;I&rsquo;m
-            new here&rdquo;. Sign-in uses a one-time link sent by email, or Microsoft, Google or
+            An account is created for you by a chata admin, through &ldquo;That&rsquo;s
+            me&rdquo; (a claim request linking you to a participant name), through &ldquo;I&rsquo;m
+            new here&rdquo;, or by voting while a trip is being planned. Sign-in uses a
+            one-time link sent by email, or Microsoft, Google or
             Apple; there is no password with us, so protect your mailbox: whoever controls it
             controls your account.
           </p>
