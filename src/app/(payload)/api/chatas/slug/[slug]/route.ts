@@ -11,6 +11,7 @@ import {
 import { bankFieldVisibilityFor, findLockedParticipants } from '@/utils/participantPrivacy'
 import { isCountedExpense, normalizePayer, payerAccountIds } from '@/lib/expenseAuthoring'
 import type { ViewerClaim } from '@/lib/claimRequests'
+import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import {
   calculateStats,
   transformExpense,
@@ -295,6 +296,68 @@ export async function GET(
           }))
       : []
 
+    // Planning phase ("Plánujeme" — docs/PRD-planovani.md): options are
+    // public; per-person votes ship only to chata admins and viewers with a
+    // linked participant here. Everyone else gets the anonymous headcount.
+    let planning: PlanningPayload | null = null
+    if (chata.planningEnabled === true) {
+      const [dateOptionsResult, accommodationsResult, votesResult] = await Promise.all([
+        payload.find({
+          collection: 'trip-date-options',
+          where: { chata: { equals: chata.id } },
+          sort: 'dateFrom',
+          limit: 100,
+          depth: 0,
+        }),
+        payload.find({
+          collection: 'trip-accommodation-options',
+          where: { chata: { equals: chata.id } },
+          limit: 100,
+          depth: 1,
+        }),
+        payload.find({
+          collection: 'trip-votes',
+          where: { chata: { equals: chata.id } },
+          limit: 1000,
+          depth: 0,
+          overrideAccess: true,
+        }),
+      ])
+      const votes = votesResult.docs.map((vote: any) => ({
+        participantId: Number(refId(vote.participant)),
+        dateOptionIds: (vote.dates || []).map((ref: unknown) => Number(refId(ref))),
+        accommodationOptionIds: (vote.accommodations || []).map((ref: unknown) =>
+          Number(refId(ref)),
+        ),
+      }))
+      const canSeeResults = canSeePlanningResults(viewer)
+      const ownIds = new Set(viewer.linkedParticipantIds.map(String))
+      planning = {
+        enabled: true,
+        intro: chata.planningIntro ?? null,
+        dateOptions: dateOptionsResult.docs.map((option: any) => ({
+          id: option.id,
+          label: option.label ?? '',
+          dateFrom: option.dateFrom,
+          dateTo: option.dateTo,
+          note: option.note ?? null,
+        })),
+        accommodations: accommodationsResult.docs.map((option: any) => ({
+          id: option.id,
+          name: option.name,
+          locationNote: option.locationNote ?? null,
+          url: option.url ?? null,
+          description: option.description ?? null,
+          imageUrl:
+            typeof option.image === 'object' && option.image?.url ? option.image.url : null,
+          dateOptionIds: (option.dateOptions || []).map((ref: unknown) => Number(refId(ref))),
+        })),
+        voteCount: votes.length,
+        votes: canSeeResults ? votes : null,
+        viewerVoted: votes.some((vote) => ownIds.has(String(vote.participantId))),
+      }
+    }
+
     // Return data with populated relationships for frontend
     // (payer/from arrive populated via depth: 1 as { relationTo, value })
     return NextResponse.json({
@@ -308,6 +371,7 @@ export async function GET(
       locked,
       pendingClaims,
       viewerClaims,
+      planning,
     })
   } catch (error) {
     console.error('Error looking up chata by slug:', error)

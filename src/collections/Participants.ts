@@ -298,6 +298,36 @@ export const Participants: CollectionConfig = {
         return doc
       },
     ],
+    beforeDelete: [
+      // A vote means nothing without its voter. Production has ON DELETE
+      // CASCADE on trip_votes.participant_id, but dev-push schemas carry
+      // Payload's NOT NULL + SET NULL combo (the claim_requests story), so
+      // the app cleans up first either way.
+      async ({ id, req }) => {
+        try {
+          const votes = await req.payload.find({
+            collection: 'trip-votes',
+            where: { participant: { equals: id } },
+            limit: 100,
+            depth: 0,
+            overrideAccess: true,
+          })
+          for (const vote of votes.docs) {
+            await req.payload.delete({
+              collection: 'trip-votes',
+              id: vote.id,
+              overrideAccess: true,
+              depth: 0,
+            })
+          }
+        } catch (err) {
+          req.payload.logger.error(
+            { err, participant: id },
+            'Failed to delete planning votes before participant delete',
+          )
+        }
+      },
+    ],
   },
   admin: {
     useAsTitle: 'name',

@@ -73,6 +73,9 @@ export interface Config {
     prepayments: Prepayment;
     'joint-accounts': JointAccount;
     'claim-requests': ClaimRequest;
+    'trip-date-options': TripDateOption;
+    'trip-accommodation-options': TripAccommodationOption;
+    'trip-votes': TripVote;
     'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
@@ -85,6 +88,11 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
+    chatas: {
+      planningDateOptions: 'trip-date-options';
+      planningAccommodationOptions: 'trip-accommodation-options';
+      planningVotes: 'trip-votes';
+    };
     users: {
       participants: 'participants';
     };
@@ -96,6 +104,9 @@ export interface Config {
     prepayments: PrepaymentsSelect<false> | PrepaymentsSelect<true>;
     'joint-accounts': JointAccountsSelect<false> | JointAccountsSelect<true>;
     'claim-requests': ClaimRequestsSelect<false> | ClaimRequestsSelect<true>;
+    'trip-date-options': TripDateOptionsSelect<false> | TripDateOptionsSelect<true>;
+    'trip-accommodation-options': TripAccommodationOptionsSelect<false> | TripAccommodationOptionsSelect<true>;
+    'trip-votes': TripVotesSelect<false> | TripVotesSelect<true>;
     'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
@@ -179,6 +190,29 @@ export interface Chata {
         id?: string | null;
       }[]
     | null;
+  /**
+   * The public page shows only the planning view: the date and accommodation options, and a vote form that creates accounts and participants. Untick it (and set the real dates) once the trip is booked.
+   */
+  planningEnabled?: boolean | null;
+  /**
+   * The pitch at the top of the planning page — what is being planned and why people should vote.
+   */
+  planningIntro?: string | null;
+  planningDateOptions?: {
+    docs?: (number | TripDateOption)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  planningAccommodationOptions?: {
+    docs?: (number | TripAccommodationOption)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  planningVotes?: {
+    docs?: (number | TripVote)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   /**
    * Person managing the money for this trip. On a new chata the list is empty — save the chata, add participants (e.g. via "Prefill participants" above), then pick the banker. Everyone pays into the banker's own account, so their banking info is edited on the participant, not here.
    */
@@ -547,6 +581,106 @@ export interface Chata {
   createdAt: string;
 }
 /**
+ * Candidate date windows people vote on while the chata is in the planning phase.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trip-date-options".
+ */
+export interface TripDateOption {
+  id: number;
+  chata: number | Chata;
+  /**
+   * Shown everywhere this window is named. Left empty, it is filled from the dates ("16.–18. 10. 2026").
+   */
+  label?: string | null;
+  dateFrom: string;
+  dateTo: string;
+  /**
+   * Optional note shown under the window (e.g. "víkend pá–ne")
+   */
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Candidate places to stay, voted on while the chata is in the planning phase.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trip-accommodation-options".
+ */
+export interface TripAccommodationOption {
+  id: number;
+  chata: number | Chata;
+  /**
+   * Name of the place (e.g. "Kamenná chalupa")
+   */
+  name: string;
+  /**
+   * Shown next to the name (e.g. "Bezdědice, pod Bezdězem")
+   */
+  locationNote?: string | null;
+  /**
+   * Link to the listing (e-chalupy, Booking…) so people can browse the details
+   */
+  url?: string | null;
+  /**
+   * One or two factual sentences (capacity, what stands out)
+   */
+  description?: string | null;
+  /**
+   * Photo shown on the card (optional)
+   */
+  image?: (number | null) | Media;
+  /**
+   * Date options this place is available for. Empty = available for all of them.
+   */
+  dateOptions?: (number | TripDateOption)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Files backing Backgrounds and Icons (not expense receipts)
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  alt: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Votes cast on the planning page. Created by the public vote form; edit only to fix mistakes.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trip-votes".
+ */
+export interface TripVote {
+  id: number;
+  /**
+   * Who voted
+   */
+  participant: number | Participant;
+  /**
+   * Derived from the participant — drives admin-scoped access
+   */
+  chata?: (number | null) | Chata;
+  dates?: (number | TripDateOption)[] | null;
+  accommodations?: (number | TripAccommodationOption)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "participants".
  */
@@ -671,27 +805,6 @@ export interface Background {
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * Files backing Backgrounds and Icons (not expense receipts)
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  alt: string;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1020,6 +1133,18 @@ export interface PayloadLockedDocument {
         value: number | ClaimRequest;
       } | null)
     | ({
+        relationTo: 'trip-date-options';
+        value: number | TripDateOption;
+      } | null)
+    | ({
+        relationTo: 'trip-accommodation-options';
+        value: number | TripAccommodationOption;
+      } | null)
+    | ({
+        relationTo: 'trip-votes';
+        value: number | TripVote;
+      } | null)
+    | ({
         relationTo: 'expense-attachments';
         value: number | ExpenseAttachment;
       } | null)
@@ -1101,6 +1226,11 @@ export interface ChatasSelect<T extends boolean = true> {
         domain?: T;
         id?: T;
       };
+  planningEnabled?: T;
+  planningIntro?: T;
+  planningDateOptions?: T;
+  planningAccommodationOptions?: T;
+  planningVotes?: T;
   banker?: T;
   background?: T;
   icon?: T;
@@ -1357,6 +1487,46 @@ export interface ClaimRequestsSelect<T extends boolean = true> {
   decidedAt?: T;
   autoApproved?: T;
   reminderSentAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trip-date-options_select".
+ */
+export interface TripDateOptionsSelect<T extends boolean = true> {
+  chata?: T;
+  label?: T;
+  dateFrom?: T;
+  dateTo?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trip-accommodation-options_select".
+ */
+export interface TripAccommodationOptionsSelect<T extends boolean = true> {
+  chata?: T;
+  name?: T;
+  locationNote?: T;
+  url?: T;
+  description?: T;
+  image?: T;
+  dateOptions?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trip-votes_select".
+ */
+export interface TripVotesSelect<T extends boolean = true> {
+  participant?: T;
+  chata?: T;
+  dates?: T;
+  accommodations?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -1,0 +1,87 @@
+{
+  "hero": {
+    "badge": "Planning",
+    "whenTitle": "When",
+    "nightsNote": "We'll stay {nights}. The exact weekend comes out of the vote.",
+    "note": "The exact weekend comes out of the vote."
+  },
+  "stats": {
+    "dates": "{count, plural, one {date option} other {date options}}",
+    "places": "{count, plural, one {cottage} other {cottages}}",
+    "votes": "{count, plural, one {person voted so far} other {people voted so far}}"
+  },
+  "dates": {
+    "title": "Dates in play",
+    "availablePlaces": "{count, plural, one {# cottage available} other {# cottages available}}"
+  },
+  "places": {
+    "title": "Where we could stay",
+    "count": "{count, plural, one {# cottage} other {# cottages}}",
+    "viewListing": "View the listing",
+    "limitedNote": "Booked out on the other dates."
+  },
+  "cta": {
+    "label": "Vote",
+    "title": "Are you in?",
+    "body": "Pick every date that works for you and every place you like. It takes a minute and we'll know where we stand.",
+    "button": "Count me in",
+    "anonHint": "After you vote you'll see who joined and which date is winning.",
+    "signIn": "Already have an account? Sign in"
+  },
+  "results": {
+    "yourVote": "Your vote",
+    "datesLabel": "You can make",
+    "placesLabel": "You like",
+    "noPlaces": "no preference",
+    "edit": "Edit",
+    "votersTitle": "Who's in",
+    "votersCount": "{count, plural, one {# person} other {# people}}",
+    "title": "How it stands",
+    "datesSection": "Dates",
+    "placesSection": "Cottages",
+    "fraction": "{count}/{total}",
+    "leading": "leading",
+    "noVotes": "Nobody has voted yet. Be the first.",
+    "note": "Voting runs until the admin picks a date and a cottage. Then this page turns into the usual trip guide."
+  },
+  "dialog": {
+    "title": "Coming along?",
+    "close": "Close",
+    "stepWho": "Who you are",
+    "nameLabel": "Name",
+    "namePlaceholder": "Kate Smith",
+    "nameHint": "This is how the others will see you.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "kate@example.com",
+    "emailHint": "We'll send you a sign-in link here so you can see the results. No spam.",
+    "adultConfirm": "I'm at least 18 years old.",
+    "signedInAs": "Voting as {name}.",
+    "stepDates": "When you can",
+    "stepDatesHint": "pick every date that works for you",
+    "stepPlaces": "Where you'd like to go",
+    "stepPlacesHint": "feel free to pick several",
+    "unavailable": "only on {dates}",
+    "listing": "listing",
+    "submit": "Send my vote",
+    "submitting": "Sending…",
+    "accountNote": "We'll create an account for you so you can see the results and later your finances for the chata. By submitting you agree to the <terms>terms</terms> and <privacy>privacy policy</privacy>.",
+    "sentTitle": "Thanks, you're counted",
+    "sentBody": "Your vote is in. A sign-in link is on its way to <strong>{email}</strong>. Once you sign in you'll see who joined and how the vote stands.",
+    "sentBodyNoEmail": "Your vote is in, but the sign-in link failed to send. Please request one on the sign-in page.",
+    "savedTitle": "Vote saved",
+    "savedBody": "Thanks, the results reflect it right away.",
+    "resend": "Nothing arrived? Check spam, or vote again.",
+    "errors": {
+      "generic": "That didn't work. Please try again.",
+      "captcha": "The bot check failed. Please try again.",
+      "rate-limited": "Too many attempts. Wait a bit and try again.",
+      "name-required": "Tell us your name.",
+      "name-taken": "Someone here already has this name. If that's you, sign in with the email you used before.",
+      "no-dates": "Pick at least one date.",
+      "accommodation-unavailable": "One of the picked cottages isn't available on your dates.",
+      "planning-closed": "Voting has ended.",
+      "email-required": "Tell us your email.",
+      "adult-required": "Accounts are for adults. Please confirm you're at least 18."
+    }
+  }
+}

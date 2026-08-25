@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { ArrowLeft, BedDouble, Info, Moon, Sun, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, BedDouble, Info, Moon, Sun, Users, Vote, Wallet } from 'lucide-react'
 import { DynamicIcon } from './DynamicIcon'
 import type { AppTheme } from '../utils/useAppTheme'
 
@@ -9,11 +9,16 @@ interface HeaderProps {
   chataName: string
   location?: string
   bankerName?: string
-  currentView?: 'finance' | 'information' | 'organization' | 'participants'
-  onViewChange?: (view: 'finance' | 'information' | 'organization' | 'participants') => void
+  currentView?: 'finance' | 'information' | 'organization' | 'participants' | 'planning'
+  onViewChange?: (
+    view: 'finance' | 'information' | 'organization' | 'participants' | 'planning',
+  ) => void
+  showPlanningTab?: boolean
   showInformationTab?: boolean
   showOrganizationTab?: boolean
   showParticipantsTab?: boolean
+  /** hidden during the planning phase — there are no finances yet */
+  showFinanceTab?: boolean
   onSwitchChata?: () => void
   theme?: AppTheme
   onToggleTheme?: () => void
@@ -29,9 +34,11 @@ export function Header({
   bankerName,
   currentView = 'finance',
   onViewChange,
+  showPlanningTab = false,
   showInformationTab = false,
   showOrganizationTab = false,
   showParticipantsTab = false,
+  showFinanceTab = true,
   onSwitchChata,
   theme = 'light',
   onToggleTheme,
@@ -54,6 +61,12 @@ export function Header({
     label: string
   }> = [
     {
+      view: 'planning',
+      show: showPlanningTab,
+      icon: <Vote size={15} aria-hidden="true" />,
+      label: t('tabPlanning'),
+    },
+    {
       view: 'information',
       show: showInformationTab,
       icon: <Info size={15} aria-hidden="true" />,
@@ -67,7 +80,7 @@ export function Header({
     },
     {
       view: 'finance',
-      show: true,
+      show: showFinanceTab,
       icon: <Wallet size={15} aria-hidden="true" />,
       label: t('tabFinance'),
     },
