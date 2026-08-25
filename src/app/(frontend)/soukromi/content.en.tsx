@@ -1,5 +1,6 @@
 // English content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/privacy-policy.en.md (effective 2026-08-16). Edit wording
+// docs/legal/privacy-policy.en.md (version 2, effective 2026-08-25; the
+// version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale. The one
 // interactive element is the consent button in section 12.
 
@@ -11,6 +12,7 @@ import {
   Cookie,
   Database,
   Eye,
+  FileClock,
   Gavel,
   Globe,
   History,
@@ -36,7 +38,7 @@ export default function PrivacyContentEn() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Privacy policy"
-      lead="zicha.travel · Effective from 16 August 2026"
+      lead="zicha.travel · Effective from 25 August 2026 (version 2)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Who the controller is" icon={<UserCog size={20} />}>
@@ -611,9 +613,10 @@ export default function PrivacyContentEn() {
         <Section id="zmeny" title="16. Changes to this policy" icon={<History size={20} />}>
           <p>
             When the policy changes, we publish the new version with its effective date on this
-            page. We will announce substantial changes (a new data recipient, a new purpose, a
-            changed retention period) on the site as well, and email the people affected when
-            the processing expands substantially.
+            page; section 18 shows what changed between versions. We will announce substantial
+            changes (a new data recipient, a new purpose, a changed retention period) on the
+            site as well, and email the people affected when the processing expands
+            substantially.
           </p>
         </Section>
 
@@ -625,6 +628,37 @@ export default function PrivacyContentEn() {
             </a>
             .
           </p>
+        </Section>
+
+        <Section id="historie" title="18. Version history" icon={<FileClock size={20} />}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px] border-collapse">
+              <thead>
+                <tr className="text-left text-gray-500 border-b border-gray-200">
+                  <th className="py-2 pr-4 font-semibold">Version</th>
+                  <th className="py-2 pr-4 font-semibold">Effective</th>
+                  <th className="py-2 font-semibold">What changed</th>
+                </tr>
+              </thead>
+              <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">2</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">25 August 2026</td>
+                  <td className="py-2.5">
+                    Trip planning phase: the date and accommodation vote as a new data category,
+                    the option to join a trip through the vote form, and the related additions
+                    to sections 2, 3, 5, 6 and 9.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">1</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">16 August 2026</td>
+                  <td className="py-2.5">First published version.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>We will send the full text of an older version on request.</p>
         </Section>
       </div>
     </HelpShell>

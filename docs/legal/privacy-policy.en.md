@@ -2,7 +2,7 @@
 
 zicha.travel
 
-Effective from: 16 August 2026
+Effective from: 25 August 2026 (version 2)
 
 ## 1. Who the controller is
 
@@ -307,11 +307,21 @@ on.
 ## 16. Changes to this policy
 
 When the policy changes, we publish the new version with its effective date
-on this page. We will announce substantial changes (a new data recipient, a
-new purpose, a changed retention period) on the site as well, and email the
-people affected when the processing expands substantially.
+on this page; section 18 shows what changed between versions. We will
+announce substantial changes (a new data recipient, a new purpose, a
+changed retention period) on the site as well, and email the people
+affected when the processing expands substantially.
 
 ## 17. Contact
 
 Vojtěch Zicha,
 [mail@vojtechzicha.com](mailto:mail@vojtechzicha.com).
+
+## 18. Version history
+
+| Version | Effective | What changed |
+| --- | --- | --- |
+| 2 | 25 August 2026 | Trip planning phase: the date and accommodation vote as a new data category, the option to join a trip through the vote form, and the related additions to sections 2, 3, 5, 6 and 9. |
+| 1 | 16 August 2026 | First published version. |
+
+We will send the full text of an older version on request.

@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 16. 8. 2026
+Účinnost od: 25. 8. 2026 (verze 2)
 
 ## 1. Kdo je správce
 
@@ -296,11 +296,20 @@ funkce zapne.
 ## 16. Změny těchto zásad
 
 Když se zásady změní, zveřejníme novou verzi s datem účinnosti na této
-stránce. O podstatných změnách (nový příjemce údajů, nový účel, změna doby
-uchování) dáme vědět i na webu, u podstatného rozšíření zpracování e-mailem
-těm, kterých se týká.
+stránce; co se mezi verzemi změnilo, ukazuje kapitola 18. O podstatných
+změnách (nový příjemce údajů, nový účel, změna doby uchování) dáme vědět i
+na webu, u podstatného rozšíření zpracování e-mailem těm, kterých se týká.
 
 ## 17. Kontakt
 
 Vojtěch Zicha,
 [mail@vojtechzicha.com](mailto:mail@vojtechzicha.com).
+
+## 18. Historie verzí
+
+| Verze | Účinnost | Co se změnilo |
+| --- | --- | --- |
+| 2 | 25. 8. 2026 | Fáze plánování výletu: hlasování o termínu a ubytování jako nová kategorie údajů, možnost přidat se k výletu hlasovacím formulářem a s tím spojené doplnění kapitol 2, 3, 5, 6 a 9. |
+| 1 | 16. 8. 2026 | První zveřejněná verze. |
+
+Plné znění starší verze pošleme na vyžádání.

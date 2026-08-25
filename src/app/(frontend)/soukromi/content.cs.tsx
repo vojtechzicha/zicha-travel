@@ -1,5 +1,6 @@
 // Czech content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (effective 2026-08-16).
+// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 2, effective
+// 2026-08-25; the version history section tracks the changes).
 // Edit wording there first, then mirror it here; page.tsx only picks a
 // locale. The one interactive element is the consent button in section 12.
 
@@ -11,6 +12,7 @@ import {
   Cookie,
   Database,
   Eye,
+  FileClock,
   Gavel,
   Globe,
   History,
@@ -36,7 +38,7 @@ export default function PrivacyContentCs() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Zásady zpracování osobních údajů"
-      lead="Služba zicha.travel · Účinnost od 16. 8. 2026"
+      lead="Služba zicha.travel · Účinnost od 25. 8. 2026 (verze 2)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Kdo je správce" icon={<UserCog size={20} />}>
@@ -603,9 +605,10 @@ export default function PrivacyContentCs() {
 
         <Section id="zmeny" title="16. Změny těchto zásad" icon={<History size={20} />}>
           <p>
-            Když se zásady změní, zveřejníme novou verzi s datem účinnosti na této stránce. O
-            podstatných změnách (nový příjemce údajů, nový účel, změna doby uchování) dáme vědět
-            i na webu, u podstatného rozšíření zpracování e-mailem těm, kterých se týká.
+            Když se zásady změní, zveřejníme novou verzi s datem účinnosti na této stránce; co
+            se mezi verzemi změnilo, ukazuje kapitola 18. O podstatných změnách (nový příjemce
+            údajů, nový účel, změna doby uchování) dáme vědět i na webu, u podstatného rozšíření
+            zpracování e-mailem těm, kterých se týká.
           </p>
         </Section>
 
@@ -617,6 +620,37 @@ export default function PrivacyContentCs() {
             </a>
             .
           </p>
+        </Section>
+
+        <Section id="historie" title="18. Historie verzí" icon={<FileClock size={20} />}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px] border-collapse">
+              <thead>
+                <tr className="text-left text-gray-500 border-b border-gray-200">
+                  <th className="py-2 pr-4 font-semibold">Verze</th>
+                  <th className="py-2 pr-4 font-semibold">Účinnost</th>
+                  <th className="py-2 font-semibold">Co se změnilo</th>
+                </tr>
+              </thead>
+              <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">2</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">25. 8. 2026</td>
+                  <td className="py-2.5">
+                    Fáze plánování výletu: hlasování o termínu a ubytování jako nová kategorie
+                    údajů, možnost přidat se k výletu hlasovacím formulářem a s tím spojené
+                    doplnění kapitol 2, 3, 5, 6 a 9.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">1</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">16. 8. 2026</td>
+                  <td className="py-2.5">První zveřejněná verze.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Plné znění starší verze pošleme na vyžádání.</p>
         </Section>
       </div>
     </HelpShell>
