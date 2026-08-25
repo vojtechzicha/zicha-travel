@@ -1,5 +1,5 @@
-import type { CollectionConfig } from 'payload'
-import { chataScopedAccess } from '../lib/access'
+import { APIError, type CollectionConfig } from 'payload'
+import { canManageChata, chataScopedAccess, refId } from '../lib/access'
 
 // Candidate cottages of a chata in the planning phase ("Plánujeme" —
 // docs/PRD-planovani.md). Public read; an option can be limited to some of
@@ -24,6 +24,20 @@ export const TripAccommodationOptions: CollectionConfig = {
     create: chataScopedAccess,
     update: chataScopedAccess,
     delete: chataScopedAccess,
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, originalDoc, req }) => {
+        // The access Where scopes only STORED docs — the incoming chata
+        // must be manageable too, or a scoped admin could create (or move)
+        // an option into another chata
+        const chataRef = data?.chata ?? originalDoc?.chata
+        if (req.user && chataRef != null && !canManageChata(req.user, refId(chataRef))) {
+          throw new APIError('Forbidden', 403)
+        }
+        return data
+      },
+    ],
   },
   fields: [
     {

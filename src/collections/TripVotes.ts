@@ -1,7 +1,11 @@
 import crypto from 'crypto'
-import type { CollectionConfig, Where } from 'payload'
-import { isSuperadmin, refId } from '../lib/access'
-import { normalizeVoterName, validateVoteSelection } from '../lib/planning'
+import { APIError, type CollectionConfig, type Where } from 'payload'
+import { canManageChata, chataScopedAccess, isSuperadmin, refId } from '../lib/access'
+import {
+  normalizeVoterName,
+  planningVoteReturnTo,
+  validateVoteSelection,
+} from '../lib/planning'
 import { requestOrigin, sendMagicLink, sendSuperadminNotice } from '../lib/auth/magicLink'
 import { isOAuthConfigured } from '../lib/auth/config'
 import { clientIp, verifyTurnstileToken } from '../lib/turnstile'
@@ -62,9 +66,12 @@ export const TripVotes: CollectionConfig = {
       const ownWhere: Where = { participant: { in: own.docs.map((p) => p.id) } }
       return ownWhere
     },
-    create: ({ req: { user } }) => isSuperadmin(user) || user?.role === 'admin',
-    update: ({ req: { user } }) => isSuperadmin(user) || user?.role === 'admin',
-    delete: ({ req: { user } }) => isSuperadmin(user) || user?.role === 'admin',
+    // Admin writes are chata-scoped like the other chata-owned collections
+    // (the Where matches the denormalized chata field); the public flow
+    // goes through the submit endpoint below (overrideAccess)
+    create: chataScopedAccess,
+    update: chataScopedAccess,
+    delete: chataScopedAccess,
   },
   hooks: {
     beforeChange: [
@@ -84,6 +91,13 @@ export const TripVotes: CollectionConfig = {
             // participant gone — leave data as-is
           }
         }
+        // The access Where can only scope by the STORED chata; the chata
+        // just derived from the incoming participant must be manageable
+        // too, or a scoped admin could write into another chata by picking
+        // its participant. (The submit endpoint writes without req.user.)
+        if (req.user && data?.chata != null && !canManageChata(req.user, data.chata)) {
+          throw new APIError('Forbidden', 403)
+        }
         return data
       },
     ],
@@ -91,10 +105,12 @@ export const TripVotes: CollectionConfig = {
   endpoints: [
     {
       // The public vote ("Chci jet"). Signed-in callers vote as their linked
-      // participant (or get one created); anonymous callers leave a name and
-      // email — the account is created like claim registration (Turnstile,
-      // rate limits, magic link whose click doubles as verification), the
-      // participant is created linked to it, and the vote is recorded.
+      // participant (or get one created) and the vote lands immediately.
+      // Anonymous callers leave a name and email — the account is created
+      // like claim registration (Turnstile, rate limits), but NOTHING else
+      // is recorded until the magic-link click verifies the email: the
+      // selection rides the link's returnTo and the signed-in auto-submit
+      // on the planning page records it.
       path: '/submit',
       method: 'post',
       handler: async (req) => {
@@ -156,55 +172,6 @@ export const TripVotes: CollectionConfig = {
           return Response.json({ error: selectionError }, { status: 400 })
         }
 
-        // ── who is voting ──
-        // Resolve the EXISTING account first and create nothing until the
-        // participant name is known to be free — a refused vote must not
-        // leave an orphaned account behind
-        let user = req.user
-        let emailSent = false
-        if (!user) {
-          const email = body.email
-          if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-            return Response.json({ error: 'A valid email is required' }, { status: 400 })
-          }
-          // Accounts are adults-only (terms section 4) — affirmed client-side
-          // and enforced here, like claim registration
-          if (body.adult !== true) {
-            return Response.json({ error: 'adult-confirmation-required' }, { status: 400 })
-          }
-          // Throttle + bot gate: this endpoint creates accounts and sends
-          // email to a caller-supplied address (compliance blocker 9)
-          const ip = clientIp(req.headers)
-          const ipCheck = checkRateLimit(`planning-vote:ip:${ip}`, RATE_LIMITS.claimPerIp)
-          if (!ipCheck.allowed) return rateLimitResponse(ipCheck)
-          const emailCheck = checkRateLimit(
-            `magic-link:email:${email.trim().toLowerCase()}`,
-            RATE_LIMITS.magicLinkPerEmail,
-          )
-          if (!emailCheck.allowed) return rateLimitResponse(emailCheck)
-          if (!(await verifyTurnstileToken(body.turnstileToken, ip))) {
-            return Response.json({ error: 'captcha' }, { status: 403 })
-          }
-
-          const normalizedEmail = email.trim().toLowerCase()
-          const existing = await req.payload.find({
-            collection: 'users',
-            where: { email: { equals: normalizedEmail } },
-            limit: 1,
-            depth: 0,
-            overrideAccess: true,
-          })
-          user = existing.docs[0] ?? null
-          if (user && isSuperadmin(user)) {
-            // Superadmins never magic-link; the generic success keeps the
-            // form from probing for accounts. No vote is recorded — they
-            // sign in with OAuth and vote from the results view.
-            await sendSuperadminNotice(req.payload, user)
-            return Response.json({ ok: true, emailSent: true })
-          }
-        }
-
-        // ── which participant ──
         const chataParticipants = await req.payload.find({
           collection: 'participants',
           where: { chata: { equals: chataId } },
@@ -212,30 +179,137 @@ export const TripVotes: CollectionConfig = {
           depth: 0,
           overrideAccess: true,
         })
-        const existingUserId = user != null ? String(user.id) : null
-        let voter =
-          existingUserId != null
-            ? chataParticipants.docs.find(
-                (p) => p.account != null && refId(p.account) === existingUserId,
-              )
-            : undefined
-        let newVoterName: string | null = null
-        if (!voter) {
-          newVoterName = normalizeVoterName(body.name)
-          if (!newVoterName) {
-            return Response.json({ error: 'name-required' }, { status: 400 })
-          }
-          // Never silently take over an existing participant by name —
-          // linking identities is the claim flow's job
-          const clash = chataParticipants.docs.some(
-            (p) => p.name.trim().toLowerCase() === newVoterName!.toLowerCase(),
+
+        // ── signed-in: record the vote right away ──
+        if (req.user) {
+          const user = req.user
+          let voter = chataParticipants.docs.find(
+            (p) => p.account != null && refId(p.account) === String(user.id),
           )
-          if (clash) {
-            return Response.json({ error: 'name-taken' }, { status: 409 })
+          if (!voter) {
+            const name = normalizeVoterName(body.name)
+            if (!name) {
+              return Response.json({ error: 'name-required' }, { status: 400 })
+            }
+            // Never silently take over an existing participant by name —
+            // linking identities is the claim flow's job
+            const clash = chataParticipants.docs.some(
+              (p) => p.name.trim().toLowerCase() === name.toLowerCase(),
+            )
+            if (clash) {
+              return Response.json({ error: 'name-taken' }, { status: 409 })
+            }
+            voter = await req.payload.create({
+              collection: 'participants',
+              data: {
+                name,
+                chata: chataId,
+                account: user.id,
+              },
+              overrideAccess: true,
+              depth: 0,
+            })
           }
+
+          const existingVote = await req.payload.find({
+            collection: 'trip-votes',
+            where: { participant: { equals: voter.id } },
+            limit: 1,
+            depth: 0,
+            overrideAccess: true,
+          })
+          const voteData = {
+            chata: chataId,
+            participant: voter.id,
+            dates: dateOptionIds,
+            accommodations: accommodationOptionIds,
+          }
+          if (existingVote.docs.length > 0) {
+            await req.payload.update({
+              collection: 'trip-votes',
+              id: existingVote.docs[0].id,
+              data: voteData,
+              overrideAccess: true,
+              depth: 0,
+            })
+          } else {
+            await req.payload.create({
+              collection: 'trip-votes',
+              data: voteData,
+              overrideAccess: true,
+              depth: 0,
+            })
+          }
+          return Response.json({ ok: true, emailSent: false })
         }
+
+        // ── anonymous: defer everything to the magic-link click ──
+        // Knowing an email address proves nothing, so an unauthenticated
+        // submission must not touch any existing participant's vote (or
+        // create one in somebody's name). The server records NOTHING here:
+        // the selection rides the magic-link returnTo as intent params, and
+        // the click — which IS the verification — lands back on the
+        // planning page, where the signed-in auto-submit records the vote
+        // through the branch above.
+        const email = body.email
+        if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+          return Response.json({ error: 'A valid email is required' }, { status: 400 })
+        }
+        // Accounts are adults-only (terms section 4) — affirmed client-side
+        // and enforced here, like claim registration
+        if (body.adult !== true) {
+          return Response.json({ error: 'adult-confirmation-required' }, { status: 400 })
+        }
+        // Throttle + bot gate: this endpoint creates accounts and sends
+        // email to a caller-supplied address (compliance blocker 9)
+        const ip = clientIp(req.headers)
+        const ipCheck = checkRateLimit(`planning-vote:ip:${ip}`, RATE_LIMITS.claimPerIp)
+        if (!ipCheck.allowed) return rateLimitResponse(ipCheck)
+        const emailCheck = checkRateLimit(
+          `magic-link:email:${email.trim().toLowerCase()}`,
+          RATE_LIMITS.magicLinkPerEmail,
+        )
+        if (!emailCheck.allowed) return rateLimitResponse(emailCheck)
+        if (!(await verifyTurnstileToken(body.turnstileToken, ip))) {
+          return Response.json({ error: 'captcha' }, { status: 403 })
+        }
+
+        const name = normalizeVoterName(body.name)
+        if (!name) {
+          return Response.json({ error: 'name-required' }, { status: 400 })
+        }
+
+        const normalizedEmail = email.trim().toLowerCase()
+        const existing = await req.payload.find({
+          collection: 'users',
+          where: { email: { equals: normalizedEmail } },
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
+        })
+        let user = existing.docs[0] ?? null
+        if (user && isSuperadmin(user)) {
+          // Superadmins never magic-link; the generic success keeps the
+          // form from probing for accounts — they sign in with OAuth and
+          // vote from the results view.
+          await sendSuperadminNotice(req.payload, user)
+          return Response.json({ ok: true, emailSent: true })
+        }
+
+        // A name clash with somebody else's participant is refused up
+        // front (participant names are public data, so this reveals
+        // nothing); a clash with a participant linked to THIS email's own
+        // account is that person re-voting and passes through.
+        const clash = chataParticipants.docs.some(
+          (p) =>
+            p.name.trim().toLowerCase() === name.toLowerCase() &&
+            !(user != null && p.account != null && refId(p.account) === String(user.id)),
+        )
+        if (clash) {
+          return Response.json({ error: 'name-taken' }, { status: 409 })
+        }
+
         if (!user) {
-          const normalizedEmail = (body.email as string).trim().toLowerCase()
           user = await req.payload.create({
             collection: 'users',
             data: {
@@ -248,66 +322,26 @@ export const TripVotes: CollectionConfig = {
             overrideAccess: true,
           })
         }
-        if (!voter) {
-          voter = await req.payload.create({
-            collection: 'participants',
-            data: {
-              name: newVoterName!,
-              chata: chataId,
-              account: user.id,
-            },
-            overrideAccess: true,
-            depth: 0,
+
+        // The click lands back on the planning page with the intent params,
+        // where the signed-in auto-submit records the vote
+        const returnTo = planningVoteReturnTo(
+          typeof body.returnTo === 'string' && body.returnTo ? body.returnTo : '/',
+          { name, dateOptionIds, accommodationOptionIds },
+        )
+        try {
+          await sendMagicLink(req.payload, user, {
+            origin: requestOrigin(req.headers),
+            returnTo,
           })
+        } catch (err) {
+          // Nothing was recorded, so a failed send is an honest failure —
+          // the voter can simply try again
+          req.payload.logger.error({ err }, 'Failed to send planning-vote magic link')
+          return Response.json({ error: 'Failed to send email' }, { status: 500 })
         }
 
-        // ── record (or update) the vote ──
-        const existingVote = await req.payload.find({
-          collection: 'trip-votes',
-          where: { participant: { equals: voter.id } },
-          limit: 1,
-          depth: 0,
-          overrideAccess: true,
-        })
-        const voteData = {
-          chata: chataId,
-          participant: voter.id,
-          dates: dateOptionIds,
-          accommodations: accommodationOptionIds,
-        }
-        if (existingVote.docs.length > 0) {
-          await req.payload.update({
-            collection: 'trip-votes',
-            id: existingVote.docs[0].id,
-            data: voteData,
-            overrideAccess: true,
-            depth: 0,
-          })
-        } else {
-          await req.payload.create({
-            collection: 'trip-votes',
-            data: voteData,
-            overrideAccess: true,
-            depth: 0,
-          })
-        }
-
-        // ── magic link for the anonymous flow (login = seeing results) ──
-        if (!req.user) {
-          try {
-            await sendMagicLink(req.payload, user, {
-              origin: requestOrigin(req.headers),
-              returnTo: typeof body.returnTo === 'string' ? body.returnTo : null,
-            })
-            emailSent = true
-          } catch (err) {
-            req.payload.logger.error({ err }, 'Failed to send planning-vote magic link')
-            // The vote IS recorded — report it, with emailSent false so the
-            // UI can suggest requesting a login link later
-          }
-        }
-
-        return Response.json({ ok: true, emailSent })
+        return Response.json({ ok: true, emailSent: true })
       },
     },
   ],

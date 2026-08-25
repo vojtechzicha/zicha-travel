@@ -202,3 +202,61 @@ export function normalizeVoterName(value: unknown): string | null {
   if (trimmed.length === 0 || trimmed.length > 100) return null
   return trimmed
 }
+
+// ---------------------------------------------------------------------------
+// Deferred anonymous votes. An unauthenticated submission proves nothing
+// about who owns the email, so the server records NOTHING for it — the
+// selection rides the magic-link returnTo as intent params (the same trick
+// the claim flow plays with ?claim=), and the click, which IS the
+// verification, lands back on the planning page where the signed-in
+// auto-submit records the vote. The params carry the voter's own input
+// back to them; they are scrubbed from analytics URLs (lib/analytics.ts).
+
+export const PLANNING_INTENT_PARAMS = ['pv_d', 'pv_a', 'pv_n'] as const
+
+export interface PlanningVoteIntent {
+  name: string | null
+  dateOptionIds: number[]
+  accommodationOptionIds: number[]
+}
+
+/** basePath + the vote intent as query params ("/pratele?pv_d=1,2&…"). */
+export function planningVoteReturnTo(basePath: string, intent: PlanningVoteIntent): string {
+  const [path, query = ''] = basePath.split('?')
+  const params = new URLSearchParams(query)
+  params.set('pv_d', intent.dateOptionIds.join(','))
+  if (intent.accommodationOptionIds.length > 0) {
+    params.set('pv_a', intent.accommodationOptionIds.join(','))
+  } else {
+    params.delete('pv_a')
+  }
+  if (intent.name) params.set('pv_n', intent.name)
+  else params.delete('pv_n')
+  return `${path}?${params.toString()}`
+}
+
+function parseIdList(value: string | null): number[] | null {
+  if (value == null || value === '') return []
+  const ids: number[] = []
+  for (const part of value.split(',')) {
+    const id = Number(part)
+    if (!Number.isInteger(id) || id <= 0) return null
+    ids.push(id)
+  }
+  return [...new Set(ids)]
+}
+
+/** null when the URL carries no (valid) vote intent. */
+export function parsePlanningVoteIntent(params: URLSearchParams): PlanningVoteIntent | null {
+  if (!params.has('pv_d')) return null
+  const dateOptionIds = parseIdList(params.get('pv_d'))
+  const accommodationOptionIds = parseIdList(params.get('pv_a'))
+  if (dateOptionIds == null || dateOptionIds.length === 0 || accommodationOptionIds == null) {
+    return null
+  }
+  return {
+    name: normalizeVoterName(params.get('pv_n')),
+    dateOptionIds,
+    accommodationOptionIds,
+  }
+}

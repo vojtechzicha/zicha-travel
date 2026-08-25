@@ -193,10 +193,13 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      `Chata.planningEnabled` is on, the frontend shows ONLY the
      `PlanningView` poll — candidate date windows, candidate cottages
      (optionally limited to some windows; empty `dateOptions` = all), and
-     a vote form. Voting creates the account (magic link, Turnstile, rate
-     limits — same posture as claim registration) AND the participant, so
-     the group carries over when the admin books the trip and unticks the
-     flag
+     a vote form. Anonymous voting creates the account (magic link,
+     Turnstile, rate limits — same posture as claim registration) but
+     records NO participant and NO vote until the magic-link click verifies
+     the email: the selection rides the link's returnTo as `pv_*` intent
+     params and the signed-in auto-submit in PlanningView records it. The
+     group so assembled carries over when the admin books the trip and
+     unticks the flag
    - `POST /api/trip-votes/submit` upserts one vote per participant;
      name collisions refuse with `name-taken` (identity linking stays the
      claim flow's job). Options are public read; votes are NOT (admins +

@@ -22,6 +22,8 @@ interface PlanningVoteFlowProps {
   /** signed-in viewer's linked participant name; null = ask for name */
   viewerName: string | null
   authenticated: boolean
+  /** prefill for the name field (a failed auto-submitted vote intent) */
+  initialName?: string | null
   initialDateIds: number[]
   initialAccommodationIds: number[]
   onClose: () => void
@@ -36,6 +38,7 @@ export function PlanningVoteFlow({
   planning,
   viewerName,
   authenticated,
+  initialName = null,
   initialDateIds,
   initialAccommodationIds,
   onClose,
@@ -44,7 +47,7 @@ export function PlanningVoteFlow({
   const t = useTranslations('planning')
   const { theme } = useAppTheme()
 
-  const [name, setName] = useState('')
+  const [name, setName] = useState(initialName ?? '')
   const [email, setEmail] = useState('')
   const [adultConfirmed, setAdultConfirmed] = useState(false)
   const [selectedDates, setSelectedDates] = useState<number[]>(initialDateIds)

@@ -8,7 +8,7 @@
 // chata admins and viewers with a linked participant here see who joined
 // and the tallies instead.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   BarChart3,
   CalendarRange,
@@ -25,12 +25,16 @@ import { nightsLabel } from '@/lib/chataSelection'
 import {
   accommodationAvailableFor,
   canSeePlanningResults,
+  parsePlanningVoteIntent,
   planningMonthsLabel,
   tallyVotes,
+  PLANNING_INTENT_PARAMS,
   type PlanningAccommodationOption,
   type PlanningPayload,
   type PlanningTallyRow,
+  type PlanningVoteIntent,
 } from '@/lib/planning'
+import { track } from '@/lib/analytics'
 import {
   AccentCard,
   HintCard,
@@ -75,6 +79,59 @@ export function PlanningView({
   const t = useTranslations('planning')
   const locale = useLocale() as AppLocale
   const [dialogOpen, setDialogOpen] = useState(false)
+  // A vote intent that failed to auto-submit (below) prefills the dialog
+  const [fallbackIntent, setFallbackIntent] = useState<PlanningVoteIntent | null>(null)
+  const autoSubmitted = useRef(false)
+
+  // Deferred anonymous vote: the magic-link click lands here with the
+  // selection in pv_* params (docs/PRD-planovani.md) — now that the viewer
+  // is verified and signed in, record it through the authenticated path.
+  // On failure (name taken meanwhile, options changed) the dialog opens
+  // prefilled so the voter can finish by hand.
+  useEffect(() => {
+    if (autoSubmitted.current || !viewer.authenticated) return
+    const url = new URL(window.location.href)
+    const intent = parsePlanningVoteIntent(url.searchParams)
+    if (!intent) return
+    autoSubmitted.current = true
+    for (const param of PLANNING_INTENT_PARAMS) url.searchParams.delete(param)
+    window.history.replaceState({}, '', url)
+    const submitIntent = async () => {
+      try {
+        const res = await fetch('/api/trip-votes/submit', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chataId: chata.id,
+            dateOptionIds: intent.dateOptionIds,
+            accommodationOptionIds: intent.accommodationOptionIds,
+            ...(intent.name ? { name: intent.name } : {}),
+          }),
+        })
+        if (res.ok) {
+          track('planning_vote_submitted', {
+            signed_in: true,
+            dates: intent.dateOptionIds.length,
+            places: intent.accommodationOptionIds.length,
+          })
+          await onDataChanged()
+          return
+        }
+        const data = await res.json().catch(() => null)
+        track('save_failed', {
+          operation: 'planning_vote_intent',
+          status: res.status,
+          code: data?.error,
+        })
+      } catch {
+        // fall through to the manual dialog
+      }
+      setFallbackIntent(intent)
+      setDialogOpen(true)
+    }
+    void submitIntent()
+  }, [viewer.authenticated, chata.id, onDataChanged])
 
   const canSeeResults = canSeePlanningResults(viewer)
   const votes = useMemo(() => planning.votes ?? [], [planning.votes])
@@ -475,8 +532,11 @@ export function PlanningView({
           planning={planning}
           viewerName={myParticipant?.name ?? null}
           authenticated={viewer.authenticated}
-          initialDateIds={viewerVote?.dateOptionIds ?? []}
-          initialAccommodationIds={viewerVote?.accommodationOptionIds ?? []}
+          initialName={fallbackIntent?.name ?? null}
+          initialDateIds={viewerVote?.dateOptionIds ?? fallbackIntent?.dateOptionIds ?? []}
+          initialAccommodationIds={
+            viewerVote?.accommodationOptionIds ?? fallbackIntent?.accommodationOptionIds ?? []
+          }
           onClose={() => setDialogOpen(false)}
           onVoted={onDataChanged}
         />

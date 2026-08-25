@@ -1,5 +1,5 @@
-import type { CollectionConfig } from 'payload'
-import { chataScopedAccess } from '../lib/access'
+import { APIError, type CollectionConfig } from 'payload'
+import { canManageChata, chataScopedAccess, refId } from '../lib/access'
 
 /**
  * Czech admin label from the window dates: "16.–18. 10. 2026", or
@@ -42,7 +42,14 @@ export const TripDateOptions: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ data }) => {
+      ({ data, originalDoc, req }) => {
+        // The access Where scopes only STORED docs — the incoming chata
+        // must be manageable too, or a scoped admin could create (or move)
+        // an option into another chata
+        const chataRef = data?.chata ?? originalDoc?.chata
+        if (req.user && chataRef != null && !canManageChata(req.user, refId(chataRef))) {
+          throw new APIError('Forbidden', 403)
+        }
         // Auto-label from the dates so the list view and the vote rows are
         // readable without opening each row
         if (data && !data.label?.trim() && data.dateFrom && data.dateTo) {

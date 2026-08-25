@@ -3,6 +3,8 @@ import {
   accommodationAvailableFor,
   canSeePlanningResults,
   normalizeVoterName,
+  parsePlanningVoteIntent,
+  planningVoteReturnTo,
   tallyVotes,
   validateVoteSelection,
   type PlanningVote,
@@ -149,6 +151,59 @@ describe('normalizeVoterName', () => {
     expect(normalizeVoterName('   ')).toBeNull()
     expect(normalizeVoterName(42)).toBeNull()
     expect(normalizeVoterName('x'.repeat(101))).toBeNull()
+  })
+})
+
+describe('planning vote intent (deferred anonymous votes)', () => {
+  it('round-trips through the magic-link returnTo', () => {
+    const returnTo = planningVoteReturnTo('/pratele', {
+      name: 'Katka Nováková',
+      dateOptionIds: [1, 2],
+      accommodationOptionIds: [10],
+    })
+    const [path, query] = returnTo.split('?')
+    expect(path).toBe('/pratele')
+    const intent = parsePlanningVoteIntent(new URLSearchParams(query))
+    expect(intent).toEqual({
+      name: 'Katka Nováková',
+      dateOptionIds: [1, 2],
+      accommodationOptionIds: [10],
+    })
+  })
+
+  it('keeps existing query params and drops empty parts', () => {
+    const returnTo = planningVoteReturnTo('/pratele?view=planning', {
+      name: null,
+      dateOptionIds: [2],
+      accommodationOptionIds: [],
+    })
+    const params = new URLSearchParams(returnTo.split('?')[1])
+    expect(params.get('view')).toBe('planning')
+    expect(params.has('pv_a')).toBe(false)
+    expect(params.has('pv_n')).toBe(false)
+    expect(parsePlanningVoteIntent(params)).toEqual({
+      name: null,
+      dateOptionIds: [2],
+      accommodationOptionIds: [],
+    })
+  })
+
+  it('rejects URLs without an intent or with mangled ids', () => {
+    expect(parsePlanningVoteIntent(new URLSearchParams('view=planning'))).toBeNull()
+    expect(parsePlanningVoteIntent(new URLSearchParams('pv_d='))).toBeNull()
+    expect(parsePlanningVoteIntent(new URLSearchParams('pv_d=1,abc'))).toBeNull()
+    expect(parsePlanningVoteIntent(new URLSearchParams('pv_d=1&pv_a=zero'))).toBeNull()
+  })
+
+  it('dedupes repeated ids and normalizes the name', () => {
+    const intent = parsePlanningVoteIntent(
+      new URLSearchParams('pv_d=1,1,2&pv_a=10,10&pv_n=++Katka++Nov%C3%A1kov%C3%A1'),
+    )
+    expect(intent).toEqual({
+      name: 'Katka Nováková',
+      dateOptionIds: [1, 2],
+      accommodationOptionIds: [10],
+    })
   })
 })
 

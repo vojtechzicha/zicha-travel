@@ -51,7 +51,7 @@ export type AnalyticsRole = 'anonymous' | 'user' | 'admin' | 'superadmin'
 /** Query params that identify a person or carry secrets — never transmitted.
  *  `participant` is subtle but critical: the PUBLIC read API resolves a
  *  participant id to a real name, so the id itself is a direct identifier. */
-const FORBIDDEN_PARAMS = ['participant', 'claim', 'token', 'returnTo']
+const FORBIDDEN_PARAMS = ['participant', 'claim', 'token', 'returnTo', 'pv_d', 'pv_a', 'pv_n']
 
 /** Prop keys that must never appear on an event (defense in depth). */
 const FORBIDDEN_PROP_KEYS = new Set([

@@ -93,26 +93,39 @@ Validation (pure rules in `src/lib/planning.ts`, unit-tested):
 
 Signed-in caller: their linked participant in the chata is the voter; when
 they have none, `name` is required and a new participant is created with
-`account` set to them. No captcha.
+`account` set to them. No captcha. The vote is recorded (or updated)
+immediately — re-votes from the results view go through this path.
 
 Anonymous caller: `name`, `email` and the adults-only `adult` affirmation
 are required; Turnstile + the claim-registration rate limits apply (the
 endpoint can create accounts and send email — same posture as
-`POST /api/claim-requests/register`). The account is created (or quietly
-reused) exactly like claim registration — never revealing whether the
-email already existed, superadmin addresses get the explanatory notice
-instead — the participant is created linked to it, and a magic link is
-sent whose click is both the email verification and the first login. The
-response never distinguishes new/existing accounts.
+`POST /api/claim-requests/register`). Knowing an email address proves
+nothing, so **an unauthenticated submission never writes a participant or
+a vote** — otherwise anyone who knows a voter's email could overwrite
+their vote. The account is created (or quietly reused) exactly like claim
+registration — never revealing whether the email already existed,
+superadmin addresses get the explanatory notice instead — and the magic
+link is sent with the SELECTION riding its returnTo as intent params
+(`pv_d`, `pv_a`, `pv_n` — the `?claim=` trick; `planningVoteReturnTo` /
+`parsePlanningVoteIntent` in `src/lib/planning.ts`, params scrubbed from
+analytics URLs). The click is the verification AND the first login; it
+lands back on the planning page, where the signed-in auto-submit in
+`PlanningView` records the vote through the authenticated path (falling
+back to the prefilled dialog when it refuses, e.g. the name was taken
+meanwhile). Only verified voters therefore ever appear in `voteCount` or
+the results.
 
 Name collision: a participant with the same (case-insensitive) name that
-is NOT linked to the caller's account refuses with `name-taken` — silently
-linking to an existing participant is the claim flow's job, not the vote
-form's.
+is NOT linked to the caller's (or the email's) account refuses with
+`name-taken` — silently linking to an existing participant is the claim
+flow's job, not the vote form's. Participant names are public data, so
+the refusal reveals nothing about accounts.
 
-Re-vote: the endpoint finds the participant's existing vote and updates it
-(signed-in re-votes from the results view; an anonymous re-submit with the
-same email lands on the same account → same participant → same vote row).
+Admin writes on `trip-votes` (and the two option collections) are
+chata-scoped like every chata-owned collection, and a beforeChange guard
+additionally checks the admin may manage the chata derived from the
+INCOMING participant/chata, so a scoped admin cannot write into another
+chata by picking its participant.
 
 ## Results visibility
 
