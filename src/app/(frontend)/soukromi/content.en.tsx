@@ -1,5 +1,6 @@
 // English content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/privacy-policy.en.md (effective 2026-08-16). Edit wording
+// docs/legal/privacy-policy.en.md (version 2, effective 2026-08-25; the
+// version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale. The one
 // interactive element is the consent button in section 12.
 
@@ -11,6 +12,7 @@ import {
   Cookie,
   Database,
   Eye,
+  FileClock,
   Gavel,
   Globe,
   History,
@@ -36,7 +38,7 @@ export default function PrivacyContentEn() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Privacy policy"
-      lead="zicha.travel · Effective from 16 August 2026"
+      lead="zicha.travel · Effective from 25 August 2026 (version 2)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Who the controller is" icon={<UserCog size={20} />}>
@@ -64,6 +66,8 @@ export default function PrivacyContentEn() {
             zicha.travel is a private, free app for groups of friends and families who travel to
             chatas together and want to split shared expenses fairly. It is not a public
             service: a chata is created by its admin, who enters the participants personally.
+            The planning phase is the one exception: while the group is voting on the date and
+            the place, you can join the trip yourself through the vote form.
           </p>
           <p>We process data about four groups of people:</p>
           <List
@@ -75,8 +79,8 @@ export default function PrivacyContentEn() {
               </>,
               <>
                 <strong>signed-in users</strong>, people with an account (participants who had
-                an account created for them, or who claimed their name through &ldquo;That&rsquo;s
-                me&rdquo;),
+                an account created for them, who claimed their name through &ldquo;That&rsquo;s
+                me&rdquo;, or who joined by voting while the trip was being planned),
               </>,
               <>
                 <strong>chata admins</strong> and site administrators,
@@ -95,7 +99,9 @@ export default function PrivacyContentEn() {
             they bring a pet, the &ldquo;someone else pays for them&rdquo; link (typically a
             parent paying for a child), room and bed assignment, seat in a car or on public
             transport, expense shares, advances and refunds, joint account membership, and the
-            resulting settlement (who owes whom how much).
+            resulting settlement (who owes whom how much). When the trip was put to a vote,
+            this also includes the vote: which dates work for the participant and which places
+            they like.
           </p>
           <p>
             <strong>About signed-in users, in addition:</strong> the account email, last login
@@ -177,7 +183,8 @@ export default function PrivacyContentEn() {
             record.
           </p>
           <p>
-            Data about signed-in users comes from the users themselves, or from their
+            Data about signed-in users, and about participants who joined by voting while the
+            trip was being planned, comes from those people themselves, or from their
             Microsoft, Google or Apple account when they sign in with one of them.
           </p>
         </Section>
@@ -203,7 +210,9 @@ export default function PrivacyContentEn() {
           <p>
             Without signing in, a visitor can never see: anyone&rsquo;s bank details except the
             banker&rsquo;s, receipts, email addresses, the &ldquo;Keys and Wi-Fi&rdquo; section,
-            or expenses waiting for confirmation. A participant&rsquo;s bank details are visible
+            expenses waiting for confirmation, or planning votes (who joined and what suits
+            them); votes are visible only to the chata&rsquo;s signed-in participants and its
+            admins. A participant&rsquo;s bank details are visible
             only to that participant (through their account), the signed-in banker and the
             admins of that chata; the banker&rsquo;s bank details are public because the
             anonymous QR settlement cannot work without them (the banker takes that on with the
@@ -337,6 +346,10 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">claim requests, including rejection reasons</td>
                   <td className="py-2.5">deleted within 12 months of the decision</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">planning votes</td>
+                  <td className="py-2.5">part of the trip record, for as long as the service runs</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">login links (tokens)</td>
@@ -600,9 +613,10 @@ export default function PrivacyContentEn() {
         <Section id="zmeny" title="16. Changes to this policy" icon={<History size={20} />}>
           <p>
             When the policy changes, we publish the new version with its effective date on this
-            page. We will announce substantial changes (a new data recipient, a new purpose, a
-            changed retention period) on the site as well, and email the people affected when
-            the processing expands substantially.
+            page; section 18 shows what changed between versions. We will announce substantial
+            changes (a new data recipient, a new purpose, a changed retention period) on the
+            site as well, and email the people affected when the processing expands
+            substantially.
           </p>
         </Section>
 
@@ -614,6 +628,37 @@ export default function PrivacyContentEn() {
             </a>
             .
           </p>
+        </Section>
+
+        <Section id="historie" title="18. Version history" icon={<FileClock size={20} />}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px] border-collapse">
+              <thead>
+                <tr className="text-left text-gray-500 border-b border-gray-200">
+                  <th className="py-2 pr-4 font-semibold">Version</th>
+                  <th className="py-2 pr-4 font-semibold">Effective</th>
+                  <th className="py-2 font-semibold">What changed</th>
+                </tr>
+              </thead>
+              <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">2</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">25 August 2026</td>
+                  <td className="py-2.5">
+                    Trip planning phase: the date and accommodation vote as a new data category,
+                    the option to join a trip through the vote form, and the related additions
+                    to sections 2, 3, 5, 6 and 9.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">1</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">16 August 2026</td>
+                  <td className="py-2.5">First published version.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>We will send the full text of an older version on request.</p>
         </Section>
       </div>
     </HelpShell>

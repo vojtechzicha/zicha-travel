@@ -1,11 +1,13 @@
 // English content of /podminky: the terms of use, transcribed from
-// docs/legal/terms-of-use.en.md (effective 2026-08-16). Edit wording
+// docs/legal/terms-of-use.en.md (version 2, effective 2026-08-25; the
+// version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale.
 
 import {
   BookOpen,
   Calculator,
   Eye,
+  FileClock,
   History,
   Info,
   KeyRound,
@@ -28,7 +30,7 @@ export default function TermsContentEn() {
       isHub
       icon={<ScrollText size={44} className="text-primary-light" />}
       title="Terms of use"
-      lead="zicha.travel · Effective from 16 August 2026"
+      lead="zicha.travel · Effective from 25 August 2026 (version 2)"
     >
       <div className="flex flex-col gap-6">
         <Section
@@ -99,9 +101,10 @@ export default function TermsContentEn() {
 
         <Section id="ucty" title="4. Accounts" icon={<KeyRound size={20} />}>
           <p>
-            An account is created for you by a chata admin, or through &ldquo;That&rsquo;s
-            me&rdquo; (a claim request linking you to a participant name) or &ldquo;I&rsquo;m
-            new here&rdquo;. Sign-in uses a one-time link sent by email, or Microsoft, Google or
+            An account is created for you by a chata admin, through &ldquo;That&rsquo;s
+            me&rdquo; (a claim request linking you to a participant name), through &ldquo;I&rsquo;m
+            new here&rdquo;, or by voting while a trip is being planned. Sign-in uses a
+            one-time link sent by email, or Microsoft, Google or
             Apple; there is no password with us, so protect your mailbox: whoever controls it
             controls your account.
           </p>
@@ -249,10 +252,10 @@ export default function TermsContentEn() {
         <Section id="zmeny" title="11. Changes to these terms" icon={<History size={20} />}>
           <p>
             We may change these terms, for example when a feature is added or the law requires
-            it. We publish the new version on the site with its effective date; we announce
-            substantial changes to users in advance, by email or on the site. If you do not
-            agree with the new version, you can cancel your account; continued use after the
-            effective date means acceptance.
+            it. We publish the new version on the site with its effective date; section 14
+            shows what changed between versions. We announce substantial changes to users in
+            advance, by email or on the site. If you do not agree with the new version, you can
+            cancel your account; continued use after the effective date means acceptance.
           </p>
         </Section>
 
@@ -282,6 +285,36 @@ export default function TermsContentEn() {
             </a>
             .
           </p>
+        </Section>
+
+        <Section id="historie" title="14. Version history" icon={<FileClock size={20} />}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px] border-collapse">
+              <thead>
+                <tr className="text-left text-gray-500 border-b border-gray-200">
+                  <th className="py-2 pr-4 font-semibold">Version</th>
+                  <th className="py-2 pr-4 font-semibold">Effective</th>
+                  <th className="py-2 font-semibold">What changed</th>
+                </tr>
+              </thead>
+              <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">2</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">25 August 2026</td>
+                  <td className="py-2.5">
+                    Voting during trip planning added as another way an account comes to exist
+                    (section 4).
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">1</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">16 August 2026</td>
+                  <td className="py-2.5">First published version.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>We will send the full text of an older version on request.</p>
         </Section>
       </div>
     </HelpShell>

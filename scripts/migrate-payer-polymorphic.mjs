@@ -645,6 +645,128 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_data_requests_id_idx
   ON payload_locked_documents_rels USING btree (data_requests_id);
+
+-- Planning phase ("Plánujeme" — docs/PRD-planovani.md): the chata flag +
+-- intro, candidate date windows, candidate cottages (optionally limited to
+-- some windows) and per-participant votes. Additive only — new tables and
+-- nullable chata columns; DDL mirrors the local dev push.
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS planning_enabled boolean DEFAULT false;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS planning_intro character varying;
+
+CREATE TABLE IF NOT EXISTS trip_date_options (
+  id serial PRIMARY KEY,
+  chata_id integer NOT NULL,
+  label character varying,
+  date_from timestamp(3) with time zone NOT NULL,
+  date_to timestamp(3) with time zone NOT NULL,
+  note character varying,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT trip_date_options_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS trip_date_options_chata_idx ON trip_date_options USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS trip_date_options_updated_at_idx ON trip_date_options USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS trip_date_options_created_at_idx ON trip_date_options USING btree (created_at);
+
+CREATE TABLE IF NOT EXISTS trip_accommodation_options (
+  id serial PRIMARY KEY,
+  chata_id integer NOT NULL,
+  name character varying NOT NULL,
+  location_note character varying,
+  url character varying,
+  description character varying,
+  image_id integer,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT trip_accommodation_options_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL,
+  CONSTRAINT trip_accommodation_options_image_id_media_id_fk
+    FOREIGN KEY (image_id) REFERENCES media(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_chata_idx ON trip_accommodation_options USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_image_idx ON trip_accommodation_options USING btree (image_id);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_updated_at_idx ON trip_accommodation_options USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_created_at_idx ON trip_accommodation_options USING btree (created_at);
+
+CREATE TABLE IF NOT EXISTS trip_accommodation_options_rels (
+  id serial PRIMARY KEY,
+  "order" integer,
+  parent_id integer NOT NULL,
+  path character varying NOT NULL,
+  trip_date_options_id integer,
+  CONSTRAINT trip_accommodation_options_rels_parent_fk
+    FOREIGN KEY (parent_id) REFERENCES trip_accommodation_options(id) ON DELETE CASCADE,
+  CONSTRAINT trip_accommodation_options_rels_trip_date_options_fk
+    FOREIGN KEY (trip_date_options_id) REFERENCES trip_date_options(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_rels_order_idx ON trip_accommodation_options_rels USING btree ("order");
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_rels_parent_idx ON trip_accommodation_options_rels USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_rels_path_idx ON trip_accommodation_options_rels USING btree (path);
+CREATE INDEX IF NOT EXISTS trip_accommodation_options_rels_trip_date_options_id_idx ON trip_accommodation_options_rels USING btree (trip_date_options_id);
+
+CREATE TABLE IF NOT EXISTS trip_votes (
+  id serial PRIMARY KEY,
+  participant_id integer NOT NULL,
+  chata_id integer,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT trip_votes_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE,
+  CONSTRAINT trip_votes_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS trip_votes_participant_idx ON trip_votes USING btree (participant_id);
+CREATE INDEX IF NOT EXISTS trip_votes_chata_idx ON trip_votes USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS trip_votes_updated_at_idx ON trip_votes USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS trip_votes_created_at_idx ON trip_votes USING btree (created_at);
+
+CREATE TABLE IF NOT EXISTS trip_votes_rels (
+  id serial PRIMARY KEY,
+  "order" integer,
+  parent_id integer NOT NULL,
+  path character varying NOT NULL,
+  trip_date_options_id integer,
+  trip_accommodation_options_id integer,
+  CONSTRAINT trip_votes_rels_parent_fk
+    FOREIGN KEY (parent_id) REFERENCES trip_votes(id) ON DELETE CASCADE,
+  CONSTRAINT trip_votes_rels_trip_date_options_fk
+    FOREIGN KEY (trip_date_options_id) REFERENCES trip_date_options(id) ON DELETE CASCADE,
+  CONSTRAINT trip_votes_rels_trip_accommodation_options_fk
+    FOREIGN KEY (trip_accommodation_options_id) REFERENCES trip_accommodation_options(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS trip_votes_rels_order_idx ON trip_votes_rels USING btree ("order");
+CREATE INDEX IF NOT EXISTS trip_votes_rels_parent_idx ON trip_votes_rels USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS trip_votes_rels_path_idx ON trip_votes_rels USING btree (path);
+CREATE INDEX IF NOT EXISTS trip_votes_rels_trip_date_options_id_idx ON trip_votes_rels USING btree (trip_date_options_id);
+CREATE INDEX IF NOT EXISTS trip_votes_rels_trip_accommodation_options_id_idx ON trip_votes_rels USING btree (trip_accommodation_options_id);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS trip_date_options_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_trip_date_options_fk
+    FOREIGN KEY (trip_date_options_id) REFERENCES trip_date_options(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_trip_date_options_id_idx
+  ON payload_locked_documents_rels USING btree (trip_date_options_id);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS trip_accommodation_options_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_trip_accommodation_options_fk
+    FOREIGN KEY (trip_accommodation_options_id) REFERENCES trip_accommodation_options(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_trip_accommodation_options_id_idx
+  ON payload_locked_documents_rels USING btree (trip_accommodation_options_id);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS trip_votes_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_trip_votes_fk
+    FOREIGN KEY (trip_votes_id) REFERENCES trip_votes(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_trip_votes_id_idx
+  ON payload_locked_documents_rels USING btree (trip_votes_id);
 `
 
 async function enumLabels(typeName) {

@@ -9,6 +9,7 @@ import { FinanceOverview } from './FinanceOverview'
 import { InformationView } from './InformationView'
 import { OrganizationView } from './OrganizationView'
 import { ParticipantsView } from './ParticipantsView'
+import { PlanningView } from './PlanningView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { useAppTheme } from '../utils/useAppTheme'
@@ -18,6 +19,7 @@ import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/pa
 import type { ChataStats } from '@/utils/calculateStats'
 import type { FinanceViewer, LockedParticipant } from '@/lib/financeAccess'
 import type { ViewerClaim } from '@/lib/claimRequests'
+import type { PlanningPayload } from '@/lib/planning'
 
 interface ChataData {
   chata: Chata
@@ -30,6 +32,7 @@ interface ChataData {
   locked?: LockedParticipant[]
   pendingClaims?: number[]
   viewerClaims?: ViewerClaim[]
+  planning?: PlanningPayload | null
 }
 
 interface ChataViewProps {
@@ -74,7 +77,13 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const { theme, toggleTheme } = useAppTheme()
 
   // If participant param is present but no view, default to finance
-  type ViewName = 'finance' | 'information' | 'organization' | 'participants' | 'finance-overview'
+  type ViewName =
+    | 'finance'
+    | 'information'
+    | 'organization'
+    | 'participants'
+    | 'finance-overview'
+    | 'planning'
   const initialView = searchParams.get('view') as ViewName | null
   const [currentView, setCurrentView] = useState<ViewName | null>(
     initialView || (searchParams.get('participant') ? 'finance' : null)
@@ -149,13 +158,17 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     async function fetchData() {
       const result = await loadData()
       if (result) {
-        // Set default view based on what's enabled (priority: information > organization > finance)
+        // Set default view based on what's enabled (priority: planning >
+        // information > organization > finance) — a planning-phase chata
+        // shows ONLY the planning view (docs/PRD-planovani.md)
         if (currentView === null) {
           const hasInfo = result.chata.informationEnabled === true
           const hasOrg =
             result.chata.bedroomOrganizationEnabled === true ||
             result.chata.sharedCarsEnabled === true
-          if (hasInfo) {
+          if (result.chata.planningEnabled === true) {
+            setCurrentView('planning')
+          } else if (hasInfo) {
             setCurrentView('information')
           } else if (hasOrg) {
             setCurrentView('organization')
@@ -201,7 +214,14 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   if (loading && !data) {
     // Use current view for navigation, or fall back to URL param / default for initial load
     const rawSkeletonView = currentView || (searchParams.get('view') as ViewName) || 'information'
-    const skeletonView = rawSkeletonView === 'finance-overview' ? 'finance' : rawSkeletonView
+    // The planning sheet has no skeleton of its own — the information one
+    // is the closest shape
+    const skeletonView =
+      rawSkeletonView === 'finance-overview'
+        ? 'finance'
+        : rawSkeletonView === 'planning'
+          ? 'information'
+          : rawSkeletonView
     const skeletonColors = getThemeColors(initialThemeColor)
 
     return (
@@ -255,11 +275,22 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   }
 
   const { chata, participants, expenses, prepayments, stats } = data
-  const hasInformation = chata.informationEnabled === true
+  // Planning phase: the page IS the poll — the other tabs (and with them
+  // the public participant/finance data) wait until the trip is booked
+  const isPlanning = chata.planningEnabled === true && data.planning != null
+  const hasInformation = !isPlanning && chata.informationEnabled === true
   const hasOrganization =
-    chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true
-  const hasParticipants = participants.length > 2
-  const activeView = currentView || (hasInformation ? 'information' : hasOrganization ? 'organization' : 'finance')
+    !isPlanning && (chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true)
+  const hasParticipants = !isPlanning && participants.length > 2
+  const activeView = isPlanning
+    ? 'planning'
+    : currentView && currentView !== 'planning'
+      ? currentView
+      : hasInformation
+        ? 'information'
+        : hasOrganization
+          ? 'organization'
+          : 'finance'
   // The overview is a sub-view of Finance — the Finance tab stays highlighted
   const headerView = activeView === 'finance-overview' ? 'finance' : activeView
 
@@ -285,6 +316,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             }
             currentView={headerView}
             onViewChange={handleViewChange}
+            showPlanningTab={isPlanning}
+            showFinanceTab={!isPlanning}
             showInformationTab={hasInformation}
             showOrganizationTab={hasOrganization}
             showParticipantsTab={hasParticipants}
@@ -297,7 +330,17 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
           <div
             className={`transition-opacity duration-150 ${isPending ? 'opacity-70' : 'opacity-100'}`}
           >
-            {activeView === 'finance' ? (
+            {activeView === 'planning' && data.planning ? (
+              <PlanningView
+                chata={chata}
+                participants={participants}
+                planning={data.planning}
+                viewer={data.viewer}
+                onDataChanged={async () => {
+                  await loadData({ silent: true })
+                }}
+              />
+            ) : activeView === 'finance' ? (
               <FinanceView
                 chata={chata}
                 participants={participants}

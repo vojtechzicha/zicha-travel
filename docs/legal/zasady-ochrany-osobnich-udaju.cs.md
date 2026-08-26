@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 16. 8. 2026
+Účinnost od: 25. 8. 2026 (verze 2)
 
 ## 1. Kdo je správce
 
@@ -20,6 +20,8 @@ Nejsou samostatnými správci; odpovědnost vůči vám neseme my.
 zicha.travel je soukromá, bezplatná aplikace pro party přátel a rodin, které
 spolu jezdí na chaty a chtějí si férově rozdělit společné výdaje. Není to
 veřejná služba: chatu založí její správce a účastníky do ní zapíše sám.
+Jedinou výjimkou je fáze plánování: dokud parta hlasuje o termínu a
+ubytování, můžete se k výletu přidat sami hlasovacím formulářem.
 
 Zpracováváme údaje čtyř skupin lidí:
 
@@ -27,7 +29,8 @@ Zpracováváme údaje čtyř skupin lidí:
   nemá účet a mnozí o zápisu ani nevěděli, dokud jim to správce chaty neřekl.
   Právě proto existuje kapitola 5,
 - **přihlášení uživatelé**, tedy lidé s účtem (účastníci, kteří si účet
-  nechali založit nebo si své jméno nárokovali přes „To jsem já"),
+  nechali založit, nárokovali si své jméno přes „To jsem já", nebo se
+  přidali hlasováním při plánování výletu),
 - **správci chat** a administrátoři webu,
 - **návštěvníci** stránek, i nepřihlášení.
 
@@ -38,7 +41,9 @@ správce chaty zadal), číslo bankovního účtu nebo IBAN pro vyrovnání, úd
 zda s sebou má zvíře, vazbu „platí za něj někdo jiný" (typicky rodič za
 dítě), přiřazení k pokoji a posteli, místo v autě nebo spoji veřejné
 dopravy, podíly na výdajích, zálohy a vratky, členství ve společném účtu a
-výsledné vyrovnání (kdo komu kolik dluží).
+výsledné vyrovnání (kdo komu kolik dluží). Pokud se o podobě výletu
+hlasovalo, patří sem i hlas: které termíny účastníkovi vyhovují a která
+ubytování se mu líbí.
 
 **O přihlášených uživatelích navíc:** e-mail účtu, čas posledního přihlášení,
 při přihlášení přes Microsoft, Google nebo Apple identifikátor a e-mail
@@ -97,8 +102,9 @@ zapsání pošle odkaz na tyto zásady (typicky ve skupinové konverzaci party),
 a odkaz na ně je v patičce každé stránky webu. Pokud si myslíte, že vás
 někdo zapsal neprávem, napište nám a záznam prověříme.
 
-Údaje o přihlášených uživatelích pocházejí od nich samotných, případně z
-jejich účtu u Microsoftu, Googlu nebo Applu, pokud se přes něj přihlásí.
+Údaje o přihlášených uživatelích, a také o účastnících, kteří se přidali
+sami hlasováním při plánování výletu, pocházejí od nich samotných, případně
+z jejich účtu u Microsoftu, Googlu nebo Applu, pokud se přes něj přihlásí.
 
 ## 6. Kdo vaše údaje vidí
 
@@ -118,8 +124,9 @@ jedno přihlášení je tedy způsob, jak svůj rozpis a zůstatek schovat.
 Jméno u výletu zůstává v obou případech.
 
 Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě
-pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi" a výdaje
-čekající na potvrzení. Bankovní spojení účastníka vidí jen on sám (přes
+pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi", výdaje
+čekající na potvrzení a hlasy z plánování výletu (kdo se přidal a co komu
+vyhovuje); hlasy vidí jen přihlášení účastníci dané chaty a její správci. Bankovní spojení účastníka vidí jen on sám (přes
 svůj účet), přihlášený pokladník a správci dané chaty; pokladníkovo
 bankovní spojení je veřejné, protože bez něj by nefungovalo anonymní
 vyrovnání (pokladník s tím svou rolí počítá). Účtenky vidí jen přihlášení
@@ -170,6 +177,7 @@ ke konkrétnímu poskytovateli vám na vyžádání pošleme.
 | účtenky | smažeme do 12 měsíců od vyrovnání výletu |
 | účet, který se 2 roky nepřihlásil | smažeme včetně vazeb |
 | žádosti o propojení včetně důvodu zamítnutí | smažeme do 12 měsíců od rozhodnutí |
+| hlasy z plánování výletu | součást záznamu výletu, po dobu provozu služby |
 | přihlašovací odkazy (tokeny) | platí 15 minut, poté jsou neplatné |
 | surové statistické události | 12 měsíců, poté jen souhrnná čísla |
 | provozní logy hostingu | krátkodobě, podle nastavení poskytovatele |
@@ -288,11 +296,20 @@ funkce zapne.
 ## 16. Změny těchto zásad
 
 Když se zásady změní, zveřejníme novou verzi s datem účinnosti na této
-stránce. O podstatných změnách (nový příjemce údajů, nový účel, změna doby
-uchování) dáme vědět i na webu, u podstatného rozšíření zpracování e-mailem
-těm, kterých se týká.
+stránce; co se mezi verzemi změnilo, ukazuje kapitola 18. O podstatných
+změnách (nový příjemce údajů, nový účel, změna doby uchování) dáme vědět i
+na webu, u podstatného rozšíření zpracování e-mailem těm, kterých se týká.
 
 ## 17. Kontakt
 
 Vojtěch Zicha,
 [mail@vojtechzicha.com](mailto:mail@vojtechzicha.com).
+
+## 18. Historie verzí
+
+| Verze | Účinnost | Co se změnilo |
+| --- | --- | --- |
+| 2 | 25. 8. 2026 | Fáze plánování výletu: hlasování o termínu a ubytování jako nová kategorie údajů, možnost přidat se k výletu hlasovacím formulářem a s tím spojené doplnění kapitol 2, 3, 5, 6 a 9. |
+| 1 | 16. 8. 2026 | První zveřejněná verze. |
+
+Plné znění starší verze pošleme na vyžádání.

@@ -4,24 +4,30 @@ Správce: Vojtěch Zicha, mail@vojtechzicha.com (jediný správce, rozhodnutí 1
 v `compliance-gaps.md`). Výjimka pro malé organizace se nepoužije:
 zpracování není příležitostné a zahrnuje finanční údaje.
 
-Poslední revize: 2026-08-16. Pravidlo údržby: každá nová kategorie údajů,
+Poslední revize: 2026-08-25 (hlasy z plánování výletu). Pravidlo údržby:
+každá nová kategorie údajů,
 nový příjemce nebo nový účel se propíše sem, do zásad (`/soukromi`) a do
 inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 
 ## 1. Společné vyúčtování a organizace výletu
 
 - **Subjekty:** účastníci výletů (i bez účtu), včetně dětí (zapisuje rodič
-  nebo správce chaty se souhlasem rodiče).
+  nebo správce chaty se souhlasem rodiče) a lidí, kteří se přidali sami
+  hlasováním při plánování výletu (jméno a e-mail zadávají sami; hlasování
+  jim zakládá účet, viz činnost 2).
 - **Údaje:** jméno + skloňované tvary, bankovní spojení, zvíře, „platí za
-  něj", postel/auto/spoj, podíly, zálohy, vyrovnání; účtenky k výdajům.
+  něj", postel/auto/spoj, podíly, zálohy, vyrovnání; účtenky k výdajům;
+  hlas z plánování (vyhovující termíny a ubytování) — není veřejný, vidí ho
+  jen přihlášení účastníci chaty a její správci.
 - **Účel:** férové rozdělení nákladů a organizace výletu.
 - **Základ:** oprávněný zájem (čl. 6 odst. 1 písm. f) — balanční test v
   `balancni-test.md`.
 - **Příjemci:** Supabase (DB + soubory), Vercel (hosting), Paylibo (údaje
   platebního QR), viz `zpracovatele-a-predavani.md`.
 - **Výmaz:** bankovní spojení a účtenky 12 měsíců po „Vyúčtováno dne"
-  (retenční cron `/api/retention`); záznam výletu po dobu provozu služby
-  jako archiv party; anonymizace na žádost (tlačítko v administraci).
+  (retenční cron `/api/retention`); záznam výletu včetně hlasů z plánování
+  po dobu provozu služby jako archiv party; anonymizace na žádost (tlačítko
+  v administraci).
 
 ## 2. Uživatelské účty a přihlašování
 

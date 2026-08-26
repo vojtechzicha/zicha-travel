@@ -20,6 +20,9 @@ import { ExpenseAttachments } from './collections/ExpenseAttachments'
 import { Prepayments } from './collections/Prepayments'
 import { ClaimRequests } from './collections/ClaimRequests'
 import { JointAccounts } from './collections/JointAccounts'
+import { TripDateOptions } from './collections/TripDateOptions'
+import { TripAccommodationOptions } from './collections/TripAccommodationOptions'
+import { TripVotes } from './collections/TripVotes'
 import { DataRequests } from './collections/DataRequests'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
@@ -72,6 +75,9 @@ export default buildConfig({
     Prepayments,
     JointAccounts,
     ClaimRequests,
+    TripDateOptions,
+    TripAccommodationOptions,
+    TripVotes,
     ExpenseAttachments,
     Backgrounds,
     Icons,

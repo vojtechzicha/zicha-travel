@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 16. 8. 2026
+Účinnost od: 25. 8. 2026 (verze 2)
 
 ## 1. Co je zicha.travel a kdo ho provozuje
 
@@ -44,7 +44,8 @@ pravidla:
 ## 4. Účty
 
 Účet vám založí správce chaty, nebo vznikne přes „To jsem já" (žádost o
-propojení se jménem účastníka) či „Jsem tu poprvé". Přihlašuje se
+propojení se jménem účastníka), přes „Jsem tu poprvé", anebo hlasováním při
+plánování výletu. Přihlašuje se
 jednorázovým odkazem na e-mail, nebo přes Microsoft, Google či Apple; heslo
 u nás neexistuje,
 takže chraňte svou e-mailovou schránku, kdo ovládá ji, ovládá váš účet.
@@ -135,8 +136,9 @@ právo), trvají i po ukončení.
 ## 11. Změny podmínek
 
 Podmínky můžeme měnit, například když přibude funkce nebo to vyžádá právo.
-Novou verzi zveřejníme na webu s datem účinnosti; na podstatné změny
-upozorníme uživatele předem e-mailem nebo na webu. Pokud s novou verzí
+Novou verzi zveřejníme na webu s datem účinnosti; co se mezi verzemi
+změnilo, ukazuje kapitola 14. Na podstatné změny upozorníme uživatele
+předem e-mailem nebo na webu. Pokud s novou verzí
 nesouhlasíte, můžete účet zrušit; dalším užíváním po účinnosti změnu
 přijímáte.
 
@@ -152,3 +154,12 @@ ustanovení neplatné, zbytek podmínek platí dál.
 
 Vojtěch Zicha,
 [mail@vojtechzicha.com](mailto:mail@vojtechzicha.com).
+
+## 14. Historie verzí
+
+| Verze | Účinnost | Co se změnilo |
+| --- | --- | --- |
+| 2 | 25. 8. 2026 | Hlasování při plánování výletu doplněno jako další způsob vzniku účtu (kapitola 4). |
+| 1 | 16. 8. 2026 | První zveřejněná verze. |
+
+Plné znění starší verze pošleme na vyžádání.

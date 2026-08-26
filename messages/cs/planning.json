@@ -1,0 +1,87 @@
+{
+  "hero": {
+    "badge": "Plánujeme",
+    "whenTitle": "Kdy",
+    "nightsNote": "Pojede se na {nights}, přesný termín vybereme hlasováním.",
+    "note": "Přesný termín vybereme hlasováním."
+  },
+  "stats": {
+    "dates": "{count, plural, one {termín} few {termíny} other {termínů}}",
+    "places": "{count, plural, one {chalupa} few {chalupy} other {chalup}}",
+    "votes": "{count, plural, one {člověk už hlasoval} few {lidé už hlasovali} other {lidí už hlasovalo}}"
+  },
+  "dates": {
+    "title": "Termíny ve hře",
+    "availablePlaces": "{count, plural, one {volná # chalupa} few {volné # chalupy} other {volných # chalup}}"
+  },
+  "places": {
+    "title": "Kde bychom spali",
+    "count": "{count, plural, one {# chalupa} few {# chalupy} other {# chalup}}",
+    "viewListing": "Prohlédnout nabídku",
+    "limitedNote": "V ostatních termínech je obsazená."
+  },
+  "cta": {
+    "label": "Hlasování",
+    "title": "Jedeš taky?",
+    "body": "Vyber termíny, které ti vychází, a chalupy, které se ti líbí. Zabere to minutku a hned víme, na čem jsme.",
+    "button": "Chci jet",
+    "anonHint": "Po hlasování se ti ukáže, kdo se přidal a který termín vede.",
+    "signIn": "Už máš účet? Přihlas se"
+  },
+  "results": {
+    "yourVote": "Tvůj hlas",
+    "datesLabel": "Můžeš",
+    "placesLabel": "Líbí se ti",
+    "noPlaces": "bez preference",
+    "edit": "Upravit",
+    "votersTitle": "Kdo se přidal",
+    "votersCount": "{count, plural, one {# člověk} few {# lidé} other {# lidí}}",
+    "title": "Jak to vypadá",
+    "datesSection": "Termíny",
+    "placesSection": "Chalupy",
+    "fraction": "{count}/{total}",
+    "leading": "vede",
+    "noVotes": "Zatím nehlasoval nikdo. Buď první.",
+    "note": "Hlasuje se, dokud správce nevybere termín a chalupu. Pak se tady objeví informace k výletu, jak je znáš z ostatních chat."
+  },
+  "dialog": {
+    "title": "Jedeš s námi?",
+    "close": "Zavřít",
+    "stepWho": "Kdo jsi",
+    "nameLabel": "Jméno",
+    "namePlaceholder": "Katka Nováková",
+    "nameHint": "Takhle tě uvidí ostatní.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "katka@priklad.cz",
+    "emailHint": "Pošleme ti sem přihlašovací odkaz, ať vidíš výsledky. Žádný spam.",
+    "adultConfirm": "Je mi aspoň 18 let.",
+    "signedInAs": "Hlasuješ jako {name}.",
+    "stepDates": "Kdy můžeš",
+    "stepDatesHint": "vyber všechny termíny, které ti vychází",
+    "stepPlaces": "Kam by se ti chtělo",
+    "stepPlacesHint": "klidně vyber víc míst",
+    "unavailable": "jen v termínu {dates}",
+    "listing": "nabídka",
+    "submit": "Odeslat hlas",
+    "submitting": "Odesílám…",
+    "accountNote": "Vytvoříme ti účet, ať vidíš výsledky a máš pak na chatě svoje finance. Odesláním souhlasíš s <terms>podmínkami</terms> a <privacy>zpracováním údajů</privacy>.",
+    "sentTitle": "Ještě klik a je to",
+    "sentBody": "Na <strong>{email}</strong> ti letí odkaz. Klikni na něj, tím se tvůj hlas uloží a uvidíš, kdo se přidal.",
+    "sentBodyNoEmail": "Odkaz se nepodařilo odeslat a hlas zatím uložený není. Zkus to prosím za chvíli znovu.",
+    "savedTitle": "Hlas uložen",
+    "savedBody": "Díky, hned se promítl do výsledků.",
+    "resend": "Nepřišel? Zkontroluj spam, nebo hlasuj znovu.",
+    "errors": {
+      "generic": "To se nepovedlo. Zkus to prosím znovu.",
+      "captcha": "Ověření, že nejsi robot, nevyšlo. Zkus to znovu.",
+      "rate-limited": "Příliš mnoho pokusů. Chvíli počkej a zkus to znovu.",
+      "name-required": "Napiš, jak se jmenuješ.",
+      "name-taken": "Tohle jméno už tady někdo má. Jestli jsi to ty, přihlas se e-mailem, který jsi použil(a) minule.",
+      "no-dates": "Vyber aspoň jeden termín.",
+      "accommodation-unavailable": "Některá vybraná chalupa není ve zvolených termínech volná.",
+      "planning-closed": "Hlasování už skončilo.",
+      "email-required": "Napiš svůj e-mail.",
+      "adult-required": "Účet může mít jen dospělý. Potvrď prosím, že ti je aspoň 18."
+    }
+  }
+}

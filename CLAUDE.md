@@ -186,6 +186,33 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      `loginToken`/`loginTokenExpires` fields (sha256 hash, 15min TTL)
    - See `docs/PRD-uzivatele.md` for the full auth/roles design
 
+9. **TripDateOptions / TripAccommodationOptions / TripVotes**
+   (`src/collections/TripDateOptions.ts`, `TripAccommodationOptions.ts`,
+   `TripVotes.ts` — admin group "Planning")
+   - The planning phase ("Plánujeme", `docs/PRD-planovani.md`): while
+     `Chata.planningEnabled` is on, the frontend shows ONLY the
+     `PlanningView` poll — candidate date windows, candidate cottages
+     (optionally limited to some windows; empty `dateOptions` = all), and
+     a vote form. Anonymous voting creates the account (magic link,
+     Turnstile, rate limits — same posture as claim registration) but
+     records NO participant and NO vote until the magic-link click verifies
+     the email: the selection rides the link's returnTo as `pv_*` intent
+     params and the signed-in auto-submit in PlanningView records it. The
+     group so assembled carries over when the admin books the trip and
+     unticks the flag
+   - `POST /api/trip-votes/submit` upserts one vote per participant;
+     name collisions refuse with `name-taken` (identity linking stays the
+     claim flow's job). Options are public read; votes are NOT (admins +
+     own votes only) — the slug API ships `planning.votes` only to chata
+     admins and viewers with a linked participant here, everyone else gets
+     the anonymous `voteCount` plus a "results after voting" hint
+   - Pure rules (`accommodationAvailableFor`, `validateVoteSelection`,
+     `canSeePlanningResults`, `tallyVotes`, `planningMonthsLabel`) in
+     `src/lib/planning.ts`, unit-tested in `tests/int/planning.int.spec.ts`;
+     strings in the `planning` i18n namespace; DDL appended to
+     `NEW_SCHEMA_DDL`; one-off seed for /pratele in
+     `scripts/seed-planning-pratele.mjs` (`pnpm planning:seed:pratele`)
+
 ### Utilities
 
 **calculateStats** (`src/utils/calculateStats.ts`)
