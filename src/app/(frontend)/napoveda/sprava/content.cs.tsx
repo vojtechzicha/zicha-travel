@@ -1,7 +1,7 @@
 // Czech content, moved verbatim from page.tsx when the frontend went
 // bilingual. Edit wording here; page.tsx only picks a locale.
 
-import { Crown, Settings, ShieldCheck, UserCog, UserPlus, Wallet } from 'lucide-react'
+import { Crown, Settings, ShieldCheck, UserCog, UserPlus, Vote, Wallet } from 'lucide-react'
 import { Callout, HelpShell, List, PageCards, Screenshot, Section, Steps } from '../ui'
 
 export default function SpravaContentCs() {
@@ -38,6 +38,54 @@ export default function SpravaContentCs() {
               </>,
             ]}
           />
+        </Section>
+
+        <Section title="Fáze plánování a hlasování" icon={<Vote size={20} />}>
+          <p>
+            Dokud není výlet rezervovaný, může chata běžet jako anketa: lidi na stránce hlasují,
+            kdy můžou a která chalupa se jim líbí, a hlasováním se sami přidají mezi účastníky.
+          </p>
+          <List
+            items={[
+              <>
+                Ve formuláři chaty zaškrtni <strong>Fáze plánování (hlasování) běží</strong> a
+                napiš úvodní text. Veřejná stránka pak ukazuje jen plánovací pohled.
+              </>,
+              <>
+                Termíny a chalupy k hlasování se zakládají ve skupině <strong>Plánování</strong>.
+                U chalupy jde vybrat, ve kterých termínech je volná; prázdné pole znamená ve
+                všech.
+              </>,
+              <>
+                Výsledky vidí jen přihlášení účastníci chaty a správci. Až bude jasno, zaškrtnutí
+                zruš a nastav skutečný termín. Hlasující už jsou založení jako účastníci.
+              </>,
+            ]}
+          />
+          <p>
+            <strong>Hlas za někoho, kdo web nepoužívá</strong> (třeba to řekl po telefonu), jde
+            zadat ručně:
+          </p>
+          <Steps
+            items={[
+              <>
+                Založ ho jako účastníka: <strong>Participants</strong>, stačí jméno a chata, účet
+                nepotřebuje.
+              </>,
+              <>
+                Ve skupině <strong>Plánování → Hlasy v plánování</strong> založ nový hlas, vyber
+                účastníka a ulož. Tím se doplní chata a objeví se pole s termíny a chalupami.
+              </>,
+              <>
+                Zaškrtni, co dotyčnému vyhovuje, a znovu ulož. Hlas se hned počítá a jméno se
+                ukáže v „Kdo se přidal“.
+              </>,
+            ]}
+          />
+          <Callout>
+            Každý účastník má nejvýš jeden hlas. Když se rozmyslí, uprav jeho stávající hlas,
+            druhý nezakládej.
+          </Callout>
         </Section>
 
         <Section title="Účastníci" icon={<UserPlus size={20} />}>
