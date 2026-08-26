@@ -668,7 +668,7 @@ export interface Media {
 export interface TripVote {
   id: number;
   /**
-   * Who voted
+   * Who voted. On a new vote, save right after picking the participant — the chata is derived from them and unlocks the date and place fields.
    */
   participant: number | Participant;
   /**

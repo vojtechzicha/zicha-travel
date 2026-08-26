@@ -74,12 +74,16 @@ export const TripVotes: CollectionConfig = {
     delete: chataScopedAccess,
   },
   hooks: {
-    beforeChange: [
+    // beforeVALIDATE, not beforeChange: the dates/accommodations fields are
+    // validated against filterOptions keyed on `chata`, and validation runs
+    // before beforeChange — deriving the chata any later makes every
+    // selection "invalid" on a hand-created vote.
+    beforeValidate: [
       async ({ data, originalDoc, req }) => {
         // Keep the denormalized chata in sync with the participant (it
         // drives admin-scoped access, like on claim requests)
         const participantRef = data?.participant ?? originalDoc?.participant
-        if (participantRef != null) {
+        if (data && participantRef != null) {
           try {
             const participant = await req.payload.findByID({
               collection: 'participants',
@@ -354,9 +358,25 @@ export const TripVotes: CollectionConfig = {
       index: true,
       admin: {
         description: {
-          en: 'Who voted',
-          cs: 'Kdo hlasoval',
+          en:
+            'Who voted. On a new vote, save right after picking the participant — ' +
+            'the chata is derived from them and unlocks the date and place fields.',
+          cs:
+            'Kdo hlasoval. U nového hlasu po výběru účastníka nejdřív uložte – ' +
+            'z účastníka se odvodí chata a zpřístupní se pole termínů a chalup.',
         },
+      },
+      filterOptions: ({ data, user }) => {
+        // An existing vote stays within its chata; a fresh one offers only
+        // participants of chatas that are actually in the planning phase —
+        // and for scoped admins only their own chatas
+        const and: Where[] = data?.chata
+          ? [{ chata: { equals: data.chata } }]
+          : [{ 'chata.planningEnabled': { equals: true } }]
+        if (user && user.role === 'admin') {
+          and.push({ chata: { in: (user.assignedChatas || []).map((ref) => refId(ref)) } })
+        }
+        return and.length === 1 ? and[0] : { and }
       },
     },
     {
@@ -378,6 +398,11 @@ export const TripVotes: CollectionConfig = {
       relationTo: 'trip-date-options',
       hasMany: true,
       label: { en: 'Dates that work', cs: 'Vyhovující termíny' },
+      admin: {
+        // Hidden until the chata is derived (first save with a participant):
+        // selections made before that would fail validation
+        condition: (data) => Boolean(data?.chata),
+      },
       filterOptions: ({ data }) => {
         if (data?.chata) {
           return {
@@ -395,6 +420,9 @@ export const TripVotes: CollectionConfig = {
       relationTo: 'trip-accommodation-options',
       hasMany: true,
       label: { en: 'Liked places', cs: 'Líbí se' },
+      admin: {
+        condition: (data) => Boolean(data?.chata),
+      },
       filterOptions: ({ data }) => {
         if (data?.chata) {
           return {
