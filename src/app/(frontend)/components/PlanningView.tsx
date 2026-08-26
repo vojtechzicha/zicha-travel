@@ -270,8 +270,13 @@ export function PlanningView({
               </div>
             </div>
           )}
+          {/* Admin-entered texts are Czech in both UI locales; lang="cs" keeps
+              the hyphenation Czech, which the justified block depends on */}
           {planning.intro && (
-            <p className="max-w-[620px] m-0 text-[14.5px] leading-relaxed text-gray-700 dark:text-slate-300">
+            <p
+              lang="cs"
+              className="max-w-[620px] m-0 text-[14.5px] leading-relaxed text-gray-700 dark:text-slate-300 sm:text-justify hyphens-auto"
+            >
               {planning.intro}
             </p>
           )}
@@ -429,7 +434,10 @@ export function PlanningView({
                         )}
                       </div>
                       {place.description && (
-                        <p className="m-0 text-[13.5px] leading-relaxed text-gray-700 dark:text-slate-300">
+                        <p
+                          lang="cs"
+                          className="m-0 text-[13.5px] leading-relaxed text-gray-700 dark:text-slate-300 sm:text-justify hyphens-auto"
+                        >
                           {place.description}
                         </p>
                       )}
