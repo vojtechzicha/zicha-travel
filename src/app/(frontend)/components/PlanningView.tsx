@@ -275,7 +275,7 @@ export function PlanningView({
           {planning.intro && (
             <p
               lang="cs"
-              className="max-w-[620px] m-0 text-[14.5px] leading-relaxed text-gray-700 dark:text-slate-300 sm:text-justify hyphens-auto"
+              className="max-w-[620px] m-0 text-[14.5px] leading-relaxed text-gray-700 dark:text-slate-300 text-left sm:text-justify hyphens-auto"
             >
               {planning.intro}
             </p>
