@@ -9,6 +9,7 @@
 // and the tallies instead.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   BarChart3,
   CalendarRange,
@@ -82,6 +83,11 @@ export function PlanningView({
   // A vote intent that failed to auto-submit (below) prefills the dialog
   const [fallbackIntent, setFallbackIntent] = useState<PlanningVoteIntent | null>(null)
   const autoSubmitted = useRef(false)
+  // The vote must stay one tap away at every scroll position: while the
+  // inline CTA card is out of the viewport, a floating "Chci jet" button
+  // takes over (same FAB pattern as Finance's "Přidat výdaj")
+  const ctaRef = useRef<HTMLDivElement | null>(null)
+  const [ctaInView, setCtaInView] = useState(true)
 
   // Deferred anonymous vote: the magic-link click lands here with the
   // selection in pv_* params (docs/PRD-planovani.md) — now that the viewer
@@ -197,8 +203,22 @@ export function PlanningView({
     </div>
   )
 
+  const showCta = !viewerVote
+
+  useEffect(() => {
+    if (!showCta) return
+    const el = ctaRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setCtaInView(entry.isIntersecting))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [showCta])
+
   const ctaCard = (
-    <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] dark:border-primary/40 dark:bg-primary/10 px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mt-7">
+    <div
+      ref={ctaRef}
+      className="rounded-2xl border border-primary/30 bg-primary/[0.06] dark:border-primary/40 dark:bg-primary/10 px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mt-7"
+    >
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-primary-dark dark:text-primary-light">
           {t('cta.label')}
@@ -525,6 +545,29 @@ export function PlanningView({
           </>
         )}
       </Sheet>
+
+      {/* Floating vote button while the inline CTA is scrolled away.
+          Portaled to <body>: the view lives in a `relative z-10` container
+          and the site footer would otherwise paint over the fixed button. */}
+      {showCta &&
+        !ctaInView &&
+        !dialogOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <button
+            type="button"
+            onClick={() => setDialogOpen(true)}
+            aria-label={t('cta.button')}
+            className="fixed z-40 bottom-6 right-5 lg:bottom-8 lg:right-8 flex items-center
+                       justify-center gap-2.5 rounded-full bg-primary hover:bg-primary-dark
+                       text-white font-bold text-[15px] px-6 py-3.5 shadow-xl shadow-primary/50
+                       transition-colors motion-safe:animate-slideUp"
+          >
+            <CircleCheckBig size={18} strokeWidth={2.5} aria-hidden="true" />
+            {t('cta.button')}
+          </button>,
+          document.body,
+        )}
 
       {dialogOpen && (
         <PlanningVoteFlow
