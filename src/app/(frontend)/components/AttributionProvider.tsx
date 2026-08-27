@@ -99,16 +99,24 @@ export function AttributionNotice() {
 
   const open = hovered || pinned
 
-  // A pinned panel is dismissed the way any popover is: Escape, or a click
-  // that lands somewhere else. Hovering needs neither.
+  // The panel is dismissed the way any popover is: Escape, or a click that
+  // lands somewhere else. This watches `open` rather than `pinned` because
+  // focusing the button opens the panel too, and Escape has to close that as
+  // well; for the same reason it clears BOTH pieces of state, or the panel
+  // would stay open on the focus half while the keyboard user is asking it
+  // to go away.
   useEffect(() => {
-    if (!pinned) return
+    if (!open) return
 
+    const close = () => {
+      setPinned(false)
+      setHovered(false)
+    }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPinned(false)
+      if (event.key === 'Escape') close()
     }
     const onPointerDown = (event: PointerEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) setPinned(false)
+      if (!wrapperRef.current?.contains(event.target as Node)) close()
     }
 
     document.addEventListener('keydown', onKeyDown)
@@ -117,7 +125,7 @@ export function AttributionNotice() {
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('pointerdown', onPointerDown)
     }
-  }, [pinned])
+  }, [open])
 
   const items = context?.items ?? []
   if (items.length === 0) return null
@@ -144,7 +152,12 @@ export function AttributionNotice() {
       {open && (
         <span
           role="tooltip"
-          className="absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg border border-white/15 bg-slate-900/95 p-3 text-left shadow-xl backdrop-blur-sm"
+          // Centred on the icon while the footer centres its content (mobile),
+          // but left-anchored from `sm` up, where the copyright sits against
+          // the page padding: a centred 16rem panel would hang off the left of
+          // the viewport there and `body { overflow-x: hidden }` would clip
+          // the start of every credit.
+          className="absolute bottom-full left-1/2 z-20 mb-2 w-64 max-w-[calc(100vw-2.5rem)] -translate-x-1/2 rounded-lg border border-white/15 bg-slate-900/95 p-3 text-left shadow-xl backdrop-blur-sm sm:left-0 sm:translate-x-0"
         >
           <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-white/50">
             {t('imageCredits')}
