@@ -645,6 +645,11 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_data_requests_id_idx
   ON payload_locked_documents_rels USING btree (data_requests_id);
+
+-- Background photo credits: a background is painted as a CSS background-image,
+-- so CC BY / CC BY-SA photos need the credit rendered as its own line.
+ALTER TABLE backgrounds ADD COLUMN IF NOT EXISTS attribution character varying;
+ALTER TABLE backgrounds ADD COLUMN IF NOT EXISTS attribution_url character varying;
 `
 
 async function enumLabels(typeName) {

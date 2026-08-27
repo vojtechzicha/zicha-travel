@@ -24,6 +24,8 @@ import {
 } from '@/lib/chataSelection'
 import { computeChataStats } from '@/utils/chataStatsBatch'
 import { resolveChataIdentities } from '@/lib/chataIdentity'
+import { dedupeAttributions, type ImageAttribution } from '@/lib/attribution'
+import { RegisterAttributions } from './components/AttributionProvider'
 import {
   isIndexableChataRender,
   NOINDEX_FOLLOW,
@@ -239,5 +241,19 @@ export default async function HomePage() {
         isRestrictedList: false,
       }
 
-  return <ChataSelector chatas={items} viewer={viewer} />
+  // Every cover on screen at once, so the footer credits them together. Only
+  // the chatas that survived the visibility filter are shown, hence `ordered`
+  // rather than the full list.
+  const coverAttributions = dedupeAttributions(
+    ordered
+      .map((chata) => identities.get(chata.id)?.coverAttribution)
+      .filter((credit): credit is ImageAttribution => Boolean(credit))
+  )
+
+  return (
+    <>
+      <RegisterAttributions items={coverAttributions} />
+      <ChataSelector chatas={items} viewer={viewer} />
+    </>
+  )
 }

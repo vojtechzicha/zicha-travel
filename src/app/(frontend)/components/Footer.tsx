@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import config from '@/payload.config'
 import { isAdminRole } from '@/lib/access'
 import { analyticsEnabled } from '@/lib/consent'
+import { AttributionNotice } from './AttributionProvider'
 import { PrivacySettingsLink } from './PrivacySettingsLink'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import packageJson from '../../../../package.json'
@@ -34,8 +35,11 @@ export async function Footer() {
         <div className="text-center sm:text-left">
           <span className="font-serif font-bold text-white/80">zicha.travel</span>{' '}
           {t('tagline')}
-          <div className="text-xs text-white/40 mt-1">
-            © {new Date().getFullYear()} · {t('version', { version: versionLabel() })}
+          <div className="text-xs text-white/40 mt-1 flex items-center justify-center sm:justify-start gap-1.5">
+            <span>© {new Date().getFullYear()}</span>
+            {/* Renders nothing unless something on this page owes a credit */}
+            <AttributionNotice />
+            <span>· {t('version', { version: versionLabel() })}</span>
           </div>
         </div>
 

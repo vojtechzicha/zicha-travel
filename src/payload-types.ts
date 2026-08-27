@@ -669,6 +669,14 @@ export interface Background {
    * Upload a background image
    */
   image?: (number | null) | Media;
+  /**
+   * Credit line shown under the chata page, e.g. "Petrovy kameny · MartinVeselka · CC BY-SA 4.0". Required by CC BY and CC BY-SA photos; leave empty when the licence asks for nothing.
+   */
+  attribution?: string | null;
+  /**
+   * Where the credit links to: the source page of the photo (e.g. its Wikimedia Commons file page), not the image file itself.
+   */
+  attributionUrl?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1388,6 +1396,8 @@ export interface BackgroundsSelect<T extends boolean = true> {
   type?: T;
   url?: T;
   image?: T;
+  attribution?: T;
+  attributionUrl?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -3,10 +3,12 @@
 import { createContext, useContext, useMemo } from 'react'
 import type { Chata, Background, Icon, Media } from '@/payload-types'
 import { getThemeColors, type ThemeColors } from '@/utils/themeColors'
+import { useRegisterAttributions } from './AttributionProvider'
 
 interface ThemeContextValue {
   colors: ThemeColors
   backgroundUrl: string | null
+  backgroundCredit: { text: string; url: string | null } | null
   iconUrl: string | null
 }
 
@@ -22,12 +24,13 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ chata, children }: ThemeProviderProps) {
-  const theme = useMemo(() => {
+  const theme = useMemo((): ThemeContextValue => {
     // Get colors from chata's themeColor
     const colors = getThemeColors(chata.themeColor)
 
     // Get background URL
     let backgroundUrl: string | null = DEFAULT_BACKGROUND_URL
+    let backgroundCredit: ThemeContextValue['backgroundCredit'] = null
     if (chata.background && typeof chata.background === 'object') {
       const bg = chata.background as Background
       if (bg.type === 'url' && bg.url) {
@@ -35,6 +38,9 @@ export function ThemeProvider({ chata, children }: ThemeProviderProps) {
       } else if (bg.type === 'upload' && bg.image && typeof bg.image === 'object') {
         const media = bg.image as Media
         backgroundUrl = media.url || DEFAULT_BACKGROUND_URL
+      }
+      if (bg.attribution) {
+        backgroundCredit = { text: bg.attribution, url: bg.attributionUrl || null }
       }
     }
 
@@ -48,8 +54,16 @@ export function ThemeProvider({ chata, children }: ThemeProviderProps) {
       }
     }
 
-    return { colors, backgroundUrl, iconUrl }
+    return { colors, backgroundUrl, backgroundCredit, iconUrl }
   }, [chata])
+
+  // The background fills the screen but is painted through CSS, so its credit
+  // is owed by this page and paid in the footer.
+  useRegisterAttributions(
+    theme.backgroundCredit
+      ? [{ text: theme.backgroundCredit.text, url: theme.backgroundCredit.url }]
+      : null
+  )
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -79,3 +93,4 @@ export function useTheme() {
   }
   return context
 }
+

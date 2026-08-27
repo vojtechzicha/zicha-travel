@@ -1,11 +1,14 @@
 import type { Payload } from 'payload'
 import type { Background, Chata, Icon, Media } from '@/payload-types'
+import type { ImageAttribution } from './attribution'
 
 export interface ChataIdentity {
   /** URL of the chata's icon SVG, if it has one */
   iconUrl: string | null
   /** URL of the chata's cover photo (external URL or uploaded image) */
   coverUrl: string | null
+  /** Credit owed for that cover, for licences that require one */
+  coverAttribution: ImageAttribution | null
 }
 
 const refId = (ref: unknown): number | null => {
@@ -72,12 +75,20 @@ export async function resolveChataIdentities(
     const background = backgrounds.get(refId(chata.background) ?? -1)
 
     let coverUrl: string | null = null
+    let coverAttribution: ImageAttribution | null = null
     if (background) {
       coverUrl =
         background.type === 'url' && background.url ? background.url : mediaUrl(background.image)
+      if (background.attribution) {
+        coverAttribution = { text: background.attribution, url: background.attributionUrl }
+      }
     }
 
-    result.set(chata.id, { iconUrl: icon ? mediaUrl(icon.svg) : null, coverUrl })
+    result.set(chata.id, {
+      iconUrl: icon ? mediaUrl(icon.svg) : null,
+      coverUrl,
+      coverAttribution,
+    })
   }
 
   return result
