@@ -205,13 +205,20 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě pokladníka,
-            účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi“, výdaje čekající na potvrzení a
-            hlasy z plánování výletu (kdo se přidal a co komu vyhovuje); hlasy vidí jen
-            přihlášení účastníci dané chaty a její správci.
+            účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi“, výdaje čekající na potvrzení,
+            soukromé výdaje a hlasy z plánování výletu (kdo se přidal a co komu vyhovuje); hlasy
+            vidí jen přihlášení účastníci dané chaty a její správci.
             Bankovní spojení účastníka vidí jen on sám (přes svůj účet), přihlášený pokladník a
             správci dané chaty; pokladníkovo bankovní spojení je veřejné, protože bez něj by
             nefungovalo anonymní vyrovnání (pokladník s tím svou rolí počítá). Účtenky vidí jen
             přihlášení uživatelé.
+          </p>
+          <p>
+            Soukromý výdaj (dárek nebo překvapení) je přísnější výjimka: vidí ho jen jeho plátce,
+            účastníci jeho rozdělení a superadministrátor webu. Nevidí ho ani správci chaty, ani
+            pokladník, pokud v rozdělení sami nejsou. Protože se takový výdaj platí přímo plátci,
+            zobrazuje se členům jeho rozdělení bankovní spojení plátce; založením soukromého
+            výdaje s tím plátce počítá.
           </p>
           <p>
             Správci chaty vidí všechny údaje své chaty. My jako provozovatel máme přístup ke
@@ -633,6 +640,14 @@ export default function PrivacyContentCs() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">3</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">27. 8. 2026</td>
+                  <td className="py-2.5">
+                    Soukromé výdaje: nový typ výdaje viditelný jen jeho členům, doplnění kapitoly
+                    6 včetně zobrazení bankovního spojení plátce členům jeho rozdělení.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">2</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">25. 8. 2026</td>

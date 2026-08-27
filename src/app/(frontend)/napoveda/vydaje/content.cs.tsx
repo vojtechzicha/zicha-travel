@@ -4,6 +4,7 @@
 import {
   Camera,
   Clock,
+  EyeOff,
   HeartHandshake,
   Monitor,
   PencilLine,
@@ -162,6 +163,48 @@ export default function VydajeContentCs() {
               </>,
             ]}
           />
+        </Section>
+
+        <Section title="Soukromý výdaj: dárek, který nemá být vidět" icon={<EyeOff size={20} />}>
+          <p>
+            Kupuješ na výletě dárek a oslavenec o něm nesmí vědět? Zapni fialový přepínač{' '}
+            <em>Soukromý výdaj (překvapení)</em>. Takový výdaj uvidíš jen ty a lidi, které vybereš
+            v rozdělení. Nikdo jiný ho nenajde v deníku, v souhrnu ani v Přehledu. Prostě tam pro
+            něj není.
+          </p>
+          <List
+            items={[
+              <>
+                Plátcem jsi vždycky ty, tedy některý z tvých propojených účastníků. Rozdělení se
+                zadává po podílech nebo přesných částkách, <em>všichni rovným dílem</em> tady z
+                podstaty věci není.
+              </>,
+              <>
+                Soukromý výdaj jde úplně mimo společnou pokladnu. Členové ti svůj podíl posílají
+                přímo na účet: ve Financích na ně čeká fialová karta <em>Soukromé výdaje</em> s QR
+                platbou a tlačítkem <strong>Označit jako zaplacené</strong>.
+              </>,
+              <>
+                Když si s někým dlužíte navzájem, karta nabídne poslat jen rozdíl a označit obojí
+                jedním klepnutím.
+              </>,
+              <>
+                Přepínač je jen při vytváření výdaje. Veřejný výdaj už soukromým udělat nejde,
+                lidi ho totiž mohli vidět. Opačně to jde kdykoli: odtajněný výdaj se stane obyčejným.
+              </>,
+              <>
+                Když u soukromého výdaje změníš částku, plátce nebo rozdělení, označení zaplacených
+                podílů se zruší. Dluh se totiž změnil a je potřeba ho označit znovu.
+              </>,
+              <>
+                Účtenky k němu zatím přiložit nejde. Soubory příloh by viděli i lidi mimo výdaj.
+              </>,
+            ]}
+          />
+          <Callout tone="note">
+            Správce chaty ani pokladník soukromý výdaj nevidí, pokud nejsou přímo v jeho rozdělení.
+            Jedinou výjimkou je superadministrátor webu. Překvapení tak zůstane překvapením.
+          </Callout>
         </Section>
 
         <Section title="Pozvání: platím za někoho dalšího" icon={<HeartHandshake size={20} />}>

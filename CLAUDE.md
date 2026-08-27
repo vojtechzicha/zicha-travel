@@ -118,6 +118,25 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      members may confirm or reject but not edit, since a shared wallet has no
      owner. Admin-entered expenses are approved from the start. See
      `docs/PRD-vydaj-za-jineho.md`
+   - **"Soukromý výdaj"** (`isPrivate`, `privateSettlements`): a gift/surprise
+     visible ONLY to its payer + split members + superadmins — chata admins
+     and a non-member banker included in "nobody" (the surprise target could
+     be either). Excluded from `calculateStats` entirely (pot, Přehled Σ,
+     homepage `_stats` unchanged); settled member→payer directly (QR to the
+     payer's own account, manual per-member marks via the transactional
+     `POST /api/expenses/private-settle`, batch for netting). Invariants
+     (participant payer owned by the creator, weighted split, positive
+     amount, no invitations, NO receipts in v1, forced `approved`, one-way
+     door: create-only flag, declassify allowed, public→private rejected,
+     debt-signature edits clear marks) run in the FIRST beforeChange hook for
+     every writer; pure rules + the private-layer math (shares, netting
+     hints, banker combine hint) in `src/lib/privateExpenses.ts`
+     (unit-tested; role matrix in `tests/int/privateExpensesApi.int.spec.ts`).
+     Slug API filters per viewer (`canViewPrivateExpense`) and widens bank
+     fields to members for the QR (`visiblePrivatePayerIds`). UI: purple
+     switch/notes in the composer, purple badge + circle footer on the card,
+     `PrivateExpensesCard.tsx` under the PersonView summary. See
+     `docs/PRD-soukromy-vydaj.md`
 
 4. **Prepayments** (`src/collections/Prepayments.ts`)
    - Money transfers between participants and banker
@@ -392,6 +411,12 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
     waiting for (or refused) approval is a claim about somebody else's
     money, so `Expenses.access.read` narrows to approved rows for anyone
     but admins, the author and the payer's account
+  - **Private expenses are invisible even to chata admins**: both
+    `Expenses.access.read` AND `access.update/delete` guard the admin chata
+    branch with `isPrivate: { not_equals: true }` (a blind PATCH would
+    return the doc). Superadmin, `authoredBy` and `payerAccount` keep
+    access; the other members read via the slug API only. Legacy NULL rows
+    count as public (drizzle `not_equals` matches NULL)
 - **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
   the slug API returns a `viewer` + `locked` list; admins of the chata get
   the full participant selector (defaulting to their own linked

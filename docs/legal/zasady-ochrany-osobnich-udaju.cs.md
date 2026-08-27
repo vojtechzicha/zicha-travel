@@ -125,12 +125,19 @@ Jméno u výletu zůstává v obou případech.
 
 Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě
 pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi", výdaje
-čekající na potvrzení a hlasy z plánování výletu (kdo se přidal a co komu
-vyhovuje); hlasy vidí jen přihlášení účastníci dané chaty a její správci. Bankovní spojení účastníka vidí jen on sám (přes
+čekající na potvrzení, soukromé výdaje a hlasy z plánování výletu (kdo se
+přidal a co komu vyhovuje); hlasy vidí jen přihlášení účastníci dané chaty
+a její správci. Bankovní spojení účastníka vidí jen on sám (přes
 svůj účet), přihlášený pokladník a správci dané chaty; pokladníkovo
 bankovní spojení je veřejné, protože bez něj by nefungovalo anonymní
 vyrovnání (pokladník s tím svou rolí počítá). Účtenky vidí jen přihlášení
 uživatelé.
+
+Soukromý výdaj (dárek nebo překvapení) je přísnější výjimka: vidí ho jen
+jeho plátce, účastníci jeho rozdělení a superadministrátor webu. Nevidí ho
+ani správci chaty, ani pokladník, pokud v rozdělení sami nejsou. Protože se
+takový výdaj platí přímo plátci, zobrazuje se členům jeho rozdělení
+bankovní spojení plátce; založením soukromého výdaje s tím plátce počítá.
 
 Správci chaty vidí všechny údaje své chaty. My jako provozovatel máme
 přístup ke všemu, ale používáme ho jen k provozu, podpoře a plnění těchto
@@ -309,6 +316,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
+| 3 | 27. 8. 2026 | Soukromé výdaje: nový typ výdaje viditelný jen jeho členům, doplnění kapitoly 6 včetně zobrazení bankovního spojení plátce členům jeho rozdělení. |
 | 2 | 25. 8. 2026 | Fáze plánování výletu: hlasování o termínu a ubytování jako nová kategorie údajů, možnost přidat se k výletu hlasovacím formulářem a s tím spojené doplnění kapitol 2, 3, 5, 6 a 9. |
 | 1 | 16. 8. 2026 | První zveřejněná verze. |
 

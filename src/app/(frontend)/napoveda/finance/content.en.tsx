@@ -1,7 +1,8 @@
 // English content. A translation of content.cs.tsx — same structure, same
 // screenshots (which show the Czech UI), idiomatic English.
 
-import { Banknote, ClipboardList, Crown, ListTree, Receipt, UserSearch, Wallet } from 'lucide-react'
+import {
+  EyeOff, Banknote, ClipboardList, Crown, ListTree, Receipt, UserSearch, Wallet } from 'lucide-react'
 import { Callout, HelpShell, List, NextPage, Screenshot, ScreenshotRow, Section, Steps } from '../ui'
 
 export default function FinanceContentEn() {
@@ -129,6 +130,11 @@ export default function FinanceContentEn() {
                     A yellow dashed border and a <em>Planned</em> badge mean an expense that is
                     still to come.
                   </>,
+                  <>
+                    A purple border with a lock and a <em>Private</em> badge belongs to an expense
+                    only its members can see. Nobody else knows about it and the journal shows no
+                    gap where it would be.
+                  </>,
                 ]}
               />
             </div>
@@ -159,6 +165,35 @@ export default function FinanceContentEn() {
               <>
                 Receipts hang there as small thumbnails. An image opens full screen when tapped, a
                 PDF opens in a new tab.
+              </>,
+              <>
+                A private expense card lists everyone in the know in its footer, a reminder that
+                the rest of the chata cannot see it.
+              </>,
+            ]}
+          />
+        </Section>
+
+        <Section title="Private expenses: the purple card outside the pot" icon={<EyeOff size={20} />}>
+          <p>
+            When a private expense concerns you, say a gift for somebody on the trip, a purple{' '}
+            <em>Private expenses</em> card appears under the summary box. It never counts into the
+            shared settlement; it is a separate layer just for its members.
+          </p>
+          <List
+            items={[
+              <>
+                When you owe: the card shows your share, a QR payment straight to the account of
+                whoever paid, and a <strong>Mark as paid</strong> button.
+              </>,
+              <>
+                When you paid: you see who still owes what, with a <em>waiting</em> or{' '}
+                <em>settled</em> state. Both the debtor and you can mark a payment.
+              </>,
+              <>Owing each other? The card works out the difference and offers to mark both at once.</>,
+              <>
+                How to record a private expense is covered in the{' '}
+                <a href="/napoveda/vydaje">expenses guide</a>.
               </>,
             ]}
           />

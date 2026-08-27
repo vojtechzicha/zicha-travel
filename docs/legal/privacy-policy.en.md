@@ -129,14 +129,21 @@ with the trip either way.
 
 Without signing in, a visitor can never see: anyone's bank details except
 the banker's, receipts, email addresses, the "Keys and Wi-Fi" section,
-expenses waiting for confirmation, or planning votes (who joined and what
-suits them); votes are visible only to the chata's signed-in participants
-and its admins. A participant's bank details are
+expenses waiting for confirmation, private expenses, or planning votes
+(who joined and what suits them); votes are visible only to the chata's
+signed-in participants and its admins. A participant's bank details are
 visible only to that participant (through their account), the signed-in
 banker and the admins of that chata; the banker's bank details are public
 because the anonymous QR settlement cannot work without them (the banker
 takes that on with the role). Receipts are visible to signed-in users
 only.
+
+A private expense (a gift or a surprise) is a stricter exception: only its
+payer, the participants in its split and the site superadmin can see it.
+Neither the chata's admins nor the banker see it unless they are in the
+split themselves. Because such an expense is paid straight to the payer,
+the members of its split are shown the payer's bank details; by creating a
+private expense the payer accepts that.
 
 A chata's admins see all of that chata's data. As the operator we have
 access to everything, but we use it only to run the service, provide
@@ -321,6 +328,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
+| 3 | 27 August 2026 | Private expenses: a new expense type visible only to its members, additions to section 6 including showing the payer's bank details to the members of its split. |
 | 2 | 25 August 2026 | Trip planning phase: the date and accommodation vote as a new data category, the option to join a trip through the vote form, and the related additions to sections 2, 3, 5, 6 and 9. |
 | 1 | 16 August 2026 | First published version. |
 
