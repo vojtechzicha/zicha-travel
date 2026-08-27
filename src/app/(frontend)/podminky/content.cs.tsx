@@ -1,11 +1,13 @@
 // Czech content of /podminky: the terms of use, transcribed from
-// docs/legal/podminky-uziti.cs.md (effective 2026-08-16). Edit wording
+// docs/legal/podminky-uziti.cs.md (version 2, effective 2026-08-25; the
+// version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale.
 
 import {
   BookOpen,
   Calculator,
   Eye,
+  FileClock,
   History,
   Info,
   KeyRound,
@@ -28,7 +30,7 @@ export default function TermsContentCs() {
       isHub
       icon={<ScrollText size={44} className="text-primary-light" />}
       title="Podmínky užití"
-      lead="Služba zicha.travel · Účinnost od 16. 8. 2026"
+      lead="Služba zicha.travel · Účinnost od 25. 8. 2026 (verze 2)"
     >
       <div className="flex flex-col gap-6">
         <Section
@@ -98,7 +100,8 @@ export default function TermsContentCs() {
         <Section id="ucty" title="4. Účty" icon={<KeyRound size={20} />}>
           <p>
             Účet vám založí správce chaty, nebo vznikne přes „To jsem já“ (žádost o propojení se
-            jménem účastníka) či „Jsem tu poprvé“. Přihlašuje se jednorázovým odkazem na e-mail,
+            jménem účastníka), přes „Jsem tu poprvé“, anebo hlasováním při plánování výletu.
+            Přihlašuje se jednorázovým odkazem na e-mail,
             nebo přes Microsoft, Google či Apple; heslo u nás neexistuje, takže chraňte svou
             e-mailovou schránku, kdo ovládá ji, ovládá váš účet.
           </p>
@@ -237,9 +240,10 @@ export default function TermsContentCs() {
         <Section id="zmeny" title="11. Změny podmínek" icon={<History size={20} />}>
           <p>
             Podmínky můžeme měnit, například když přibude funkce nebo to vyžádá právo. Novou
-            verzi zveřejníme na webu s datem účinnosti; na podstatné změny upozorníme uživatele
-            předem e-mailem nebo na webu. Pokud s novou verzí nesouhlasíte, můžete účet zrušit;
-            dalším užíváním po účinnosti změnu přijímáte.
+            verzi zveřejníme na webu s datem účinnosti; co se mezi verzemi změnilo, ukazuje
+            kapitola 14. Na podstatné změny upozorníme uživatele předem e-mailem nebo na webu.
+            Pokud s novou verzí nesouhlasíte, můžete účet zrušit; dalším užíváním po účinnosti
+            změnu přijímáte.
           </p>
         </Section>
 
@@ -268,6 +272,36 @@ export default function TermsContentCs() {
             </a>
             .
           </p>
+        </Section>
+
+        <Section id="historie" title="14. Historie verzí" icon={<FileClock size={20} />}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px] border-collapse">
+              <thead>
+                <tr className="text-left text-gray-500 border-b border-gray-200">
+                  <th className="py-2 pr-4 font-semibold">Verze</th>
+                  <th className="py-2 pr-4 font-semibold">Účinnost</th>
+                  <th className="py-2 font-semibold">Co se změnilo</th>
+                </tr>
+              </thead>
+              <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">2</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">25. 8. 2026</td>
+                  <td className="py-2.5">
+                    Hlasování při plánování výletu doplněno jako další způsob vzniku účtu
+                    (kapitola 4).
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">1</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">16. 8. 2026</td>
+                  <td className="py-2.5">První zveřejněná verze.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Plné znění starší verze pošleme na vyžádání.</p>
         </Section>
       </div>
     </HelpShell>

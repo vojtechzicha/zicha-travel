@@ -22,7 +22,7 @@ ve stejném PR.
 | Cíl | Odkud | Co odchází |
 | --- | --- | --- |
 | `/ingest` (first-party proxy → PostHog EU) | AnalyticsProvider | anonymní události |
-| `challenges.cloudflare.com` | TurnstileWidget (login, claim) | signály prohlížeče |
+| `challenges.cloudflare.com` | TurnstileWidget (login, claim, hlasování v plánování) | signály prohlížeče |
 | `api.open-meteo.com` | TripWeather (jen s koordináty + blízkým termínem) | souřadnice, IP |
 | `api.paylibo.com` | QRPayment (`<img>`) | účet příjemce, částka, zpráva, IP |
 | bucket S3 (presigned PUT) | ExpenseComposer upload | soubor účtenky |

@@ -2,7 +2,7 @@
 // screenshots (which show the Czech UI). Quoted admin-panel labels (Name,
 // Slug, Paid By, ...) are the actual English labels of the admin UI.
 
-import { Crown, Settings, ShieldCheck, UserCog, UserPlus, Wallet } from 'lucide-react'
+import { Crown, Settings, ShieldCheck, UserCog, UserPlus, Vote, Wallet } from 'lucide-react'
 import { Callout, HelpShell, List, PageCards, Screenshot, Section, Steps } from '../ui'
 
 export default function SpravaContentEn() {
@@ -44,6 +44,57 @@ export default function SpravaContentEn() {
               </>,
             ]}
           />
+        </Section>
+
+        <Section title="Planning phase and voting" icon={<Vote size={20} />}>
+          <p>
+            Until the trip is booked, a chata can run as a poll: people vote on the page for the
+            dates they can make and the cottages they like, and by voting they add themselves as
+            participants.
+          </p>
+          <List
+            items={[
+              <>
+                Tick <strong>Planning phase (voting) is on</strong> in the chata form and write
+                the intro text. The public page then shows only the planning view.
+              </>,
+              <>
+                The candidate dates and cottages live in the <strong>Planning</strong> admin
+                group. A cottage can be limited to some of the dates; an empty field means it
+                works for all of them.
+              </>,
+              <>
+                Results are visible only to the chata&apos;s signed-in participants and its
+                admins. Once the group decides, untick the box and set the real dates. The
+                voters already exist as participants.
+              </>,
+            ]}
+          />
+          <p>
+            <strong>A vote for someone who doesn&apos;t use the web</strong> (say they told you
+            on the phone) can be entered by hand:
+          </p>
+          <Steps
+            items={[
+              <>
+                Create them as a participant: <strong>Participants</strong>, a name and the
+                chata are enough, no account needed.
+              </>,
+              <>
+                In <strong>Planning → Planning votes</strong> create a new vote, pick the
+                participant and save. That fills in the chata and reveals the date and place
+                fields.
+              </>,
+              <>
+                Tick what works for them and save again. The vote counts right away and the
+                name shows up under &ldquo;Who&apos;s in&rdquo;.
+              </>,
+            ]}
+          />
+          <Callout>
+            Each participant has at most one vote. If they change their mind, edit their
+            existing vote instead of creating a second one.
+          </Callout>
         </Section>
 
         <Section title="Participants" icon={<UserPlus size={20} />}>

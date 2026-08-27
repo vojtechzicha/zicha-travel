@@ -222,6 +222,77 @@ export const Chatas: CollectionConfig = {
       },
     },
 
+    // Planning phase ("Plánujeme" — docs/PRD-planovani.md): while enabled,
+    // the frontend shows only the planning/voting view. The options and the
+    // votes live in their own collections (Planning group), joined here for
+    // a quick overview.
+    {
+      type: 'collapsible',
+      label: { en: 'Planning phase', cs: 'Fáze plánování' },
+      admin: {
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'planningEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          label: { en: 'Planning phase (voting) is on', cs: 'Fáze plánování (hlasování) běží' },
+          admin: {
+            description: {
+              en:
+                'The public page shows only the planning view: the date and accommodation ' +
+                'options, and a vote form that creates accounts and participants. Untick it ' +
+                '(and set the real dates) once the trip is booked.',
+              cs:
+                'Veřejná stránka ukazuje jen plánovací pohled: termíny a chalupy k hlasování ' +
+                'a formulář, který zakládá účty a účastníky. Až bude výlet rezervovaný, ' +
+                'zaškrtnutí zrušte a nastavte skutečné datum.',
+            },
+          },
+        },
+        {
+          name: 'planningIntro',
+          type: 'textarea',
+          label: { en: 'Planning intro', cs: 'Úvod plánování' },
+          admin: {
+            description: {
+              en: 'The pitch at the top of the planning page — what is being planned and why people should vote.',
+              cs: 'Text v záhlaví plánovací stránky – co se chystá a proč mají lidé hlasovat.',
+            },
+            condition: (data) => data.planningEnabled === true,
+          },
+        },
+        {
+          name: 'planningDateOptions',
+          type: 'join',
+          collection: 'trip-date-options',
+          on: 'chata',
+          admin: {
+            condition: (data) => data.planningEnabled === true,
+          },
+        },
+        {
+          name: 'planningAccommodationOptions',
+          type: 'join',
+          collection: 'trip-accommodation-options',
+          on: 'chata',
+          admin: {
+            condition: (data) => data.planningEnabled === true,
+          },
+        },
+        {
+          name: 'planningVotes',
+          type: 'join',
+          collection: 'trip-votes',
+          on: 'chata',
+          admin: {
+            condition: (data) => data.planningEnabled === true,
+          },
+        },
+      ],
+    },
+
     // Banker ("pokladník"). Their own participant record carries the account
     // everyone pays into — the chata keeps no copy of it
     {

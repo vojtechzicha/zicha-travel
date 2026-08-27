@@ -2,7 +2,7 @@
 
 zicha.travel
 
-Effective from: 16 August 2026
+Effective from: 25 August 2026 (version 2)
 
 ## 1. What zicha.travel is and who runs it
 
@@ -43,8 +43,9 @@ policy. Even without an account, the rules apply:
 
 ## 4. Accounts
 
-An account is created for you by a chata admin, or through "That's me" (a
-claim request linking you to a participant name) or "I'm new here". Sign-in
+An account is created for you by a chata admin, through "That's me" (a
+claim request linking you to a participant name), through "I'm new here",
+or by voting while a trip is being planned. Sign-in
 uses a one-time link sent by email, or Microsoft, Google or Apple; there is
 no password with
 us, so protect your mailbox: whoever controls it controls your account.
@@ -143,8 +144,8 @@ settlements, liability, governing law) survive termination.
 
 We may change these terms, for example when a feature is added or the law
 requires it. We publish the new version on the site with its effective
-date; we announce substantial changes to users in advance, by email or on
-the site. If you do not agree with the new version, you can cancel your
+date; section 14 shows what changed between versions. We announce
+substantial changes to users in advance, by email or on the site. If you do not agree with the new version, you can cancel your
 account; continued use after the effective date means acceptance.
 
 ## 12. Governing law
@@ -160,3 +161,12 @@ of the terms remain in force.
 
 Vojtěch Zicha,
 [mail@vojtechzicha.com](mailto:mail@vojtechzicha.com).
+
+## 14. Version history
+
+| Version | Effective | What changed |
+| --- | --- | --- |
+| 2 | 25 August 2026 | Voting during trip planning added as another way an account comes to exist (section 4). |
+| 1 | 16 August 2026 | First published version. |
+
+We will send the full text of an older version on request.
