@@ -342,20 +342,33 @@ export function PrivateExpensesCard({
                 <span className="text-[14px] font-semibold text-purple-950 dark:text-purple-100 min-w-0 break-words">
                   {row.title}
                 </span>
-                <strong className="text-[14px] text-green-700 dark:text-green-400 flex-shrink-0">
+                {/* a planned expense has not been paid, so nothing is owed
+                    back yet — amber and future tense until it is real */}
+                <strong
+                  className={`text-[14px] flex-shrink-0 ${
+                    row.isPlanned
+                      ? 'text-amber-700 dark:text-amber-300'
+                      : 'text-green-700 dark:text-green-400'
+                  }`}
+                >
                   + {formatCurrency(Math.round(row.net), locale)}
                 </strong>
               </div>
               <div className="text-[12.5px] text-purple-800 dark:text-purple-300 flex items-center gap-2 flex-wrap">
                 <span>
-                  {row.ownShare > 0
-                    ? t('privateLayer.paidSummary', {
-                        paid: formatCurrency(Math.round(row.paidTotal), locale),
-                        share: formatCurrency(Math.round(row.ownShare), locale),
-                      })
-                    : t('privateLayer.paidSummaryNoShare', {
-                        paid: formatCurrency(Math.round(row.paidTotal), locale),
-                      })}
+                  {t(
+                    row.isPlanned
+                      ? row.ownShare > 0
+                        ? 'privateLayer.willPaySummary'
+                        : 'privateLayer.willPaySummaryNoShare'
+                      : row.ownShare > 0
+                        ? 'privateLayer.paidSummary'
+                        : 'privateLayer.paidSummaryNoShare',
+                    {
+                      paid: formatCurrency(Math.round(row.paidTotal), locale),
+                      share: formatCurrency(Math.round(row.ownShare), locale),
+                    },
+                  )}
                 </span>
                 {row.isPlanned && (
                   <span className="text-[11.5px] font-bold text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-400/15 px-2 py-0.5 rounded-full">
@@ -363,6 +376,11 @@ export function PrivateExpensesCard({
                   </span>
                 )}
               </div>
+              {row.isPlanned && (
+                <p className="text-[12px] text-purple-700 dark:text-purple-300">
+                  {t('privateLayer.plannedHint')}
+                </p>
+              )}
               {!row.isPlanned && (
                 <div className="flex flex-col gap-1.5">
                   {row.members.map((member) => {

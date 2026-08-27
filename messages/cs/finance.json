@@ -187,6 +187,8 @@
     "settled": "vyrovnáno",
     "paidSummary": "zaplaceno {paid}, tvůj podíl {share}",
     "paidSummaryNoShare": "zaplaceno {paid}",
+    "willPaySummary": "zaplatíš {paid}, tvůj podíl {share}",
+    "willPaySummaryNoShare": "zaplatíš {paid}",
     "nettingSend": "Ty a {name} si navzájem dlužíte. Stačí, když pošleš rozdíl {amount}.",
     "nettingReceive": "Ty a {name} si navzájem dlužíte. Stačí, když {name} pošle rozdíl {amount}.",
     "nettingEven": "Ty a {name} si navzájem dlužíte stejně. Stačí obojí označit jako vyrovnané.",

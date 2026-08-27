@@ -1,11 +1,12 @@
 import crypto from 'crypto'
-import type { CollectionConfig, FieldAccess, PayloadRequest, Where } from 'payload'
+import { APIError, type CollectionConfig, type FieldAccess, type PayloadRequest, type Where } from 'payload'
 import type { Participant } from '../payload-types'
 import { refId, syncPaidByInvitations } from '../utils/paidByInvitations'
 import { anonymizeParticipant, exportParticipantBundle } from '../utils/participantRights'
 import { adminRoleOnly, canManageChata, chataScopedAccess, isSuperadmin } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 import { isOAuthConfigured } from '../lib/auth/config'
+import { payerParticipantId } from '../lib/privateExpenses'
 
 const isOAuthEnabled = isOAuthConfigured()
 
@@ -299,6 +300,77 @@ export const Participants: CollectionConfig = {
       },
     ],
     beforeDelete: [
+      // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): deleting a participant
+      // must not bypass the private-expense invariants. The payer anchors the
+      // whole expense — the circle, the settlement target, the payerAccount
+      // access branch — so deleting them is refused: delete their private
+      // expenses first, or anonymize the participant instead. A deleted
+      // MEMBER changes the debt: their weight rows go and every settlement
+      // mark is cleared (the same rule a debt-signature edit applies), and
+      // an expense left without a positive share is deleted with them.
+      // Every step runs on the delete's own req (same transaction), so a
+      // failed reconcile aborts the deletion instead of half-applying it.
+      async ({ id, req }) => {
+        const participant = await req.payload
+          .findByID({ collection: 'participants', id, depth: 0, overrideAccess: true, req })
+          .catch(() => null)
+        if (!participant) return
+        const privateExpenses = await req.payload.find({
+          collection: 'expenses',
+          where: {
+            and: [
+              { chata: { equals: refId(participant.chata) } },
+              { isPrivate: { equals: true } },
+            ],
+          },
+          limit: 1000,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })
+        for (const expense of privateExpenses.docs) {
+          if (payerParticipantId(expense.payer) === String(id)) {
+            throw new APIError(
+              'Účastníka nelze smazat: je plátcem soukromého výdaje. Nejdříve smažte jeho soukromé výdaje, nebo účastníka anonymizujte.',
+              400,
+            )
+          }
+          const weights = expense.weights ?? []
+          const isMember = weights.some(
+            (w) => w.participant != null && refId(w.participant) === String(id),
+          )
+          if (!isMember) continue
+          const remaining = weights.filter(
+            (w) => w.participant != null && refId(w.participant) !== String(id),
+          )
+          const total = remaining.reduce((sum, w) => sum + (w.weight ?? 0), 0)
+          if (remaining.length === 0 || !(total > 0)) {
+            // the deleted member was the only debtor — nothing remains to
+            // split, settle or see
+            await req.payload.delete({
+              collection: 'expenses',
+              id: expense.id,
+              overrideAccess: true,
+              depth: 0,
+              req,
+              context: { skipExpenseApprovalEffects: true },
+            })
+          } else {
+            await req.payload.update({
+              collection: 'expenses',
+              id: expense.id,
+              data: { weights: remaining, privateSettlements: [] },
+              overrideAccess: true,
+              depth: 0,
+              req,
+              // server-side maintenance: the settle context lets the cleared
+              // marks through the server-owned guard, and the shape written
+              // here satisfies the private invariants by construction
+              context: { expensePrivateSettle: true, skipExpenseApprovalEffects: true },
+            })
+          }
+        }
+      },
       // A vote means nothing without its voter. Production has ON DELETE
       // CASCADE on trip_votes.participant_id, but dev-push schemas carry
       // Payload's NOT NULL + SET NULL combo (the claim_requests story), so

@@ -150,9 +150,15 @@ cannot be probed.
     `payerAccount` on the other). Marking is one transaction; undo is
     per-row — no netting-group id is stored, and the UI promises no more.
 13. **Banker-combine hint** never mutates prepayments or the pot.
-14. **A deleted member participant**: the settlement FK is nullable with
-    ON DELETE SET NULL, so deletion works and leaves a null row every helper
-    skips; the next debt-signature change sweeps such rows away.
+14. **Participant deletion goes through the circle rules** (a Participants
+    beforeDelete hook, on the delete's own transaction). Deleting the PAYER
+    of a private expense is refused — the payer anchors the circle, the
+    settlement target and the payerAccount access branch; delete the
+    expense first or anonymize the participant. Deleting a MEMBER applies
+    the debt-signature rule: their weight rows go, every settlement mark is
+    cleared, and an expense left without a positive share is deleted with
+    them. The nullable settlement FK (ON DELETE SET NULL) remains as belt
+    and braces for any path that skips the hook.
 15. **Deleted/anonymized accounts**: `userCleanup` nulls
     `authoredBy`/`payerAccount`; visibility narrows to superadmins and the
     remaining linked members.

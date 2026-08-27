@@ -187,6 +187,8 @@
     "settled": "settled",
     "paidSummary": "you paid {paid}, your share {share}",
     "paidSummaryNoShare": "you paid {paid}",
+    "willPaySummary": "you will pay {paid}, your share {share}",
+    "willPaySummaryNoShare": "you will pay {paid}",
     "nettingSend": "You and {name} owe each other. Sending the {amount} difference covers it.",
     "nettingReceive": "You and {name} owe each other. {name} sending the {amount} difference covers it.",
     "nettingEven": "You and {name} owe each other the same. Just mark both as settled.",

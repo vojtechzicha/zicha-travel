@@ -726,6 +726,116 @@ describe('rights exports keep private expenses in the circle (review P4)', () =>
   })
 })
 
+describe('participant deletion respects the circle (review round 2)', () => {
+  it('refuses to delete the payer of a private expense', async () => {
+    // one account may own several participants — Pavel is the payer's
+    // second, disposable one
+    const pavel = await payload.create({
+      collection: 'participants',
+      depth: 0,
+      data: { name: 'Pavel', chata: chata.id, account: users.payer.id },
+    })
+    const gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Pavlův dárek',
+        amount: 300,
+        payer: { relationTo: 'participants', value: pavel.id },
+        splitType: 'weighted',
+        weights: [{ participant: people.Tereza.id, weight: 1 }],
+        isPrivate: true,
+      },
+    })
+    try {
+      await expect(
+        payload.delete({ collection: 'participants', id: pavel.id, depth: 0 }),
+      ).rejects.toThrow(/plátcem soukromého/i)
+      const fresh = await payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 })
+      expect(fresh.isPrivate).toBe(true)
+    } finally {
+      await payload.delete({ collection: 'expenses', id: gift.id, depth: 0 })
+      await payload.delete({ collection: 'participants', id: pavel.id, depth: 0 })
+    }
+  })
+
+  it('deleting a member drops their weight and clears every settlement mark', async () => {
+    const zdena = await payload.create({
+      collection: 'participants',
+      depth: 0,
+      data: { name: 'Zdena', chata: chata.id },
+    })
+    const gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Dárek se Zdenou',
+        amount: 900,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [
+          { participant: people.Tereza.id, weight: 1 },
+          { participant: zdena.id, weight: 2 },
+        ],
+        isPrivate: true,
+      },
+    })
+    try {
+      // Tereza had already paid her share — the mark must not survive a
+      // debt change it no longer describes
+      await payload.update({
+        collection: 'expenses',
+        id: gift.id,
+        depth: 0,
+        overrideAccess: true,
+        context: { expensePrivateSettle: true, skipExpenseApprovalEffects: true },
+        data: {
+          privateSettlements: [
+            { participant: people.Tereza.id, settledAt: new Date().toISOString() },
+          ],
+        },
+      })
+      await payload.delete({ collection: 'participants', id: zdena.id, depth: 0 })
+      const fresh = await payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 })
+      expect(fresh.weights).toHaveLength(1)
+      expect(String(fresh.weights?.[0]?.participant)).toBe(String(people.Tereza.id))
+      expect(fresh.privateSettlements ?? []).toEqual([])
+    } finally {
+      await payload.delete({ collection: 'expenses', id: gift.id, depth: 0 })
+    }
+  })
+
+  it('deleting the only debtor deletes the expense with them', async () => {
+    const robert = await payload.create({
+      collection: 'participants',
+      depth: 0,
+      data: { name: 'Robert', chata: chata.id },
+    })
+    const gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Dárek jen s Robertem',
+        amount: 400,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [{ participant: robert.id, weight: 1 }],
+        isPrivate: true,
+      },
+    })
+    await payload.delete({ collection: 'participants', id: robert.id, depth: 0 })
+    await expect(
+      payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 }),
+    ).rejects.toThrow()
+  })
+})
+
 const refIdOf = (ref: unknown): string | null => {
   if (ref == null) return null
   if (typeof ref === 'object' && 'value' in (ref as object)) {
