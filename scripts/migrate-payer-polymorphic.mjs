@@ -646,6 +646,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_data_requests_id_idx
   ON payload_locked_documents_rels USING btree (data_requests_id);
 
+
 -- Planning phase ("Plánujeme" — docs/PRD-planovani.md): the chata flag +
 -- intro, candidate date windows, candidate cottages (optionally limited to
 -- some windows) and per-participant votes. Additive only — new tables and
@@ -767,6 +768,12 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_trip_votes_id_idx
   ON payload_locked_documents_rels USING btree (trip_votes_id);
+
+
+-- Background photo credits: a background is painted as a CSS background-image,
+-- so CC BY / CC BY-SA photos need their credit listed in the footer instead.
+ALTER TABLE backgrounds ADD COLUMN IF NOT EXISTS attribution character varying;
+ALTER TABLE backgrounds ADD COLUMN IF NOT EXISTS attribution_url character varying;
 `
 
 async function enumLabels(typeName) {

@@ -131,5 +131,31 @@ export const Backgrounds: CollectionConfig = {
         condition: (data) => data.type === 'upload',
       },
     },
+    // A background is painted as a CSS background-image, so an `alt` would
+    // never reach a reader. Photos under CC BY / CC BY-SA need the credit
+    // shown anyway, which is what these two fields render (BackgroundCredit,
+    // at the foot of the chata page). Leave them empty for stock that asks
+    // for nothing (Unsplash) and no credit line appears.
+    {
+      name: 'attribution',
+      type: 'text',
+      admin: {
+        description: {
+          en: 'Credit line shown under the chata page, e.g. "Petrovy kameny · MartinVeselka · CC BY-SA 4.0". Required by CC BY and CC BY-SA photos; leave empty when the licence asks for nothing.',
+          cs: 'Popiska uvedená pod stránkou chaty, např. „Petrovy kameny · MartinVeselka · CC BY-SA 4.0“. U fotek pod CC BY a CC BY-SA je povinná; pokud licence nic nevyžaduje, nechte prázdné.',
+        },
+      },
+    },
+    {
+      name: 'attributionUrl',
+      type: 'text',
+      admin: {
+        description: {
+          en: 'Where the credit links to: the source page of the photo (e.g. its Wikimedia Commons file page), not the image file itself.',
+          cs: 'Kam popiska odkazuje: na zdrojovou stránku fotky (např. její stránku na Wikimedia Commons), ne na samotný soubor obrázku.',
+        },
+        condition: (data) => Boolean(data.attribution),
+      },
+    },
   ],
 }

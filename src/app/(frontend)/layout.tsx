@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { Footer } from './components/Footer'
+import { AttributionProvider } from './components/AttributionProvider'
 import { ConsentBanner } from './components/ConsentBanner'
 import { UpdateHint } from './components/UpdateHint'
 import { AnalyticsProvider } from './components/AnalyticsProvider'
@@ -61,8 +62,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     <html lang={locale} className={`${inter.variable} ${merriweather.variable}`}>
       <body className="flex flex-col min-h-screen">
         <NextIntlClientProvider>
-          <main className="flex-1">{children}</main>
-          <Footer />
+          {/* Wraps content AND footer: photo credits are raised inside the
+              page and spent in the footer, which is the content's sibling. */}
+          <AttributionProvider>
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </AttributionProvider>
           {/* Post-deploy refresh hint for long-lived tabs — renders nothing
               until a newer build answers /api/version. */}
           <UpdateHint />
