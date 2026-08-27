@@ -20,8 +20,10 @@ import {
   Check,
   ChevronLeft,
   Clock,
+  EyeOff,
   FileText,
   HeartHandshake,
+  Lock,
   Minus,
   Pencil,
   Plus,
@@ -280,6 +282,14 @@ export function ExpenseComposer({
   // happen (one stray tap), and the way back is to delete and add it again.
   const plannedEditable = !isEdit || (expense?.isPlanned ?? false)
   const [isPlanned, setIsPlanned] = useState(markPaid ? false : (expense?.isPlanned ?? false))
+  // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): a gift only its circle
+  // ever sees. Its switch is a one-way door like the planned one, but in the
+  // OTHER direction: it shows while creating and on an expense that already
+  // is private (turning it off declassifies it) — a public expense has been
+  // seen and can never go private, so editing one never offers the switch.
+  // It also needs an own participant to pay: the server refuses any other
+  // creator.
+  const [isPrivate, setIsPrivate] = useState(expense?.isPrivate ?? false)
   // Confirming a payment re-dates the expense to the day it was paid
   const [dateStr, setDateStr] = useState(
     toDateInput(markPaid ? new Date() : (expense?.createdAt ?? new Date())),
@@ -364,6 +374,27 @@ export function ExpenseComposer({
     payerIsOwn: alternatePayer === null,
   })
   const [showOtherPayers, setShowOtherPayers] = useState(() => alternatePayer !== null)
+  const privateEditable = (!isEdit || (expense?.isPrivate ?? false)) && ownParticipants.length > 0
+
+  const handlePrivateToggle = () => {
+    const next = !isPrivate
+    setIsPrivate(next)
+    if (!next) return
+    // a private expense is always paid by one of the author's own people;
+    // refunds, invitations and the everyone-splits mode contradict it
+    if (payer === null || payer.relationTo !== 'participants' || !ownIds.includes(payer.value)) {
+      setPayer(
+        ownParticipants.length > 0
+          ? { relationTo: 'participants', value: ownParticipants[0].id }
+          : null,
+      )
+    }
+    setShowOtherPayers(false)
+    setIsRefund(false)
+    setSplitMode((mode) => (mode === 'equal' ? 'shares' : mode))
+    setManualInvites([])
+    setDraftHost('')
+  }
 
   const includedParticipants = useMemo(
     () =>
@@ -419,7 +450,11 @@ export function ExpenseComposer({
         ? includedParticipants.length > 0 && totalShares > 0
         : amountsPlan.valid
 
-  const detailsValid = title.trim().length > 0 && amountValid && payer !== null
+  const detailsValid =
+    title.trim().length > 0 &&
+    amountValid &&
+    payer !== null &&
+    (!isPrivate || (payer.relationTo === 'participants' && ownIds.includes(payer.value)))
   const formValid = detailsValid && splitValid
 
   // Refunds keep shares/equal — negative exact amounts don't exist (weights
@@ -544,9 +579,11 @@ export function ExpenseComposer({
     setSaving(true)
     setError(null)
     try {
-      // 1) upload new receipts (downscaled client-side; Vercel body cap)
+      // 1) upload new receipts (downscaled client-side; Vercel body cap).
+      // A private expense takes none — the files would be readable by any
+      // signed-in account
       const uploadedIds: number[] = []
-      for (const nf of newFiles) {
+      for (const nf of isPrivate ? [] : newFiles) {
         const prepared = await downscaleImage(nf.file)
         if (prepared.size > 4 * 1024 * 1024) {
           throw new Error(t('errors.fileTooLarge', { name: nf.file.name }))
@@ -600,12 +637,16 @@ export function ExpenseComposer({
         payer: { relationTo: payer.relationTo, value: payer.value },
         splitType: splitMode === 'equal' ? 'equal' : 'weighted',
         weights,
-        invitations,
+        invitations: isPrivate ? [] : invitations,
         createdAt: baseDate.toISOString(),
-        attachments: [...existingAttachments.map((a) => a.id), ...uploadedIds],
+        attachments: isPrivate ? [] : [...existingAttachments.map((a) => a.id), ...uploadedIds],
         // only where the switch was offered; a paid expense keeps its flag
         // untouched (PATCH is partial), so it can never revert to planned
         ...(plannedEditable ? { isPlanned } : {}),
+        // same shape for privacy: sent only while the switch shows, so a
+        // public expense can never be flipped from here (the server refuses
+        // it anyway)
+        ...(privateEditable ? { isPrivate } : {}),
       }
 
       const res = await fetch(isEdit ? `/api/expenses/${expense!.id}` : '/api/expenses', {
@@ -630,6 +671,7 @@ export function ExpenseComposer({
           split_mode: splitMode,
           planned: isPlanned,
           for_other: alternatePayer !== null,
+          private: isPrivate,
         })
       }
       await onSaved()
@@ -659,8 +701,11 @@ export function ExpenseComposer({
         initialsOf: p.name,
       })
     }
-    for (const ja of payableJointAccounts) {
-      options.push({ choice: { relationTo: 'joint-accounts', value: ja.id }, label: ja.name })
+    // a private expense knows only participant payers — no shared wallets
+    if (!isPrivate) {
+      for (const ja of payableJointAccounts) {
+        options.push({ choice: { relationTo: 'joint-accounts', value: ja.id }, label: ja.name })
+      }
     }
     // an edited expense may have a payer outside the viewer's options
     // (a joint account assigned by an admin) — keep it selectable so saving
@@ -685,7 +730,7 @@ export function ExpenseComposer({
     // as pickable, only rarer. Once one is chosen the row stays open: it is
     // the only place showing who is meant to have paid.
     const otherPayerUi =
-      otherPayers.length === 0 ? null : !showOtherPayers && alternatePayer === null ? (
+      otherPayers.length === 0 || isPrivate ? null : !showOtherPayers && alternatePayer === null ? (
         <button
           type="button"
           onClick={() => setShowOtherPayers(true)}
@@ -852,10 +897,74 @@ export function ExpenseComposer({
 
   const renderAmountToggles = (compact = false) => (
     <>
-      {renderRefundSwitch(compact)}
+      {!isPrivate && renderRefundSwitch(compact)}
       {renderPlannedSwitch(compact)}
     </>
   )
+
+  const renderPrivateSwitch = (compact = false) =>
+    privateEditable
+      ? renderSwitch({
+          label: t('private.toggle'),
+          checked: isPrivate,
+          onToggle: handlePrivateToggle,
+          onColor: 'bg-purple-600',
+          compact,
+        })
+      : null
+
+  // Who is inside the circle, for the note: the payer first (the viewer's
+  // own participant reads as "ty"), then everyone picked in the split
+  const circleNames = useMemo(() => {
+    if (payer === null || payer.relationTo !== 'participants') return []
+    const payerLabel = ownIds.includes(payer.value)
+      ? t('private.you')
+      : (participantById.get(payer.value)?.name ?? '')
+    return [
+      payerLabel,
+      ...includedParticipants.filter((p) => p.id !== payer.value).map((p) => p.name),
+    ].filter(Boolean)
+  }, [payer, ownIds, includedParticipants, participantById, t])
+
+  const listNames = (names: string[]) =>
+    new Intl.ListFormat(locale === 'cs' ? 'cs' : 'en', {
+      style: 'long',
+      type: 'conjunction',
+    }).format(names)
+
+  // The one thing to understand before saving a private expense: exactly who
+  // will see it, and that the pot stays out of it. With names once the split
+  // is picked; generic while it is not.
+  const renderPrivateNote = (withNames: boolean) => {
+    if (!isPrivate) return null
+    const named = withNames && circleNames.length > 1
+    return (
+      <div className="flex items-start gap-2.5 mt-2.5 bg-purple-50 border border-purple-200 text-purple-900 dark:bg-purple-400/10 dark:border-purple-400/30 dark:text-purple-200 rounded-xl px-3 py-2.5">
+        <EyeOff size={15} className="flex-shrink-0 mt-0.5" />
+        <span className="text-[13px] leading-relaxed">
+          {named
+            ? t('private.noteNamed', { names: listNames(circleNames) })
+            : t('private.noteGeneric')}
+          {isEdit ? ` ${t('private.editResets')}` : ''}
+        </span>
+      </div>
+    )
+  }
+
+  const renderPrivateSplitLock = () =>
+    isPrivate ? (
+      <div className="flex items-center gap-2 mt-2.5 text-[12.5px] text-purple-700 dark:text-purple-300">
+        <Lock size={13} className="flex-shrink-0" />
+        {t('private.splitLock')}
+      </div>
+    ) : null
+
+  const renderNoReceiptsNote = () =>
+    isPrivate && existingAttachments.length + newFiles.length > 0 ? (
+      <p className="text-[12.5px] text-purple-700 dark:text-purple-300">
+        {t('private.noReceipts')}
+      </p>
+    ) : null
 
   const setRow = (participantId: number, patch: Partial<SplitRow>) =>
     setRows((prev) => ({
@@ -1352,7 +1461,7 @@ export function ExpenseComposer({
         <div className="flex-1 overflow-y-auto px-5 pb-6 flex flex-col gap-5">
           {mobileStep === 'details' && (
             <>
-              {(existingAttachments.length > 0 || newFiles.length > 0) && (
+              {!isPrivate && (existingAttachments.length > 0 || newFiles.length > 0) && (
                 <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.12] rounded-2xl px-3 py-2.5">
                   <div className="flex gap-2 flex-wrap flex-1 min-w-0 items-center">
                     {renderAttachmentThumbs()}
@@ -1360,6 +1469,7 @@ export function ExpenseComposer({
                   </div>
                 </div>
               )}
+              {renderNoReceiptsNote()}
               <div>
                 <label
                   htmlFor="expense-title"
@@ -1418,6 +1528,12 @@ export function ExpenseComposer({
                   />
                 </div>
               </div>
+              {privateEditable && (
+                <div>
+                  {renderPrivateSwitch()}
+                  {renderPrivateNote(false)}
+                </div>
+              )}
               <div>
                 <div className="text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5">{t('stepWhat.payerLabel')}</div>
                 {renderPayerChips()}
@@ -1427,6 +1543,7 @@ export function ExpenseComposer({
 
           {mobileStep === 'split' && (
             <>
+              {!isPrivate && (
               <div className="flex bg-gray-100 dark:bg-white/[0.07] rounded-xl p-1">
                 <button
                   type="button"
@@ -1451,12 +1568,14 @@ export function ExpenseComposer({
                   {t('stepWho.selectShares')}
                 </button>
               </div>
+              )}
               {splitMode === 'equal' ? (
                 renderEqualSummary(t('stepWho.selectShares'))
               ) : (
                 <>
                   {renderSplitRows(splitMode === 'amounts' ? 'amounts' : 'shares')}
                   {renderSplitHint()}
+                  {renderPrivateSplitLock()}
                   {!isRefund && (
                     <button
                       type="button"
@@ -1481,18 +1600,22 @@ export function ExpenseComposer({
               <div className="bg-gray-50 border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.12] rounded-2xl p-4">
                 <div className="flex gap-3">
                   <div className="flex-shrink-0">
-                    {/* mirrors the finished card (ExpenseCard): planned wins
-                        over refund in the styling */}
+                    {/* mirrors the finished card (ExpenseCard): private wins,
+                        then planned over refund in the styling */}
                     <div
                       className={`p-2 rounded-lg ${
-                        isPlanned
-                          ? 'bg-amber-100 dark:bg-amber-400/15'
-                          : isRefund
-                            ? 'bg-green-100 dark:bg-green-500/15'
-                            : 'bg-primary/10'
+                        isPrivate
+                          ? 'bg-purple-100 dark:bg-purple-400/15'
+                          : isPlanned
+                            ? 'bg-amber-100 dark:bg-amber-400/15'
+                            : isRefund
+                              ? 'bg-green-100 dark:bg-green-500/15'
+                              : 'bg-primary/10'
                       }`}
                     >
-                      {isPlanned ? (
+                      {isPrivate ? (
+                        <EyeOff size={20} className="text-purple-600 dark:text-purple-300" />
+                      ) : isPlanned ? (
                         <Clock size={20} className="text-amber-600 dark:text-amber-300" />
                       ) : isRefund ? (
                         <ArrowLeft size={20} className="text-green-600 dark:text-green-300" />
@@ -1549,22 +1672,26 @@ export function ExpenseComposer({
                         ))
                       )}
                     </div>
-                    <div className="flex gap-2 mt-2.5 flex-wrap">
-                      {renderAttachmentThumbs()}
-                      <button
-                        type="button"
-                        aria-label={t('attachments.ariaAdd')}
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-11 h-11 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 dark:border-white/[0.15] dark:text-slate-500 dark:hover:text-slate-300 dark:hover:border-white/[0.25] flex items-center justify-center"
-                      >
-                        <Camera size={16} />
-                      </button>
-                    </div>
+                    {!isPrivate && (
+                      <div className="flex gap-2 mt-2.5 flex-wrap">
+                        {renderAttachmentThumbs()}
+                        <button
+                          type="button"
+                          aria-label={t('attachments.ariaAdd')}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-11 h-11 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 dark:border-white/[0.15] dark:text-slate-500 dark:hover:text-slate-300 dark:hover:border-white/[0.25] flex items-center justify-center"
+                        >
+                          <Camera size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+              {renderPrivateNote(true)}
+              {renderNoReceiptsNote()}
               {renderApprovalNote()}
-              {renderInvitations()}
+              {!isPrivate && renderInvitations()}
               {errorBanner}
             </>
           )}
@@ -1695,10 +1822,15 @@ export function ExpenseComposer({
             <div className="col-span-2">
               <div className="text-[13px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5">{t('stepWhat.payerLabel')}</div>
               {renderPayerChips()}
+              {renderPrivateSwitch(true)}
+              {renderPrivateNote(true)}
             </div>
           </div>
 
-          {/* attachments */}
+          {/* attachments — receipts have no place on a private expense: the
+              files are readable by any signed-in account */}
+          {renderNoReceiptsNote()}
+          {!isPrivate && (
           <div>
             <div className="text-xs font-bold tracking-[0.08em] uppercase text-gray-400 dark:text-slate-500 mb-2.5">
               {t('attachments.title')}
@@ -1742,6 +1874,7 @@ export function ExpenseComposer({
               <Upload size={22} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
             </div>
           </div>
+          )}
 
           {/* split */}
           <div>
@@ -1755,7 +1888,9 @@ export function ExpenseComposer({
                   { mode: 'shares' as const, label: t('stepWho.modeShares') },
                   { mode: 'amounts' as const, label: t('stepWho.modeAmounts') },
                 ] as const
-              ).map(({ mode, label }) => {
+              )
+                .filter(({ mode }) => !(isPrivate && mode === 'equal'))
+                .map(({ mode, label }) => {
                 const disabled = mode === 'amounts' && isRefund
                 return (
                   <button
@@ -1781,12 +1916,13 @@ export function ExpenseComposer({
               <>
                 {renderSplitRows(splitMode === 'amounts' ? 'amounts' : 'shares')}
                 {renderSplitHint()}
+                {renderPrivateSplitLock()}
               </>
             )}
           </div>
 
           {/* invitations */}
-          {renderInvitations()}
+          {!isPrivate && renderInvitations()}
           {errorBanner}
         </div>
 
