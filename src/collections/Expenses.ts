@@ -121,8 +121,15 @@ export const Expenses: CollectionConfig = {
         if (!data) return data
         const original = originalDoc as Expense | undefined
         // Settlement marks are server-owned for everybody; only the
-        // private-settle endpoint (context above) may write them
-        if ('privateSettlements' in data) delete data.privateSettlements
+        // private-settle endpoint (context above) may write them. On update
+        // the incoming data arrives merged with the stored document, so the
+        // stored rows are put back rather than deleted — an absent array
+        // would wipe them
+        if (operation === 'create') {
+          delete data.privateSettlements
+        } else {
+          data.privateSettlements = original?.privateSettlements ?? []
+        }
 
         const wasPrivate = original?.isPrivate === true
         const isPrivate = data.isPrivate !== undefined ? data.isPrivate === true : wasPrivate

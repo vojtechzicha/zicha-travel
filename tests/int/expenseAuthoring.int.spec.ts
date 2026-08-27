@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   canDecideExpense,
+  canSettlePrivateRow,
   canManageExpense,
   isAllowedPayer,
   isCountedExpense,
@@ -211,5 +212,57 @@ describe('isCountedExpense', () => {
   it('leaves pending and rejected ones out', () => {
     expect(isCountedExpense('pending')).toBe(false)
     expect(isCountedExpense('rejected')).toBe(false)
+  })
+})
+
+describe('canSettlePrivateRow', () => {
+  it('lets superadmins mark anything', () => {
+    expect(
+      canSettlePrivateRow({ userId: 99, isSuperadminUser: true }),
+    ).toBe(true)
+  })
+  it("lets the payer's account and the member's own account mark", () => {
+    expect(
+      canSettlePrivateRow({
+        userId: 50,
+        isSuperadminUser: false,
+        payerAccountId: 50,
+        participantAccountId: 60,
+      }),
+    ).toBe(true)
+    expect(
+      canSettlePrivateRow({
+        userId: 60,
+        isSuperadminUser: false,
+        payerAccountId: 50,
+        participantAccountId: 60,
+      }),
+    ).toBe(true)
+  })
+  it('refuses everyone else, including anonymous and unlinked rows', () => {
+    expect(
+      canSettlePrivateRow({
+        userId: 70,
+        isSuperadminUser: false,
+        payerAccountId: 50,
+        participantAccountId: 60,
+      }),
+    ).toBe(false)
+    expect(
+      canSettlePrivateRow({
+        userId: null,
+        isSuperadminUser: false,
+        payerAccountId: 50,
+        participantAccountId: 60,
+      }),
+    ).toBe(false)
+    expect(
+      canSettlePrivateRow({
+        userId: 70,
+        isSuperadminUser: false,
+        payerAccountId: null,
+        participantAccountId: null,
+      }),
+    ).toBe(false)
   })
 })

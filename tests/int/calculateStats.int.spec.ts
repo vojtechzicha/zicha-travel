@@ -538,6 +538,32 @@ describe('expenses waiting for approval ("výdaj za jiného plátce")', () => {
     expectZeroSum(withPending)
   })
 
+  it('ignores private expenses entirely ("soukromý výdaj")', () => {
+    const counted = [expense({ title: 'Groceries', amount: 400, payer: alice })]
+    const withPrivate: Expense[] = [
+      ...counted,
+      expense({
+        title: 'Dárek',
+        amount: 2400,
+        payer: bob,
+        splitType: 'weighted',
+        weights: [
+          { participant: { id: '2', name: 'Bob' }, weight: 1 },
+          { participant: { id: '3', name: 'Cedric' }, weight: 1 },
+        ],
+        isPrivate: true,
+      }),
+    ]
+    const base = calculateStats(participants, counted, [], 'Alice')
+    const stats = calculateStats(participants, withPrivate, [], 'Alice')
+
+    expect(stats).toEqual(base)
+    expect(stats.totalExpenses).toBe(400)
+    expect(stats.participants.Bob.paidExternal).toBe(0)
+    expect(stats.participants.Cedric.costBreakdown.map((c) => c.title)).toEqual(['Groceries'])
+    expectZeroSum(stats)
+  })
+
   it('counts an approved expense and a legacy row with no status at all', () => {
     const stats = calculateStats(
       participants,
