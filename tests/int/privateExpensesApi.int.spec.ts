@@ -38,7 +38,7 @@ async function removeFixture() {
   })
   const found = existing.docs[0]
   if (!found) return
-  for (const collection of ['expenses', 'joint-accounts', 'participants'] as const) {
+  for (const collection of ['expenses', 'prepayments', 'joint-accounts', 'participants'] as const) {
     await payload.delete({
       collection,
       where: { chata: { equals: found.id } },
@@ -833,6 +833,140 @@ describe('participant deletion respects the circle (review round 2)', () => {
     await expect(
       payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 }),
     ).rejects.toThrow()
+  })
+})
+
+describe('references never span chatas (expenses + prepayments)', () => {
+  let otherChata: Chata
+  let stranger: Participant
+  beforeAll(async () => {
+    otherChata = await payload.create({
+      collection: 'chatas',
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: {
+        name: 'Vitest — cizí chata',
+        shortName: 'Vitest cizí',
+        location: 'Testov',
+        slug: `${SLUG}-cizi`,
+      },
+    })
+    stranger = await payload.create({
+      collection: 'participants',
+      depth: 0,
+      data: { name: 'Cizinec', chata: otherChata.id },
+    })
+  })
+  afterAll(async () => {
+    await payload.delete({ collection: 'participants', id: stranger.id, depth: 0 })
+    await payload.delete({ collection: 'chatas', id: otherChata.id, depth: 0 })
+  })
+
+  const publicBase = () => ({
+    chata: chata.id,
+    title: 'Cizí reference',
+    amount: 300,
+    payer: { relationTo: 'participants' as const, value: people.Martin.id },
+    splitType: 'equal' as const,
+  })
+
+  it('rejects a split member from another chata — private (the Codex case) and public alike', async () => {
+    await expect(
+      payload.create({
+        collection: 'expenses',
+        depth: 0,
+        ...asUser(users.payer),
+        data: {
+          ...publicBase(),
+          splitType: 'weighted',
+          weights: [
+            { participant: people.Tereza.id, weight: 1 },
+            { participant: stranger.id, weight: 1 },
+          ],
+          isPrivate: true,
+        },
+      }),
+    ).rejects.toThrow(/jiné chaty/i)
+    await expect(
+      payload.create({
+        collection: 'expenses',
+        depth: 0,
+        data: {
+          ...publicBase(),
+          splitType: 'weighted',
+          weights: [{ participant: stranger.id, weight: 1 }],
+        },
+      }),
+    ).rejects.toThrow(/jiné chaty/i)
+  })
+
+  it('rejects a payer and invitation people from another chata, even without the frontend guard', async () => {
+    await expect(
+      payload.create({
+        collection: 'expenses',
+        depth: 0,
+        data: {
+          ...publicBase(),
+          payer: { relationTo: 'participants', value: stranger.id },
+        },
+      }),
+    ).rejects.toThrow(/jiné chaty/i)
+    await expect(
+      payload.create({
+        collection: 'expenses',
+        depth: 0,
+        data: {
+          ...publicBase(),
+          invitations: [{ host: people.Martin.id, guest: stranger.id }],
+        },
+      }),
+    ).rejects.toThrow(/jiné chaty/i)
+  })
+
+  it('rejects moving an expense to another chata while its references stay behind', async () => {
+    const expense = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      data: publicBase(),
+    })
+    try {
+      await expect(
+        payload.update({
+          collection: 'expenses',
+          id: expense.id,
+          depth: 0,
+          data: { chata: otherChata.id },
+        }),
+      ).rejects.toThrow(/jiné chaty/i)
+    } finally {
+      await payload.delete({ collection: 'expenses', id: expense.id, depth: 0 })
+    }
+  })
+
+  it('rejects a prepayment sender from another chata and accepts one from its own', async () => {
+    await expect(
+      payload.create({
+        collection: 'prepayments',
+        depth: 0,
+        data: {
+          chata: chata.id,
+          from: { relationTo: 'participants', value: stranger.id },
+          amount: 500,
+          type: 'advance',
+        },
+      }),
+    ).rejects.toThrow(/jiné chaty/i)
+    const ok = await payload.create({
+      collection: 'prepayments',
+      depth: 0,
+      data: {
+        chata: chata.id,
+        from: { relationTo: 'participants', value: people.Tereza.id },
+        amount: 500,
+        type: 'advance',
+      },
+    })
+    await payload.delete({ collection: 'prepayments', id: ok.id, depth: 0 })
   })
 })
 

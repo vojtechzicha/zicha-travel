@@ -1,12 +1,41 @@
 import type { CollectionConfig } from 'payload'
 import type { Prepayment } from '../payload-types'
-import { adminRoleOnly, chataScopedAccess } from '../lib/access'
+import { adminRoleOnly, chataScopedAccess, refId } from '../lib/access'
+import { normalizePayer } from '../lib/expenseAuthoring'
+import { assertRefsBelongToChata } from '../utils/chataRefIntegrity'
 
 export const Prepayments: CollectionConfig = {
   slug: 'prepayments',
   labels: {
     singular: { en: 'Prepayment', cs: 'Záloha' },
     plural: { en: 'Prepayments', cs: 'Zálohy' },
+  },
+  hooks: {
+    beforeChange: [
+      // Reference integrity: a prepayment never spans chatas. The sender
+      // must belong to the prepayment's own chata whoever writes it — the
+      // admin filterOptions only constrain the UI.
+      async ({ data, req, originalDoc }) => {
+        if (!data) return data
+        const original = originalDoc as Prepayment | undefined
+        const eff = (key: string): unknown =>
+          (data as Record<string, unknown>)[key] !== undefined
+            ? (data as Record<string, unknown>)[key]
+            : (original as unknown as Record<string, unknown> | undefined)?.[key]
+        const chataId = refId(eff('chata'))
+        if (!chataId || chataId === 'undefined' || chataId === 'null') return data
+        const from = normalizePayer(eff('from'))
+        await assertRefsBelongToChata({
+          req,
+          chataId,
+          participantRefs: from?.relationTo === 'participants' ? [from.value] : [],
+          jointAccountRefs: from?.relationTo === 'joint-accounts' ? [from.value] : [],
+          participantMessage: 'Záloha nemůže odkazovat na účastníka jiné chaty',
+          jointAccountMessage: 'Záloha nemůže odkazovat na společný účet jiné chaty',
+        })
+        return data
+      },
+    ],
   },
   admin: {
     useAsTitle: 'note',

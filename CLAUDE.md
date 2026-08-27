@@ -583,6 +583,13 @@ Collections use `filterOptions` to limit relationship dropdowns:
 - Expenses show only participants from the same Chata
 - Bedroom occupants filtered by Chata
 
+`filterOptions` only constrain the admin UI. For Expenses and Prepayments
+the rule "never span chatas" is ALSO enforced server-side
+(`src/utils/chataRefIntegrity.ts`, wired as beforeChange hooks): every
+participant/joint-account reference — payer/from, weights, invitations,
+privateSettlements — must belong to the document's own chata, whoever
+writes it, and a chata move with stale references is refused.
+
 ## Compliance & GDPR (docs/legal/)
 
 The legal layer shipped 2026-08-16 (docs/legal/compliance-gaps.md is the

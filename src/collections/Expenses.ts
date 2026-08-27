@@ -32,6 +32,7 @@ import {
   notifyExpenseAuthor,
 } from '../utils/expenseApproval'
 import { pickValidationMessage } from '../i18n/adminTranslations'
+import { assertRefsBelongToChata } from '../utils/chataRefIntegrity'
 
 // Write access: superadmin everything, admin their assigned chatas, and a
 // frontend account (role "user") the expenses it authored itself
@@ -231,6 +232,49 @@ export const Expenses: CollectionConfig = {
             data.privateSettlements = []
           }
         }
+        return data
+      },
+      // Reference integrity: an expense never spans chatas. Runs for EVERY
+      // writer — the admin panel and scripts included — because the
+      // filterOptions above it only constrain the UI. Also what stops a
+      // chata move with stale references: the effective refs are checked
+      // against the effective chata. The decide and settle endpoints change
+      // no references and skip the queries.
+      async ({ data, req, originalDoc }) => {
+        if (req.context?.expenseDecision === true) return data
+        if (req.context?.expensePrivateSettle === true) return data
+        if (!data) return data
+        const original = originalDoc as Expense | undefined
+        const eff = (key: string): unknown =>
+          (data as Record<string, unknown>)[key] !== undefined
+            ? (data as Record<string, unknown>)[key]
+            : (original as unknown as Record<string, unknown> | undefined)?.[key]
+        const chataId = refId(eff('chata'))
+        if (!chataId || chataId === 'undefined' || chataId === 'null') return data
+
+        const participantRefs: unknown[] = []
+        const jointAccountRefs: unknown[] = []
+        const payer = normalizePayer(eff('payer'))
+        if (payer?.relationTo === 'participants') participantRefs.push(payer.value)
+        if (payer?.relationTo === 'joint-accounts') jointAccountRefs.push(payer.value)
+        for (const w of (eff('weights') as Expense['weights']) ?? []) {
+          if (w?.participant != null) participantRefs.push(w.participant)
+        }
+        for (const inv of (eff('invitations') as Expense['invitations']) ?? []) {
+          if (inv?.host != null) participantRefs.push(inv.host)
+          if (inv?.guest != null) participantRefs.push(inv.guest)
+        }
+        for (const row of (eff('privateSettlements') as Expense['privateSettlements']) ?? []) {
+          if (row?.participant != null) participantRefs.push(row.participant)
+        }
+        await assertRefsBelongToChata({
+          req,
+          chataId,
+          participantRefs,
+          jointAccountRefs,
+          participantMessage: 'Výdaj nemůže odkazovat na účastníky jiné chaty',
+          jointAccountMessage: 'Výdaj nemůže odkazovat na společný účet jiné chaty',
+        })
         return data
       },
       // Frontend authoring guard + authorship stamp. Authority is scoped to
