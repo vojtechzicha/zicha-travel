@@ -95,6 +95,20 @@ decided further:
     for refunds requires the banker (or an admin) to sign in, and the
     admin panel nudges toward the existing "Create account from email"
     flow when a banker without a linked account is picked.
+14. (2026-08-27) Private expenses ("soukromý výdaj",
+    docs/PRD-soukromy-vydaj.md) narrow visibility below the chata-admin
+    level for the first time: a private expense is served only to its
+    payer, the participants in its split and superadmins — chata admins
+    and a non-member banker are deliberately excluded, because the
+    surprise target could be either of them. The superadmin retains
+    access as the operator. Two policy-visible consequences, both
+    published in section 6 (version 3): private expenses join the "never
+    visible without signing in" list, and the payer's bank details are
+    shown to the members of the split (the QR settlement needs them;
+    creating the private expense is the payer's consent). Receipts are
+    forbidden on private expenses until per-file access control exists —
+    attachment files are readable by any signed-in account and public by
+    bucket URL, which would contradict the promise.
 
 ## Blockers: the documents are false until these are fixed
 

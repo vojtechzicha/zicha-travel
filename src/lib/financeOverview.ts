@@ -40,15 +40,24 @@ export function overviewOrder(names: string[], bankerName: string): string[] {
  * One row per ACTUAL (non-planned) expense, with each participant's share
  * pulled from the stats breakdown (matched by expense id, so duplicate
  * titles stay separate). A host's cell merges their own share with the
- * guests' shares they cover.
+ * guests' shares they cover. Private expenses ("soukromý výdaj") never get a
+ * row, even for their own members: the overview is the shared dispute table
+ * and must show the same picture to everybody — and the pot maths excludes
+ * them anyway, so a row would only dangle with empty cells.
  */
 export function buildExpenseRows(
-  expenses: Array<{ id: string | number; title: string; amount: number; isPlanned?: boolean | null }>,
+  expenses: Array<{
+    id: string | number
+    title: string
+    amount: number
+    isPlanned?: boolean | null
+    isPrivate?: boolean | null
+  }>,
   payerLabels: Record<string, string>,
   stats: ChataStats,
 ): OverviewExpenseRow[] {
   return expenses
-    .filter((e) => !e.isPlanned)
+    .filter((e) => !e.isPlanned && e.isPrivate !== true)
     .map((e) => {
       const cells: Record<string, OverviewCellEntry> = {}
       for (const [name, pStats] of Object.entries(stats.participants)) {

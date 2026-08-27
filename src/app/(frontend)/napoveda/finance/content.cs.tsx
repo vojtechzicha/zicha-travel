@@ -1,7 +1,8 @@
 // Czech content, moved verbatim from page.tsx when the frontend went
 // bilingual. Edit wording here; page.tsx only picks a locale.
 
-import { Banknote, ClipboardList, Crown, ListTree, Receipt, UserSearch, Wallet } from 'lucide-react'
+import {
+  EyeOff, Banknote, ClipboardList, Crown, ListTree, Receipt, UserSearch, Wallet } from 'lucide-react'
 import { Callout, HelpShell, List, NextPage, Screenshot, ScreenshotRow, Section, Steps } from '../ui'
 
 export default function FinanceContentCs() {
@@ -121,6 +122,10 @@ export default function FinanceContentCs() {
                     Žlutě čárkovaný rámeček a značka <em>Plánovaný</em> znamenají výdaj, který se
                     teprve chystá.
                   </>,
+                  <>
+                    Fialový rámeček se zámečkem a značkou <em>Soukromý</em> patří výdaji, který
+                    vidí jen jeho členové. Nikdo jiný o něm neví a v deníku po něm není ani mezera.
+                  </>,
                 ]}
               />
             </div>
@@ -151,6 +156,37 @@ export default function FinanceContentCs() {
               <>
                 Účtenky visí jako malé náhledy. Obrázek se po klepnutí otevře přes celou obrazovku,
                 PDF se otevře v nové záložce.
+              </>,
+              <>
+                Karta soukromého výdaje má v patičce jména všech, kdo o něm vědí. Připomíná, že
+                zbytek chaty ho nevidí.
+              </>,
+            ]}
+          />
+        </Section>
+
+        <Section title="Soukromé výdaje: fialová karta mimo pokladnu" icon={<EyeOff size={20} />}>
+          <p>
+            Když se tě týká nějaký soukromý výdaj, třeba dárek pro někoho z chaty, objeví se pod
+            souhrnným boxem fialová karta <em>Soukromé výdaje</em>. Do společného vyrovnání se
+            nepočítá, je to oddělená vrstva jen pro jeho členy.
+          </p>
+          <List
+            items={[
+              <>
+                Když dlužíš ty: u výdaje je tvůj podíl, QR platba přímo na účet toho, kdo ho
+                zaplatil, a tlačítko <strong>Označit jako zaplacené</strong>.
+              </>,
+              <>
+                Když jsi platil/a ty: vidíš, kolik ti kdo dluží, se stavem <em>čeká</em> nebo{' '}
+                <em>vyrovnáno</em>. Označit zaplacení může dlužník i ty.
+              </>,
+              <>
+                Dlužíte si navzájem? Karta spočítá rozdíl a nabídne označit obojí najednou.
+              </>,
+              <>
+                Jak se soukromý výdaj zadává, popisuje{' '}
+                <a href="/napoveda/vydaje">návod k výdajům</a>.
               </>,
             ]}
           />

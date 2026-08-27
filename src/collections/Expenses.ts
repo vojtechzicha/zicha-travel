@@ -1,14 +1,25 @@
-import { APIError, type Access, type CollectionConfig, type Where } from 'payload'
+import { APIError, type Access, type CollectionConfig, type PayloadRequest, type Where } from 'payload'
+import { sql } from '@payloadcms/db-postgres/drizzle'
 import type { Expense } from '../payload-types'
 import { buildAutoInvitations, findPaidByPairs } from '../utils/paidByInvitations'
 import { canManageChata, isAdminRole, isSuperadmin, refId } from '../lib/access'
 import {
   canDecideExpense,
+  canSettlePrivateRow,
   isAllowedPayer,
   linkedParticipantIds,
   needsApproval,
   normalizePayer,
 } from '../lib/expenseAuthoring'
+import {
+  payerParticipantId,
+  privateDebtSignature,
+  privateExpenseMembers,
+  privateExpenseProblem,
+  privateShare,
+  type PrivateExpenseLike,
+  type PrivateExpenseProblem,
+} from '../lib/privateExpenses'
 import { verifyExpenseDecideToken } from '../lib/expenseApproval'
 import { requestOrigin } from '../lib/auth/session'
 import { clientIp } from '../lib/turnstile'
@@ -21,6 +32,7 @@ import {
   notifyExpenseAuthor,
 } from '../utils/expenseApproval'
 import { pickValidationMessage } from '../i18n/adminTranslations'
+import { assertRefsBelongToChata } from '../utils/chataRefIntegrity'
 
 // Write access: superadmin everything, admin their assigned chatas, and a
 // frontend account (role "user") the expenses it authored itself
@@ -31,13 +43,29 @@ const expenseWriteAccess: Access = ({ req: { user } }) => {
   if (isSuperadmin(user)) return true
   // An admin outside their assigned chatas is just a participant like anyone
   // else: in OTHER chatas they keep only what they authored or paid for
+  // authoredBy is deliberately blind to PRIVATE rows: after a payer change
+  // or an account relink the author may sit outside the current circle, and
+  // the circle is the only law there. The current payer's account is what
+  // grants private access (payerAccount below).
   const own: Where[] = [
-    { authoredBy: { equals: user.id } },
+    { and: [{ authoredBy: { equals: user.id } }, { isPrivate: { not_equals: true } }] },
     { payerAccount: { equals: user.id } },
   ]
   if (user.role === 'admin') {
     const where: Where = {
-      or: [{ chata: { in: user.assignedChatas || [] } }, ...own],
+      or: [
+        // Private expenses stay invisible to chata admins even here — a
+        // blind update/delete returns the document, which would leak one
+        // (docs/PRD-soukromy-vydaj.md). Only the author/payer branches and
+        // superadmins reach them.
+        {
+          and: [
+            { chata: { in: user.assignedChatas || [] } },
+            { isPrivate: { not_equals: true } },
+          ],
+        },
+        ...own,
+      ],
     }
     return where
   }
@@ -54,14 +82,32 @@ const expenseWriteAccess: Access = ({ req: { user } }) => {
 // rule with the chata context it has.
 const expenseReadAccess: Access = ({ req: { user } }) => {
   if (isSuperadmin(user)) return true
+  // Private expenses ("soukromý výdaj") exist only for their own circle. In
+  // a Where clause that circle cannot be joined (weights live in a child
+  // table), so REST serves them to the author and the payer's account only —
+  // the other members read through the slug API, which has the full context.
+  // `not_equals: true` deliberately matches legacy NULL rows as public.
+  const notPrivate: Where = { isPrivate: { not_equals: true } }
   const visible: Where[] = [
-    { approvalStatus: { equals: 'approved' } },
-    { approvalStatus: { exists: false } },
+    {
+      and: [
+        {
+          or: [{ approvalStatus: { equals: 'approved' } }, { approvalStatus: { exists: false } }],
+        },
+        notPrivate,
+      ],
+    },
   ]
   if (user) {
-    visible.push({ authoredBy: { equals: user.id } }, { payerAccount: { equals: user.id } })
+    // authoredBy carries no private access — see expenseWriteAccess above
+    visible.push(
+      { and: [{ authoredBy: { equals: user.id } }, notPrivate] },
+      { payerAccount: { equals: user.id } },
+    )
     if (user.role === 'admin') {
-      visible.push({ chata: { in: user.assignedChatas || [] } })
+      // Chata admins see their chatas' expenses — except private ones: the
+      // surprise target could be exactly this admin
+      visible.push({ and: [{ chata: { in: user.assignedChatas || [] } }, notPrivate] })
     }
   }
   return { or: visible }
@@ -75,6 +121,162 @@ export const Expenses: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
+      // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): the structural rules a
+      // private expense must obey, enforced for EVERY writer — the admin
+      // panel included — so no path can produce one that leaks. Runs first,
+      // because the authoring guard below early-returns for chata admins.
+      async ({ data, operation, req, originalDoc }) => {
+        if (req.context?.expenseDecision === true) return data
+        if (req.context?.expensePrivateSettle === true) return data
+        if (!data) return data
+        const original = originalDoc as Expense | undefined
+        // Settlement marks are server-owned for everybody; only the
+        // private-settle endpoint (context above) may write them. On update
+        // the incoming data arrives merged with the stored document, so the
+        // stored rows are put back rather than deleted — an absent array
+        // would wipe them
+        if (operation === 'create') {
+          delete data.privateSettlements
+        } else {
+          data.privateSettlements = original?.privateSettlements ?? []
+        }
+
+        const wasPrivate = original?.isPrivate === true
+        const isPrivate = data.isPrivate !== undefined ? data.isPrivate === true : wasPrivate
+
+        if (operation === 'update' && isPrivate && !wasPrivate) {
+          // One-way door: a public expense has already been seen — feeds,
+          // exports, emails — so hiding it now would only pretend
+          throw new APIError('Veřejný výdaj nelze změnit na soukromý', 403)
+        }
+        if (operation === 'update' && wasPrivate && !isPrivate) {
+          // Declassified: an ordinary expense from now on. The direct
+          // payments belonged to the private layer and are wiped with it
+          data.privateSettlements = []
+          return data
+        }
+        if (!isPrivate) return data
+
+        // All rules run against the EFFECTIVE document — a PATCH may carry
+        // any subset of fields, and false/empty values matter here
+        const eff = (key: string): unknown =>
+          (data as Record<string, unknown>)[key] !== undefined
+            ? (data as Record<string, unknown>)[key]
+            : (original as unknown as Record<string, unknown> | undefined)?.[key]
+        const effectiveExpense: PrivateExpenseLike = {
+          id: original?.id ?? 0,
+          amount: eff('amount') as number,
+          payer: eff('payer') as PrivateExpenseLike['payer'],
+          splitType: eff('splitType') as string | null,
+          weights: eff('weights') as PrivateExpenseLike['weights'],
+          invitations: eff('invitations') as Array<unknown> | null,
+          attachments: eff('attachments') as Array<unknown> | null,
+          isPlanned: eff('isPlanned') as boolean | null,
+          isPrivate: true,
+        }
+        const problem = privateExpenseProblem(effectiveExpense)
+        if (problem) {
+          const messages: Record<PrivateExpenseProblem, string> = {
+            payer: 'Soukromý výdaj musí platit účastník, ne společný účet',
+            amount: 'Soukromý výdaj musí mít kladnou částku',
+            split: 'Soukromý výdaj vyžaduje rozdělení podle podílů',
+            'weights-empty': 'Soukromý výdaj potřebuje alespoň jeden podíl',
+            'weights-duplicate': 'Každý účastník může mít v rozdělení jen jeden podíl',
+            'weights-total': 'Součet podílů soukromého výdaje musí být větší než nula',
+            invitations: 'Soukromý výdaj nemůže mít pozvání',
+            attachments: 'Soukromý výdaj nemůže mít účtenky',
+          }
+          throw new APIError(messages[problem], 400)
+        }
+
+        if (req.user && !isSuperadmin(req.user)) {
+          // Whoever writes a private expense must BE its payer (own linked
+          // participant) — chata admins included, and on UPDATES as much as
+          // on create. Without the update check, a PATCH could name somebody
+          // else's participant as payer, the authoring guard below would put
+          // the expense in the approval queue, and the approval emails would
+          // hand the private title and amount to the payer, the banker and
+          // the admins. The author is thereby always inside the circle, and
+          // "author visibility" is never an extra class of readers.
+          const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
+          const participantsResult = await req.payload.find({
+            collection: 'participants',
+            where: { chata: { equals: chataId } },
+            limit: 1000,
+            depth: 0,
+            overrideAccess: true,
+          })
+          const ownIds = linkedParticipantIds(req.user.id, participantsResult.docs)
+          const payerId = payerParticipantId(effectiveExpense.payer)
+          if (payerId == null || !ownIds.includes(payerId)) {
+            throw new APIError('Soukromý výdaj může založit jen sám plátce', 403)
+          }
+        }
+
+        // A private expense never waits for approval — the payer created it
+        // themselves. Keeping this invariant keeps the whole approval
+        // machinery (emails, decide links) away from private data.
+        data.approvalStatus = 'approved'
+        data.approvalDecidedBy = null
+        data.approvalDecidedAt = null
+        data.approvalNote = null
+
+        if (operation === 'update' && original) {
+          // Debt signature: when amount, payer, split or planned state
+          // change, every settlement mark settled a DIFFERENT debt — clear
+          // them all rather than keep a wrong "paid"
+          if (
+            privateDebtSignature(effectiveExpense) !==
+            privateDebtSignature(original as unknown as PrivateExpenseLike)
+          ) {
+            data.privateSettlements = []
+          }
+        }
+        return data
+      },
+      // Reference integrity: an expense never spans chatas. Runs for EVERY
+      // writer — the admin panel and scripts included — because the
+      // filterOptions above it only constrain the UI. Also what stops a
+      // chata move with stale references: the effective refs are checked
+      // against the effective chata. The decide and settle endpoints change
+      // no references and skip the queries.
+      async ({ data, req, originalDoc }) => {
+        if (req.context?.expenseDecision === true) return data
+        if (req.context?.expensePrivateSettle === true) return data
+        if (!data) return data
+        const original = originalDoc as Expense | undefined
+        const eff = (key: string): unknown =>
+          (data as Record<string, unknown>)[key] !== undefined
+            ? (data as Record<string, unknown>)[key]
+            : (original as unknown as Record<string, unknown> | undefined)?.[key]
+        const chataId = refId(eff('chata'))
+        if (!chataId || chataId === 'undefined' || chataId === 'null') return data
+
+        const participantRefs: unknown[] = []
+        const jointAccountRefs: unknown[] = []
+        const payer = normalizePayer(eff('payer'))
+        if (payer?.relationTo === 'participants') participantRefs.push(payer.value)
+        if (payer?.relationTo === 'joint-accounts') jointAccountRefs.push(payer.value)
+        for (const w of (eff('weights') as Expense['weights']) ?? []) {
+          if (w?.participant != null) participantRefs.push(w.participant)
+        }
+        for (const inv of (eff('invitations') as Expense['invitations']) ?? []) {
+          if (inv?.host != null) participantRefs.push(inv.host)
+          if (inv?.guest != null) participantRefs.push(inv.guest)
+        }
+        for (const row of (eff('privateSettlements') as Expense['privateSettlements']) ?? []) {
+          if (row?.participant != null) participantRefs.push(row.participant)
+        }
+        await assertRefsBelongToChata({
+          req,
+          chataId,
+          participantRefs,
+          jointAccountRefs,
+          participantMessage: 'Výdaj nemůže odkazovat na účastníky jiné chaty',
+          jointAccountMessage: 'Výdaj nemůže odkazovat na společný účet jiné chaty',
+        })
+        return data
+      },
       // Frontend authoring guard + authorship stamp. Authority is scoped to
       // THIS chata, never to the bare role: an admin of one chata is an
       // ordinary participant in every other, and gets the same rules as a
@@ -86,8 +288,10 @@ export const Expenses: CollectionConfig = {
       async ({ data, operation, req, originalDoc }) => {
         const user = req.user
         // The decide endpoint writes the approval verdict itself; re-running
-        // the guard here would reset the very status it is setting
+        // the guard here would reset the very status it is setting. The
+        // private-settle endpoint only touches settlement marks.
         if (req.context?.expenseDecision === true) return data
+        if (req.context?.expensePrivateSettle === true) return data
 
         const original = originalDoc as Expense | undefined
         const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
@@ -183,8 +387,15 @@ export const Expenses: CollectionConfig = {
         // "Výdaj za jiného plátce": stored, but invisible and outside the
         // maths until the payer, the banker or a chata admin confirms it.
         // Editing one puts it back in the queue — an approved amount must
-        // not be changeable after the fact.
-        data.approvalStatus = needsApproval({ isAdmin: false, payerIsOwn }) ? 'pending' : 'approved'
+        // not be changeable after the fact. A PRIVATE expense never enters
+        // the queue: the hook above already guaranteed its payer is the
+        // writer's own, and pending would hand it to the approval emails.
+        const effectivePrivate =
+          (data.isPrivate !== undefined ? data.isPrivate : original?.isPrivate) === true
+        data.approvalStatus =
+          !effectivePrivate && needsApproval({ isAdmin: false, payerIsOwn })
+            ? 'pending'
+            : 'approved'
         data.approvalDecidedBy = null
         data.approvalDecidedAt = null
         data.approvalNote = null
@@ -196,6 +407,7 @@ export const Expenses: CollectionConfig = {
       // correct, and it drives the write-access filter, which cannot join.
       async ({ data, operation, req, originalDoc }) => {
         if (req.context?.expenseDecision === true) return data
+        if (req.context?.expensePrivateSettle === true) return data
         // PATCH without a payer keeps the stored value — the field is
         // server-owned, so a submitted value is dropped, never honoured
         if (operation === 'update' && data?.payer === undefined) {
@@ -224,6 +436,9 @@ export const Expenses: CollectionConfig = {
       // per-expense opt-out; the retroactive sync lives on the participant
       async ({ data, operation, req }) => {
         if (operation !== 'create') return data
+        // A private expense carries no invitations at all — an auto row
+        // would even tell a non-member host about it
+        if (data?.isPrivate === true) return data
         const chataId =
           typeof data.chata === 'object' && data.chata !== null ? data.chata.id : data.chata
         if (!chataId) return data
@@ -379,7 +594,9 @@ export const Expenses: CollectionConfig = {
             .findByID({ collection: 'expenses', id: expenseId, depth: 0, overrideAccess: true })
             .catch(() => null),
         ])
-        if (!expense) {
+        if (!expense || expense.isPrivate === true) {
+          // A private expense never waits for approval; a guessed or stale
+          // id must look exactly like a missing one
           return Response.json({ error: 'not-found' }, { status: 404 })
         }
         if (!decider) {
@@ -431,6 +648,155 @@ export const Expenses: CollectionConfig = {
           context: { expenseDecision: true },
         })
         return Response.json({ ok: true, action })
+      },
+    },
+    {
+      // Mark a member's direct payment on a PRIVATE expense as done, or take
+      // the mark back (docs/PRD-soukromy-vydaj.md). Batch on purpose: the
+      // netting hint settles several rows in one go, and the whole batch
+      // commits or fails together. Any failure that concerns a specific
+      // expense answers the same generic not-found, so nobody can probe
+      // which ids exist or which of them are private.
+      path: '/private-settle',
+      method: 'post',
+      handler: async (req) => {
+        const notFound = () => Response.json({ error: 'not-found' }, { status: 404 })
+        let body: { items?: unknown; settled?: unknown } = {}
+        try {
+          body = (await req.json?.()) ?? {}
+        } catch {
+          // fall through to validation
+        }
+        const settled = body.settled
+        if (typeof settled !== 'boolean' || !Array.isArray(body.items)) {
+          return Response.json({ error: 'invalid' }, { status: 400 })
+        }
+        const rawItems = body.items as Array<{ expenseId?: unknown; participantId?: unknown }>
+        if (rawItems.length === 0 || rawItems.length > 20) {
+          return Response.json({ error: 'invalid' }, { status: 400 })
+        }
+        const seen = new Set<string>()
+        const items: Array<{ expenseId: string; participantId: string }> = []
+        for (const item of rawItems) {
+          const expenseId = item?.expenseId
+          const participantId = item?.participantId
+          if (
+            (typeof expenseId !== 'number' && typeof expenseId !== 'string') ||
+            (typeof participantId !== 'number' && typeof participantId !== 'string')
+          ) {
+            return Response.json({ error: 'invalid' }, { status: 400 })
+          }
+          const key = `${expenseId}:${participantId}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          items.push({ expenseId: String(expenseId), participantId: String(participantId) })
+        }
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const settleCheck = checkRateLimit(
+          `expense-private-settle:ip:${clientIp(req.headers)}`,
+          RATE_LIMITS.decidePerIp,
+        )
+        if (!settleCheck.allowed) return rateLimitResponse(settleCheck)
+
+        const superadminUser = isSuperadmin(req.user)
+        // One transaction with the expense rows locked: marking rewrites the
+        // whole settlements array, so two people marking at once must not
+        // overwrite each other
+        const tid = await req.payload.db.beginTransaction()
+        if (tid == null) {
+          return Response.json({ error: 'invalid' }, { status: 500 })
+        }
+        const trxReq = { transactionID: tid } as unknown as PayloadRequest
+        try {
+          const session = (
+            req.payload.db as unknown as {
+              sessions?: Record<string, { db?: { execute?: (q: unknown) => Promise<unknown> } }>
+            }
+          ).sessions?.[String(tid)]?.db
+          // Lock in a stable order so two overlapping batches cannot deadlock
+          const lockIds = [...new Set(items.map((i) => Number(i.expenseId)))]
+            .filter((id) => Number.isFinite(id))
+            .sort((a, b) => a - b)
+          if (session?.execute) {
+            for (const id of lockIds) {
+              await session.execute(sql`SELECT id FROM expenses WHERE id = ${id} FOR UPDATE`)
+            }
+          }
+          for (const item of items) {
+            const expense = await req.payload
+              .findByID({
+                collection: 'expenses',
+                id: item.expenseId,
+                depth: 0,
+                overrideAccess: true,
+                req: trxReq,
+              })
+              .catch(() => null)
+            if (!expense || expense.isPrivate !== true) {
+              await req.payload.db.rollbackTransaction(tid)
+              return notFound()
+            }
+            const payerId = payerParticipantId(expense.payer)
+            // Only a row that actually owes money can be marked: a planned
+            // expense has no debt yet, and a zero-weight member is in the
+            // circle but owes nothing. The UI hides these; the server refuses
+            // them.
+            const isMember =
+              payerId !== item.participantId &&
+              expense.isPlanned !== true &&
+              privateExpenseMembers(expense).includes(item.participantId) &&
+              privateShare(expense, item.participantId) > 0
+            const participant = await req.payload
+              .findByID({
+                collection: 'participants',
+                id: item.participantId,
+                depth: 0,
+                overrideAccess: true,
+                req: trxReq,
+              })
+              .catch(() => null)
+            const allowed =
+              isMember &&
+              participant != null &&
+              canSettlePrivateRow({
+                userId: req.user.id,
+                isSuperadminUser: superadminUser,
+                payerAccountId: expense.payerAccount != null ? refId(expense.payerAccount) : null,
+                participantAccountId:
+                  participant.account != null ? refId(participant.account) : null,
+              })
+            if (!allowed) {
+              await req.payload.db.rollbackTransaction(tid)
+              return notFound()
+            }
+            const rows = (expense.privateSettlements || []).filter(
+              (row) => row?.participant != null && refId(row.participant) !== item.participantId,
+            )
+            if (settled) {
+              rows.push({
+                participant: Number(item.participantId),
+                settledAt: new Date().toISOString(),
+              })
+            }
+            await req.payload.update({
+              collection: 'expenses',
+              id: expense.id,
+              data: { privateSettlements: rows },
+              overrideAccess: true,
+              depth: 0,
+              req: trxReq,
+              context: { expensePrivateSettle: true, skipExpenseApprovalEffects: true },
+            })
+          }
+          await req.payload.db.commitTransaction(tid)
+          return Response.json({ ok: true, settled })
+        } catch (err) {
+          await req.payload.db.rollbackTransaction(tid)
+          req.payload.logger.error({ err }, 'Private settle failed')
+          return Response.json({ error: 'invalid' }, { status: 500 })
+        }
       },
     },
   ],
@@ -763,6 +1129,49 @@ export const Expenses: CollectionConfig = {
       },
     },
     {
+      // Direct payments inside a private expense: a row means that member
+      // has already paid the payer. Server-owned — written only by the
+      // private-settle endpoint, so the site and the record always agree.
+      name: 'privateSettlements',
+      type: 'array',
+      admin: {
+        readOnly: true,
+        condition: (data) => data?.isPrivate === true,
+        description: {
+          en: 'Who has already sent their share straight to the payer. Managed from the site; a row means "paid".',
+          cs: 'Kdo už poslal svůj podíl přímo plátci. Spravuje se z webu – řádek znamená „zaplaceno“.',
+        },
+      },
+      fields: [
+        {
+          // Not required on purpose: deleting a participant sets the FK to
+          // NULL, and every helper skips null rows. Requiring it would make
+          // the participant undeletable while a mark exists.
+          name: 'participant',
+          type: 'relationship',
+          relationTo: 'participants',
+          filterOptions: ({ data }) => {
+            const doc = data as Partial<Expense> | undefined
+            if (doc?.chata) {
+              return {
+                chata: {
+                  equals: typeof doc.chata === 'object' ? doc.chata.id : doc.chata,
+                },
+              }
+            }
+            return false
+          },
+        },
+        {
+          name: 'settledAt',
+          type: 'date',
+          admin: {
+            date: { displayFormat: 'yyyy-MM-dd HH:mm' },
+          },
+        },
+      ],
+    },
+    {
       // The signed-in account that created this expense. Set automatically
       // by the beforeChange hook; drives the frontend "Přidali jste vy"
       // footer with edit/delete. maxDepth 0 keeps it a bare ID on the
@@ -874,6 +1283,29 @@ export const Expenses: CollectionConfig = {
         description: {
           en: 'Planned expense (not yet paid) - uncheck when actually paid',
           cs: 'Plánovaný výdaj (zatím nezaplacený) – po skutečném zaplacení zrušte zaškrtnutí',
+        },
+      },
+    },
+    {
+      // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): visible only to the
+      // payer, the participants in the split and superadmins; excluded from
+      // the pot; settled member-to-payer directly. Create-only by design —
+      // the invariant hook above rejects flipping a public expense.
+      name: 'isPrivate',
+      type: 'checkbox',
+      defaultValue: false,
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description: {
+          en:
+            'Private expense (a gift or a surprise): only the payer, the participants in its ' +
+            'split and superadmins see it. It stays out of all balances - the members pay the ' +
+            'payer directly. Can be ticked only when creating the expense.',
+          cs:
+            'Soukromý výdaj (dárek nebo překvapení): vidí ho jen plátce, účastníci rozdělení ' +
+            'a superadministrátoři. Do společného vyrovnání se nepočítá – členové platí přímo ' +
+            'plátci. Zaškrtnout jde jen při vytváření výdaje.',
         },
       },
     },

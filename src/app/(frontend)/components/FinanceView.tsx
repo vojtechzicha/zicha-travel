@@ -175,6 +175,26 @@ export function FinanceView({
     await onDataChanged?.()
   }
 
+  // Direct payments on private expenses (docs/PRD-soukromy-vydaj.md): the
+  // endpoint checks who may mark; the card only offers buttons it believes
+  // will pass. Reload afterwards so every mark is the server's truth.
+  const handlePrivateSettle = async (
+    items: Array<{ expenseId: string; participantId: string }>,
+    settled: boolean,
+  ) => {
+    const res = await fetch('/api/expenses/private-settle', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, settled }),
+    })
+    if (!res.ok) {
+      track('save_failed', { operation: 'private_settle', status: res.status })
+      throw new Error('private-settle failed')
+    }
+    await onDataChanged?.()
+  }
+
   const handleDeleteExpense = async (expense: Expense) => {
     const res = await fetch(`/api/expenses/${expense.id}`, {
       method: 'DELETE',
@@ -481,6 +501,8 @@ export function FinanceView({
             expenses={expenses}
             showHeader={false}
             creditorAccountsHidden={creditorAccountsHidden}
+            viewer={viewer}
+            onPrivateSettle={handlePrivateSettle}
           />
         </section>
       </div>

@@ -4,6 +4,7 @@
 import {
   Camera,
   Clock,
+  EyeOff,
   HeartHandshake,
   Monitor,
   PencilLine,
@@ -170,6 +171,50 @@ export default function VydajeContentEn() {
               </>,
             ]}
           />
+        </Section>
+
+        <Section title="Private expense: a gift that must stay unseen" icon={<EyeOff size={20} />}>
+          <p>
+            Buying a present on the trip that the birthday person must not find out about? Turn on
+            the purple <em>Private expense (a surprise)</em> switch. Only you and the people you
+            pick in the split will see it. For everyone else it simply does not exist: not in the
+            journal, not in the summary, not in the Overview.
+          </p>
+          <List
+            items={[
+              <>
+                The payer is always you, one of your linked participants. The split uses shares or
+                exact amounts; <em>everyone equally</em> is not an option here, for obvious reasons.
+              </>,
+              <>
+                A private expense stays completely outside the shared pot. The members send their
+                share straight to your account: the Finance view shows them a purple{' '}
+                <em>Private expenses</em> card with a QR payment and a <strong>Mark as paid</strong>{' '}
+                button.
+              </>,
+              <>
+                When two of you owe each other, the card offers to send just the difference and
+                mark both debts with one tap.
+              </>,
+              <>
+                The switch only exists while creating the expense. A public expense can never
+                become private, people may have already seen it. The other way works any time: a
+                declassified expense becomes an ordinary one.
+              </>,
+              <>
+                Changing the amount, the payer or the split of a private expense clears the paid
+                marks. The debt changed, so it needs marking again.
+              </>,
+              <>
+                Receipts cannot go on it yet. The attachment files would be visible to people
+                outside the expense.
+              </>,
+            ]}
+          />
+          <Callout tone="note">
+            Chata admins and the banker do not see a private expense unless they are in its split
+            themselves. The only exception is the site superadmin. The surprise stays a surprise.
+          </Callout>
         </Section>
 
         <Section title="Invitations: I am paying for someone else" icon={<HeartHandshake size={20} />}>

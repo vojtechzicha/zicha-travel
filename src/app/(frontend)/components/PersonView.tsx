@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { SettlementActions } from './SettlementActions'
+import { PrivateExpensesCard } from './PrivateExpensesCard'
 import { formatCurrency, getInitials, getAvatarColor } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
 import { getPayerDisplay, attributedShare } from '@/lib/payerRef'
@@ -27,6 +28,8 @@ import { resolveBankAccount } from '@/utils/czechBankAccount'
 import type { AppLocale } from '@/i18n/config'
 import type { Participant, Chata, Prepayment, Expense } from '@/payload-types'
 import type { ParticipantStats } from '@/utils/calculateStats'
+import type { FinanceViewer } from '@/lib/financeAccess'
+import type { PrivateSettleItem } from '@/lib/privateExpenses'
 
 interface PersonViewProps {
   participant: Participant
@@ -41,6 +44,10 @@ interface PersonViewProps {
   showHeader?: boolean
   /** creditor bank fields were withheld from this viewer (not admin/banker) */
   creditorAccountsHidden?: boolean
+  /** who is looking — drives the private layer's settle buttons */
+  viewer?: FinanceViewer | null
+  /** marks direct payments on private expenses (docs/PRD-soukromy-vydaj.md) */
+  onPrivateSettle?: (items: PrivateSettleItem[], settled: boolean) => Promise<void>
 }
 
 export function PersonView({
@@ -55,6 +62,8 @@ export function PersonView({
   expenses,
   showHeader = true,
   creditorAccountsHidden = false,
+  viewer = null,
+  onPrivateSettle,
 }: PersonViewProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
   const [isPlannedBreakdownOpen, setIsPlannedBreakdownOpen] = useState(false)
@@ -118,6 +127,9 @@ export function PersonView({
   // Joint-account ("společný účet") payments count for each member.
   const myExpenses = expenses.filter((e) => {
     if (!isCountedExpense(e.approvalStatus)) return false
+    // private expenses live in their own card — keeping them out here keeps
+    // the history summing to "Zaplaceno za ostatní" above
+    if (e.isPrivate === true) return false
     return getPayerDisplay(e.payer).memberIds.includes(participant.id) && !e.isPlanned
   })
   const myPrepayments = prepayments.filter((p) => {
@@ -408,6 +420,24 @@ export function PersonView({
           )}
         </div>
       </div>
+
+      {/* Private layer ("soukromé výdaje") — a separate purple card right
+          under the pot summary: what this person owes payers directly and
+          what others owe them, settled outside the pot. Renders nothing
+          when no private expense reaches this viewer. */}
+      {viewer && onPrivateSettle && (
+        <PrivateExpensesCard
+          participant={participant}
+          allParticipants={allParticipants}
+          expenses={expenses}
+          viewer={viewer}
+          bankerId={typeof bankerId === 'number' ? bankerId : null}
+          potDebtors={debtors}
+          potCreditors={creditors}
+          chataShortName={chata.shortName || chata.name}
+          onSettle={onPrivateSettle}
+        />
+      )}
 
       {/* Settlement Actions - only show if not settled OR if banker */}
       {(!isSettled || isBanker) && (

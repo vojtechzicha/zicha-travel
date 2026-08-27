@@ -34,7 +34,8 @@ export async function GET(
     })
 
     // Fetch expenses. This export is anonymous, so expenses still waiting
-    // for approval ("výdaj za jiného plátce") never appear here.
+    // for approval ("výdaj za jiného plátce") never appear here — and
+    // private expenses ("soukromý výdaj") never do either.
     const expensesResult = await payload.find({
       collection: 'expenses',
       where: {
@@ -46,6 +47,7 @@ export async function GET(
               { approvalStatus: { exists: false } },
             ],
           },
+          { isPrivate: { not_equals: true } },
         ],
       },
       limit: 1000,

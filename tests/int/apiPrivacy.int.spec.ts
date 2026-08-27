@@ -86,6 +86,18 @@ describe('anonymous API privacy invariants', () => {
     }
   })
 
+  it('serves no private expenses to anonymous readers', async () => {
+    const expenses = await payload.find({
+      collection: 'expenses',
+      depth: 0,
+      limit: 1000,
+      ...anonymous,
+    })
+    for (const e of expenses.docs) {
+      expect(e.isPrivate ?? false, `expense ${e.id} isPrivate`).toBe(false)
+    }
+  })
+
   it('withholds locked participants’ balances from anonymous chata stats', async () => {
     const chatas = await payload.find({
       collection: 'chatas',

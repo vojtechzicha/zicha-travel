@@ -76,7 +76,9 @@ export default async function DecideExpensePage({
       .catch(() => null),
   ])
 
-  if (!expense) {
+  if (!expense || expense.isPrivate === true) {
+    // A private expense never waits for approval — a stale link to one must
+    // read exactly like a link to nothing (docs/PRD-soukromy-vydaj.md)
     return message(t('expenseDecide.page.notFoundTitle'), t('expenseDecide.page.notFoundBody'))
   }
 

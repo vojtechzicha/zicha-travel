@@ -107,5 +107,14 @@
     "uploadFailed": "Uploading the receipt failed.",
     "saveFailedRetry": "Saving the expense failed. Please try again.",
     "saveFailed": "Saving the expense failed."
+  },
+  "private": {
+    "toggle": "Private expense (a surprise)",
+    "noteGeneric": "Only you and the people you pick in the split will see it. It shows to nobody else and you settle it among yourselves, outside the shared pot.",
+    "noteNamed": "Only {names} will see it. It shows to nobody else and you settle it among yourselves, outside the shared pot.",
+    "you": "you",
+    "splitLock": "People left out of the split will never see this expense.",
+    "editResets": "Changing the amount, the payer or the split clears the paid marks.",
+    "noReceipts": "Receipts cannot go on a private expense yet. The attachment files would be visible to people outside it."
   }
 }

@@ -136,6 +136,17 @@ export async function exportParticipantBundle(payload: Payload, participantId: n
         ownWeight: weight?.weight ?? null,
         invitedByHostId: invitationsAsGuest.map((inv) => Number(refId(inv.host))),
         hostsGuestIds: invitationsAsHost.map((inv) => Number(refId(inv.guest))),
+        // "Soukromý výdaj": a private expense reaches only its members'
+        // bundles (weighted split, so expenseInvolvesParticipant already
+        // guarantees that); the person's own direct-payment mark belongs to
+        // their data (docs/PRD-soukromy-vydaj.md)
+        isPrivate: e.isPrivate === true,
+        privateSettledAt:
+          e.isPrivate === true
+            ? ((e.privateSettlements ?? []).find((row) =>
+                involvesParticipant(row.participant, pid),
+              )?.settledAt ?? null)
+            : null,
       },
     ]
   })
@@ -185,7 +196,13 @@ export async function exportParticipantBundle(payload: Payload, participantId: n
       }
       const authored = await payload.find({
         collection: 'expenses',
-        where: { authoredBy: { equals: user.id } },
+        // Private expenses stay out of this account-wide list on purpose:
+        // one account may own participants on several trips, and a private
+        // expense belongs only in the bundles of its payer and members —
+        // where expenseRows above already carries it
+        where: {
+          and: [{ authoredBy: { equals: user.id } }, { isPrivate: { not_equals: true } }],
+        },
         limit: 1000,
         depth: 0,
         overrideAccess: true,

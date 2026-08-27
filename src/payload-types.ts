@@ -915,6 +915,16 @@ export interface Expense {
    */
   attachments?: (number | ExpenseAttachment)[] | null;
   /**
+   * Who has already sent their share straight to the payer. Managed from the site; a row means "paid".
+   */
+  privateSettlements?:
+    | {
+        participant?: (number | null) | Participant;
+        settledAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Account that created this expense (set automatically). Frontend users may edit/delete only their own expenses.
    */
   authoredBy?: (number | null) | User;
@@ -939,6 +949,10 @@ export interface Expense {
    * Planned expense (not yet paid) - uncheck when actually paid
    */
   isPlanned?: boolean | null;
+  /**
+   * Private expense (a gift or a surprise): only the payer, the participants in its split and superadmins see it. It stays out of all balances - the members pay the payer directly. Can be ticked only when creating the expense.
+   */
+  isPrivate?: boolean | null;
   updatedAt: string;
 }
 /**
@@ -1448,6 +1462,13 @@ export interface ExpensesSelect<T extends boolean = true> {
   createdAt?: T;
   note?: T;
   attachments?: T;
+  privateSettlements?:
+    | T
+    | {
+        participant?: T;
+        settledAt?: T;
+        id?: T;
+      };
   authoredBy?: T;
   payerAccount?: T;
   approvalStatus?: T;
@@ -1455,6 +1476,7 @@ export interface ExpensesSelect<T extends boolean = true> {
   approvalDecidedBy?: T;
   approvalDecidedAt?: T;
   isPlanned?: T;
+  isPrivate?: T;
   updatedAt?: T;
 }
 /**

@@ -8,8 +8,10 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
+  EyeOff,
   HeartHandshake,
   FileText,
+  Lock,
   X,
   Pencil,
   Trash2,
@@ -73,6 +75,9 @@ export function ExpenseCard({
   const isRejected = expense.approvalStatus === 'rejected'
   const isRefund = expense.amount < 0
   const isPlanned = expense.isPlanned || false
+  // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): the card reaches only the
+  // circle (server-filtered), so here it just says so out loud
+  const isPrivate = expense.isPrivate === true
   const payer = getPayerDisplay(expense.payer)
   const payerName = payer.name
 
@@ -111,6 +116,26 @@ export function ExpenseCard({
       typeof inv.guest === 'object' &&
       inv.guest !== null
   )
+
+  // The circle for the footer note: the payer plus everyone in the split,
+  // with the selected participant reading as "ty"
+  const circleNames = (() => {
+    if (!isPrivate) return []
+    const seen = new Set<number>()
+    const names: string[] = []
+    const push = (id: number | null, name: string) => {
+      if (id !== null && seen.has(id)) return
+      if (id !== null) seen.add(id)
+      if (id !== null && id === selectedParticipantId) names.unshift(t('privateLayer.you'))
+      else if (name) names.push(name)
+    }
+    push(payer.id, payerName)
+    for (const w of weights) {
+      const doc = typeof w.participant === 'object' && w.participant !== null ? w.participant : null
+      push(doc ? doc.id : typeof w.participant === 'number' ? w.participant : null, doc?.name ?? '')
+    }
+    return names
+  })()
 
   // Attachments ("účtenky") arrive populated via depth: 1 in the chata API
   const attachments = (expense.attachments ?? []).filter(
@@ -177,13 +202,18 @@ export function ExpenseCard({
         rounded-xl p-4 shadow-md flex gap-3 transition-transform hover:scale-[1.02]
         ${isOther ? 'bg-gray-50 opacity-60 dark:bg-white/[0.04]' : 'bg-white dark:bg-[#1b212c]'}
         ${isRefund ? 'border-2 border-green-200 dark:border-green-500/30' : ''}
+        ${isPrivate ? 'border-2 border-purple-200 dark:border-purple-400/30' : ''}
         ${isPlanned ? 'border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-400/40 dark:bg-amber-400/10' : ''}
         ${isPending ? 'border-2 border-dashed border-slate-300 bg-slate-50/70 dark:border-white/[0.2] dark:bg-white/[0.05]' : ''}
         ${isRejected ? 'border-2 border-red-200 bg-red-50/40 dark:border-red-500/30 dark:bg-red-500/[0.07]' : ''}
       `}
     >
       <div className="flex-shrink-0">
-        {isPlanned ? (
+        {isPrivate ? (
+          <div className="bg-purple-100 dark:bg-purple-400/15 p-2 rounded-lg">
+            <EyeOff size={20} className="text-purple-600 dark:text-purple-300" />
+          </div>
+        ) : isPlanned ? (
           <div className="bg-amber-100 dark:bg-amber-400/15 p-2 rounded-lg">
             <Clock size={20} className="text-amber-600 dark:text-amber-300" />
           </div>
@@ -234,6 +264,11 @@ export function ExpenseCard({
               <span className="text-gray-400 dark:text-slate-500"> {t('expenseCard.jointAccount')}</span>
             )}
           </span>
+          {isPrivate && (
+            <span className="bg-purple-100 text-purple-700 dark:bg-purple-400/15 dark:text-purple-300 text-xs font-bold px-2 py-0.5 rounded-md uppercase inline-flex items-center gap-1">
+              <Lock size={11} strokeWidth={2.5} /> {t('expenseCard.privateBadge')}
+            </span>
+          )}
           {isPlanned && (
             <span className="bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-md uppercase">
               {t('expenseCard.plannedBadge')}
@@ -338,6 +373,19 @@ export function ExpenseCard({
                 </a>
               )
             )}
+          </div>
+        )}
+
+        {/* Who is in on it — the quiet reminder that this card is invisible
+            to everyone else (design 1b) */}
+        {isPrivate && circleNames.length > 0 && (
+          <div className="text-xs text-purple-700 dark:text-purple-300 mt-2 pt-2 border-t border-gray-100 dark:border-white/[0.07]">
+            {t('expenseCard.privateCircle', {
+              names: new Intl.ListFormat(locale === 'cs' ? 'cs' : 'en', {
+                style: 'long',
+                type: 'conjunction',
+              }).format(circleNames),
+            })}
           </div>
         )}
 

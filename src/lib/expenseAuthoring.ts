@@ -181,6 +181,30 @@ export function canManageExpense(args: {
   )
 }
 
+/**
+ * May this account mark one member's direct payment on a PRIVATE expense as
+ * done (or take the mark back)? Superadmins, the account speaking for the
+ * payer (they receive the money) and the member's own account (they sent
+ * it). Nobody else — a private settlement is between exactly those two
+ * people. See docs/PRD-soukromy-vydaj.md.
+ */
+export function canSettlePrivateRow(args: {
+  userId: number | string | null | undefined
+  isSuperadminUser: boolean
+  /** the paying participant's linked account (Expense.payerAccount) */
+  payerAccountId?: number | string | null
+  /** the settling member's own linked account */
+  participantAccountId?: number | string | null
+}): boolean {
+  if (args.isSuperadminUser) return true
+  if (args.userId == null) return false
+  const me = String(args.userId)
+  return (
+    (args.payerAccountId != null && refId(args.payerAccountId) === me) ||
+    (args.participantAccountId != null && refId(args.participantAccountId) === me)
+  )
+}
+
 /** Is this expense part of the journal and the maths? (undefined = legacy row) */
 export function isCountedExpense(status: ApprovalStatus | null | undefined): boolean {
   return status == null || status === 'approved'

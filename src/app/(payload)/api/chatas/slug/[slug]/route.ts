@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { canManageChata, refId } from '@/lib/access'
+import { canManageChata, isSuperadmin, refId } from '@/lib/access'
 import { type FinanceViewer, type LockedParticipant } from '@/lib/financeAccess'
 import {
   deepScrubParticipants,
@@ -10,6 +10,7 @@ import {
 } from '@/lib/privacyScrub'
 import { bankFieldVisibilityFor, findLockedParticipants } from '@/utils/participantPrivacy'
 import { isCountedExpense, normalizePayer, payerAccountIds } from '@/lib/expenseAuthoring'
+import { canViewPrivateExpense, visiblePrivatePayerIds } from '@/lib/privateExpenses'
 import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import {
@@ -185,6 +186,24 @@ export async function GET(
       bankerParticipant?.account != null &&
       refId(bankerParticipant.account) === String(user.id)
     const visibleExpenses = expensesResult.docs.filter((expense: any) => {
+      // "Soukromý výdaj" first — an approved private expense would otherwise
+      // slip through the isCountedExpense shortcut below. Its circle is the
+      // payer's account and the members' accounts, plus superadmins; chata
+      // admins and the banker deliberately get nothing (the surprise target
+      // could be either of them). See docs/PRD-soukromy-vydaj.md.
+      if (expense.isPrivate === true) {
+        return canViewPrivateExpense({
+          isSuperadminUser: isSuperadmin(user),
+          userId: user?.id ?? null,
+          payerAccountIds: payerAccountIds(
+            normalizePayer(expense.payer),
+            participantsResult.docs,
+            jointAccountsResult.docs,
+          ),
+          linkedParticipantIds: viewer.linkedParticipantIds,
+          expense,
+        })
+      }
       if (isCountedExpense(expense.approvalStatus)) return true
       if (!user) return false
       if (canManageChata(user, chata.id) || viewerIsBanker) return true
@@ -253,9 +272,18 @@ export async function GET(
       bankerId: chata.banker != null ? refId(chata.banker) : null,
       participants: participantsResult.docs,
     })
+    // Being in a private expense's split means paying that payer directly, so
+    // the member's QR needs the payer's bank fields. Creating the private
+    // expense is the payer's consent; the widening covers exactly the private
+    // expenses this viewer already receives (docs/PRD-soukromy-vydaj.md).
+    const privatePayerIds = visiblePrivatePayerIds(visibleExpenses, viewer.linkedParticipantIds)
+    const widenedBankVisibility =
+      bankVisibility === 'all' || privatePayerIds.length === 0
+        ? bankVisibility
+        : new Set([...bankVisibility, ...privatePayerIds])
     deepScrubParticipants(
       [chata, participantsResult.docs, visibleExpenses, prepaymentsResult.docs, jointAccountsResult.docs],
-      bankVisibility,
+      widenedBankVisibility,
     )
     if (!user) {
       stripExpenseAttachments(visibleExpenses as unknown as Array<Record<string, unknown>>)

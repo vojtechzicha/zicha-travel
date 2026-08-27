@@ -107,5 +107,14 @@
     "uploadFailed": "Nahrání účtenky se nepovedlo.",
     "saveFailedRetry": "Uložení výdaje se nepovedlo. Zkus to znovu.",
     "saveFailed": "Uložení výdaje se nepovedlo."
+  },
+  "private": {
+    "toggle": "Soukromý výdaj (překvapení)",
+    "noteGeneric": "Uvidí ho jen ty a lidi, které vybereš v rozdělení. Nikomu dalšímu se neukáže a vyrovnáte si ho mezi sebou, mimo společnou pokladnu.",
+    "noteNamed": "Uvidí ho jen {names}. Nikomu dalšímu se neukáže a vyrovnáte si ho mezi sebou, mimo společnou pokladnu.",
+    "you": "ty",
+    "splitLock": "Kdo není v rozdělení, výdaj neuvidí.",
+    "editResets": "Když změníš částku, plátce nebo rozdělení, označení zaplacených podílů se zruší.",
+    "noReceipts": "Účtenky k soukromému výdaji zatím přiložit nejde. Soubory příloh by viděli i lidi mimo něj."
   }
 }

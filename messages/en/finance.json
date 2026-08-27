@@ -152,7 +152,9 @@
       "decideFailed": "Saving failed. Please try again.",
       "rejectedNote": "This expense was rejected and doesn't count towards the settlement.",
       "rejectedWithReason": "This expense was rejected: “{reason}”. It doesn't count towards the settlement."
-    }
+    },
+    "privateBadge": "Private",
+    "privateCircle": "Only {names} can see it. You settle it among yourselves, outside the pot."
   },
   "expensesFeed": {
     "title": "Expense journal",
@@ -164,5 +166,36 @@
   },
   "qrPayment": {
     "alt": "QR payment"
+  },
+  "privateLayer": {
+    "title": "Private expenses",
+    "outsidePot": "outside the pot",
+    "you": "you",
+    "paidByDetail": "paid by {name}",
+    "willPayDetail": "{name} will pay",
+    "plannedBadge": "not paid yet",
+    "plannedHint": "Settlement shows up once it is paid.",
+    "toPay": "Send {amount} to {name}",
+    "qrButton": "QR payment",
+    "qrHide": "Hide QR",
+    "noBankDetails": "{name} has no bank details filled in. Sort it out directly.",
+    "markPaid": "Mark as paid",
+    "unmark": "Undo the mark",
+    "saving": "Saving…",
+    "saveFailed": "Saving failed. Try again.",
+    "waiting": "waiting",
+    "settled": "settled",
+    "paidSummary": "you paid {paid}, your share {share}",
+    "paidSummaryNoShare": "you paid {paid}",
+    "willPaySummary": "you will pay {paid}, your share {share}",
+    "willPaySummaryNoShare": "you will pay {paid}",
+    "nettingSend": "You and {name} owe each other. Sending the {amount} difference covers it.",
+    "nettingReceive": "You and {name} owe each other. {name} sending the {amount} difference covers it.",
+    "nettingEven": "You and {name} owe each other the same. Just mark both as settled.",
+    "nettingMarkAll": "Mark everything as settled",
+    "bankerCombineRefund": "Tip: {name} is getting a refund from the pot. You can send both amounts in one payment.",
+    "bankerCombineTopup": "Tip: you are also sending a top-up to the banker. You can join both amounts into one payment.",
+    "debtFooter": "Not part of the result above. You pay each other directly and the pot never knows.",
+    "payerFooter": "You mark the payments yourselves, by hand. The shared settlement does not change."
   }
 }

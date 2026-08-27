@@ -210,13 +210,21 @@ export default function PrivacyContentEn() {
           <p>
             Without signing in, a visitor can never see: anyone&rsquo;s bank details except the
             banker&rsquo;s, receipts, email addresses, the &ldquo;Keys and Wi-Fi&rdquo; section,
-            expenses waiting for confirmation, or planning votes (who joined and what suits
-            them); votes are visible only to the chata&rsquo;s signed-in participants and its
-            admins. A participant&rsquo;s bank details are visible
+            expenses waiting for confirmation, private expenses, or planning votes (who joined
+            and what suits them); votes are visible only to the chata&rsquo;s signed-in
+            participants and its admins. A participant&rsquo;s bank details are visible
             only to that participant (through their account), the signed-in banker and the
             admins of that chata; the banker&rsquo;s bank details are public because the
             anonymous QR settlement cannot work without them (the banker takes that on with the
             role). Receipts are visible to signed-in users only.
+          </p>
+          <p>
+            A private expense (a gift or a surprise) is a stricter exception: only its payer,
+            the participants in its split and the site superadmin can see it. Neither the
+            chata&rsquo;s admins nor the banker see it unless they are in the split themselves.
+            Because such an expense is paid straight to the payer, the members of its split are
+            shown the payer&rsquo;s bank details; by creating a private expense the payer
+            accepts that.
           </p>
           <p>
             A chata&rsquo;s admins see all of that chata&rsquo;s data. As the operator we have
@@ -641,6 +649,15 @@ export default function PrivacyContentEn() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">3</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">27 August 2026</td>
+                  <td className="py-2.5">
+                    Private expenses: a new expense type visible only to its members, additions
+                    to section 6 including showing the payer&rsquo;s bank details to the members
+                    of its split.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">2</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">25 August 2026</td>

@@ -62,6 +62,30 @@ describe('buildExpenseRows', () => {
     expect(rows[0].payerLabel).toBe('Alice')
   })
 
+  it('leaves no trace of private expenses, even for their members', () => {
+    const withPrivate: Expense[] = [
+      ...expenses,
+      {
+        id: 13,
+        title: 'Dárek pro Danu',
+        amount: 2400,
+        payer: 'Bob',
+        splitType: 'weighted',
+        weights: [
+          { participant: 'Bob', weight: 1 },
+          { participant: 'Cedric', weight: 1 },
+        ],
+        isPrivate: true,
+      },
+    ]
+    const privateRows = buildExpenseRows(
+      withPrivate,
+      { '10': 'Alice', '11': 'Bob', '13': 'Bob' },
+      calculateStats(participants, withPrivate, prepayments, 'Alice'),
+    )
+    expect(privateRows).toEqual(rows)
+  })
+
   it('cells of each row sum to the expense amount (the Σ-kontrola invariant)', () => {
     for (const row of rows) {
       const sum = Object.values(row.cells).reduce((a, c) => a + c.cost, 0)

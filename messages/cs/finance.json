@@ -152,7 +152,9 @@
       "decideFailed": "Uložení se nepovedlo. Zkus to znovu.",
       "rejectedNote": "Výdaj byl zamítnutý, do vyrovnání se nepočítá.",
       "rejectedWithReason": "Výdaj byl zamítnutý: „{reason}“. Do vyrovnání se nepočítá."
-    }
+    },
+    "privateBadge": "Soukromý",
+    "privateCircle": "Vidí ho jen {names}. Vyrovnáte si ho mezi sebou, mimo pokladnu."
   },
   "expensesFeed": {
     "title": "Deník výdajů",
@@ -164,5 +166,36 @@
   },
   "qrPayment": {
     "alt": "QR platba"
+  },
+  "privateLayer": {
+    "title": "Soukromé výdaje",
+    "outsidePot": "mimo pokladnu",
+    "you": "ty",
+    "paidByDetail": "zaplatil/a {name}",
+    "willPayDetail": "zaplatí {name}",
+    "plannedBadge": "zatím nezaplaceno",
+    "plannedHint": "Vyrovnání se ukáže, až bude zaplaceno.",
+    "toPay": "Pošli {amount} pro {name}",
+    "qrButton": "QR platba",
+    "qrHide": "Skrýt QR",
+    "noBankDetails": "{name} nemá vyplněné bankovní údaje. Domluvte se napřímo.",
+    "markPaid": "Označit jako zaplacené",
+    "unmark": "Vrátit označení",
+    "saving": "Ukládám…",
+    "saveFailed": "Uložení se nepovedlo. Zkus to znovu.",
+    "waiting": "čeká",
+    "settled": "vyrovnáno",
+    "paidSummary": "zaplaceno {paid}, tvůj podíl {share}",
+    "paidSummaryNoShare": "zaplaceno {paid}",
+    "willPaySummary": "zaplatíš {paid}, tvůj podíl {share}",
+    "willPaySummaryNoShare": "zaplatíš {paid}",
+    "nettingSend": "Ty a {name} si navzájem dlužíte. Stačí, když pošleš rozdíl {amount}.",
+    "nettingReceive": "Ty a {name} si navzájem dlužíte. Stačí, když {name} pošle rozdíl {amount}.",
+    "nettingEven": "Ty a {name} si navzájem dlužíte stejně. Stačí obojí označit jako vyrovnané.",
+    "nettingMarkAll": "Označit vše jako vyrovnané",
+    "bankerCombineRefund": "Tip: {name} dostává od pokladny vratku. Obě částky můžeš poslat jednou platbou.",
+    "bankerCombineTopup": "Tip: pokladníkovi posíláš i doplatek do pokladny. Obě částky můžeš spojit do jedné platby.",
+    "debtFooter": "Nepočítá se do výsledku výše. Platíte si napřímo, pokladna o tom neví.",
+    "payerFooter": "Zaplacení si označujete sami, ručně. Společné vyrovnání se tím nemění."
   }
 }
