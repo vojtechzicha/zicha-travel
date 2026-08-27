@@ -34,6 +34,12 @@ export interface Expense {
    * skipped by every calculation below. See docs/PRD-vydaj-za-jineho.md.
    */
   approvalStatus?: ApprovalStatus | null
+  /**
+   * "Soukromý výdaj": settled peer-to-peer between its members, outside the
+   * common pot. Never part of any calculation here — the private layer lives
+   * in src/lib/privateExpenses.ts. See docs/PRD-soukromy-vydaj.md.
+   */
+  isPrivate?: boolean | null
 }
 
 export interface Prepayment {
@@ -136,8 +142,12 @@ export function calculateStats(
   jointAccounts: JointAccountInfo[] = []
 ): ChataStats {
   // An expense recorded for somebody else counts only once it is confirmed —
-  // until then it exists in the database and nowhere else (docs/PRD-vydaj-za-jineho.md)
-  const expenses = allExpenses.filter((e) => isCountedExpense(e.approvalStatus))
+  // until then it exists in the database and nowhere else (docs/PRD-vydaj-za-jineho.md).
+  // Private expenses ("soukromý výdaj") never enter the pot at all: their
+  // members settle them among themselves (docs/PRD-soukromy-vydaj.md)
+  const expenses = allExpenses.filter(
+    (e) => isCountedExpense(e.approvalStatus) && e.isPrivate !== true,
+  )
   const jointAccountsById = new Map<string, JointAccountInfo>()
   const jointAccountsByName = new Map<string, JointAccountInfo>()
   jointAccounts.forEach((ja) => {
@@ -370,6 +380,7 @@ export function transformExpense(expense: any): Expense {
     invitations: expense.invitations,
     isPlanned: expense.isPlanned || false,
     approvalStatus: expense.approvalStatus ?? null,
+    isPrivate: expense.isPrivate === true,
   }
 }
 

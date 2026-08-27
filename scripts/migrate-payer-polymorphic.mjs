@@ -774,6 +774,33 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_trip_votes_id_idx
 -- so CC BY / CC BY-SA photos need their credit listed in the footer instead.
 ALTER TABLE backgrounds ADD COLUMN IF NOT EXISTS attribution character varying;
 ALTER TABLE backgrounds ADD COLUMN IF NOT EXISTS attribution_url character varying;
+
+-- "Soukromý výdaj" (private expense, docs/PRD-soukromy-vydaj.md): the flag
+-- plus the per-member direct-payment marks. Additive only; existing rows
+-- keep is_private NULL, which every filter reads as public. The unique index
+-- on (parent, participant) backs the settle endpoint's row locking — one
+-- mark per member, even under concurrent writes.
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS is_private boolean DEFAULT false;
+CREATE INDEX IF NOT EXISTS expenses_is_private_idx ON expenses USING btree (is_private);
+CREATE TABLE IF NOT EXISTS expenses_private_settlements (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  participant_id integer NOT NULL,
+  settled_at timestamp(3) with time zone,
+  CONSTRAINT expenses_private_settlements_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES expenses(id) ON DELETE CASCADE,
+  CONSTRAINT expenses_private_settlements_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS expenses_private_settlements_order_idx
+  ON expenses_private_settlements USING btree (_order);
+CREATE INDEX IF NOT EXISTS expenses_private_settlements_parent_id_idx
+  ON expenses_private_settlements USING btree (_parent_id);
+CREATE INDEX IF NOT EXISTS expenses_private_settlements_participant_idx
+  ON expenses_private_settlements USING btree (participant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS expenses_private_settlements_parent_participant_uq
+  ON expenses_private_settlements USING btree (_parent_id, participant_id);
 `
 
 async function enumLabels(typeName) {

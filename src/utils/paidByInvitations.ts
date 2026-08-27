@@ -113,7 +113,9 @@ export async function syncPaidByInvitations(
 
   const expenses = await payload.find({
     collection: 'expenses',
-    where: { chata: { equals: chataId } },
+    // Private expenses carry no invitations at all (docs/PRD-soukromy-vydaj.md);
+    // touching one here would also tell a non-member host about it
+    where: { and: [{ chata: { equals: chataId } }, { isPrivate: { not_equals: true } }] },
     limit: 1000,
     depth: 0,
   })
