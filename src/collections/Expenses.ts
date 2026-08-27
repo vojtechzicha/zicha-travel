@@ -16,6 +16,7 @@ import {
   privateDebtSignature,
   privateExpenseMembers,
   privateExpenseProblem,
+  privateShare,
   type PrivateExpenseLike,
   type PrivateExpenseProblem,
 } from '../lib/privateExpenses'
@@ -41,8 +42,12 @@ const expenseWriteAccess: Access = ({ req: { user } }) => {
   if (isSuperadmin(user)) return true
   // An admin outside their assigned chatas is just a participant like anyone
   // else: in OTHER chatas they keep only what they authored or paid for
+  // authoredBy is deliberately blind to PRIVATE rows: after a payer change
+  // or an account relink the author may sit outside the current circle, and
+  // the circle is the only law there. The current payer's account is what
+  // grants private access (payerAccount below).
   const own: Where[] = [
-    { authoredBy: { equals: user.id } },
+    { and: [{ authoredBy: { equals: user.id } }, { isPrivate: { not_equals: true } }] },
     { payerAccount: { equals: user.id } },
   ]
   if (user.role === 'admin') {
@@ -93,7 +98,11 @@ const expenseReadAccess: Access = ({ req: { user } }) => {
     },
   ]
   if (user) {
-    visible.push({ authoredBy: { equals: user.id } }, { payerAccount: { equals: user.id } })
+    // authoredBy carries no private access — see expenseWriteAccess above
+    visible.push(
+      { and: [{ authoredBy: { equals: user.id } }, notPrivate] },
+      { payerAccount: { equals: user.id } },
+    )
     if (user.role === 'admin') {
       // Chata admins see their chatas' expenses — except private ones: the
       // surprise target could be exactly this admin
@@ -179,12 +188,16 @@ export const Expenses: CollectionConfig = {
           throw new APIError(messages[problem], 400)
         }
 
-        if (operation === 'create' && req.user && !isSuperadmin(req.user)) {
-          // Whoever creates a private expense must BE its payer (own linked
-          // participant) — chata admins included. The author is thereby
-          // always inside the circle, and "author visibility" is never an
-          // extra class of readers.
-          const chataId = refId(data.chata)
+        if (req.user && !isSuperadmin(req.user)) {
+          // Whoever writes a private expense must BE its payer (own linked
+          // participant) — chata admins included, and on UPDATES as much as
+          // on create. Without the update check, a PATCH could name somebody
+          // else's participant as payer, the authoring guard below would put
+          // the expense in the approval queue, and the approval emails would
+          // hand the private title and amount to the payer, the banker and
+          // the admins. The author is thereby always inside the circle, and
+          // "author visibility" is never an extra class of readers.
+          const chataId = refId(operation === 'create' ? data.chata : (original?.chata ?? data.chata))
           const participantsResult = await req.payload.find({
             collection: 'participants',
             where: { chata: { equals: chataId } },
@@ -330,8 +343,15 @@ export const Expenses: CollectionConfig = {
         // "Výdaj za jiného plátce": stored, but invisible and outside the
         // maths until the payer, the banker or a chata admin confirms it.
         // Editing one puts it back in the queue — an approved amount must
-        // not be changeable after the fact.
-        data.approvalStatus = needsApproval({ isAdmin: false, payerIsOwn }) ? 'pending' : 'approved'
+        // not be changeable after the fact. A PRIVATE expense never enters
+        // the queue: the hook above already guaranteed its payer is the
+        // writer's own, and pending would hand it to the approval emails.
+        const effectivePrivate =
+          (data.isPrivate !== undefined ? data.isPrivate : original?.isPrivate) === true
+        data.approvalStatus =
+          !effectivePrivate && needsApproval({ isAdmin: false, payerIsOwn })
+            ? 'pending'
+            : 'approved'
         data.approvalDecidedBy = null
         data.approvalDecidedAt = null
         data.approvalNote = null
@@ -675,9 +695,15 @@ export const Expenses: CollectionConfig = {
               return notFound()
             }
             const payerId = payerParticipantId(expense.payer)
+            // Only a row that actually owes money can be marked: a planned
+            // expense has no debt yet, and a zero-weight member is in the
+            // circle but owes nothing. The UI hides these; the server refuses
+            // them.
             const isMember =
               payerId !== item.participantId &&
-              privateExpenseMembers(expense).includes(item.participantId)
+              expense.isPlanned !== true &&
+              privateExpenseMembers(expense).includes(item.participantId) &&
+              privateShare(expense, item.participantId) > 0
             const participant = await req.payload
               .findByID({
                 collection: 'participants',
@@ -1074,10 +1100,12 @@ export const Expenses: CollectionConfig = {
       },
       fields: [
         {
+          // Not required on purpose: deleting a participant sets the FK to
+          // NULL, and every helper skips null rows. Requiring it would make
+          // the participant undeletable while a mark exists.
           name: 'participant',
           type: 'relationship',
           relationTo: 'participants',
-          required: true,
           filterOptions: ({ data }) => {
             const doc = data as Partial<Expense> | undefined
             if (doc?.chata) {

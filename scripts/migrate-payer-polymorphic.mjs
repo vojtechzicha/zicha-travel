@@ -786,7 +786,7 @@ CREATE TABLE IF NOT EXISTS expenses_private_settlements (
   _order integer NOT NULL,
   _parent_id integer NOT NULL,
   id character varying PRIMARY KEY,
-  participant_id integer NOT NULL,
+  participant_id integer,
   settled_at timestamp(3) with time zone,
   CONSTRAINT expenses_private_settlements_parent_id_fk
     FOREIGN KEY (_parent_id) REFERENCES expenses(id) ON DELETE CASCADE,
@@ -801,6 +801,9 @@ CREATE INDEX IF NOT EXISTS expenses_private_settlements_participant_idx
   ON expenses_private_settlements USING btree (participant_id);
 CREATE UNIQUE INDEX IF NOT EXISTS expenses_private_settlements_parent_participant_uq
   ON expenses_private_settlements USING btree (_parent_id, participant_id);
+-- participant_id must be nullable for ON DELETE SET NULL to work (helpers
+-- skip null rows); databases created before this fix carried NOT NULL
+ALTER TABLE expenses_private_settlements ALTER COLUMN participant_id DROP NOT NULL;
 `
 
 async function enumLabels(typeName) {

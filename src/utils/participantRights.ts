@@ -196,7 +196,13 @@ export async function exportParticipantBundle(payload: Payload, participantId: n
       }
       const authored = await payload.find({
         collection: 'expenses',
-        where: { authoredBy: { equals: user.id } },
+        // Private expenses stay out of this account-wide list on purpose:
+        // one account may own participants on several trips, and a private
+        // expense belongs only in the bundles of its payer and members —
+        // where expenseRows above already carries it
+        where: {
+          and: [{ authoredBy: { equals: user.id } }, { isPrivate: { not_equals: true } }],
+        },
         limit: 1000,
         depth: 0,
         overrideAccess: true,

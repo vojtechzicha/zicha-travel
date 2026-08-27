@@ -919,7 +919,7 @@ export interface Expense {
    */
   privateSettlements?:
     | {
-        participant: number | Participant;
+        participant?: (number | null) | Participant;
         settledAt?: string | null;
         id?: string | null;
       }[]

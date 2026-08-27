@@ -413,10 +413,12 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
     but admins, the author and the payer's account
   - **Private expenses are invisible even to chata admins**: both
     `Expenses.access.read` AND `access.update/delete` guard the admin chata
-    branch with `isPrivate: { not_equals: true }` (a blind PATCH would
-    return the doc). Superadmin, `authoredBy` and `payerAccount` keep
-    access; the other members read via the slug API only. Legacy NULL rows
-    count as public (drizzle `not_equals` matches NULL)
+    branch AND the `authoredBy` branch with `isPrivate: { not_equals: true }`
+    (a blind PATCH would return the doc; an author relinked out of the
+    circle keeps nothing). Superadmin and `payerAccount` keep access; the
+    other members read via the slug API only; every non-superadmin write
+    (update included) must keep a payer the writer's account owns. Legacy
+    NULL rows count as public (drizzle `not_equals` matches NULL)
 - **Frontend Finance gating** (`src/lib/financeAccess.ts`, unit-tested):
   the slug API returns a `viewer` + `locked` list; admins of the chata get
   the full participant selector (defaulting to their own linked

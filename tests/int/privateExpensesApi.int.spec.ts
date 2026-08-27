@@ -1,5 +1,8 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
+import { REST_POST } from '@payloadcms/next/routes'
+import jwt from 'jsonwebtoken'
+import { exportParticipantBundle } from '@/utils/participantRights'
 
 import { describe, it, beforeAll, afterAll, expect } from 'vitest'
 import type { Chata, Expense, JointAccount, Participant, User } from '@/payload-types'
@@ -433,3 +436,301 @@ describe('settlement marks', () => {
     ).rejects.toThrow(/soukrom/i)
   })
 })
+
+// ── the real endpoint, through Payload's REST route ─────────────────────
+// The settlement tests above write through the bypass context; these hit
+// POST /api/expenses/private-settle the way the browser does, session
+// cookie included, so authorization, anti-enumeration and the payable-row
+// rules are exercised end to end.
+const settlePost = REST_POST(config)
+
+const sessionCookie = (user: User): string =>
+  `payload-token=${jwt.sign(
+    { id: user.id, email: user.email, collection: 'users' },
+    process.env.PAYLOAD_SECRET!,
+    { expiresIn: 600 },
+  )}`
+
+const callSettle = async (
+  user: User | null,
+  body: unknown,
+): Promise<{ status: number; json: { error?: string; ok?: boolean } }> => {
+  const request = new Request('http://localhost:3000/api/expenses/private-settle', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(user ? { Cookie: sessionCookie(user) } : {}),
+    },
+    body: JSON.stringify(body),
+  })
+  const response = await settlePost(request, {
+    params: Promise.resolve({ slug: ['expenses', 'private-settle'] }),
+  })
+  return { status: response.status, json: await response.json() }
+}
+
+describe('POST /api/expenses/private-settle (real endpoint)', () => {
+  // the shared privateExpense gets declassified by an earlier test, so this
+  // block keeps its own gift
+  let gift: Expense
+  beforeAll(async () => {
+    gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Endpointový dárek',
+        amount: 1200,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [
+          { participant: people.Martin.id, weight: 1 },
+          { participant: people.Tereza.id, weight: 1 },
+        ],
+        isPrivate: true,
+      },
+    })
+  })
+  afterAll(async () => {
+    await payload.delete({ collection: 'expenses', id: gift.id, depth: 0 })
+  })
+
+  it('lets a member mark and unmark their own row', async () => {
+    const mark = await callSettle(users.member, {
+      items: [{ expenseId: gift.id, participantId: people.Tereza.id }],
+      settled: true,
+    })
+    expect(mark.status).toBe(200)
+    expect(mark.json.ok).toBe(true)
+    let fresh = await payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 })
+    expect(fresh.privateSettlements).toHaveLength(1)
+
+    const unmark = await callSettle(users.member, {
+      items: [{ expenseId: gift.id, participantId: people.Tereza.id }],
+      settled: false,
+    })
+    expect(unmark.status).toBe(200)
+    fresh = await payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 })
+    expect(fresh.privateSettlements ?? []).toEqual([])
+  })
+
+  it('answers the same not-found for public, nonexistent and out-of-circle probes', async () => {
+    for (const [who, expenseId] of [
+      [users.target, () => gift.id],
+      [users.banker, () => gift.id],
+      [users.chataAdmin, () => gift.id],
+      [users.member, () => publicExpense.id],
+      [users.member, () => 999999],
+    ] as const) {
+      const res = await callSettle(who, {
+        items: [{ expenseId: expenseId(), participantId: people.Tereza.id }],
+        settled: true,
+      })
+      expect(res.status, `${who.email} on expense ${expenseId()}`).toBe(404)
+      expect(res.json.error).toBe('not-found')
+    }
+  })
+
+  it('refuses anonymous callers and malformed bodies', async () => {
+    const anon = await callSettle(null, {
+      items: [{ expenseId: gift.id, participantId: people.Tereza.id }],
+      settled: true,
+    })
+    expect(anon.status).toBe(401)
+    const bad = await callSettle(users.member, { items: 'nope', settled: true })
+    expect(bad.status).toBe(400)
+  })
+
+  it('refuses planned expenses and zero-share members', async () => {
+    const planned = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Plánovaný dárek',
+        amount: 900,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [{ participant: people.Tereza.id, weight: 1 }],
+        isPlanned: true,
+        isPrivate: true,
+      },
+    })
+    const zeroShare = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Dárek s nulovým podílem',
+        amount: 500,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [
+          { participant: people.Tereza.id, weight: 0 },
+          { participant: people.Ondra.id, weight: 1 },
+        ],
+        isPrivate: true,
+      },
+    })
+    try {
+      const onPlanned = await callSettle(users.payer, {
+        items: [{ expenseId: planned.id, participantId: people.Tereza.id }],
+        settled: true,
+      })
+      expect(onPlanned.status).toBe(404)
+      const onZero = await callSettle(users.payer, {
+        items: [{ expenseId: zeroShare.id, participantId: people.Tereza.id }],
+        settled: true,
+      })
+      expect(onZero.status).toBe(404)
+    } finally {
+      await payload.delete({ collection: 'expenses', id: planned.id, depth: 0 })
+      await payload.delete({ collection: 'expenses', id: zeroShare.id, depth: 0 })
+    }
+  })
+})
+
+describe('the payer stays the writer (review P0)', () => {
+  it("rejects a PATCH that names somebody else's participant as payer", async () => {
+    const gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Dárek k přepsání',
+        amount: 700,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [{ participant: people.Tereza.id, weight: 1 }],
+        isPrivate: true,
+      },
+    })
+    try {
+      await expect(
+        payload.update({
+          collection: 'expenses',
+          id: gift.id,
+          depth: 0,
+          data: { payer: { relationTo: 'participants', value: people.Katka.id } },
+          ...asUser(users.payer),
+        }),
+      ).rejects.toThrow(/plátce/i)
+      // and it never reached the approval queue (no email leak path)
+      const fresh = await payload.findByID({ collection: 'expenses', id: gift.id, depth: 0 })
+      expect(fresh.approvalStatus).toBe('approved')
+      expect(refIdOf(fresh.payer)).toBe(String(people.Martin.id))
+    } finally {
+      await payload.delete({ collection: 'expenses', id: gift.id, depth: 0 })
+    }
+  })
+})
+
+describe('authorship grants no private access (review P1)', () => {
+  it('an author whose payer link was cut loses REST access to the private row', async () => {
+    const gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Dárek bez autora',
+        amount: 600,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [{ participant: people.Tereza.id, weight: 1 }],
+        isPrivate: true,
+      },
+    })
+    // simulate an account relink: Martin's participant loses its account,
+    // the Participants hook re-stamps payerAccount to null
+    await payload.update({
+      collection: 'participants',
+      id: people.Martin.id,
+      depth: 0,
+      data: { account: null },
+    })
+    try {
+      const ids = await findExpenseIds(users.payer)
+      expect(ids).not.toContain(gift.id)
+      await expect(
+        payload.update({
+          collection: 'expenses',
+          id: gift.id,
+          depth: 0,
+          data: { title: 'stále moje?' },
+          ...asUser(users.payer),
+        }),
+      ).rejects.toThrow()
+    } finally {
+      await payload.update({
+        collection: 'participants',
+        id: people.Martin.id,
+        depth: 0,
+        data: { account: users.payer.id },
+      })
+      await payload.delete({ collection: 'expenses', id: gift.id, depth: 0 })
+    }
+  })
+})
+
+describe('rights exports keep private expenses in the circle (review P4)', () => {
+  it("a bundle of the same account's participant on ANOTHER trip carries no private titles", async () => {
+    // Martin's account also owns a participant on a second chata; that
+    // participant is neither payer nor member of the gift, so their bundle
+    // must not mention it — not even through the account-wide authored list
+    const otherChata = await payload.create({
+      collection: 'chatas',
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: {
+        name: 'Vitest — druhá chata',
+        shortName: 'Vitest 2',
+        location: 'Testov',
+        slug: `${SLUG}-2`,
+      },
+    })
+    const otherMartin = await payload.create({
+      collection: 'participants',
+      depth: 0,
+      data: { name: 'Martin', chata: otherChata.id, account: users.payer.id },
+    })
+    const gift = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      ...asUser(users.payer),
+      data: {
+        chata: chata.id,
+        title: 'Exportní překvapení',
+        amount: 800,
+        payer: { relationTo: 'participants', value: people.Martin.id },
+        splitType: 'weighted',
+        weights: [{ participant: people.Tereza.id, weight: 1 }],
+        isPrivate: true,
+      },
+    })
+    try {
+      const bundle = await exportParticipantBundle(payload, otherMartin.id)
+      expect(JSON.stringify(bundle)).not.toContain('Exportní překvapení')
+      // the sanity half: HIS OWN bundle on the gift's chata still carries it
+      const ownBundle = await exportParticipantBundle(payload, people.Martin.id)
+      expect(JSON.stringify(ownBundle)).toContain('Exportní překvapení')
+    } finally {
+      await payload.delete({ collection: 'expenses', id: gift.id, depth: 0 })
+      await payload.delete({ collection: 'participants', id: otherMartin.id, depth: 0 })
+      await payload.delete({ collection: 'chatas', id: otherChata.id, depth: 0 })
+    }
+  })
+})
+
+const refIdOf = (ref: unknown): string | null => {
+  if (ref == null) return null
+  if (typeof ref === 'object' && 'value' in (ref as object)) {
+    const value = (ref as { value: unknown }).value
+    return value != null ? String(typeof value === 'object' ? (value as { id: unknown }).id : value) : null
+  }
+  return String(typeof ref === 'object' ? (ref as { id: unknown }).id : ref)
+}

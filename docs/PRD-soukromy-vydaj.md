@@ -20,8 +20,10 @@ directly and mark the payment by hand.
 
 - **The circle** = the payer participant + every `weights[].participant`.
   There is no denormalized "visibleTo" column: REST serves private rows only
-  to superadmins, `authoredBy` and `payerAccount`; the other members read
-  through the slug API, which has the full context a `Where` clause lacks.
+  to superadmins and `payerAccount`; the other members read through the slug
+  API, which has the full context a `Where` clause lacks. `authoredBy` grants
+  NO private access — after an account relink the author may sit outside the
+  current circle, and the circle is the only law.
 - **`privateSettlements` is server-owned everywhere.** Only the
   `/api/expenses/private-settle` endpoint writes it (context flag
   `expensePrivateSettle`); the admin field is read-only and any submitted rows
@@ -64,11 +66,13 @@ The private layer is computed separately in `src/lib/privateExpenses.ts`:
 
 Four layers, because the read API is public by design:
 
-1. `Expenses.access.read` AND `access.write`: the approved-or-legacy branch
-   and the chata-admin branch both carry `isPrivate: { not_equals: true }`
-   (verified: the drizzle adapter compiles it to `IS NULL OR <> true`, so
-   legacy rows stay public). A blind PATCH/DELETE would return the document,
-   which is why the write access needs the guard too.
+1. `Expenses.access.read` AND `access.write`: the approved-or-legacy branch,
+   the chata-admin branch AND the `authoredBy` branch all carry
+   `isPrivate: { not_equals: true }` (verified: the drizzle adapter compiles
+   it to `IS NULL OR <> true`, so legacy rows stay public). A blind
+   PATCH/DELETE would return the document, which is why the write access
+   needs the guard too; the current payer's account is the one own-branch
+   that reaches private rows.
 2. The slug API filters `visibleExpenses` per viewer, private branch first
    (an approved private row would pass the `isCountedExpense` shortcut):
    superadmin, the payer's account, or a linked member — never `canManageChata`
@@ -91,10 +95,12 @@ settled }` — batch (≤ 20, deduplicated) so a netting hint marks all its rows
 in one transaction. Per row: superadmin, the payer's account
 (`Expense.payerAccount`) or the member's own account may mark
 (`canSettlePrivateRow`); the participant must be a current non-payer member.
-Concurrency: one transaction, parent rows locked with `SELECT … FOR UPDATE`
-in id order, every read/write on the shared `transactionID`, rollback on any
-failure, plus a unique index on `(_parent_id, participant_id)` as
-belt-and-braces. **Anti-enumeration**: nonexistent, public and
+Only a row that actually owes money can be marked: the expense must not be
+planned and the member's normalized share must be positive — the server
+enforces both, the UI merely hides the buttons. Concurrency: one
+transaction, parent rows locked with `SELECT … FOR UPDATE` in id order,
+every read/write on the shared `transactionID`, rollback on any failure,
+plus a unique index on `(_parent_id, participant_id)` as belt-and-braces. **Anti-enumeration**: nonexistent, public and
 unauthorized-private expenses all answer the same generic not-found, so ids
 cannot be probed.
 
@@ -128,9 +134,14 @@ cannot be probed.
    writes, admin panel included. The surprise target could be either of them.
    Superadmins see everything (the user's recorded decision); in the admin
    panel a private expense is therefore editable only by a superadmin.
-10. **The creator must be the payer.** Every non-superadmin creator — chata
-    admins included — must own the payer participant, so the author is always
-    inside the circle and "author visibility" is never an extra class.
+10. **The payer stays the writer.** Every non-superadmin WRITE — create and
+    update alike, chata admins included — must keep a payer the writer's
+    account owns. Without the update half, a PATCH could name somebody
+    else's participant as payer, the authoring guard would queue the expense
+    for approval, and the approval emails would hand the private title and
+    amount to the new payer, the banker and the admins. Belt and braces: the
+    authoring guard itself never moves an effectively-private expense off
+    `approved`.
 11. **Debt signature**: editing the amount, payer, weights, split type or
     planned state clears ALL settlement marks — they settled a different
     debt. A title or date edit keeps them. The composer warns about this.
@@ -139,9 +150,9 @@ cannot be probed.
     `payerAccount` on the other). Marking is one transaction; undo is
     per-row — no netting-group id is stored, and the UI promises no more.
 13. **Banker-combine hint** never mutates prepayments or the pot.
-14. **A deleted member participant**: helpers skip null refs; the DB blocks
-    deleting a participant who still has settlement rows (same as invitation
-    rows) — anonymize instead, which keeps the arithmetic.
+14. **A deleted member participant**: the settlement FK is nullable with
+    ON DELETE SET NULL, so deletion works and leaves a null row every helper
+    skips; the next debt-signature change sweeps such rows away.
 15. **Deleted/anonymized accounts**: `userCleanup` nulls
     `authoredBy`/`payerAccount`; visibility narrows to superadmins and the
     remaining linked members.
@@ -149,7 +160,10 @@ cannot be probed.
     private QR codes stop working; the settlement flags remain as the record.
 17. **Rights export**: a private expense appears only in its members' and
     payer's bundles (guaranteed by the weighted-only rule), flagged
-    `isPrivate` with the person's own `privateSettledAt`.
+    `isPrivate` with the person's own `privateSettledAt`. The account-wide
+    `authoredExpenses` list excludes private rows: one account may own
+    participants on several trips, and an unrelated participant's bundle
+    must not mention the gift.
 18. **Receipts are forbidden on private expenses in v1**: attachment
     documents are readable by any signed-in account and the files are public
     by URL, which would break the promise. Follow-up option if ever needed:
