@@ -1455,6 +1455,11 @@ export function InformationView({
   // CSS multicol balances column heights natively, so a short section stacks
   // under another instead of leaving a hole next to a tall neighbour. A lone
   // surviving section renders full width — no ghost column.
+  //
+  // Inside the columns the heading's own top margin is swapped for padding on
+  // the wrapper: a margin at the top of a column fragment gets truncated, so
+  // the section opening the second column sat 36px higher than the first one.
+  // Padding survives the break, and stacked sections keep the same gap.
   const flowColumns = (sections: Array<React.ReactNode | null>, key: string) => {
     const present = sections.filter(Boolean)
     if (present.length === 0) return null
@@ -1462,7 +1467,10 @@ export function InformationView({
     return (
       <div key={key} className="md:columns-2 md:gap-x-11">
         {present.map((section, idx) => (
-          <div key={idx} className="md:break-inside-avoid">
+          <div
+            key={idx}
+            className="md:break-inside-avoid md:pt-9 md:[&_.sheet-heading]:mt-0"
+          >
             {section}
           </div>
         ))}

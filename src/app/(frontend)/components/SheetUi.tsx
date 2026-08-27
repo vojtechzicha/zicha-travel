@@ -32,7 +32,10 @@ export function SheetHeading({
   aside?: ReactNode
 }) {
   return (
-    <div className="flex items-center gap-3 pb-2.5 sm:pb-3 border-b-[3px] border-gray-100 dark:border-white/10 mt-7 sm:mt-9 mb-4">
+    // the `sheet-heading` marker lets a container neutralize the top margin —
+    // InformationView's multicol flow does, because a margin at the top of a
+    // column fragment is truncated and the columns would start out of line
+    <div className="sheet-heading flex items-center gap-3 pb-2.5 sm:pb-3 border-b-[3px] border-gray-100 dark:border-white/10 mt-7 sm:mt-9 mb-4">
       <Icon
         size={20}
         className="text-primary dark:text-primary-light shrink-0"
