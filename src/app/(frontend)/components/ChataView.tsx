@@ -10,7 +10,7 @@ import { InformationView } from './InformationView'
 import { OrganizationView } from './OrganizationView'
 import { ParticipantsView } from './ParticipantsView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
-import { ThemeProvider } from './ThemeProvider'
+import { BackgroundCredit, ThemeProvider } from './ThemeProvider'
 import { useAppTheme } from '../utils/useAppTheme'
 import { getThemeColors } from '@/utils/themeColors'
 import { setAnalyticsContext, track, trackPageview, type AnalyticsRole } from '@/lib/analytics'
@@ -348,6 +348,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
               />
             )}
           </div>
+
+          <BackgroundCredit />
         </div>
       </div>
     </ThemeProvider>
