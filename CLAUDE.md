@@ -363,7 +363,9 @@ API payload, no new endpoints).
   (endpoint 401s anonymous): the anonymous, indexable render stays
   photo-free, same posture as participant names. The fetch host-allowlists
   `photos.app.goo.gl`/`photos.google.com`/`goo.gl` so the admin-entered URL
-  can't point the server anywhere else. `pickMoments` spreads the picks
+  can't point the server anywhere else — and because share links redirect
+  (goo.gl short links can point anywhere), redirects are followed manually
+  with EVERY hop re-validated (`albumRedirectTarget`). `pickMoments` spreads the picks
   across the whole album; thumbnails render at `=w480`, the shared
   `PhotoLightbox` (prop type widened to `LightboxPhoto`) at `=w2048`.
   Outbound-calls inventory, zpracovatelé table and the `/soukromi` policy

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   albumPhotoSrc,
+  albumRedirectTarget,
   extractAlbumPhotoUrls,
   isGooglePhotosAlbumUrl,
   pickMoments,
@@ -21,6 +22,30 @@ describe('isGooglePhotosAlbumUrl', () => {
     expect(isGooglePhotosAlbumUrl('https://photos.app.goo.gl.evil.example/x')).toBe(false)
     expect(isGooglePhotosAlbumUrl('not a url')).toBe(false)
     expect(isGooglePhotosAlbumUrl('')).toBe(false)
+  })
+})
+
+describe('albumRedirectTarget', () => {
+  const current = 'https://photos.app.goo.gl/AbCd123'
+
+  it('follows a redirect that stays on the allowlisted hosts', () => {
+    expect(
+      albumRedirectTarget('https://photos.google.com/share/AF1Qip?key=xyz', current),
+    ).toBe('https://photos.google.com/share/AF1Qip?key=xyz')
+    // relative Location resolves against the current URL
+    expect(albumRedirectTarget('/share/AF1Qip', current)).toBe(
+      'https://photos.app.goo.gl/share/AF1Qip',
+    )
+  })
+
+  it('stops a redirect that leaves them', () => {
+    // a goo.gl short link can point anywhere — a hop off the allowlist must
+    // end the fetch, or the first hop's check is theatre
+    expect(albumRedirectTarget('https://evil.example/album', current)).toBeNull()
+    expect(albumRedirectTarget('http://photos.google.com/share/x', current)).toBeNull()
+    expect(albumRedirectTarget('https://169.254.169.254/latest', current)).toBeNull()
+    expect(albumRedirectTarget(null, current)).toBeNull()
+    expect(albumRedirectTarget('::not a url::', 'also not a url')).toBeNull()
   })
 })
 

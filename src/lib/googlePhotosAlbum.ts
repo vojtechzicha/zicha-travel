@@ -23,6 +23,28 @@ export function isGooglePhotosAlbumUrl(url: string): boolean {
   return parsed.protocol === 'https:' && ALBUM_HOSTS.has(parsed.hostname)
 }
 
+/**
+ * Where a redirect hop may take the album fetch, or null when it must stop.
+ * Share links redirect (goo.gl → photos.app.goo.gl → photos.google.com), and
+ * following a Location header blindly would defeat the host allowlist — a
+ * goo.gl short link can point anywhere, so EVERY hop gets the same check as
+ * the starting URL. Relative Locations resolve against the current URL.
+ */
+export function albumRedirectTarget(
+  location: string | null,
+  currentUrl: string,
+): string | null {
+  if (!location) return null
+  let resolved: URL
+  try {
+    resolved = new URL(location, currentUrl)
+  } catch {
+    return null
+  }
+  const url = resolved.toString()
+  return isGooglePhotosAlbumUrl(url) ? url : null
+}
+
 // Photo base URLs sit in the share page's embedded JSON as
 // https://lh3.googleusercontent.com/pw/<token>. The /pw/ prefix is what
 // separates album media from avatars and other lh3 assets on the same page.

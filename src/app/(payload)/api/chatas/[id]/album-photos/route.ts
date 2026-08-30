@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { unstable_cache } from 'next/cache'
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { extractAlbumPhotoUrls, isGooglePhotosAlbumUrl } from '@/lib/googlePhotosAlbum'
+import {
+  albumRedirectTarget,
+  extractAlbumPhotoUrls,
+  isGooglePhotosAlbumUrl,
+} from '@/lib/googlePhotosAlbum'
 
 // How long a parsed album is served before the share page is fetched again.
 // During a trip new photos show up within a few hours; between trips the
@@ -14,10 +18,17 @@ const ALBUM_REVALIDATE_SECONDS = 6 * 60 * 60
 // not be). The page HTML is megabytes, so only the parsed URL list is
 // cached; the fetch itself must opt out of the fetch cache (no-store) or
 // Next would try to cache the oversized HTML response too.
-const cachedAlbumPhotoUrls = unstable_cache(
-  async (albumUrl: string): Promise<string[]> => {
-    const response = await fetch(albumUrl, {
-      redirect: 'follow',
+// Share links redirect (goo.gl → photos.app.goo.gl → photos.google.com),
+// but `redirect: 'follow'` would apply the host allowlist to the FIRST URL
+// only — a goo.gl short link can point anywhere, so each hop is validated
+// (albumRedirectTarget) before it is fetched.
+const MAX_REDIRECT_HOPS = 5
+
+async function fetchAlbumPage(albumUrl: string): Promise<string | null> {
+  let url = albumUrl
+  for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
+    const response = await fetch(url, {
+      redirect: 'manual',
       cache: 'no-store',
       headers: {
         // Google serves the full share page to browsers; the default
@@ -27,8 +38,22 @@ const cachedAlbumPhotoUrls = unstable_cache(
         'Accept-Language': 'cs,en;q=0.8',
       },
     })
-    if (!response.ok) return []
-    return extractAlbumPhotoUrls(await response.text())
+    if (response.status >= 300 && response.status < 400) {
+      const next = albumRedirectTarget(response.headers.get('location'), url)
+      if (!next) return null
+      url = next
+      continue
+    }
+    if (!response.ok) return null
+    return response.text()
+  }
+  return null
+}
+
+const cachedAlbumPhotoUrls = unstable_cache(
+  async (albumUrl: string): Promise<string[]> => {
+    const html = await fetchAlbumPage(albumUrl)
+    return html === null ? [] : extractAlbumPhotoUrls(html)
   },
   ['google-photos-album'],
   { revalidate: ALBUM_REVALIDATE_SECONDS },
