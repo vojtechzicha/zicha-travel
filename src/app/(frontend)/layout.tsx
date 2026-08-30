@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Merriweather } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
@@ -8,6 +8,7 @@ import { Footer } from './components/Footer'
 import { AttributionProvider } from './components/AttributionProvider'
 import { ConsentBanner } from './components/ConsentBanner'
 import { UpdateHint } from './components/UpdateHint'
+import { PwaProvider } from './components/PwaProvider'
 import { AnalyticsProvider } from './components/AnalyticsProvider'
 import { analyticsEnabled, CONSENT_COOKIE, resolveConsent } from '@/lib/consent'
 import './styles.css'
@@ -39,7 +40,19 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: t('description'),
     icons: {
-      icon: '/favicon.svg',
+      icon: [
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+        { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+      apple: '/icons/apple-touch-icon.png',
+    },
+    // The manifest route is host-aware (single-chata subdomains install
+    // through the apex bridge) — see src/lib/pwa.ts.
+    manifest: '/manifest.webmanifest',
+    appleWebApp: {
+      capable: true,
+      title: 'zicha.travel',
+      statusBarStyle: 'default',
     },
     openGraph: {
       type: 'website',
@@ -47,6 +60,12 @@ export async function generateMetadata(): Promise<Metadata> {
       description: t('description'),
     },
   }
+}
+
+// Colors the browser/app chrome to match the slate ground the site (and
+// the PWA splash screen) sits on.
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
@@ -71,6 +90,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           {/* Post-deploy refresh hint for long-lived tabs — renders nothing
               until a newer build answers /api/version. */}
           <UpdateHint />
+          {/* Service worker lifecycle + rolling session refresh (renders
+              nothing) — see components/PwaProvider.tsx. */}
+          <PwaProvider />
           {/* Frontend route group only — /admin (its own route group) never
               sees the banner or the provider by construction. Both off
               without the PostHog key. */}

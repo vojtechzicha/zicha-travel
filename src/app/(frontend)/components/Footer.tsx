@@ -7,6 +7,7 @@ import { analyticsEnabled } from '@/lib/consent'
 import { AttributionNotice } from './AttributionProvider'
 import { PrivacySettingsLink } from './PrivacySettingsLink'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { InstallAppLink } from './InstallAppLink'
 import packageJson from '../../../../package.json'
 
 // Version stamp: Vercel injects the deployed commit; local dev falls back to
@@ -50,6 +51,10 @@ export async function Footer() {
             </span>
           )}
           <LanguageSwitcher />
+          {/* Only shows once the browser reports the page as installable */}
+          <InstallAppLink className="hover:text-white transition-colors underline underline-offset-2">
+            {t('installApp')}
+          </InstallAppLink>
           <a
             href="/napoveda"
             className="hover:text-white transition-colors underline underline-offset-2"

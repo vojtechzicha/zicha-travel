@@ -12,7 +12,13 @@
     "privacySettings": "Nastavení soukromí",
     "admin": "Administrace",
     "signOut": "Odhlásit se",
-    "signIn": "Přihlásit se"
+    "signIn": "Přihlásit se",
+    "installApp": "Nainstalovat aplikaci"
+  },
+  "offline": {
+    "title": "Jsi offline",
+    "body": "Bez připojení k internetu se tahle stránka nenačte. Zkus to znovu, až budeš zase online.",
+    "retry": "Zkusit znovu"
   },
   "error": {
     "title": "Něco se pokazilo",

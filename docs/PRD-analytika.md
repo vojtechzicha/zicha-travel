@@ -103,7 +103,7 @@ Chosen: **cookieless always-on, cookie only after opt-in.**
 | ------------------- | -------------------------------- | -------- | --------------- |
 | `zt_consent`        | remembers the answer (`granted` / `denied`) | 12 months | no — strictly necessary (it *is* the consent record) |
 | `ph_*` (PostHog)    | visitor + session id             | 12 months | **yes**         |
-| `payload-token`     | login session (already exists)   | 30 d / 2 h | no — strictly necessary |
+| `payload-token`     | login session (already exists)   | 1 y (rolling) / 2 h | no — strictly necessary |
 
 `zt_consent` is set with `domain=${SESSION_COOKIE_DOMAIN}` (`.zicha.travel`),
 the same variable the auth session already uses — otherwise every chata

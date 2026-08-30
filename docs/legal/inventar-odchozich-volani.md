@@ -36,7 +36,8 @@ externí řádky převede `pnpm backgrounds:selfhost`. Admin fonty jsou v
 
 ## Cookies
 
-`payload-token` (30 d / 2 h správci), `zt_consent` (12 m),
+`payload-token` (1 rok, obnovuje se používáním / 2 h správci),
+`zt_consent` (12 m),
 `NEXT_LOCALE` (12 m), `oauth-state` + `oauth-return-to` (10 min),
 `zt_login_evt` (sekundy), `ph_*` (12 m, jen se souhlasem). Detaily a
 právní režim: zásady kap. 11.
@@ -44,4 +45,7 @@ právní režim: zásady kap. 11.
 ## localStorage
 
 `zt_theme`, `chata-overview-mode`, `chata-selected-participant-*`,
-PostHog `ph_*` (jen se souhlasem).
+`zt_session_refreshed_at`, PostHog `ph_*` (jen se souhlasem). Vedle toho
+drží service worker (PWA) v Cache Storage prohlížeče kopie naposledy
+otevřených stránek a dat pro offline režim — jen v zařízení, verzované
+podle buildu a mazané s daty prohlížeče.

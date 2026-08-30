@@ -31,7 +31,8 @@ Zálohy databáze dělá Supabase. **Ověřit v dashboardu a doplnit sem:**
 
 `payload-token` je JWT, které nejde před vypršením odvolat; „odhlásit
 všude" neexistuje. Dopad omezuje: 2h platnost pro správcovské role,
-30 dní jen pro role user (která nic nespravuje), cookie HttpOnly +
+1 rok (s obnovou při použití, kvůli instalované aplikaci) jen pro role
+user (která nic nespravuje), cookie HttpOnly +
 Secure, žádná hesla (převzetí schránky je řešeno u poskytovatele
 schránky). Riziko přijato; kdyby se objevil zneužitý token, okamžitá
 rotace `PAYLOAD_SECRET` zneplatní všechny sessiony najednou.

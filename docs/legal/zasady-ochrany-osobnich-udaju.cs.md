@@ -223,7 +223,7 @@ nejdřív nám.
 
 | Cookie | K čemu slouží | Platnost | Souhlas |
 | --- | --- | --- | --- |
-| `payload-token` | drží vaše přihlášení | 30 dní (2 h pro správce) | nezbytná pro přihlášení |
+| `payload-token` | drží vaše přihlášení | 1 rok, obnovuje se při každém použití webu (2 h pro správce) | nezbytná pro přihlášení |
 | `zt_consent` | pamatuje si vaši volbu v liště souhlasu | 12 měsíců | nezbytná, je sama záznamem souhlasu |
 | `NEXT_LOCALE` | pamatuje si zvolený jazyk | 12 měsíců | nezbytná, ukládá se po vaší volbě v patičce |
 | `oauth-state` | náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft, Google nebo Apple před podvržením | 10 minut | nezbytná |
@@ -238,19 +238,27 @@ všude a lišta se neptá na každé adrese znovu.
 
 Vedle cookies si stránka ukládá pár drobností do úložiště vašeho prohlížeče
 (localStorage). Zůstávají jen ve vašem zařízení, na server se neposílají a
-zapisují se až po vaší volbě, proto nevyžadují souhlas:
+buď si pamatují vaši volbu, nebo slouží jen technickému chodu webu, proto
+nevyžadují souhlas:
 
 | Klíč | K čemu slouží |
 | --- | --- |
 | `zt_theme` | zvolený tmavý nebo světlý režim |
 | `chata-overview-mode` | zvolené zobrazení přehledu (tabulka, nebo karty) |
 | `chata-selected-participant-*` | čí finance jste si na dané chatě naposledy otevřeli, aby se záložka otevřela stejně |
+| `zt_session_refreshed_at` | kdy si web naposledy prodloužil vaše přihlášení, aby to nezkoušel při každém načtení |
 
 Se souhlasem se statistikami si PostHog ukládá svůj anonymní identifikátor
 kromě cookie i do localStorage (klíče `ph_*`); odvoláním souhlasu se maže
 obojí. Widget Turnstile na veřejných formulářích si může ve svém rámu na
 doméně Cloudflare ukládat vlastní technická data potřebná k rozpoznání
 robotů.
+
+Web se dá nainstalovat jako aplikace do telefonu. Prohlížeč si pak (stejně
+jako při běžné návštěvě) ukládá do své mezipaměti kopie naposledy
+otevřených stránek a dat, aby aplikace fungovala i bez připojení. I tahle
+mezipaměť zůstává jen ve vašem zařízení a smažete ji smazáním dat
+prohlížeče.
 
 ## 12. Měření návštěvnosti
 

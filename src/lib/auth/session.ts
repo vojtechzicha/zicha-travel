@@ -17,9 +17,17 @@ export function requestOrigin(headers: Headers): string {
   return `${proto}://${host}`
 }
 
-/** Frontend users stay signed in for a month; admin sessions stay short. */
+/**
+ * Frontend users stay signed in for a year; admin sessions stay short.
+ * A year (up from the original 30 days) because the site now installs as
+ * an app on phones and trips are months apart — losing the login between
+ * trips defeated the installed app. Combined with the rolling refresh
+ * (POST /api/auth/refresh) any account that opens the app at least once a
+ * year effectively never signs in again. Mirrored in the cookie table of
+ * the published privacy policy — change both together.
+ */
 export function sessionDurationSeconds(role: string | null | undefined): number {
-  return role === 'user' ? 30 * 24 * 60 * 60 : 2 * 60 * 60
+  return role === 'user' ? 365 * 24 * 60 * 60 : 2 * 60 * 60
 }
 
 /**
