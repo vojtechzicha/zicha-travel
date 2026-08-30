@@ -118,7 +118,11 @@ export const config = {
      * - media (uploaded files)
      * - ingest (PostHog proxy — every analytics beacon would otherwise
      *   trigger a domain lookup incl. a fetch back into the deployment)
+     * - .well-known (discovery files: security.txt, change-password,
+     *   microsoft-identity-association.json — host-independent by design,
+     *   so the domain lookup would be a wasted round-trip; Microsoft's
+     *   publisher-domain verifier also refuses redirects)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|admin|media|ingest).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|admin|media|ingest|\\.well-known).*)',
   ],
 }
