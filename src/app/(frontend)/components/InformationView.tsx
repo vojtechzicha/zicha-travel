@@ -1514,6 +1514,9 @@ export function InformationView({
             transportSection,
             destinationSection,
             basicInfoSection,
+            // the promo gallery stays reachable mid-trip, but everything
+            // you actually need while there outranks it
+            gallerySection,
           ]
         : [
             weatherSection,
