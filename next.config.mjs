@@ -81,8 +81,9 @@ const nextConfig = {
     //
     // Known needs: Turnstile (script + iframe + its own connect calls),
     // Open-Meteo (client-side weather fetch), Paylibo QR + legacy external
-    // backgrounds + S3 storage (img-src https:), PostHog rides the
-    // first-party /ingest proxy so connect-src 'self' covers it.
+    // backgrounds + S3 storage + Google Photos album thumbnails
+    // (lh3.googleusercontent.com — all under img-src https:), PostHog rides
+    // the first-party /ingest proxy so connect-src 'self' covers it.
     // 'unsafe-eval' only in development — Next.js dev tooling needs it.
     const isDev = process.env.NODE_ENV === 'development'
     // Receipt uploads go straight from the browser to the bucket

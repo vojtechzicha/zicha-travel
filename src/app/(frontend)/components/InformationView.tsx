@@ -67,6 +67,7 @@ import {
   tripTotalDays,
   type TripPhase,
 } from '../utils/tripData'
+import { AlbumMoments } from './AlbumMoments'
 import { ArrivalTimeline } from './ArrivalTimeline'
 import {
   AccentCard,
@@ -1232,6 +1233,16 @@ export function InformationView({
       </div>
     ) : null
 
+  // "Momentky z alba" — hotlinked photos from the shared Google Photos
+  // album, signed-in viewers only (the anonymous, indexable render stays
+  // photo-free). The component hides itself while loading and whenever the
+  // album gives it nothing, so this renders as a plain teaser next to the
+  // album link.
+  const albumMomentsSection =
+    viewer.authenticated && chata.sharedAlbumUrl ? (
+      <AlbumMoments chataId={chata.id} albumUrl={chata.sharedAlbumUrl} />
+    ) : null
+
   const whoWasSection =
     phase === 'after' && participants.length > 0 ? (
       <div>
@@ -1481,6 +1492,7 @@ export function InformationView({
   const body =
     phase === 'after'
       ? [
+          albumMomentsSection,
           gallerySection,
           flowColumns([destinationSection, whoWasSection], 'after-flow'),
         ]
@@ -1494,6 +1506,7 @@ export function InformationView({
               [surroundingsSection, contactSection, whoIsHereSection, programSection],
               'during-flow',
             ),
+            albumMomentsSection,
             transportSection,
             destinationSection,
             basicInfoSection,
@@ -1510,6 +1523,7 @@ export function InformationView({
             transportSection,
             contactSection,
             gallerySection,
+            albumMomentsSection,
           ]
 
   return (

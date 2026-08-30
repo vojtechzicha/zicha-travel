@@ -304,8 +304,10 @@ export default function PrivacyContentEn() {
           <p>
             In addition, when the trip&rsquo;s weather forecast is shown, your browser fetches
             data from Open-Meteo (which learns your IP address; none of your data is sent to
-            it). Links to Google Calendar and Google Maps are opened by you; until then, nothing
-            goes to Google.
+            it). For signed-in visitors the trip page also shows photo previews from the shared
+            Google Photos album; your browser loads those directly from Google, which learns
+            your IP address in the process. Links to Google Calendar and Google Maps are opened
+            by you.
           </p>
           <p>We do not sell data to anyone and pass it to no one for advertising.</p>
         </Section>
