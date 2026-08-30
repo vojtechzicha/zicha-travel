@@ -13,6 +13,7 @@ import { isCountedExpense, normalizePayer, payerAccountIds } from '@/lib/expense
 import { canViewPrivateExpense, visiblePrivatePayerIds } from '@/lib/privateExpenses'
 import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
+import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendingVotes'
 import {
   calculateStats,
   transformExpense,
@@ -329,6 +330,19 @@ export async function GET(
     // linked participant here. Everyone else gets the anonymous headcount.
     let planning: PlanningPayload | null = null
     if (chata.planningEnabled === true) {
+      // Self-heal for "Nepotvrzené hlasy": a signed-in viewer whose vote is
+      // still waiting (a sign-in path that failed mid-way) gets it recorded
+      // now; what cannot be recorded ships as `pendingVote` so the page can
+      // ask them to finish by hand
+      let pendingVote = null
+      if (user && user.role !== 'superadmin') {
+        try {
+          await confirmPendingVotesForUser(payload, user.id, { chataId: chata.id })
+          pendingVote = await pendingVoteIntentFor(payload, user.id, chata.id)
+        } catch (err) {
+          console.error('Pending vote self-heal failed:', err)
+        }
+      }
       const [dateOptionsResult, accommodationsResult, votesResult] = await Promise.all([
         payload.find({
           collection: 'trip-date-options',
@@ -383,6 +397,7 @@ export async function GET(
         voteCount: votes.length,
         votes: canSeeResults ? votes : null,
         viewerVoted: votes.some((vote) => ownIds.has(String(vote.participantId))),
+        pendingVote,
       }
     }
 

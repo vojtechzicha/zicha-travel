@@ -15,6 +15,7 @@ export interface UserCleanupSummary {
   participantsUnlinked: number
   expensesCleaned: number
   claimsDeleted: number
+  pendingVotesDeleted: number
 }
 
 export async function cleanupDeletedUserReferences(
@@ -26,6 +27,7 @@ export async function cleanupDeletedUserReferences(
     participantsUnlinked: 0,
     expensesCleaned: 0,
     claimsDeleted: 0,
+    pendingVotesDeleted: 0,
   }
 
   // participants.account → null (the participant stays with the trip)
@@ -110,6 +112,26 @@ export async function cleanupDeletedUserReferences(
     })
     summary.claimsDeleted++
   }
+  // pending planning votes are the account's own intent — gone with it
+  // (`pending_votes.user_id` is NOT NULL, same reason as claims)
+  const pendingVotes = await payload.find({
+    collection: 'pending-votes',
+    where: { user: { equals: userId } },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  for (const row of pendingVotes.docs) {
+    await payload.delete({
+      collection: 'pending-votes',
+      id: row.id,
+      overrideAccess: true,
+      req,
+    })
+    summary.pendingVotesDeleted++
+  }
+
   const decidedClaims = await payload.find({
     collection: 'claim-requests',
     where: { decidedBy: { equals: userId } },

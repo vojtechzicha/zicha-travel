@@ -9,12 +9,21 @@ import {
   setSessionCookie,
   signSessionToken,
 } from './session'
+import { VOTE_INTENT_COOKIE, verifyVoteIntentToken } from '../pendingVotes'
+import { confirmPendingVotesForUser, upsertPendingVote } from '../../utils/pendingVotes'
 
 // The callback side of every OAuth sign-in, shared by all three providers.
 // Microsoft and Google arrive as a GET redirect; Apple POSTs (form_post), so
 // the route hands the already-extracted params in. The rest — state check,
 // code exchange, matching the email to an EXISTING account, session cookie —
 // is identical.
+//
+// The ONE case an account is created here: the sign-in started from the
+// planning vote dialog ("Pokračovat přes Google"), which stored the
+// selection in a signed `oauth-vote-intent` cookie (docs/PRD-planovani.md).
+// The provider has just verified the email, which is at least what a
+// magic-link click proves, so a first-time voter gets their account and
+// their vote in one round trip instead of falling back to the email form.
 
 export interface OAuthCallbackParams {
   code: string | null
@@ -81,11 +90,20 @@ export async function handleOAuthCallback(
       limit: 1,
     })
 
-    if (users.docs.length === 0) {
-      return fail('unauthorized')
-    }
+    const intentCookie = request.cookies.get(VOTE_INTENT_COOKIE)?.value
+    const secret = process.env.PAYLOAD_SECRET
+    const voteIntent = intentCookie && secret ? verifyVoteIntentToken(intentCookie, secret) : null
 
-    const user = users.docs[0]
+    let user = users.docs[0] ?? null
+    if (!user) {
+      if (!voteIntent) return fail('unauthorized')
+      user = await payload.create({
+        collection: 'users',
+        data: { email: userInfo.email.toLowerCase(), role: 'user' },
+        overrideAccess: true,
+        depth: 0,
+      })
+    }
 
     // Activate the account (lastLoginAt) — this also locks the linked
     // participants away from anonymous visitors
@@ -99,6 +117,26 @@ export async function handleOAuthCallback(
       })
     } catch (err) {
       console.error('Failed to stamp lastLoginAt:', err)
+    }
+
+    // The vote that started this sign-in, then everything else the account
+    // had waiting — never at the cost of the login itself
+    try {
+      if (voteIntent && user.role !== 'superadmin') {
+        await upsertPendingVote(payload, {
+          chataId: voteIntent.chataId,
+          userId: user.id,
+          name: voteIntent.name,
+          dateOptionIds: voteIntent.dateOptionIds,
+          accommodationOptionIds: voteIntent.accommodationOptionIds,
+          source: provider.id,
+          // the selection came from this very browser session
+          autoConfirm: true,
+        })
+      }
+      await confirmPendingVotesForUser(payload, user.id)
+    } catch (err) {
+      console.error('Pending vote confirmation failed at sign-in:', err)
     }
 
     // Frontend accounts always land on the frontend; admin roles go back to
@@ -130,4 +168,5 @@ function clearOAuthCookies(response: NextResponse): void {
   }
   response.cookies.set('oauth-state', '', cookieOptions)
   response.cookies.set('oauth-return-to', '', cookieOptions)
+  response.cookies.set(VOTE_INTENT_COOKIE, '', cookieOptions)
 }

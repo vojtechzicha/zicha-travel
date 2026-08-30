@@ -12,11 +12,13 @@
 //   removing an operator's access is a human decision.
 // - decided claim requests (approved/rejected/cancelled) go 12 months
 //   after the decision.
+// - pending planning votes ("Nepotvrzené hlasy"): confirmed rows 12 months
+//   after confirmation; every row of a chata in its settled pass.
 // - housekeeping: stale payload-locked-documents rows.
 //
 // Everything is idempotent and logs counts only — no names, no emails.
 
-import type { Payload } from 'payload'
+import type { Payload, Where } from 'payload'
 import { refId } from '@/lib/access'
 
 export const MONTH_MS = 30 * 24 * 60 * 60 * 1000
@@ -28,7 +30,28 @@ export interface RetentionSummary {
   dormantUsersDeleted: number
   dormantAdminsFound: number
   decidedClaimsDeleted: number
+  pendingVotesDeleted: number
   staleLocksDeleted: number
+}
+
+async function deletePendingVotes(payload: Payload, where: Where): Promise<number> {
+  let deleted = 0
+  const rows = await payload.find({
+    collection: 'pending-votes',
+    where,
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  for (const row of rows.docs) {
+    try {
+      await payload.delete({ collection: 'pending-votes', id: row.id, overrideAccess: true })
+      deleted++
+    } catch (err) {
+      payload.logger.error({ err, row: row.id }, 'Retention: pending vote delete failed')
+    }
+  }
+  return deleted
 }
 
 export async function runRetention(
@@ -42,6 +65,7 @@ export async function runRetention(
     dormantUsersDeleted: 0,
     dormantAdminsFound: 0,
     decidedClaimsDeleted: 0,
+    pendingVotesDeleted: 0,
     staleLocksDeleted: 0,
   }
 
@@ -110,6 +134,13 @@ export async function runRetention(
         }
       }
     }
+  }
+
+  // ── 1b. Settled chatas: the planning queue has served its purpose
+  for (const chata of settledChatas.docs) {
+    summary.pendingVotesDeleted += await deletePendingVotes(payload, {
+      chata: { equals: chata.id },
+    })
   }
 
   // ── 2. Dormant accounts: no login for 2 years (never-logged-in accounts
@@ -187,6 +218,15 @@ export async function runRetention(
       payload.logger.error({ err, claim: claim.id }, 'Retention: claim delete failed')
     }
   }
+
+  // ── 3b. Confirmed or discarded pending votes, 12 months on (the vote
+  //      itself lives on in trip-votes; this is only the audit row)
+  summary.pendingVotesDeleted += await deletePendingVotes(payload, {
+    or: [
+      { and: [{ status: { equals: 'confirmed' } }, { confirmedAt: { less_than: settledCutoff } }] },
+      { and: [{ status: { equals: 'discarded' } }, { updatedAt: { less_than: settledCutoff } }] },
+    ],
+  })
 
   // ── 4. Housekeeping: locked-document rows older than a day are leftovers
   //      of interrupted admin sessions

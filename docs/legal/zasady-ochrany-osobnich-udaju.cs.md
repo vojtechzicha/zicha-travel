@@ -82,9 +82,9 @@ podmínek užití (čl. 6 odst. 1 písm. b GDPR): bez e-mailu vám nepošleme
 přihlašovací odkaz a bez záznamu o vašich výdajích nefunguje pravidlo, že si
 je můžete sami upravit.
 
-**E-maily.** Posíláme jen provozní zprávy: přihlašovací odkazy, rozhodnutí o
-žádostech o propojení a žádosti o potvrzení výdaje, který za vás zapsal
-někdo jiný. Žádný marketing.
+**E-maily.** Posíláme jen provozní zprávy: přihlašovací odkazy, potvrzení
+hlasu při plánování výletu, rozhodnutí o žádostech o propojení a žádosti o
+potvrzení výdaje, který za vás zapsal někdo jiný. Žádný marketing.
 
 **Statistiky.** Anonymní měření návštěvnosti stojí na oprávněném zájmu vědět,
 jestli web funguje. Statistické cookies ukládáme jen s vaším souhlasem
@@ -187,7 +187,9 @@ ke konkrétnímu poskytovateli vám na vyžádání pošleme.
 | účet, který se 2 roky nepřihlásil | smažeme včetně vazeb |
 | žádosti o propojení včetně důvodu zamítnutí | smažeme do 12 měsíců od rozhodnutí |
 | hlasy z plánování výletu | součást záznamu výletu, po dobu provozu služby |
+| nepotvrzené hlasy z plánování (jméno, výběr, účet, který je má potvrdit) | smažeme do 12 měsíců od potvrzení, nejpozději do 12 měsíců od vyúčtování výletu |
 | přihlašovací odkazy (tokeny) | platí 15 minut, poté jsou neplatné |
+| odkaz k potvrzení hlasu z plánování | platí 7 dní; hlas sám nepropadá, uloží se při jakémkoli přihlášení |
 | surové statistické události | 12 měsíců, poté jen souhrnná čísla |
 | provozní logy hostingu | krátkodobě, podle nastavení poskytovatele |
 
@@ -226,6 +228,7 @@ nejdřív nám.
 | `NEXT_LOCALE` | pamatuje si zvolený jazyk | 12 měsíců | nezbytná, ukládá se po vaší volbě v patičce |
 | `oauth-state` | náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft, Google nebo Apple před podvržením | 10 minut | nezbytná |
 | `oauth-return-to` | drží návratovou adresu během přihlášení přes Microsoft, Google nebo Apple | 10 minut, jen po dobu přihlašování | nezbytná |
+| `oauth-vote-intent` | drží váš hlas z plánování (jméno, termíny, chalupy) během přihlášení přes Microsoft, Google nebo Apple, které jste spustili z hlasovacího formuláře | 10 minut, jen po dobu přihlašování | nezbytná |
 | `zt_login_evt` | jednorázová značka „přihlášení proběhlo" pro statistiky, hned se maže | sekundy | nezbytná technická |
 | `ph_*` | stabilní anonymní identifikátor pro statistiky | 12 měsíců | jen s vaším souhlasem |
 
@@ -318,6 +321,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
+| 4 | 30. 8. 2026 | Nepotvrzené hlasy z plánování: hlas zadaný bez přihlášení čeká na potvrzení jako samostatný záznam a uloží se při jakémkoli přihlášení; potvrzovací e-mail, cookie `oauth-vote-intent` a doplnění kapitol 4, 9 a 12. |
 | 3 | 27. 8. 2026 | Soukromé výdaje: nový typ výdaje viditelný jen jeho členům, doplnění kapitoly 6 včetně zobrazení bankovního spojení plátce členům jeho rozdělení. |
 | 2 | 25. 8. 2026 | Fáze plánování výletu: hlasování o termínu a ubytování jako nová kategorie údajů, možnost přidat se k výletu hlasovacím formulářem a s tím spojené doplnění kapitol 2, 3, 5, 6 a 9. |
 | 1 | 16. 8. 2026 | První zveřejněná verze. |

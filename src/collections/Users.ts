@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { isAdminRole, isSuperadmin } from '../lib/access'
 import { isOAuthConfigured } from '../lib/auth/config'
 import { cleanupDeletedUserReferences } from '../utils/userCleanup'
+import { confirmPendingVotesForUser } from '../utils/pendingVotes'
 
 const isOAuthEnabled = isOAuthConfigured()
 
@@ -97,6 +98,11 @@ export const Users: CollectionConfig = {
           })
         } catch {
           // stamping must never break the login itself
+        }
+        try {
+          await confirmPendingVotesForUser(req.payload, user.id)
+        } catch {
+          // a stuck pending vote stays visible in the admin queue
         }
         return user
       },

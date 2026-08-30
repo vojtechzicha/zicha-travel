@@ -26,14 +26,12 @@ import { nightsLabel } from '@/lib/chataSelection'
 import {
   accommodationAvailableFor,
   canSeePlanningResults,
-  parsePlanningVoteIntent,
   planningMonthsLabel,
   tallyVotes,
-  PLANNING_INTENT_PARAMS,
   type PlanningAccommodationOption,
   type PlanningPayload,
   type PlanningTallyRow,
-  type PlanningVoteIntent,
+  type PendingVoteIntent,
 } from '@/lib/planning'
 import { track } from '@/lib/analytics'
 import {
@@ -80,64 +78,53 @@ export function PlanningView({
   const t = useTranslations('planning')
   const locale = useLocale() as AppLocale
   const [dialogOpen, setDialogOpen] = useState(false)
-  // A vote intent that failed to auto-submit (below) prefills the dialog
-  const [fallbackIntent, setFallbackIntent] = useState<PlanningVoteIntent | null>(null)
-  const autoSubmitted = useRef(false)
+  // A pending vote that could not be confirmed at sign-in prefills the dialog
+  const [fallbackIntent, setFallbackIntent] = useState<PendingVoteIntent | null>(null)
+  const pendingHandled = useRef<number | null>(null)
   // The vote must stay one tap away at every scroll position: while the
   // inline CTA card is out of the viewport, a floating "Chci jet" button
   // takes over (same FAB pattern as Finance's "Přidat výdaj")
   const ctaRef = useRef<HTMLDivElement | null>(null)
   const [ctaInView, setCtaInView] = useState(true)
 
-  // Deferred anonymous vote: the magic-link click lands here with the
-  // selection in pv_* params (docs/PRD-planovani.md) — now that the viewer
-  // is verified and signed in, record it through the authenticated path.
-  // On failure (name taken meanwhile, options changed) the dialog opens
-  // prefilled so the voter can finish by hand.
+  // "Nepotvrzené hlasy" (docs/PRD-planovani.md): the slug API already tried
+  // to record the signed-in viewer's pending vote; what it ships here is
+  // the one it could NOT record (name taken meanwhile, options changed) —
+  // open the dialog prefilled so the voter can finish by hand
   useEffect(() => {
-    if (autoSubmitted.current || !viewer.authenticated) return
-    const url = new URL(window.location.href)
-    const intent = parsePlanningVoteIntent(url.searchParams)
-    if (!intent) return
-    autoSubmitted.current = true
-    for (const param of PLANNING_INTENT_PARAMS) url.searchParams.delete(param)
-    window.history.replaceState({}, '', url)
-    const submitIntent = async () => {
-      try {
-        const res = await fetch('/api/trip-votes/submit', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chataId: chata.id,
-            dateOptionIds: intent.dateOptionIds,
-            accommodationOptionIds: intent.accommodationOptionIds,
-            ...(intent.name ? { name: intent.name } : {}),
-          }),
-        })
-        if (res.ok) {
-          track('planning_vote_submitted', {
-            signed_in: true,
-            dates: intent.dateOptionIds.length,
-            places: intent.accommodationOptionIds.length,
-          })
-          await onDataChanged()
-          return
-        }
-        const data = await res.json().catch(() => null)
-        track('save_failed', {
-          operation: 'planning_vote_intent',
-          status: res.status,
-          code: data?.error,
-        })
-      } catch {
-        // fall through to the manual dialog
+    if (!viewer.authenticated || !planning.pendingVote) return
+    if (pendingHandled.current === planning.pendingVote.id) return
+    pendingHandled.current = planning.pendingVote.id
+    setFallbackIntent(planning.pendingVote)
+    setDialogOpen(true)
+  }, [viewer.authenticated, planning.pendingVote])
+
+  const [withdrawing, setWithdrawing] = useState<'ask' | 'busy' | null>(null)
+  const [withdrawError, setWithdrawError] = useState<string | null>(null)
+  const withdraw = async () => {
+    setWithdrawing('busy')
+    setWithdrawError(null)
+    try {
+      const res = await fetch('/api/trip-votes/withdraw', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId: viewerVote?.participantId }),
+      })
+      if (!res.ok) {
+        track('save_failed', { operation: 'planning_vote_withdraw', status: res.status })
+        setWithdrawError(t('results.withdrawFailed'))
+        setWithdrawing('ask')
+        return
       }
-      setFallbackIntent(intent)
-      setDialogOpen(true)
+      track('planning_vote_withdrawn', {})
+      await onDataChanged()
+      setWithdrawing(null)
+    } catch {
+      setWithdrawError(t('results.withdrawFailed'))
+      setWithdrawing('ask')
     }
-    void submitIntent()
-  }, [viewer.authenticated, chata.id, onDataChanged])
+  }
 
   const canSeeResults = canSeePlanningResults(viewer)
   const votes = useMemo(() => planning.votes ?? [], [planning.votes])
@@ -304,13 +291,24 @@ export function PlanningView({
             label={t('results.yourVote')}
             className="mt-6"
             action={
-              <button
-                type="button"
-                onClick={() => setDialogOpen(true)}
-                className="text-[13px] font-semibold text-primary-dark dark:text-primary-light hover:underline underline-offset-2"
-              >
-                {t('results.edit')}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDialogOpen(true)}
+                  className="text-[13px] font-semibold text-primary-dark dark:text-primary-light hover:underline underline-offset-2"
+                >
+                  {t('results.edit')}
+                </button>
+                {withdrawing == null && (
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawing('ask')}
+                    className="text-[13px] font-semibold text-gray-500 dark:text-slate-400 hover:underline underline-offset-2"
+                  >
+                    {t('results.withdraw')}
+                  </button>
+                )}
+              </div>
             }
           >
             <div className="flex flex-col gap-1.5 text-sm text-gray-700 dark:text-slate-200">
@@ -341,6 +339,33 @@ export function PlanningView({
                     : t('results.noPlaces')}
                 </span>
               </div>
+              {withdrawing != null && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
+                  <span className="text-gray-700 dark:text-slate-200">{t('results.withdrawAsk')}</span>
+                  <button
+                    type="button"
+                    onClick={withdraw}
+                    disabled={withdrawing === 'busy'}
+                    className="rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1 transition-colors disabled:opacity-60"
+                  >
+                    {t('results.withdrawYes')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWithdrawing(null)
+                      setWithdrawError(null)
+                    }}
+                    disabled={withdrawing === 'busy'}
+                    className="rounded-full border border-gray-300 dark:border-white/[0.2] font-semibold px-3 py-1 transition-colors disabled:opacity-60"
+                  >
+                    {t('results.withdrawNo')}
+                  </button>
+                  {withdrawError && (
+                    <span className="text-red-600 dark:text-red-400">{withdrawError}</span>
+                  )}
+                </div>
+              )}
             </div>
           </AccentCard>
         )}
@@ -579,8 +604,17 @@ export function PlanningView({
           chata={chata}
           planning={planning}
           viewerName={myParticipant?.name ?? null}
+          participantId={viewerVote?.participantId ?? null}
           authenticated={viewer.authenticated}
+          pendingApproval={
+            fallbackIntent?.needsApproval && !fallbackIntent.issue ? { id: fallbackIntent.id } : null
+          }
+          onDiscarded={async () => {
+            setFallbackIntent(null)
+            await onDataChanged()
+          }}
           initialName={fallbackIntent?.name ?? null}
+          initialIssue={fallbackIntent?.issue ?? null}
           initialDateIds={viewerVote?.dateOptionIds ?? fallbackIntent?.dateOptionIds ?? []}
           initialAccommodationIds={
             viewerVote?.accommodationOptionIds ?? fallbackIntent?.accommodationOptionIds ?? []

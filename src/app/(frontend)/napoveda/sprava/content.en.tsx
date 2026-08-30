@@ -64,6 +64,12 @@ export default function SpravaContentEn() {
                 works for all of them.
               </>,
               <>
+                A vote cast without signing in waits under <strong>Pending votes</strong> (the
+                Planning group) until its owner signs in: through the confirmation link in the
+                email, a login link, or Google, Apple or Microsoft. A row that stays pending
+                with an issue filled in (the name was already taken) deserves a look.
+              </>,
+              <>
                 Results are visible only to the chata&apos;s signed-in participants and its
                 admins. Once the group decides, untick the box and set the real dates. The
                 voters already exist as participants.

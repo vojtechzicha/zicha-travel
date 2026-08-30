@@ -57,6 +57,13 @@ export default function SpravaContentCs() {
                 všech.
               </>,
               <>
+                Kdo hlasuje bez přihlášení, tomu hlas čeká v <strong>Nepotvrzených hlasech</strong>
+                (skupina Plánování), dokud se nepřihlásí: potvrzovacím odkazem z e-mailu,
+                přihlašovacím odkazem, nebo přes Google, Apple či Microsoft. Řádek, který
+                zůstává nepotvrzený s vyplněným problémem (jméno už někdo měl), si zaslouží
+                pohled.
+              </>,
+              <>
                 Výsledky vidí jen přihlášení účastníci chaty a správci. Až bude jasno, zaškrtnutí
                 zruš a nastav skutečný termín. Hlasující už jsou založení jako účastníci.
               </>,

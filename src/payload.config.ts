@@ -23,6 +23,7 @@ import { JointAccounts } from './collections/JointAccounts'
 import { TripDateOptions } from './collections/TripDateOptions'
 import { TripAccommodationOptions } from './collections/TripAccommodationOptions'
 import { TripVotes } from './collections/TripVotes'
+import { PendingVotes } from './collections/PendingVotes'
 import { DataRequests } from './collections/DataRequests'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
@@ -78,6 +79,7 @@ export default buildConfig({
     TripDateOptions,
     TripAccommodationOptions,
     TripVotes,
+    PendingVotes,
     ExpenseAttachments,
     Backgrounds,
     Icons,

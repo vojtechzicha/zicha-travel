@@ -769,6 +769,88 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_trip_votes_id_idx
   ON payload_locked_documents_rels USING btree (trip_votes_id);
 
+-- "Nepotvrzené hlasy" (docs/PRD-planovani.md): a planning vote cast without
+-- signing in waits here as its own row until any sign-in records it.
+-- Captured from the local dev push; FK shapes mirror Payload's (SET NULL on
+-- NOT NULL columns is how Payload emits them for the other tables too).
+DO $$ BEGIN
+  CREATE TYPE enum_pending_votes_status AS ENUM('pending', 'confirmed', 'discarded');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE enum_pending_votes_issue AS ENUM('name-taken', 'planning-closed', 'invalid-selection');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE enum_pending_votes_source AS ENUM('email', 'microsoft', 'google', 'apple');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE TABLE IF NOT EXISTS pending_votes (
+  id serial PRIMARY KEY,
+  name character varying NOT NULL,
+  chata_id integer NOT NULL,
+  user_id integer NOT NULL,
+  status enum_pending_votes_status DEFAULT 'pending' NOT NULL,
+  issue enum_pending_votes_issue,
+  source enum_pending_votes_source,
+  confirmed_at timestamp(3) with time zone,
+  link_expires_at timestamp(3) with time zone,
+  link_used_at timestamp(3) with time zone,
+  auto_confirm boolean DEFAULT false,
+  submission_key character varying,
+  vote_id integer,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT pending_votes_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL,
+  CONSTRAINT pending_votes_user_id_users_id_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT pending_votes_vote_id_trip_votes_id_fk
+    FOREIGN KEY (vote_id) REFERENCES trip_votes(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS pending_votes_chata_idx ON pending_votes USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS pending_votes_user_idx ON pending_votes USING btree (user_id);
+CREATE INDEX IF NOT EXISTS pending_votes_status_idx ON pending_votes USING btree (status);
+CREATE INDEX IF NOT EXISTS pending_votes_vote_idx ON pending_votes USING btree (vote_id);
+CREATE INDEX IF NOT EXISTS pending_votes_updated_at_idx ON pending_votes USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS pending_votes_created_at_idx ON pending_votes USING btree (created_at);
+ALTER TABLE pending_votes ADD COLUMN IF NOT EXISTS link_used_at timestamp(3) with time zone;
+ALTER TABLE pending_votes ADD COLUMN IF NOT EXISTS auto_confirm boolean DEFAULT false;
+ALTER TABLE pending_votes ADD COLUMN IF NOT EXISTS submission_key character varying;
+-- One vote per participant: recordVote serializes per (account, chata) with
+-- an advisory lock; this is the backstop for anything it does not cover
+CREATE UNIQUE INDEX IF NOT EXISTS trip_votes_participant_uq ON trip_votes USING btree (participant_id);
+-- One PENDING row per account and chata, even under concurrent submits
+-- (upsertPendingVote retries on this); confirmed rows may pile up as history
+CREATE UNIQUE INDEX IF NOT EXISTS pending_votes_user_chata_pending_uq
+  ON pending_votes USING btree (user_id, chata_id) WHERE status = 'pending';
+
+CREATE TABLE IF NOT EXISTS pending_votes_rels (
+  id serial PRIMARY KEY,
+  "order" integer,
+  parent_id integer NOT NULL,
+  path character varying NOT NULL,
+  trip_date_options_id integer,
+  trip_accommodation_options_id integer,
+  CONSTRAINT pending_votes_rels_parent_fk
+    FOREIGN KEY (parent_id) REFERENCES pending_votes(id) ON DELETE CASCADE,
+  CONSTRAINT pending_votes_rels_trip_date_options_fk
+    FOREIGN KEY (trip_date_options_id) REFERENCES trip_date_options(id) ON DELETE CASCADE,
+  CONSTRAINT pending_votes_rels_trip_accommodation_options_fk
+    FOREIGN KEY (trip_accommodation_options_id) REFERENCES trip_accommodation_options(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS pending_votes_rels_order_idx ON pending_votes_rels USING btree ("order");
+CREATE INDEX IF NOT EXISTS pending_votes_rels_parent_idx ON pending_votes_rels USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS pending_votes_rels_path_idx ON pending_votes_rels USING btree (path);
+CREATE INDEX IF NOT EXISTS pending_votes_rels_trip_date_options_id_idx ON pending_votes_rels USING btree (trip_date_options_id);
+CREATE INDEX IF NOT EXISTS pending_votes_rels_trip_accommodation_options_id_idx ON pending_votes_rels USING btree (trip_accommodation_options_id);
+
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS pending_votes_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_pending_votes_fk
+    FOREIGN KEY (pending_votes_id) REFERENCES pending_votes(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_pending_votes_id_idx
+  ON payload_locked_documents_rels USING btree (pending_votes_id);
+
 
 -- Background photo credits: a background is painted as a CSS background-image,
 -- so CC BY / CC BY-SA photos need their credit listed in the footer instead.

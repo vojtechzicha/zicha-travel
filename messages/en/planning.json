@@ -42,7 +42,12 @@
     "fraction": "{count}/{total}",
     "leading": "leading",
     "noVotes": "Nobody has voted yet. Be the first.",
-    "note": "Voting runs until the admin picks a date and a cottage. Then this page turns into the usual trip guide."
+    "note": "Voting runs until the admin picks a date and a cottage. Then this page turns into the usual trip guide.",
+    "withdraw": "Withdraw my vote",
+    "withdrawAsk": "Withdraw your vote?",
+    "withdrawYes": "Yes, withdraw",
+    "withdrawNo": "No",
+    "withdrawFailed": "That didn't work. Please try again."
   },
   "dialog": {
     "title": "Coming along?",
@@ -53,7 +58,7 @@
     "nameHint": "This is how the others will see you.",
     "emailLabel": "Email",
     "emailPlaceholder": "kate@example.com",
-    "emailHint": "We'll send you a sign-in link here so you can see the results. No spam.",
+    "emailHint": "We'll send you a link here to confirm the vote. No spam.",
     "adultConfirm": "I'm at least 18 years old.",
     "signedInAs": "Voting as {name}.",
     "stepDates": "When you can",
@@ -66,11 +71,11 @@
     "submitting": "Sending…",
     "accountNote": "We'll create an account for you so you can see the results and later your finances for the chata. By submitting you agree to the <terms>terms</terms> and <privacy>privacy policy</privacy>.",
     "sentTitle": "One click to go",
-    "sentBody": "A link is on its way to <strong>{email}</strong>. Click it to save your vote and see who joined.",
-    "sentBodyNoEmail": "The link failed to send, so your vote is not saved yet. Please try again in a moment.",
+    "sentBody": "A link is on its way to <strong>{email}</strong>. Click it and your vote is saved.",
+    "sentBodyNoEmail": "The link failed to send, but we have your vote: it's saved as soon as you sign in any way, say with Google, Apple or Microsoft.",
     "savedTitle": "Vote saved",
     "savedBody": "Thanks, the results reflect it right away.",
-    "resend": "Nothing arrived? Check spam, or vote again.",
+    "resend": "Nothing arrived? Check spam, or just sign in.",
     "errors": {
       "generic": "That didn't work. Please try again.",
       "captcha": "The bot check failed. Please try again.",
@@ -81,7 +86,62 @@
       "accommodation-unavailable": "One of the picked cottages isn't available on your dates.",
       "planning-closed": "Voting has ended.",
       "email-required": "Tell us your email.",
-      "adult-required": "Accounts are for adults. Please confirm you're at least 18."
-    }
+      "adult-required": "Accounts are for adults. Please confirm you're at least 18.",
+      "invalid-provider": "This sign-in method isn't available right now. Try another one, or email."
+    },
+    "confirmWho": "Now confirm it's you",
+    "confirmWhoHint": "Your vote is saved the moment you sign in. That also creates your account.",
+    "continueWith": {
+      "microsoft": "Continue with Microsoft",
+      "google": "Continue with Google",
+      "apple": "Continue with Apple"
+    },
+    "orEmail": "or by email",
+    "sendLink": "Send me a confirmation link",
+    "sentKeeps": "The link is valid for 7 days. And if you sign in some other way in the meantime, say with Google, the vote is saved too. Nothing gets lost.",
+    "pendingIssue": {
+      "name-taken": "Your vote is waiting to be saved, but someone here already has this name. Change it and send again.",
+      "planning-closed": "Your vote was waiting to be saved, but voting ended in the meantime.",
+      "invalid-selection": "Your vote is waiting to be saved, but the dates or cottages changed in the meantime. Pick them again."
+    },
+    "pendingApproval": "Somebody voted with your email without signing in. If that was you, check the selection and send it. If not:",
+    "discard": "discard this vote"
+  },
+  "confirm": {
+    "metaTitle": "Confirm your vote",
+    "metaDescription": "Confirm a trip planning vote",
+    "title": "Confirm your vote",
+    "intro": "You're voting as <strong>{name}</strong> on <strong>{chata}</strong>.",
+    "dates": "You can make",
+    "places": "You like",
+    "noPlaces": "no preference",
+    "button": "Confirm my vote and sign in",
+    "busy": "Saving…",
+    "note": "This also signs you in. You can change or withdraw the vote any time.",
+    "invalidTitle": "Invalid link",
+    "invalidBody": "This link doesn't check out. Please use the link from the email, or just sign in.",
+    "expiredTitle": "Link expired",
+    "expiredBody": "The link was valid for 7 days. Your vote isn't lost though: just sign in and it's saved.",
+    "goneTitle": "Vote not found",
+    "goneBody": "This vote has disappeared, most likely somebody removed it. Try voting again.",
+    "doneTitle": "Vote already saved",
+    "doneBody": "This vote is confirmed. You'll see it on the chata page, where you can change it.",
+    "issueTitle": "Your vote needs you",
+    "issueBody": "You're signed in, but the vote couldn't be saved on its own. Finish it on the chata page.",
+    "open": "Open the chata page",
+    "signIn": "Sign in",
+    "signInEmail": "Sign in by email",
+    "errors": {
+      "generic": "That didn't work. Please try again.",
+      "expired": "The link expired. Sign in and the vote is saved.",
+      "invalid": "The link doesn't check out. Please use the link from the email.",
+      "not-found": "This vote is no longer here.",
+      "rate-limited": "Too many attempts. Wait a bit and try again.",
+      "superadmin_oauth": "Superadmins sign in with Microsoft, Google or Apple only.",
+      "used": "The link has already been used. Sign in and you'll see the vote on the chata page.",
+      "stale": "This link belongs to an earlier submission. Use the link from the latest email, or sign in."
+    },
+    "usedTitle": "Link already used",
+    "usedBody": "This link works once and has been used. Your vote is fine: sign in and you'll see it on the chata page."
   }
 }
