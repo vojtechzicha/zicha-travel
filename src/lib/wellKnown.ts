@@ -16,6 +16,11 @@ export const SECURITY_CONTACT = 'mailto:mail@vojtechzicha.com'
  * day (cache-friendly). The origin comes from the request: every host the
  * deployment serves (apex + wildcard chata subdomains) answers with links to
  * itself, the same host-independent posture as robots.ts.
+ *
+ * No `Policy` field on purpose: RFC 9116 defines it as the URI of a
+ * vulnerability-DISCLOSURE policy, and /soukromi is a privacy policy — a
+ * misleading destination is worse than omitting the optional field. Add it
+ * back only when a real disclosure policy page exists.
  */
 export function securityTxtBody(origin: string, now: Date): string {
   const expires = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000)
@@ -25,7 +30,6 @@ export function securityTxtBody(origin: string, now: Date): string {
     `Expires: ${expires.toISOString()}`,
     'Preferred-Languages: cs, en',
     `Canonical: ${origin}/.well-known/security.txt`,
-    `Policy: ${origin}/soukromi`,
     '',
   ].join('\n')
 }

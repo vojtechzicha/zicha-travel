@@ -21,9 +21,12 @@ describe('securityTxtBody', () => {
     expect(expires.getTime()).toBeGreaterThan(now.getTime())
   })
 
-  it('canonical and policy links use the serving origin', () => {
+  it('canonical link uses the serving origin', () => {
     expect(lines).toContain('Canonical: https://zicha.travel/.well-known/security.txt')
-    expect(lines).toContain('Policy: https://zicha.travel/soukromi')
+  })
+
+  it('has no Policy field until a real vulnerability-disclosure policy exists', () => {
+    expect(body).not.toContain('Policy:')
   })
 
   it('a chata subdomain links to itself, not the apex', () => {
