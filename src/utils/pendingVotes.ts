@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { after } from 'next/server'
 import type { Payload, PayloadRequest } from 'payload'
 import { sql } from '@payloadcms/db-postgres/drizzle'
 import type { Chata, PendingVote, User } from '../payload-types'
@@ -261,8 +262,10 @@ async function writeVote(
  * `name`. Also closes the account's pending rows for the chata — a vote
  * cast directly supersedes what was waiting. Serialized per (account,
  * chata) — see withVoteLock. Every recorded vote emails the chata's
- * admins and the superadmins (after the transaction commits, so the
- * emails never describe a vote that rolled back).
+ * admins and the superadmins — after the transaction commits (so the
+ * emails never describe a vote that rolled back) AND after the response
+ * is sent (`after()`), so no vote, sign-in or confirmation ever waits on
+ * the mail provider.
  */
 export async function recordVote(
   payload: Payload,
@@ -277,14 +280,25 @@ export async function recordVote(
 ): Promise<RecordVoteResult> {
   const result = await writeVote(payload, args)
   if (result.ok) {
-    await notifyAdminsOfVote(payload, {
-      chataId: args.chataId,
-      voterUserId: args.user.id,
-      participantId: result.participantId,
-      updated: !result.voteCreated,
-      dateOptionIds: args.dateOptionIds,
-      accommodationOptionIds: args.accommodationOptionIds,
-    })
+    const notify = () =>
+      notifyAdminsOfVote(payload, {
+        chataId: args.chataId,
+        voterUserId: args.user.id,
+        participantId: result.participantId,
+        updated: !result.voteCreated,
+        dateOptionIds: args.dateOptionIds,
+        accommodationOptionIds: args.accommodationOptionIds,
+      })
+    try {
+      // Off the request path: `after` runs the callback once the response
+      // is sent (backed by waitUntil on Vercel, so the emails still go
+      // out), keeping mail-provider latency out of every caller
+      after(notify)
+    } catch {
+      // No request scope (a script, a test harness): nobody is waiting
+      // on a response, so sending inline costs nothing
+      await notify()
+    }
   }
   return result
 }

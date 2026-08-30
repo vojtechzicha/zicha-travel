@@ -218,8 +218,10 @@ The email (`voteAdminNotificationEmail` in `src/lib/planningVoteEmail.ts`)
 is Czech-only like the claim admin emails, carries the voter's name, the
 selection and the running vote total, and links the chata page; there is
 nothing to decide, so it has no action links. It goes out only after the
-vote's transaction commits and is best-effort: a delivery failure is
-logged and never fails or delays the vote.
+vote's transaction commits AND after the response is sent (next/server
+`after()`, backed by waitUntil on Vercel), so no vote, sign-in or
+confirmation ever waits on the mail provider; best-effort, a delivery
+failure is logged and never fails the vote.
 
 ## Results visibility
 

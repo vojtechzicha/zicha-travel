@@ -227,8 +227,8 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      the anonymous `voteCount` plus a "results after voting" hint. Every
      vote `recordVote` commits (new or changed, direct or via a confirmed
      pending row) emails the chata's admins + superadmins — Czech-only
-     `voteAdminNotificationEmail`, sent post-commit, best-effort, the
-     voter's own account skipped
+     `voteAdminNotificationEmail`, sent post-commit and post-response
+     (next/server `after()`), best-effort, the voter's own account skipped
    - Pure rules (`accommodationAvailableFor`, `validateVoteSelection`,
      `canSeePlanningResults`, `tallyVotes`, `planningMonthsLabel`) in
      `src/lib/planning.ts`, unit-tested in `tests/int/planning.int.spec.ts`;
