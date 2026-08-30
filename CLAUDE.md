@@ -642,8 +642,14 @@ notes live in `src/lib/pwa.ts`, pure parts unit-tested in
   stale-while-revalidate with entry caps; everything else (auth, writes,
   `/api/version`, `/admin`, `/ingest`) untouched. `/offline` (localized,
   noindexed, in the middleware `SITE_PATHS` allowlist with `/app-start`)
-  is precached together with its chunks as the last-resort fallback.
-  Token links, `/login` and decide pages are never written to the cache.
+  is precached together with its chunks as the last-resort fallback
+  (into the static cache, so the purge below can't evict it). Token
+  links, `/login` and decide pages are never written to the cache, and
+  any request to an auth-changing endpoint (logout, OAuth callbacks,
+  magic-link verify, Payload local login) purges the page + data caches
+  — cached entries are keyed by URL but personalized per viewer, so a
+  switched or signed-out account must never see the previous identity's
+  data offline (Codex P1 on PR #33).
 - **Long-lived login**: see Auth flows — 1-year `user` sessions + the
   rolling `POST /api/auth/refresh`. The localStorage throttle stamp
   `zt_session_refreshed_at` and the offline cache are disclosed in the

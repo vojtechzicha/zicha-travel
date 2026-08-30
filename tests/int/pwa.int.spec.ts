@@ -79,6 +79,28 @@ describe('serviceWorkerSource', () => {
     expect(source).toContain('clients.claim()')
   })
 
+  it('purges the personalized caches on every auth transition', () => {
+    // Pages and chata payloads are cached by URL but personalized per
+    // viewer — each login landing and sign-out must drop them, or an
+    // offline fetch could serve the previous account's data.
+    for (const path of [
+      '/api/auth/logout',
+      '/api/auth/callback',
+      '/api/auth/magic-link/verify',
+      '/api/users/login',
+      '/api/users/logout',
+    ]) {
+      expect(source).toContain(`'${path}'`)
+    }
+    expect(source).toContain('caches.delete(PAGE_CACHE)')
+    expect(source).toContain('caches.delete(DATA_CACHE)')
+  })
+
+  it('keeps the offline precache out of the purged page cache', () => {
+    expect(source).not.toContain('caches.open(PAGE_CACHE)\n          await pages.put(OFFLINE_URL')
+    expect(source).toMatch(/caches\.open\(STATIC_CACHE\)\s*\n\s*await offlineStore\.put\(OFFLINE_URL/)
+  })
+
   it('never touches the admin panel or analytics proxy', () => {
     expect(source).toContain("startsWith('/admin')")
     expect(source).toContain("startsWith('/ingest')")
