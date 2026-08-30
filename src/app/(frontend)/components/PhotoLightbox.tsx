@@ -9,11 +9,17 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import type { Media } from '@/payload-types'
 import { useAppTheme } from '../utils/useAppTheme'
 
+// Media docs from the gallery and hotlinked shared-album photos both fit —
+// the lightbox only needs a URL and an alt text
+export interface LightboxPhoto {
+  url?: string | null
+  alt?: string | null
+}
+
 interface PhotoLightboxProps {
-  photos: Media[]
+  photos: LightboxPhoto[]
   index: number
   onClose: () => void
   onNavigate: (index: number) => void

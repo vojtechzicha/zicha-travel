@@ -16,6 +16,7 @@ ve stejném PR.
 | Google `accounts.google.com` + `oauth2.googleapis.com` | server + redirect | OAuth výměna |
 | Apple `appleid.apple.com` | server + redirect (callback přichází jako POST od Applu) | OAuth výměna |
 | PostHog EU | server-side jen přes rewrites `/ingest` | statistické události |
+| Google Fotky (`photos.app.goo.gl`, `photos.google.com`, `goo.gl`) | server (`api/chatas/[id]/album-photos`, cache ~6 h) | URL veřejné stránky sdíleného alba — bez osobních údajů |
 
 ## Odchozí volání (prohlížeč návštěvníka)
 
@@ -26,6 +27,7 @@ ve stejném PR.
 | `api.open-meteo.com` | TripWeather (jen s koordináty + blízkým termínem) | souřadnice, IP |
 | `api.paylibo.com` | QRPayment (`<img>`) | účet příjemce, částka, zpráva, IP |
 | bucket S3 (presigned PUT) | ExpenseComposer upload | soubor účtenky |
+| `lh3.googleusercontent.com` | AlbumMoments (jen přihlášení, chata se sdíleným albem Google Fotek) | IP při načtení náhledů fotek |
 | Google (Kalendář/Mapy) | až po kliknutí na odkaz | obsah odkazu |
 
 Pozadí chat se od blockeru 10 hostují lokálně (fetch-and-store); staré

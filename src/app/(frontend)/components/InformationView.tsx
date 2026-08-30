@@ -67,6 +67,7 @@ import {
   tripTotalDays,
   type TripPhase,
 } from '../utils/tripData'
+import { AlbumMoments } from './AlbumMoments'
 import { ArrivalTimeline } from './ArrivalTimeline'
 import {
   AccentCard,
@@ -1232,6 +1233,18 @@ export function InformationView({
       </div>
     ) : null
 
+  // "Momentky z alba" — hotlinked photos from the shared Google Photos
+  // album, signed-in viewers only (the anonymous, indexable render stays
+  // photo-free). Not before the trip: whatever sits in the album then is
+  // noise (test shots, leftovers), and the hero already promotes the album
+  // link. During it's the live feed, after it's the memory reel and leads
+  // the page. The component hides itself while loading and whenever the
+  // album gives it nothing.
+  const albumMomentsSection =
+    phase !== 'before' && viewer.authenticated && chata.sharedAlbumUrl ? (
+      <AlbumMoments chataId={chata.id} albumUrl={chata.sharedAlbumUrl} />
+    ) : null
+
   const whoWasSection =
     phase === 'after' && participants.length > 0 ? (
       <div>
@@ -1481,8 +1494,11 @@ export function InformationView({
   const body =
     phase === 'after'
       ? [
-          gallerySection,
+          // memories first: real photos from the trip beat the pre-loaded
+          // gallery once the trip is over, so the gallery moves to the end
+          albumMomentsSection,
           flowColumns([destinationSection, whoWasSection], 'after-flow'),
+          gallerySection,
         ]
       : phase === 'during'
         ? [
@@ -1494,9 +1510,13 @@ export function InformationView({
               [surroundingsSection, contactSection, whoIsHereSection, programSection],
               'during-flow',
             ),
+            albumMomentsSection,
             transportSection,
             destinationSection,
             basicInfoSection,
+            // the promo gallery stays reachable mid-trip, but everything
+            // you actually need while there outranks it
+            gallerySection,
           ]
         : [
             weatherSection,

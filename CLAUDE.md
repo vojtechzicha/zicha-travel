@@ -351,6 +351,32 @@ API payload, no new endpoints).
   recap: hero action before ("Sdílené album") and during ("Přidávej fotky
   do alba"), gallery aside link always — people should add photos as the
   trip happens.
+- **"Momentky z alba"** (`AlbumMoments.tsx`): a strip of up to 8 photos
+  hotlinked from the shared Google Photos album, next to a "celé album"
+  link — a teaser, not a replacement for the album. Phase-gated: NOT shown
+  before the trip (pre-trip album content is noise; the hero already
+  promotes the album link), mid-page during, and FIRST section after.
+  The pre-loaded promo gallery renders in every phase but ranks below the
+  momentky once the trip starts: last section during AND after — real
+  trip photos beat promo shots, but the promo stays as a fallback for a
+  thin album. Google killed
+  third-party API access to shared albums in 2025, so
+  `GET /api/chatas/:id/album-photos` fetches the PUBLIC share page
+  server-side and regexes the `lh3.googleusercontent.com/pw/…` base URLs
+  out of its embedded data (pure logic in `src/lib/googlePhotosAlbum.ts`,
+  unit-tested; `unstable_cache`, ~6 h). Unofficial path — every failure
+  returns `[]` and the widget just doesn't render. Signed-in viewers ONLY
+  (endpoint 401s anonymous): the anonymous, indexable render stays
+  photo-free, same posture as participant names. The fetch host-allowlists
+  `photos.app.goo.gl`/`photos.google.com`/`goo.gl` so the admin-entered URL
+  can't point the server anywhere else — and because share links redirect
+  (goo.gl short links can point anywhere), redirects are followed manually
+  with EVERY hop re-validated (`albumRedirectTarget`). `pickMoments` spreads the picks
+  across the whole album; thumbnails render at `=w480`, the shared
+  `PhotoLightbox` (prop type widened to `LightboxPhoto`) at `=w2048`.
+  Outbound-calls inventory, zpracovatelé table and the `/soukromi` policy
+  (ch. 7 paragraph, both locales + both markdowns) name the Google
+  hotlink; CSP needs nothing new (`img-src https:`).
 - Public transport assignment (`publicTransportOptions[].riders`, same
   `{ participant }` array shape as car passengers): Organizace renders a
   "Veřejnou dopravou" block next to the cars (route title, Tam/Zpět badge,

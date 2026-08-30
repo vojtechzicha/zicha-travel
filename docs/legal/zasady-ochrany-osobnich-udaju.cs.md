@@ -161,8 +161,10 @@ Provoz služby zajišťují tito zpracovatelé a příjemci:
 
 Váš prohlížeč navíc při zobrazení předpovědi počasí u výletu stahuje data ze
 služby Open-Meteo (ta se dozví vaši IP adresu, žádné vaše údaje jí
-neposíláme). Odkazy na Google Kalendář a Google Mapy otevíráte sami; do té
-chvíle Googlu nic neodchází.
+neposíláme). Přihlášeným návštěvníkům stránka výletu ukazuje i náhledy fotek
+ze sdíleného alba na Google Fotkách; ty prohlížeč stahuje přímo od Googlu,
+který se přitom dozví vaši IP adresu. Odkazy na Google Kalendář a Google
+Mapy otevíráte sami.
 
 Údaje nikomu neprodáváme a nikomu je nepředáváme k reklamě.
 
