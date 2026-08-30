@@ -208,6 +208,21 @@ the magic link's `returnTo` (`pv_*` params). Two real votes were lost
 that way — one to a never-clicked link, one to a plain login-link request
 that overwrote the pending token. Neither can happen now.
 
+## Admin notification emails
+
+Every vote `recordVote` commits — new or changed, cast directly or
+through a confirmed pending row — emails the chata's admins and the
+superadmins (`notifyAdminsOfVote` in `src/utils/pendingVotes.ts`,
+recipients via `claimDecisionMakers`, the voter's own account skipped).
+The email (`voteAdminNotificationEmail` in `src/lib/planningVoteEmail.ts`)
+is Czech-only like the claim admin emails, carries the voter's name, the
+selection and the running vote total, and links the chata page; there is
+nothing to decide, so it has no action links. It goes out only after the
+vote's transaction commits AND after the response is sent (next/server
+`after()`, backed by waitUntil on Vercel), so no vote, sign-in or
+confirmation ever waits on the mail provider; best-effort, a delivery
+failure is logged and never fails the vote.
+
 ## Results visibility
 
 `planning.results` ships from the slug API only to viewers where

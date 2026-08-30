@@ -155,8 +155,9 @@ export default function PrivacyContentEn() {
           </p>
           <p>
             <strong>Emails.</strong> We send operational messages only: login links,
-            confirmations of a trip planning vote, decisions on claim requests, and requests to
-            confirm an expense somebody recorded on your behalf. No marketing.
+            confirmations of a trip planning vote, notifications to chata admins about new
+            planning votes, decisions on claim requests, and requests to confirm an expense
+            somebody recorded on your behalf. No marketing.
           </p>
           <p>
             <strong>Statistics.</strong> Anonymous usage measurement rests on our legitimate

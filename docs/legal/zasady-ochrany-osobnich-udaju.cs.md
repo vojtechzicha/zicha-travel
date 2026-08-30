@@ -83,8 +83,9 @@ přihlašovací odkaz a bez záznamu o vašich výdajích nefunguje pravidlo, ž
 je můžete sami upravit.
 
 **E-maily.** Posíláme jen provozní zprávy: přihlašovací odkazy, potvrzení
-hlasu při plánování výletu, rozhodnutí o žádostech o propojení a žádosti o
-potvrzení výdaje, který za vás zapsal někdo jiný. Žádný marketing.
+hlasu při plánování výletu, upozornění správcům chaty na nové hlasy při
+plánování, rozhodnutí o žádostech o propojení a žádosti o potvrzení výdaje,
+který za vás zapsal někdo jiný. Žádný marketing.
 
 **Statistiky.** Anonymní měření návštěvnosti stojí na oprávněném zájmu vědět,
 jestli web funguje. Statistické cookies ukládáme jen s vaším souhlasem
