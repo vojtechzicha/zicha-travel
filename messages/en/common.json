@@ -12,7 +12,13 @@
     "privacySettings": "Privacy settings",
     "admin": "Admin",
     "signOut": "Sign out",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "installApp": "Install the app"
+  },
+  "offline": {
+    "title": "You're offline",
+    "body": "This page needs an internet connection. Try again once you're back online.",
+    "retry": "Try again"
   },
   "error": {
     "title": "Something went wrong",

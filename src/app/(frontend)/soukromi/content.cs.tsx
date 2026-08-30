@@ -435,7 +435,9 @@ export default function PrivacyContentCs() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">payload-token</td>
                   <td className="py-2.5 pr-4">drží vaše přihlášení</td>
-                  <td className="py-2.5 pr-4">30 dní (2 h pro správce)</td>
+                  <td className="py-2.5 pr-4">
+                    1 rok, obnovuje se při každém použití webu (2 h pro správce)
+                  </td>
                   <td className="py-2.5">nezbytná pro přihlášení</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -495,8 +497,9 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             Vedle cookies si stránka ukládá pár drobností do úložiště vašeho prohlížeče
-            (localStorage). Zůstávají jen ve vašem zařízení, na server se neposílají a zapisují
-            se až po vaší volbě, proto nevyžadují souhlas:
+            (localStorage). Zůstávají jen ve vašem zařízení, na server se neposílají a buď si
+            pamatují vaši volbu, nebo slouží jen technickému chodu webu, proto nevyžadují
+            souhlas:
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-[14px] border-collapse">
@@ -515,13 +518,20 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5 pr-4 font-mono text-[13px]">chata-overview-mode</td>
                   <td className="py-2.5">zvolené zobrazení přehledu (tabulka, nebo karty)</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">
                     chata-selected-participant-*
                   </td>
                   <td className="py-2.5">
                     čí finance jste si na dané chatě naposledy otevřeli, aby se záložka otevřela
                     stejně
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">zt_session_refreshed_at</td>
+                  <td className="py-2.5">
+                    kdy si web naposledy prodloužil vaše přihlášení, aby to nezkoušel při každém
+                    načtení
                   </td>
                 </tr>
               </tbody>
@@ -533,6 +543,12 @@ export default function PrivacyContentCs() {
             <span className="font-mono text-[13px]">ph_*</span>); odvoláním souhlasu se maže
             obojí. Widget Turnstile na veřejných formulářích si může ve svém rámu na doméně
             Cloudflare ukládat vlastní technická data potřebná k rozpoznání robotů.
+          </p>
+          <p>
+            Web se dá nainstalovat jako aplikace do telefonu. Prohlížeč si pak (stejně jako při
+            běžné návštěvě) ukládá do své mezipaměti kopie naposledy otevřených stránek a dat,
+            aby aplikace fungovala i bez připojení. I tahle mezipaměť zůstává jen ve vašem
+            zařízení a smažete ji smazáním dat prohlížeče.
           </p>
         </Section>
 

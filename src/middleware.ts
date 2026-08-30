@@ -83,7 +83,10 @@ export async function middleware(request: NextRequest) {
     // Block access to other chatas: /{any-slug} → redirect to /
     // Match paths that look like chata slugs (lowercase letters, numbers, hyphens)
     // but not special paths like /admin, /api, /login etc.
-    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky']
+    // /app-start and /offline belong to the PWA layer (launch bridge and
+    // offline fallback — see src/lib/pwa.ts); both must reach their own
+    // handlers instead of being swallowed by the slug redirect.
+    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky', '/app-start', '/offline']
     if (pathname.match(/^\/[a-z0-9-]+$/i) && !SITE_PATHS.includes(pathname)) {
       return NextResponse.redirect(new URL('/', request.url))
     }
