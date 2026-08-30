@@ -154,9 +154,9 @@ export default function PrivacyContentEn() {
             a record of your expenses the rule that you can edit your own does not work.
           </p>
           <p>
-            <strong>Emails.</strong> We send operational messages only: login links, decisions
-            on claim requests, and requests to confirm an expense somebody recorded on your
-            behalf. No marketing.
+            <strong>Emails.</strong> We send operational messages only: login links,
+            confirmations of a trip planning vote, decisions on claim requests, and requests to
+            confirm an expense somebody recorded on your behalf. No marketing.
           </p>
           <p>
             <strong>Statistics.</strong> Anonymous usage measurement rests on our legitimate
@@ -360,8 +360,23 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5">part of the trip record, for as long as the service runs</td>
                 </tr>
                 <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">
+                    pending planning votes (name, selection, the account meant to confirm it)
+                  </td>
+                  <td className="py-2.5">
+                    deleted within 12 months of confirmation, and within 12 months of the trip
+                    being settled at the latest
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">login links (tokens)</td>
                   <td className="py-2.5">valid for 15 minutes, then void</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">planning vote confirmation link</td>
+                  <td className="py-2.5">
+                    valid for 7 days; the vote itself does not lapse, it is saved on any sign-in
+                  </td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">raw statistics events</td>
@@ -465,6 +480,15 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-return-to</td>
                   <td className="py-2.5 pr-4">
                     holds the return address during Microsoft, Google or Apple sign-in
+                  </td>
+                  <td className="py-2.5 pr-4">10 minutes, only while signing in</td>
+                  <td className="py-2.5">necessary</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-vote-intent</td>
+                  <td className="py-2.5 pr-4">
+                    holds your planning vote (name, dates, cottages) during a Microsoft, Google
+                    or Apple sign-in started from the vote form
                   </td>
                   <td className="py-2.5 pr-4">10 minutes, only while signing in</td>
                   <td className="py-2.5">necessary</td>
@@ -649,6 +673,16 @@ export default function PrivacyContentEn() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">4</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">30 August 2026</td>
+                  <td className="py-2.5">
+                    Pending planning votes: a vote cast without signing in waits for confirmation
+                    as its own record and is saved on any sign-in; the confirmation email, the{' '}
+                    <span className="font-mono text-[13px]">oauth-vote-intent</span> cookie and
+                    additions to sections 4, 9 and 12.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">3</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">27 August 2026</td>

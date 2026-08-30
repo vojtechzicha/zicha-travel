@@ -154,8 +154,8 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             <strong>E-maily.</strong> Posíláme jen provozní zprávy: přihlašovací odkazy,
-            rozhodnutí o žádostech o propojení a žádosti o potvrzení výdaje, který za vás zapsal
-            někdo jiný. Žádný marketing.
+            potvrzení hlasu při plánování výletu, rozhodnutí o žádostech o propojení a žádosti o
+            potvrzení výdaje, který za vás zapsal někdo jiný. Žádný marketing.
           </p>
           <p>
             <strong>Statistiky.</strong> Anonymní měření návštěvnosti stojí na oprávněném zájmu
@@ -357,8 +357,23 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5">součást záznamu výletu, po dobu provozu služby</td>
                 </tr>
                 <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">
+                    nepotvrzené hlasy z plánování (jméno, výběr, účet, který je má potvrdit)
+                  </td>
+                  <td className="py-2.5">
+                    smažeme do 12 měsíců od potvrzení, nejpozději do 12 měsíců od vyúčtování
+                    výletu
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">přihlašovací odkazy (tokeny)</td>
                   <td className="py-2.5">platí 15 minut, poté jsou neplatné</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">odkaz k potvrzení hlasu z plánování</td>
+                  <td className="py-2.5">
+                    platí 7 dní; hlas sám nepropadá, uloží se při jakémkoli přihlášení
+                  </td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">surové statistické události</td>
@@ -461,6 +476,15 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-return-to</td>
                   <td className="py-2.5 pr-4">
                     drží návratovou adresu během přihlášení přes Microsoft, Google nebo Apple
+                  </td>
+                  <td className="py-2.5 pr-4">10 minut, jen po dobu přihlašování</td>
+                  <td className="py-2.5">nezbytná</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">oauth-vote-intent</td>
+                  <td className="py-2.5 pr-4">
+                    drží váš hlas z plánování (jméno, termíny, chalupy) během přihlášení přes
+                    Microsoft, Google nebo Apple, které jste spustili z hlasovacího formuláře
                   </td>
                   <td className="py-2.5 pr-4">10 minut, jen po dobu přihlašování</td>
                   <td className="py-2.5">nezbytná</td>
@@ -640,6 +664,16 @@ export default function PrivacyContentCs() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">4</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">30. 8. 2026</td>
+                  <td className="py-2.5">
+                    Nepotvrzené hlasy z plánování: hlas zadaný bez přihlášení čeká na potvrzení
+                    jako samostatný záznam a uloží se při jakémkoli přihlášení; potvrzovací
+                    e-mail, cookie <span className="font-mono text-[13px]">oauth-vote-intent</span> a
+                    doplnění kapitol 4, 9 a 12.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">3</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">27. 8. 2026</td>

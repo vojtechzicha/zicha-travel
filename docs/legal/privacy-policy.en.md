@@ -82,9 +82,9 @@ contract, namely the terms of use (Art. 6(1)(b) GDPR): without your email we
 cannot send you a login link, and without a record of your expenses the rule
 that you can edit your own does not work.
 
-**Emails.** We send operational messages only: login links, decisions on
-claim requests, and requests to confirm an expense somebody recorded on your
-behalf. No marketing.
+**Emails.** We send operational messages only: login links, confirmations of
+a trip planning vote, decisions on claim requests, and requests to confirm an
+expense somebody recorded on your behalf. No marketing.
 
 **Statistics.** Anonymous usage measurement rests on our legitimate interest
 in knowing whether the site works. Statistics cookies are stored only with
@@ -191,7 +191,9 @@ you the details for a specific provider on request.
 | an account with no login for 2 years | deleted, including its links |
 | claim requests, including rejection reasons | deleted within 12 months of the decision |
 | planning votes | part of the trip record, for as long as the service runs |
+| pending planning votes (name, selection, the account meant to confirm it) | deleted within 12 months of confirmation, and within 12 months of the trip being settled at the latest |
 | login links (tokens) | valid for 15 minutes, then void |
+| planning vote confirmation link | valid for 7 days; the vote itself does not lapse, it is saved on any sign-in |
 | raw statistics events | 12 months, then only aggregate numbers |
 | hosting operational logs | short-term, per the provider's settings |
 
@@ -232,6 +234,7 @@ to us first.
 | `NEXT_LOCALE` | remembers the chosen language | 12 months | necessary, stored after your choice in the footer |
 | `oauth-state` | random security code protecting Microsoft, Google and Apple sign-in against forgery | 10 minutes | necessary |
 | `oauth-return-to` | holds the return address during Microsoft, Google or Apple sign-in | 10 minutes, only while signing in | necessary |
+| `oauth-vote-intent` | holds your planning vote (name, dates, cottages) during a Microsoft, Google or Apple sign-in started from the vote form | 10 minutes, only while signing in | necessary |
 | `zt_login_evt` | one-shot "sign-in happened" marker for statistics, deleted immediately | seconds | necessary, technical |
 | `ph_*` | stable anonymous visitor identifier for statistics | 12 months | only with your consent |
 
@@ -328,6 +331,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
+| 4 | 30 August 2026 | Pending planning votes: a vote cast without signing in waits for confirmation as its own record and is saved on any sign-in; the confirmation email, the `oauth-vote-intent` cookie and additions to sections 4, 9 and 12. |
 | 3 | 27 August 2026 | Private expenses: a new expense type visible only to its members, additions to section 6 including showing the payer's bank details to the members of its split. |
 | 2 | 25 August 2026 | Trip planning phase: the date and accommodation vote as a new data category, the option to join a trip through the vote form, and the related additions to sections 2, 3, 5, 6 and 9. |
 | 1 | 16 August 2026 | First published version. |

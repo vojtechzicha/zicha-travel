@@ -76,6 +76,7 @@ export interface Config {
     'trip-date-options': TripDateOption;
     'trip-accommodation-options': TripAccommodationOption;
     'trip-votes': TripVote;
+    'pending-votes': PendingVote;
     'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
@@ -107,6 +108,7 @@ export interface Config {
     'trip-date-options': TripDateOptionsSelect<false> | TripDateOptionsSelect<true>;
     'trip-accommodation-options': TripAccommodationOptionsSelect<false> | TripAccommodationOptionsSelect<true>;
     'trip-votes': TripVotesSelect<false> | TripVotesSelect<true>;
+    'pending-votes': PendingVotesSelect<false> | PendingVotesSelect<true>;
     'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
@@ -1084,6 +1086,46 @@ export interface ClaimRequest {
   createdAt: string;
 }
 /**
+ * Votes cast on the planning page by people who were not signed in. Each becomes a real vote the moment its owner signs in (confirmation link, login link or Google/Apple/Microsoft). A row that stays pending with an issue needs a look: the name was taken or the planning phase ended before they signed in.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pending-votes".
+ */
+export interface PendingVote {
+  id: number;
+  /**
+   * The name typed into the vote form — becomes the participant name on confirmation.
+   */
+  name: string;
+  chata: number | Chata;
+  /**
+   * The account created (or reused) for the email given in the form.
+   */
+  user: number | User;
+  status: 'pending' | 'confirmed' | 'discarded';
+  /**
+   * Why the last sign-in could not turn this into a vote. Cleared automatically on the next successful attempt.
+   */
+  issue?: ('name-taken' | 'planning-closed' | 'invalid-selection') | null;
+  source?: ('email' | 'microsoft' | 'google' | 'apple') | null;
+  /**
+   * Off when the vote was filed for an account that already existed: the account holder sees it and decides. On for accounts the vote itself created.
+   */
+  autoConfirm?: boolean | null;
+  submissionKey?: string | null;
+  dates?: (number | TripDateOption)[] | null;
+  accommodations?: (number | TripAccommodationOption)[] | null;
+  confirmedAt?: string | null;
+  /**
+   * Only the emailed link expires; the row keeps waiting for any other sign-in.
+   */
+  linkExpiresAt?: string | null;
+  linkUsedAt?: string | null;
+  vote?: (number | null) | TripVote;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Log of GDPR data-subject requests (access, copy, rectification, erasure...). One row per request; the policy promises an answer within one month of receivedAt.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1165,6 +1207,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'trip-votes';
         value: number | TripVote;
+      } | null)
+    | ({
+        relationTo: 'pending-votes';
+        value: number | PendingVote;
       } | null)
     | ({
         relationTo: 'expense-attachments';
@@ -1557,6 +1603,28 @@ export interface TripVotesSelect<T extends boolean = true> {
   chata?: T;
   dates?: T;
   accommodations?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pending-votes_select".
+ */
+export interface PendingVotesSelect<T extends boolean = true> {
+  name?: T;
+  chata?: T;
+  user?: T;
+  status?: T;
+  issue?: T;
+  source?: T;
+  autoConfirm?: T;
+  submissionKey?: T;
+  dates?: T;
+  accommodations?: T;
+  confirmedAt?: T;
+  linkExpiresAt?: T;
+  linkUsedAt?: T;
+  vote?: T;
   updatedAt?: T;
   createdAt?: T;
 }

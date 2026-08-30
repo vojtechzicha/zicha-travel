@@ -1,17 +1,48 @@
 import crypto from 'crypto'
 import { APIError, type CollectionConfig, type Where } from 'payload'
 import { canManageChata, chataScopedAccess, isSuperadmin, refId } from '../lib/access'
+import { NextResponse } from 'next/server'
+import { normalizeVoterName, resolveVoter, validateVoteSelection } from '../lib/planning'
+import { requestOrigin, sendSuperadminNotice } from '../lib/auth/magicLink'
 import {
-  normalizeVoterName,
-  planningVoteReturnTo,
-  validateVoteSelection,
-} from '../lib/planning'
-import { requestOrigin, sendMagicLink, sendSuperadminNotice } from '../lib/auth/magicLink'
-import { isOAuthConfigured } from '../lib/auth/config'
+  OAUTH_PROVIDER_IDS,
+  isOAuthConfigured,
+  isProviderConfigured,
+  type OAuthProviderId,
+} from '../lib/auth/config'
+import { sessionCookieDomain } from '../lib/auth/session'
+import {
+  VOTE_CONFIRM_TTL_DAYS,
+  VOTE_INTENT_COOKIE,
+  VOTE_INTENT_TTL_MINUTES,
+  signVoteIntentToken,
+} from '../lib/pendingVotes'
 import { clientIp, verifyTurnstileToken } from '../lib/turnstile'
 import { RATE_LIMITS, checkRateLimit, rateLimitResponse } from '../lib/rateLimit'
+import { LOCALE_COOKIE, pickLocale } from '../i18n/config'
+import {
+  discardPendingVote,
+  recordVote,
+  sendVoteConfirmEmail,
+  upsertPendingVote,
+  type RecordVoteError,
+} from '../utils/pendingVotes'
 
 const isOAuthEnabled = isOAuthConfigured()
+
+const statusFor = (error: RecordVoteError): number => {
+  switch (error) {
+    case 'not-found':
+      return 404
+    case 'planning-closed':
+    case 'name-taken':
+      return 409
+    case 'forbidden':
+      return 403
+    default:
+      return 400
+  }
+}
 
 function idList(value: unknown): number[] | null {
   if (value == null) return []
@@ -110,11 +141,11 @@ export const TripVotes: CollectionConfig = {
     {
       // The public vote ("Chci jet"). Signed-in callers vote as their linked
       // participant (or get one created) and the vote lands immediately.
-      // Anonymous callers leave a name and email — the account is created
-      // like claim registration (Turnstile, rate limits), but NOTHING else
-      // is recorded until the magic-link click verifies the email: the
-      // selection rides the link's returnTo and the signed-in auto-submit
-      // on the planning page records it.
+      // Anonymous callers file a PENDING vote (docs/PRD-planovani.md,
+      // "Nepotvrzené hlasy"): with an email, the account is created like
+      // claim registration and a confirm link goes out; with a provider,
+      // the selection rides a signed cookie through the OAuth round trip.
+      // Either way the vote becomes real the moment its owner signs in.
       path: '/submit',
       method: 'post',
       handler: async (req) => {
@@ -134,6 +165,27 @@ export const TripVotes: CollectionConfig = {
           return Response.json({ error: 'invalid-selection' }, { status: 400 })
         }
 
+        // ── signed-in: record the vote right away ──
+        if (req.user) {
+          const result = await recordVote(req.payload, {
+            chataId,
+            user: req.user,
+            name: typeof body.name === 'string' ? body.name : null,
+            // the participant whose vote the page showed — an account may
+            // own several here (a parent and children)
+            participantId: Number.isInteger(Number(body.participantId))
+              ? Number(body.participantId)
+              : null,
+            dateOptionIds,
+            accommodationOptionIds,
+          })
+          if (!result.ok) {
+            return Response.json({ error: result.error }, { status: statusFor(result.error) })
+          }
+          return Response.json({ ok: true, mode: 'saved' })
+        }
+
+        // ── anonymous: file a pending vote ──
         let chata
         try {
           chata = await req.payload.findByID({
@@ -176,6 +228,24 @@ export const TripVotes: CollectionConfig = {
           return Response.json({ error: selectionError }, { status: 400 })
         }
 
+        // Accounts are adults-only (terms section 4) — affirmed client-side
+        // and enforced here, like claim registration
+        if (body.adult !== true) {
+          return Response.json({ error: 'adult-confirmation-required' }, { status: 400 })
+        }
+        const name = normalizeVoterName(body.name)
+        if (!name) {
+          return Response.json({ error: 'name-required' }, { status: 400 })
+        }
+        // Throttle + bot gate: this endpoint creates accounts and sends
+        // email to a caller-supplied address (compliance blocker 9)
+        const ip = clientIp(req.headers)
+        const ipCheck = checkRateLimit(`planning-vote:ip:${ip}`, RATE_LIMITS.claimPerIp)
+        if (!ipCheck.allowed) return rateLimitResponse(ipCheck)
+        if (!(await verifyTurnstileToken(body.turnstileToken, ip))) {
+          return Response.json({ error: 'captcha' }, { status: 403 })
+        }
+
         const chataParticipants = await req.payload.find({
           collection: 'participants',
           where: { chata: { equals: chataId } },
@@ -183,107 +253,71 @@ export const TripVotes: CollectionConfig = {
           depth: 0,
           overrideAccess: true,
         })
+        const candidates = chataParticipants.docs.map((p) => ({
+          id: p.id,
+          name: p.name,
+          accountId: p.account != null ? refId(p.account) : null,
+        }))
 
-        // ── signed-in: record the vote right away ──
-        if (req.user) {
-          const user = req.user
-          let voter = chataParticipants.docs.find(
-            (p) => p.account != null && refId(p.account) === String(user.id),
+        // ── provider: hand the selection to the OAuth round trip ──
+        const provider = body.provider
+        if (typeof provider === 'string') {
+          if (
+            !(OAUTH_PROVIDER_IDS as readonly string[]).includes(provider) ||
+            !isProviderConfigured(provider as OAuthProviderId)
+          ) {
+            return Response.json({ error: 'invalid-provider' }, { status: 400 })
+          }
+          // Who they are is only known after the provider answers; a clash
+          // with an UNLINKED participant is refused now (that name is
+          // definitely not theirs to take — the claim flow is for that), a
+          // linked one is theirs or not once signed in
+          const unlinkedClash = candidates.some(
+            (p) => p.accountId == null && p.name.trim().toLowerCase() === name.toLowerCase(),
           )
-          if (!voter) {
-            const name = normalizeVoterName(body.name)
-            if (!name) {
-              return Response.json({ error: 'name-required' }, { status: 400 })
-            }
-            // Never silently take over an existing participant by name —
-            // linking identities is the claim flow's job
-            const clash = chataParticipants.docs.some(
-              (p) => p.name.trim().toLowerCase() === name.toLowerCase(),
-            )
-            if (clash) {
-              return Response.json({ error: 'name-taken' }, { status: 409 })
-            }
-            voter = await req.payload.create({
-              collection: 'participants',
-              data: {
-                name,
-                chata: chataId,
-                account: user.id,
-              },
-              overrideAccess: true,
-              depth: 0,
-            })
+          if (unlinkedClash) {
+            return Response.json({ error: 'name-taken' }, { status: 409 })
           }
-
-          const existingVote = await req.payload.find({
-            collection: 'trip-votes',
-            where: { participant: { equals: voter.id } },
-            limit: 1,
-            depth: 0,
-            overrideAccess: true,
+          const secret = process.env.PAYLOAD_SECRET
+          if (!secret) {
+            return Response.json({ error: 'Server misconfigured' }, { status: 500 })
+          }
+          const returnTo =
+            typeof body.returnTo === 'string' && body.returnTo.startsWith('/') ? body.returnTo : '/'
+          const response = NextResponse.json({
+            ok: true,
+            mode: 'oauth',
+            redirect: `/api/auth/login?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`,
           })
-          const voteData = {
-            chata: chataId,
-            participant: voter.id,
-            dates: dateOptionIds,
-            accommodations: accommodationOptionIds,
-          }
-          if (existingVote.docs.length > 0) {
-            await req.payload.update({
-              collection: 'trip-votes',
-              id: existingVote.docs[0].id,
-              data: voteData,
-              overrideAccess: true,
-              depth: 0,
-            })
-          } else {
-            await req.payload.create({
-              collection: 'trip-votes',
-              data: voteData,
-              overrideAccess: true,
-              depth: 0,
-            })
-          }
-          return Response.json({ ok: true, emailSent: false })
+          // Same reach as oauth-return-to: the callback lands on the apex
+          // even when the vote was cast on a chata subdomain
+          response.cookies.set(
+            VOTE_INTENT_COOKIE,
+            signVoteIntentToken({ chataId, name, dateOptionIds, accommodationOptionIds }, secret),
+            {
+              httpOnly: true,
+              path: '/',
+              sameSite: provider === 'apple' ? 'none' : 'lax',
+              secure: provider === 'apple' || process.env.NODE_ENV === 'production',
+              maxAge: VOTE_INTENT_TTL_MINUTES * 60,
+              ...sessionCookieDomain(),
+            },
+          )
+          return response
         }
 
-        // ── anonymous: defer everything to the magic-link click ──
-        // Knowing an email address proves nothing, so an unauthenticated
-        // submission must not touch any existing participant's vote (or
-        // create one in somebody's name). The server records NOTHING here:
-        // the selection rides the magic-link returnTo as intent params, and
-        // the click — which IS the verification — lands back on the
-        // planning page, where the signed-in auto-submit records the vote
-        // through the branch above.
+        // ── email: create the account, file the row, send the confirm link ──
         const email = body.email
         if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
           return Response.json({ error: 'A valid email is required' }, { status: 400 })
         }
-        // Accounts are adults-only (terms section 4) — affirmed client-side
-        // and enforced here, like claim registration
-        if (body.adult !== true) {
-          return Response.json({ error: 'adult-confirmation-required' }, { status: 400 })
-        }
-        // Throttle + bot gate: this endpoint creates accounts and sends
-        // email to a caller-supplied address (compliance blocker 9)
-        const ip = clientIp(req.headers)
-        const ipCheck = checkRateLimit(`planning-vote:ip:${ip}`, RATE_LIMITS.claimPerIp)
-        if (!ipCheck.allowed) return rateLimitResponse(ipCheck)
+        const normalizedEmail = email.trim().toLowerCase()
         const emailCheck = checkRateLimit(
-          `magic-link:email:${email.trim().toLowerCase()}`,
+          `magic-link:email:${normalizedEmail}`,
           RATE_LIMITS.magicLinkPerEmail,
         )
         if (!emailCheck.allowed) return rateLimitResponse(emailCheck)
-        if (!(await verifyTurnstileToken(body.turnstileToken, ip))) {
-          return Response.json({ error: 'captcha' }, { status: 403 })
-        }
 
-        const name = normalizeVoterName(body.name)
-        if (!name) {
-          return Response.json({ error: 'name-required' }, { status: 400 })
-        }
-
-        const normalizedEmail = email.trim().toLowerCase()
         const existing = await req.payload.find({
           collection: 'users',
           where: { email: { equals: normalizedEmail } },
@@ -292,60 +326,167 @@ export const TripVotes: CollectionConfig = {
           overrideAccess: true,
         })
         let user = existing.docs[0] ?? null
+        // An account that already existed is somebody's: a vote filed
+        // against it without proof must be shown to them, not recorded
+        // behind their back (docs/PRD-planovani.md). One the vote itself
+        // creates has no such holder, so any sign-in may record it.
+        let autoConfirm = user == null
         if (user && isSuperadmin(user)) {
           // Superadmins never magic-link; the generic success keeps the
           // form from probing for accounts — they sign in with OAuth and
           // vote from the results view.
           await sendSuperadminNotice(req.payload, user)
-          return Response.json({ ok: true, emailSent: true })
+          return Response.json({ ok: true, mode: 'email', emailSent: true })
         }
 
         // A name clash with somebody else's participant is refused up
         // front (participant names are public data, so this reveals
         // nothing); a clash with a participant linked to THIS email's own
         // account is that person re-voting and passes through.
-        const clash = chataParticipants.docs.some(
-          (p) =>
-            p.name.trim().toLowerCase() === name.toLowerCase() &&
-            !(user != null && p.account != null && refId(p.account) === String(user.id)),
-        )
-        if (clash) {
+        const voter = resolveVoter({ participants: candidates, userId: user?.id ?? -1, name })
+        if (voter.kind === 'name-taken') {
           return Response.json({ error: 'name-taken' }, { status: 409 })
         }
 
         if (!user) {
-          user = await req.payload.create({
-            collection: 'users',
-            data: {
-              email: normalizedEmail,
-              role: 'user' as const,
-              // The local (password) strategy only exists where OAuth is
-              // not configured — give it an unguessable throwaway there
-              ...(isOAuthEnabled ? {} : { password: crypto.randomBytes(24).toString('hex') }),
-            },
+          try {
+            user = await req.payload.create({
+              collection: 'users',
+              data: {
+                email: normalizedEmail,
+                role: 'user' as const,
+                // The local (password) strategy only exists where OAuth is
+                // not configured — give it an unguessable throwaway there
+                ...(isOAuthEnabled ? {} : { password: crypto.randomBytes(24).toString('hex') }),
+              },
+              overrideAccess: true,
+            })
+          } catch (err) {
+            // Two first submits at once (a double tap): the email's unique
+            // constraint let exactly one create through — use that account
+            const raced = await req.payload.find({
+              collection: 'users',
+              where: { email: { equals: normalizedEmail } },
+              limit: 1,
+              depth: 0,
+              overrideAccess: true,
+            })
+            user = raced.docs[0] ?? null
+            if (!user) throw err
+            autoConfirm = false
+          }
+        }
+
+        const row = await upsertPendingVote(req.payload, {
+          chataId,
+          userId: user.id,
+          name,
+          dateOptionIds,
+          accommodationOptionIds,
+          source: 'email',
+          autoConfirm,
+          linkExpiresAt: new Date(
+            Date.now() + VOTE_CONFIRM_TTL_DAYS * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        })
+
+        // The requester IS the recipient, so their UI locale picks the copy
+        const cookies = req.headers.get('cookie') ?? ''
+        const localeCookie = cookies
+          .split(';')
+          .map((c) => c.trim())
+          .find((c) => c.startsWith(`${LOCALE_COOKIE}=`))
+          ?.slice(LOCALE_COOKIE.length + 1)
+        const locale = pickLocale(localeCookie, req.headers.get('accept-language'))
+        try {
+          await sendVoteConfirmEmail(req.payload, {
+            row,
+            user,
+            chata,
+            origin: requestOrigin(req.headers),
+            locale,
+          })
+        } catch (err) {
+          // The row is filed (any sign-in still confirms it), but the
+          // person expects an email — say so
+          req.payload.logger.error({ err }, 'Failed to send vote confirm email')
+          return Response.json({ ok: true, mode: 'email', emailSent: false })
+        }
+        return Response.json({ ok: true, mode: 'email', emailSent: true })
+      },
+    },
+    {
+      // "Tohle nejsem já" — the account holder throws away a pending vote
+      // somebody filed under their email
+      path: '/pending/discard',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        let id: number
+        try {
+          const body = ((await req.json?.()) ?? {}) as Record<string, unknown>
+          id = Number(body.id)
+        } catch {
+          id = NaN
+        }
+        if (!Number.isInteger(id) || id <= 0) {
+          return Response.json({ error: 'invalid-id' }, { status: 400 })
+        }
+        const ok = await discardPendingVote(req.payload, req.user.id, id)
+        return ok
+          ? Response.json({ ok: true })
+          : Response.json({ error: 'not-found' }, { status: 404 })
+      },
+    },
+    {
+      // "Vzít hlas zpět" — the signed-in voter withdraws ONE participant's
+      // vote (an account may own several here: a parent and children), and
+      // only a participant their account owns. The participant stays.
+      path: '/withdraw',
+      method: 'post',
+      handler: async (req) => {
+        if (!req.user) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        let participantId: number
+        try {
+          const body = ((await req.json?.()) ?? {}) as Record<string, unknown>
+          participantId = Number(body.participantId)
+        } catch {
+          participantId = NaN
+        }
+        if (!Number.isInteger(participantId) || participantId <= 0) {
+          return Response.json({ error: 'invalid-participant' }, { status: 400 })
+        }
+        const own = await req.payload.find({
+          collection: 'participants',
+          where: {
+            and: [{ id: { equals: participantId } }, { account: { equals: req.user.id } }],
+          },
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
+        })
+        if (own.docs.length === 0) {
+          return Response.json({ error: 'not-found' }, { status: 404 })
+        }
+        const votes = await req.payload.find({
+          collection: 'trip-votes',
+          where: { participant: { equals: participantId } },
+          limit: 10,
+          depth: 0,
+          overrideAccess: true,
+        })
+        for (const vote of votes.docs) {
+          await req.payload.delete({
+            collection: 'trip-votes',
+            id: vote.id,
             overrideAccess: true,
           })
         }
-
-        // The click lands back on the planning page with the intent params,
-        // where the signed-in auto-submit records the vote
-        const returnTo = planningVoteReturnTo(
-          typeof body.returnTo === 'string' && body.returnTo ? body.returnTo : '/',
-          { name, dateOptionIds, accommodationOptionIds },
-        )
-        try {
-          await sendMagicLink(req.payload, user, {
-            origin: requestOrigin(req.headers),
-            returnTo,
-          })
-        } catch (err) {
-          // Nothing was recorded, so a failed send is an honest failure —
-          // the voter can simply try again
-          req.payload.logger.error({ err }, 'Failed to send planning-vote magic link')
-          return Response.json({ error: 'Failed to send email' }, { status: 500 })
-        }
-
-        return Response.json({ ok: true, emailSent: true })
+        return Response.json({ ok: true, removed: votes.docs.length })
       },
     },
   ],

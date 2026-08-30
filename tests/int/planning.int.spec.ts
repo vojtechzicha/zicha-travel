@@ -3,8 +3,8 @@ import {
   accommodationAvailableFor,
   canSeePlanningResults,
   normalizeVoterName,
-  parsePlanningVoteIntent,
-  planningVoteReturnTo,
+  describeVoteSelection,
+  resolveVoter,
   tallyVotes,
   validateVoteSelection,
   type PlanningVote,
@@ -154,56 +154,88 @@ describe('normalizeVoterName', () => {
   })
 })
 
-describe('planning vote intent (deferred anonymous votes)', () => {
-  it('round-trips through the magic-link returnTo', () => {
-    const returnTo = planningVoteReturnTo('/pratele', {
-      name: 'Katka Nováková',
-      dateOptionIds: [1, 2],
-      accommodationOptionIds: [10],
+describe('resolveVoter', () => {
+  const participants = [
+    { id: 1, name: 'Vojta', accountId: 1 },
+    { id: 2, name: 'Katka Nováková', accountId: null },
+  ]
+
+  it('an account with a linked participant votes as that participant, whatever name it typed', () => {
+    expect(resolveVoter({ participants, userId: 1, name: 'Somebody Else' })).toEqual({
+      kind: 'linked',
+      participantId: 1,
     })
-    const [path, query] = returnTo.split('?')
-    expect(path).toBe('/pratele')
-    const intent = parsePlanningVoteIntent(new URLSearchParams(query))
-    expect(intent).toEqual({
-      name: 'Katka Nováková',
-      dateOptionIds: [1, 2],
-      accommodationOptionIds: [10],
+    expect(resolveVoter({ participants, userId: '1', name: null })).toEqual({
+      kind: 'linked',
+      participantId: 1,
     })
   })
 
-  it('keeps existing query params and drops empty parts', () => {
-    const returnTo = planningVoteReturnTo('/pratele?view=planning', {
-      name: null,
-      dateOptionIds: [2],
-      accommodationOptionIds: [],
+  it('a new face needs a name and gets a participant created', () => {
+    expect(resolveVoter({ participants, userId: 9, name: '  David  N. ' })).toEqual({
+      kind: 'create',
+      name: 'David N.',
     })
-    const params = new URLSearchParams(returnTo.split('?')[1])
-    expect(params.get('view')).toBe('planning')
-    expect(params.has('pv_a')).toBe(false)
-    expect(params.has('pv_n')).toBe(false)
-    expect(parsePlanningVoteIntent(params)).toEqual({
-      name: null,
-      dateOptionIds: [2],
-      accommodationOptionIds: [],
+    expect(resolveVoter({ participants, userId: 9, name: '   ' })).toEqual({
+      kind: 'name-required',
     })
   })
 
-  it('rejects URLs without an intent or with mangled ids', () => {
-    expect(parsePlanningVoteIntent(new URLSearchParams('view=planning'))).toBeNull()
-    expect(parsePlanningVoteIntent(new URLSearchParams('pv_d='))).toBeNull()
-    expect(parsePlanningVoteIntent(new URLSearchParams('pv_d=1,abc'))).toBeNull()
-    expect(parsePlanningVoteIntent(new URLSearchParams('pv_d=1&pv_a=zero'))).toBeNull()
+  it('votes as the participant asked for, but only one of its own', () => {
+    const family = [
+      { id: 1, name: 'Máma', accountId: 7 },
+      { id: 2, name: 'Dítě', accountId: 7 },
+      { id: 3, name: 'Soused', accountId: 8 },
+    ]
+    expect(resolveVoter({ participants: family, userId: 7, name: null, participantId: 2 })).toEqual({
+      kind: 'linked',
+      participantId: 2,
+    })
+    expect(resolveVoter({ participants: family, userId: 7, name: null, participantId: 3 })).toEqual({
+      kind: 'forbidden',
+    })
+    expect(resolveVoter({ participants: family, userId: 7, name: null, participantId: 99 })).toEqual({
+      kind: 'forbidden',
+    })
   })
 
-  it('dedupes repeated ids and normalizes the name', () => {
-    const intent = parsePlanningVoteIntent(
-      new URLSearchParams('pv_d=1,1,2&pv_a=10,10&pv_n=++Katka++Nov%C3%A1kov%C3%A1'),
-    )
-    expect(intent).toEqual({
-      name: 'Katka Nováková',
-      dateOptionIds: [1, 2],
-      accommodationOptionIds: [10],
+  it('never takes over an existing participant by name (case-insensitive)', () => {
+    expect(resolveVoter({ participants, userId: 9, name: 'katka nováková' })).toEqual({
+      kind: 'name-taken',
     })
+    expect(resolveVoter({ participants, userId: 9, name: 'VOJTA' })).toEqual({
+      kind: 'name-taken',
+    })
+  })
+})
+
+describe('describeVoteSelection', () => {
+  const dates = [
+    { id: 1, label: '16.–18. 10. 2026' },
+    { id: 2, label: '13.–15. 11. 2026 (preferovaný)' },
+  ]
+  const places = [
+    { id: 2, name: 'Chata Kloučka' },
+    { id: 4, name: 'Chata Skvrňov' },
+  ]
+
+  it('keeps the order picked and drops ids the chata no longer has', () => {
+    expect(
+      describeVoteSelection(
+        { dateOptionIds: [2, 1, 99], accommodationOptionIds: ['4', 2] },
+        dates,
+        places,
+      ),
+    ).toEqual({
+      dates: ['13.–15. 11. 2026 (preferovaný)', '16.–18. 10. 2026'],
+      places: ['Chata Skvrňov', 'Chata Kloučka'],
+    })
+  })
+
+  it('no places is an empty list, not a missing one', () => {
+    expect(
+      describeVoteSelection({ dateOptionIds: [1], accommodationOptionIds: [] }, dates, places),
+    ).toEqual({ dates: ['16.–18. 10. 2026'], places: [] })
   })
 })
 

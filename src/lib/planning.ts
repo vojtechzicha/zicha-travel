@@ -41,6 +41,9 @@ export interface PlanningPayload {
   votes: PlanningVote[] | null
   /** ids of date options the viewer's own participants voted (empty = no vote yet) */
   viewerVoted: boolean
+  /** the signed-in viewer's vote that could not be confirmed at sign-in
+   *  (docs/PRD-planovani.md, "Nepotvrzené hlasy"); null otherwise */
+  pendingVote: PendingVoteIntent | null
 }
 
 /**
@@ -204,59 +207,90 @@ export function normalizeVoterName(value: unknown): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Deferred anonymous votes. An unauthenticated submission proves nothing
-// about who owns the email, so the server records NOTHING for it — the
-// selection rides the magic-link returnTo as intent params (the same trick
-// the claim flow plays with ?claim=), and the click, which IS the
-// verification, lands back on the planning page where the signed-in
-// auto-submit records the vote. The params carry the voter's own input
-// back to them; they are scrubbed from analytics URLs (lib/analytics.ts).
+// Who a vote belongs to. Shared by the submit endpoint (signed-in voters),
+// the pending-vote confirmation that runs at sign-in, and the OAuth path's
+// pre-check. Pure so the name rule is tested once.
 
-export const PLANNING_INTENT_PARAMS = ['pv_d', 'pv_a', 'pv_n'] as const
+export interface VoterCandidate {
+  id: number
+  name: string
+  /** the account the participant is linked to, if any */
+  accountId: number | string | null
+}
 
-export interface PlanningVoteIntent {
-  name: string | null
+export type VoterResolution =
+  | { kind: 'linked'; participantId: number }
+  | { kind: 'create'; name: string }
+  | { kind: 'name-taken' }
+  | { kind: 'name-required' }
+  | { kind: 'forbidden' }
+
+/**
+ * Which participant a signed-in account votes as: the participant it
+ * asked for (`participantId`, must be one of its own — an account may own
+ * a parent and children in the same chata), else its first linked
+ * participant here (the typed name is then irrelevant), otherwise a new
+ * participant with the given name, unless that name is already somebody
+ * else's. Never silently takes over an existing participant by name:
+ * linking identities is the claim flow's job.
+ */
+export function resolveVoter(args: {
+  participants: VoterCandidate[]
+  userId: number | string
+  name: string | null | undefined
+  participantId?: number | null
+}): VoterResolution {
+  const user = String(args.userId)
+  if (args.participantId != null) {
+    const chosen = args.participants.find((p) => p.id === args.participantId)
+    if (!chosen || chosen.accountId == null || String(chosen.accountId) !== user) {
+      return { kind: 'forbidden' }
+    }
+    return { kind: 'linked', participantId: chosen.id }
+  }
+  const linked = args.participants.find(
+    (p) => p.accountId != null && String(p.accountId) === user,
+  )
+  if (linked) return { kind: 'linked', participantId: linked.id }
+  const name = normalizeVoterName(args.name)
+  if (!name) return { kind: 'name-required' }
+  const clash = args.participants.some((p) => p.name.trim().toLowerCase() === name.toLowerCase())
+  if (clash) return { kind: 'name-taken' }
+  return { kind: 'create', name }
+}
+
+/**
+ * Human-readable summary of a selection (email, confirm page): option
+ * labels in the order picked; ids the chata no longer has are dropped.
+ */
+export function describeVoteSelection(
+  selection: { dateOptionIds: Array<number | string>; accommodationOptionIds: Array<number | string> },
+  dateOptions: Array<Pick<PlanningDateOption, 'id' | 'label'>>,
+  accommodations: Array<Pick<PlanningAccommodationOption, 'id' | 'name'>>,
+): { dates: string[]; places: string[] } {
+  const dateById = new Map(dateOptions.map((d) => [String(d.id), d.label]))
+  const placeById = new Map(accommodations.map((a) => [String(a.id), a.name]))
+  return {
+    dates: selection.dateOptionIds
+      .map((id) => dateById.get(String(id)))
+      .filter((label): label is string => Boolean(label)),
+    places: selection.accommodationOptionIds
+      .map((id) => placeById.get(String(id)))
+      .filter((name): name is string => Boolean(name)),
+  }
+}
+
+/** The viewer's own unconfirmed vote here, as the slug API ships it. */
+export interface PendingVoteIntent {
+  id: number
+  name: string
   dateOptionIds: number[]
   accommodationOptionIds: number[]
+  /** why confirmation at sign-in could not finish (null = not tried yet) */
+  issue: PendingVoteIssue | null
+  /** filed anonymously against an account that already existed: the
+   *  person must look at it before it counts (docs/PRD-planovani.md) */
+  needsApproval: boolean
 }
 
-/** basePath + the vote intent as query params ("/pratele?pv_d=1,2&…"). */
-export function planningVoteReturnTo(basePath: string, intent: PlanningVoteIntent): string {
-  const [path, query = ''] = basePath.split('?')
-  const params = new URLSearchParams(query)
-  params.set('pv_d', intent.dateOptionIds.join(','))
-  if (intent.accommodationOptionIds.length > 0) {
-    params.set('pv_a', intent.accommodationOptionIds.join(','))
-  } else {
-    params.delete('pv_a')
-  }
-  if (intent.name) params.set('pv_n', intent.name)
-  else params.delete('pv_n')
-  return `${path}?${params.toString()}`
-}
-
-function parseIdList(value: string | null): number[] | null {
-  if (value == null || value === '') return []
-  const ids: number[] = []
-  for (const part of value.split(',')) {
-    const id = Number(part)
-    if (!Number.isInteger(id) || id <= 0) return null
-    ids.push(id)
-  }
-  return [...new Set(ids)]
-}
-
-/** null when the URL carries no (valid) vote intent. */
-export function parsePlanningVoteIntent(params: URLSearchParams): PlanningVoteIntent | null {
-  if (!params.has('pv_d')) return null
-  const dateOptionIds = parseIdList(params.get('pv_d'))
-  const accommodationOptionIds = parseIdList(params.get('pv_a'))
-  if (dateOptionIds == null || dateOptionIds.length === 0 || accommodationOptionIds == null) {
-    return null
-  }
-  return {
-    name: normalizeVoterName(params.get('pv_n')),
-    dateOptionIds,
-    accommodationOptionIds,
-  }
-}
+export type PendingVoteIssue = 'name-taken' | 'planning-closed' | 'invalid-selection'

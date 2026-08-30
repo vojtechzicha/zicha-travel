@@ -4,7 +4,7 @@ Správce: Vojtěch Zicha, mail@vojtechzicha.com (jediný správce, rozhodnutí 1
 v `compliance-gaps.md`). Výjimka pro malé organizace se nepoužije:
 zpracování není příležitostné a zahrnuje finanční údaje.
 
-Poslední revize: 2026-08-25 (hlasy z plánování výletu). Pravidlo údržby:
+Poslední revize: 2026-08-30 (nepotvrzené hlasy z plánování). Pravidlo údržby:
 každá nová kategorie údajů,
 nový příjemce nebo nový účel se propíše sem, do zásad (`/soukromi`) a do
 inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
@@ -35,7 +35,10 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 - **Údaje:** e-mail, zobrazované jméno, role, čas posledního přihlášení,
   hash přihlašovacího tokenu (15 min), identifikátor od poskytovatele
   přihlášení (Microsoft, Google nebo Apple) při OAuth;
-  žádosti o propojení včetně důvodu zamítnutí; žádosti subjektů údajů
+  žádosti o propojení včetně důvodu zamítnutí; nepotvrzené hlasy z
+  plánování (kolekce Pending Votes: jméno, výběr, účet, stav, případný
+  důvod, proč se hlas nepodařilo uložit; potvrzovací odkaz platí 7 dní,
+  hlas se uloží při jakémkoli přihlášení účtu); žádosti subjektů údajů
   (kolekce Data Requests).
 - **Účel:** vedení účtu, přihlášení, propojení účastníků, doložení
   vyřízení žádostí.
@@ -44,7 +47,9 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 - **Příjemci:** Supabase, Vercel, Resend (e-maily), Microsoft, Google a
   Apple (každý vlastní správce svého přihlášení).
 - **Výmaz:** účet 2 roky bez přihlášení (cron, včetně vazeb); rozhodnuté
-  žádosti o propojení 12 měsíců po rozhodnutí.
+  žádosti o propojení 12 měsíců po rozhodnutí; nepotvrzené hlasy 12 měsíců
+  po potvrzení a nejpozději s vyúčtováním výletu (stejný cron); smazáním
+  účtu mizí i jeho nepotvrzené hlasy.
 
 ## 3. Provoz, bezpečnost a statistiky
 

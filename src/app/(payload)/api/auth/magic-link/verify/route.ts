@@ -9,6 +9,7 @@ import {
   setSessionCookie,
   signSessionToken,
 } from '@/lib/auth/session'
+import { confirmPendingVotesForUser } from '@/utils/pendingVotes'
 
 /**
  * GET /api/auth/magic-link/verify?token=...&returnTo=/...
@@ -73,6 +74,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     },
     overrideAccess: true,
   })
+
+  // Any sign-in confirms what the person voted while anonymous
+  // (docs/PRD-planovani.md, "Nepotvrzené hlasy") — never at the cost of
+  // the login itself
+  try {
+    await confirmPendingVotesForUser(payload, user.id)
+  } catch (err) {
+    payload.logger.error({ err, user: user.id }, 'Pending vote confirmation failed at sign-in')
+  }
 
   const { token: sessionToken, maxAge } = signSessionToken(user)
   const response = NextResponse.redirect(new URL(returnTo, origin))

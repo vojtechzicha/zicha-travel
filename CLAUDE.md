@@ -231,6 +231,34 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      strings in the `planning` i18n namespace; DDL appended to
      `NEW_SCHEMA_DDL`; one-off seed for /pratele in
      `scripts/seed-planning-pratele.mjs` (`pnpm planning:seed:pratele`)
+   - **Nepotvrzené hlasy** (`PendingVotes.ts`, slug `pending-votes`): an
+     anonymous vote is filed as a ROW (name, selection, the account created
+     or reused for the email, `status`, `issue`, `source`), never as URL
+     params on the account's single magic-link slot. It becomes a trip-vote
+     the moment its owner signs in ANY way when `autoConfirm` is set (the
+     submission created the account, or same-browser OAuth intent):
+     `confirmPendingVotesForUser` (`src/utils/pendingVotes.ts`) runs from
+     the magic-link verify, every OAuth callback, Payload's afterLogin, the
+     vote link itself and the slug API (self-heal). A row filed against an
+     account that ALREADY existed is untrusted: an ordinary sign-in only
+     reveals it (`planning.pendingVote.needsApproval`, dialog prefilled with
+     a discard link → `/pending/discard`); only the emailed link records it.
+     `recordVote` holds a `pg_advisory_xact_lock` per (account, chata) and
+     `trip_votes_participant_uq` backs it. The
+     emailed link is a 7-day, SINGLE-USE JWT bound to the row AND its
+     `submissionKey` (`src/lib/pendingVotes.ts`; `claimVoteLink` spends it
+     with one `UPDATE … RETURNING`, stale keys refused) landing on
+     `/votes/confirm` (summary + one POST button,
+     scanner-safe); the subject carries the vote. One pending row per
+     account and chata is a partial unique index in the DDL. The dialog offers Google/Apple/Microsoft
+     BEFORE email: the selection rides the signed 10-minute
+     `oauth-vote-intent` cookie and the OAuth callback may create the account
+     for it, the ONE case OAuth creates users. `recordVote` is the single
+     writer of trip-votes (signed-in submit + confirmation, both send the
+     displayed `participantId`); `/withdraw { participantId }` removes one
+     owned participant's vote. Retention: confirmed rows 12 months after
+     confirmation, all rows in the settled-chata pass; user deletion drops
+     the user's rows. Tests in `tests/int/pendingVotes.int.spec.ts`
 
 ### Utilities
 

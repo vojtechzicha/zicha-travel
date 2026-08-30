@@ -4,26 +4,42 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
 import { Check, Mail, Send, X } from 'lucide-react'
-import { accommodationAvailableFor, type PlanningPayload } from '@/lib/planning'
+import {
+  accommodationAvailableFor,
+  type PendingVoteIssue,
+  type PlanningPayload,
+} from '@/lib/planning'
 import { track } from '@/lib/analytics'
 import { TurnstileWidget, turnstileSiteKey } from './TurnstileWidget'
+import { enabledOAuthProviders, type FrontendOAuthProvider } from './oauthProviders'
 import { useAppTheme } from '../utils/useAppTheme'
 import type { Chata } from '@/payload-types'
 
 // The planning-phase vote dialog ("Jedeš s námi?" — docs/PRD-planovani.md,
 // design canvas "Plánování chaty"): who you are (skipped for signed-in
 // viewers with a linked participant), which dates work, which places you
-// like, submit. Anonymous submissions create an account — visible Turnstile
-// like claim registration; the confirmation tells them to check their email.
+// like, submit. Anonymous voters then prove who they are: Google/Apple/
+// Microsoft first (the vote rides a signed cookie through the round trip
+// and lands the moment the provider answers), email second (a confirm
+// link; the vote waits as a pending row and any later sign-in saves it).
+// Visible Turnstile like claim registration.
 
 interface PlanningVoteFlowProps {
   chata: Chata
   planning: PlanningPayload
   /** signed-in viewer's linked participant name; null = ask for name */
   viewerName: string | null
+  /** the participant whose vote is being edited (an account may own several) */
+  participantId?: number | null
   authenticated: boolean
-  /** prefill for the name field (a failed auto-submitted vote intent) */
+  /** a pending vote filed under the viewer's email without proof: shown for
+   *  a check, with a way to throw it away */
+  pendingApproval?: { id: number } | null
+  onDiscarded?: () => Promise<void> | void
+  /** prefill for the name field (a pending vote that could not be confirmed) */
   initialName?: string | null
+  /** why the pending vote could not be confirmed at sign-in — shown up front */
+  initialIssue?: PendingVoteIssue | null
   initialDateIds: number[]
   initialAccommodationIds: number[]
   onClose: () => void
@@ -37,8 +53,12 @@ export function PlanningVoteFlow({
   chata,
   planning,
   viewerName,
+  participantId = null,
   authenticated,
+  pendingApproval = null,
+  onDiscarded,
   initialName = null,
+  initialIssue = null,
   initialDateIds,
   initialAccommodationIds,
   onClose,
@@ -50,11 +70,51 @@ export function PlanningVoteFlow({
   const [name, setName] = useState(initialName ?? '')
   const [email, setEmail] = useState('')
   const [adultConfirmed, setAdultConfirmed] = useState(false)
-  const [selectedDates, setSelectedDates] = useState<number[]>(initialDateIds)
-  const [selectedPlaces, setSelectedPlaces] = useState<number[]>(initialAccommodationIds)
+  // A prefilled selection (a pending vote, an earlier vote) may predate a
+  // change of options: drop ids the chata no longer has, and places no
+  // longer available on the picked dates, or the dialog could never submit
+  const [selectedDates, setSelectedDates] = useState<number[]>(() => {
+    const known = new Set(planning.dateOptions.map((option) => option.id))
+    return initialDateIds.filter((id) => known.has(id))
+  })
+  const [selectedPlaces, setSelectedPlaces] = useState<number[]>(() => {
+    const known = new Set(planning.dateOptions.map((option) => option.id))
+    const dates = initialDateIds.filter((id) => known.has(id))
+    return initialAccommodationIds.filter((id) => {
+      const place = planning.accommodations.find((a) => a.id === id)
+      return place ? accommodationAvailableFor(place, dates) : false
+    })
+  })
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(() =>
+    initialIssue ? t(`dialog.pendingIssue.${initialIssue}`) : null,
+  )
+  const [discarding, setDiscarding] = useState(false)
+  const discard = async () => {
+    if (!pendingApproval) return
+    setDiscarding(true)
+    try {
+      const res = await fetch('/api/trip-votes/pending/discard', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pendingApproval.id }),
+      })
+      if (!res.ok) {
+        track('save_failed', { operation: 'planning_vote_discard', status: res.status })
+        setError(t('dialog.errors.generic'))
+        return
+      }
+      await onDiscarded?.()
+      onClose()
+    } catch {
+      setError(t('dialog.errors.generic'))
+    } finally {
+      setDiscarding(false)
+    }
+  }
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
+  const oauthProviders = enabledOAuthProviders()
   // Visible bot check for the account-creating anonymous path (single-use
   // tokens — every submit bumps the reset signal)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
@@ -104,13 +164,16 @@ export function PlanningVoteFlow({
       'no-dates',
       'accommodation-unavailable',
       'planning-closed',
+      'invalid-provider',
     ]
     if (code && known.includes(code)) return t(`dialog.errors.${code}`)
     if (status === 429) return t('dialog.errors.rate-limited')
     return t('dialog.errors.generic')
   }
 
-  const submit = async () => {
+  type SubmitMethod = 'signed-in' | 'email' | FrontendOAuthProvider['id']
+
+  const submit = async (method: SubmitMethod) => {
     setError(null)
     if (selectedDates.length === 0) {
       setError(t('dialog.errors.no-dates'))
@@ -121,12 +184,12 @@ export function PlanningVoteFlow({
       return
     }
     if (needsContact) {
-      if (!email.trim()) {
-        setError(t('dialog.errors.email-required'))
-        return
-      }
       if (!adultConfirmed) {
         setError(t('dialog.errors.adult-required'))
+        return
+      }
+      if (method === 'email' && !email.trim()) {
+        setError(t('dialog.errors.email-required'))
         return
       }
     }
@@ -141,12 +204,13 @@ export function PlanningVoteFlow({
           dateOptionIds: selectedDates,
           accommodationOptionIds: selectedPlaces,
           ...(needsName ? { name: name.trim() } : {}),
+          ...(participantId != null ? { participantId } : {}),
           ...(needsContact
             ? {
-                email: email.trim(),
                 adult: adultConfirmed,
                 turnstileToken: captchaToken,
                 returnTo: window.location.pathname + window.location.search,
+                ...(method === 'email' ? { email: email.trim() } : { provider: method }),
               }
             : {}),
         }),
@@ -161,7 +225,14 @@ export function PlanningVoteFlow({
         signed_in: authenticated,
         dates: selectedDates.length,
         places: selectedPlaces.length,
+        ...(method === 'signed-in' ? {} : { method }),
       })
+      if (data?.mode === 'oauth' && typeof data.redirect === 'string') {
+        // The selection is in the signed cookie now; the provider takes over
+        track('login_started', { method: method as FrontendOAuthProvider['id'] })
+        window.location.assign(data.redirect)
+        return
+      }
       if (authenticated) {
         await onVoted()
         setConfirmation({ kind: 'saved' })
@@ -216,7 +287,12 @@ export function PlanningVoteFlow({
               : t('dialog.sentBodyNoEmail')}
         </p>
         {confirmation.kind === 'email' && confirmation.emailSent && (
-          <p className="text-gray-400 dark:text-slate-500 text-xs mt-3">{t('dialog.resend')}</p>
+          <>
+            <p className="text-gray-600 dark:text-slate-300 text-sm leading-relaxed mt-3">
+              {t('dialog.sentKeeps')}
+            </p>
+            <p className="text-gray-400 dark:text-slate-500 text-xs mt-3">{t('dialog.resend')}</p>
+          </>
         )}
         <button
           type="button"
@@ -238,6 +314,19 @@ export function PlanningVoteFlow({
           <div className="text-[13px] text-gray-500 dark:text-slate-400">{chata.name}</div>
         </div>
 
+        {pendingApproval && (
+          <div className="px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 dark:bg-amber-400/10 dark:border-amber-400/30 dark:text-amber-200 text-sm leading-relaxed">
+            {t('dialog.pendingApproval')}{' '}
+            <button
+              type="button"
+              onClick={discard}
+              disabled={discarding || busy}
+              className="font-semibold underline underline-offset-2 disabled:opacity-60"
+            >
+              {t('dialog.discard')}
+            </button>
+          </div>
+        )}
         {error && (
           <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400 text-sm">
             {error}
@@ -268,35 +357,6 @@ export function PlanningVoteFlow({
                   {t('dialog.nameHint')}
                 </div>
               </div>
-              {needsContact && (
-                <>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-gray-600 dark:text-slate-400">
-                      {t('dialog.emailLabel')}
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t('dialog.emailPlaceholder')}
-                      className={inputClass}
-                    />
-                    <div className="text-xs text-gray-400 dark:text-slate-500">
-                      {t('dialog.emailHint')}
-                    </div>
-                  </div>
-                  {/* Adults-only affirmation (terms section 4) */}
-                  <label className="flex items-start gap-2 text-[13px] text-gray-600 dark:text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={adultConfirmed}
-                      onChange={(e) => setAdultConfirmed(e.target.checked)}
-                      className="mt-0.5 accent-[var(--color-primary)]"
-                    />
-                    <span>{t('dialog.adultConfirm')}</span>
-                  </label>
-                </>
-              )}
             </div>
           )}
         </div>
@@ -359,7 +419,8 @@ export function PlanningVoteFlow({
                   <button
                     key={place.id}
                     type="button"
-                    disabled={!available}
+                    // a selected place stays clickable so it can always be dropped
+                    disabled={!available && !selected}
                     onClick={() => togglePlace(place.id)}
                     className={`text-left rounded-[14px] border-2 px-4 py-3 flex items-center gap-3 transition-colors disabled:cursor-not-allowed ${
                       selected
@@ -411,20 +472,88 @@ export function PlanningVoteFlow({
         )}
 
         {/* Submit */}
-        <div className="flex flex-col gap-2.5 border-t border-gray-100 dark:border-white/[0.07] pt-4">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={busy || captchaPending}
-            className="flex items-center justify-center gap-2.5 rounded-xl bg-primary hover:bg-primary-dark
-                       text-white text-[15px] font-bold px-4 py-3.5 shadow-lg shadow-primary/35
-                       transition-colors disabled:opacity-60"
-          >
-            <Send size={16} aria-hidden="true" />
-            {busy ? t('dialog.submitting') : t('dialog.submit')}
-          </button>
-          {needsContact && (
+        <div className="flex flex-col gap-3 border-t border-gray-100 dark:border-white/[0.07] pt-4">
+          {needsContact ? (
             <>
+              {/* Adults-only affirmation (terms section 4) */}
+              <label className="flex items-start gap-2 text-[13px] text-gray-600 dark:text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={adultConfirmed}
+                  onChange={(e) => setAdultConfirmed(e.target.checked)}
+                  className="mt-0.5 accent-[var(--color-primary)]"
+                />
+                <span>{t('dialog.adultConfirm')}</span>
+              </label>
+
+              {oauthProviders.length > 0 && (
+                <>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {t('dialog.confirmWho')}
+                    </div>
+                    <div className="text-xs text-gray-400 dark:text-slate-500">
+                      {t('dialog.confirmWhoHint')}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {oauthProviders.map((provider) => (
+                      <button
+                        key={provider.id}
+                        type="button"
+                        onClick={() => submit(provider.id)}
+                        disabled={busy || captchaPending}
+                        className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl
+                                   bg-white border border-gray-300 text-gray-900 text-[15px] font-semibold
+                                   hover:bg-gray-50 dark:bg-white/[0.06] dark:border-white/[0.15]
+                                   dark:text-gray-100 dark:hover:bg-white/[0.1] transition-colors
+                                   disabled:opacity-60"
+                      >
+                        {provider.icon}
+                        {t(`dialog.continueWith.${provider.labelKey}`)}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-400 dark:text-slate-500 text-xs">
+                    <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.1]" />
+                    {t('dialog.orEmail')}
+                    <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.1]" />
+                  </div>
+                </>
+              )}
+
+              <div className="flex flex-col gap-1">
+                {oauthProviders.length === 0 && (
+                  <label className="text-xs font-semibold text-gray-600 dark:text-slate-400">
+                    {t('dialog.emailLabel')}
+                  </label>
+                )}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('dialog.emailPlaceholder')}
+                    aria-label={t('dialog.emailLabel')}
+                    className={inputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => submit('email')}
+                    disabled={busy || captchaPending}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-dark
+                               text-white text-sm font-bold px-4 py-2.5 shadow-md shadow-primary/30
+                               transition-colors disabled:opacity-60 whitespace-nowrap"
+                  >
+                    <Send size={15} aria-hidden="true" />
+                    {busy ? t('dialog.submitting') : t('dialog.sendLink')}
+                  </button>
+                </div>
+                <div className="text-xs text-gray-400 dark:text-slate-500">
+                  {t('dialog.emailHint')}
+                </div>
+              </div>
+
               <p className="m-0 text-xs text-gray-400 dark:text-slate-500 text-center leading-relaxed">
                 {t.rich('dialog.accountNote', {
                   terms: (chunks) => (
@@ -446,6 +575,18 @@ export function PlanningVoteFlow({
                 className="mx-auto"
               />
             </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => submit('signed-in')}
+              disabled={busy}
+              className="flex items-center justify-center gap-2.5 rounded-xl bg-primary hover:bg-primary-dark
+                         text-white text-[15px] font-bold px-4 py-3.5 shadow-lg shadow-primary/35
+                         transition-colors disabled:opacity-60"
+            >
+              <Send size={16} aria-hidden="true" />
+              {busy ? t('dialog.submitting') : t('dialog.submit')}
+            </button>
           )}
         </div>
       </div>

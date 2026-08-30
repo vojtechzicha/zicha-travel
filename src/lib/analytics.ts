@@ -52,7 +52,16 @@ export interface AnalyticsEvents {
   claim_resolved: { outcome: 'auto-approved' | 'pending' }
   /** planning-phase vote funnel (docs/PRD-planovani.md) */
   planning_vote_started: { signed_in: boolean }
-  planning_vote_submitted: { signed_in: boolean; dates: number; places: number }
+  planning_vote_submitted: {
+    signed_in: boolean
+    dates: number
+    places: number
+    /** how an anonymous voter proves who they are (absent when signed in) */
+    method?: 'email' | 'microsoft' | 'google' | 'apple'
+  }
+  /** a pending vote turned real through the emailed confirm link */
+  planning_vote_confirmed: Record<string, never>
+  planning_vote_withdrawn: Record<string, never>
   // 4. errors
   save_failed: { operation: string; status?: number; code?: string }
 }
@@ -64,7 +73,7 @@ export type AnalyticsRole = 'anonymous' | 'user' | 'admin' | 'superadmin'
 /** Query params that identify a person or carry secrets — never transmitted.
  *  `participant` is subtle but critical: the PUBLIC read API resolves a
  *  participant id to a real name, so the id itself is a direct identifier. */
-const FORBIDDEN_PARAMS = ['participant', 'claim', 'token', 'returnTo', 'pv_d', 'pv_a', 'pv_n']
+const FORBIDDEN_PARAMS = ['participant', 'claim', 'token', 'returnTo']
 
 /** Prop keys that must never appear on an event (defense in depth). */
 const FORBIDDEN_PROP_KEYS = new Set([

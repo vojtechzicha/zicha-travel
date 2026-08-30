@@ -42,7 +42,12 @@
     "fraction": "{count}/{total}",
     "leading": "vede",
     "noVotes": "Zatím nehlasoval nikdo. Buď první.",
-    "note": "Hlasuje se, dokud správce nevybere termín a chalupu. Pak se tady objeví informace k výletu, jak je znáš z ostatních chat."
+    "note": "Hlasuje se, dokud správce nevybere termín a chalupu. Pak se tady objeví informace k výletu, jak je znáš z ostatních chat.",
+    "withdraw": "Vzít hlas zpět",
+    "withdrawAsk": "Opravdu vzít hlas zpět?",
+    "withdrawYes": "Ano, vzít zpět",
+    "withdrawNo": "Ne",
+    "withdrawFailed": "To se nepovedlo. Zkus to prosím znovu."
   },
   "dialog": {
     "title": "Jedeš s námi?",
@@ -53,7 +58,7 @@
     "nameHint": "Takhle tě uvidí ostatní.",
     "emailLabel": "E-mail",
     "emailPlaceholder": "katka@priklad.cz",
-    "emailHint": "Pošleme ti sem přihlašovací odkaz, ať vidíš výsledky. Žádný spam.",
+    "emailHint": "Pošleme ti sem odkaz, kterým hlas potvrdíš. Žádný spam.",
     "adultConfirm": "Je mi aspoň 18 let.",
     "signedInAs": "Hlasuješ jako {name}.",
     "stepDates": "Kdy můžeš",
@@ -66,11 +71,11 @@
     "submitting": "Odesílám…",
     "accountNote": "Vytvoříme ti účet, ať vidíš výsledky a máš pak na chatě svoje finance. Odesláním souhlasíš s <terms>podmínkami</terms> a <privacy>zpracováním údajů</privacy>.",
     "sentTitle": "Ještě klik a je to",
-    "sentBody": "Na <strong>{email}</strong> ti letí odkaz. Klikni na něj, tím se tvůj hlas uloží a uvidíš, kdo se přidal.",
-    "sentBodyNoEmail": "Odkaz se nepodařilo odeslat a hlas zatím uložený není. Zkus to prosím za chvíli znovu.",
+    "sentBody": "Na <strong>{email}</strong> ti letí odkaz. Klikni na něj a tvůj hlas se uloží.",
+    "sentBodyNoEmail": "Odkaz se nepodařilo odeslat. Hlas ale máme: uloží se, jakmile se přihlásíš jakkoli, třeba přes Google, Apple nebo Microsoft.",
     "savedTitle": "Hlas uložen",
     "savedBody": "Díky, hned se promítl do výsledků.",
-    "resend": "Nepřišel? Zkontroluj spam, nebo hlasuj znovu.",
+    "resend": "Nepřišel? Zkontroluj spam, nebo se rovnou přihlas.",
     "errors": {
       "generic": "To se nepovedlo. Zkus to prosím znovu.",
       "captcha": "Ověření, že nejsi robot, nevyšlo. Zkus to znovu.",
@@ -81,7 +86,62 @@
       "accommodation-unavailable": "Některá vybraná chalupa není ve zvolených termínech volná.",
       "planning-closed": "Hlasování už skončilo.",
       "email-required": "Napiš svůj e-mail.",
-      "adult-required": "Účet může mít jen dospělý. Potvrď prosím, že ti je aspoň 18."
-    }
+      "adult-required": "Účet může mít jen dospělý. Potvrď prosím, že ti je aspoň 18.",
+      "invalid-provider": "Tenhle způsob přihlášení teď není k dispozici. Zkus jiný, nebo e-mail."
+    },
+    "confirmWho": "Ještě potvrď, že jsi to ty",
+    "confirmWhoHint": "Hlas se uloží, jakmile se přihlásíš. Účet ti tím vznikne sám.",
+    "continueWith": {
+      "microsoft": "Pokračovat přes Microsoft",
+      "google": "Pokračovat přes Google",
+      "apple": "Pokračovat přes Apple"
+    },
+    "orEmail": "nebo e-mailem",
+    "sendLink": "Poslat potvrzovací odkaz",
+    "sentKeeps": "Odkaz platí 7 dní. A kdyby ses mezitím přihlásil(a) jinak, třeba přes Google, hlas se uloží taky. Nic se neztratí.",
+    "pendingIssue": {
+      "name-taken": "Tvůj hlas čeká na uložení, ale tohle jméno už tady někdo má. Napiš ho jinak a odešli znovu.",
+      "planning-closed": "Tvůj hlas čekal na uložení, ale hlasování mezitím skončilo.",
+      "invalid-selection": "Tvůj hlas čeká na uložení, ale termíny nebo chalupy se mezitím změnily. Vyber je znovu."
+    },
+    "pendingApproval": "Někdo hlasoval s tvým e-mailem bez přihlášení. Pokud jsi to byl(a) ty, zkontroluj výběr a odešli ho. Pokud ne:",
+    "discard": "zahodit tenhle hlas"
+  },
+  "confirm": {
+    "metaTitle": "Potvrzení hlasu",
+    "metaDescription": "Potvrzení hlasu v plánování výletu",
+    "title": "Potvrď svůj hlas",
+    "intro": "Hlasuješ jako <strong>{name}</strong> pro <strong>{chata}</strong>.",
+    "dates": "Můžeš",
+    "places": "Líbí se ti",
+    "noPlaces": "bez preference",
+    "button": "Potvrdit hlas a přihlásit se",
+    "busy": "Ukládám…",
+    "note": "Tím se zároveň přihlásíš. Hlas pak můžeš kdykoli upravit nebo vzít zpět.",
+    "invalidTitle": "Neplatný odkaz",
+    "invalidBody": "Tenhle odkaz nesedí. Použij prosím odkaz z e-mailu, nebo se rovnou přihlas.",
+    "expiredTitle": "Odkaz vypršel",
+    "expiredBody": "Odkaz platil 7 dní. Hlas ale nepropadl: stačí se přihlásit a uloží se sám.",
+    "goneTitle": "Hlas už tu není",
+    "goneBody": "Tenhle hlas mezitím zmizel, nejspíš ho někdo smazal. Zkus hlasovat znovu.",
+    "doneTitle": "Hlas už je uložený",
+    "doneBody": "Tenhle hlas je potvrzený. Na stránce chaty ho uvidíš a můžeš ho upravit.",
+    "issueTitle": "Hlas čeká na tebe",
+    "issueBody": "Přihlášení proběhlo, ale hlas se nepodařilo uložit sám. Na stránce chaty ho dokončíš.",
+    "open": "Otevřít stránku chaty",
+    "signIn": "Přihlásit se",
+    "signInEmail": "Přihlásit se e-mailem",
+    "errors": {
+      "generic": "To se nepovedlo. Zkus to prosím znovu.",
+      "expired": "Odkaz vypršel. Přihlas se a hlas se uloží sám.",
+      "invalid": "Odkaz nesedí. Použij prosím odkaz z e-mailu.",
+      "not-found": "Tenhle hlas už tu není.",
+      "rate-limited": "Příliš mnoho pokusů. Chvíli počkej a zkus to znovu.",
+      "superadmin_oauth": "Superadmin se přihlašuje jen přes Microsoft, Google nebo Apple.",
+      "used": "Odkaz už byl použitý. Přihlas se a hlas uvidíš na stránce chaty.",
+      "stale": "Tenhle odkaz patří ke staršímu hlasování. Použij odkaz z posledního e-mailu, nebo se přihlas."
+    },
+    "usedTitle": "Odkaz už byl použit",
+    "usedBody": "Tenhle odkaz slouží jen jednou a už byl použitý. Hlas je v pořádku: na stránce chaty ho uvidíš po přihlášení."
   }
 }
