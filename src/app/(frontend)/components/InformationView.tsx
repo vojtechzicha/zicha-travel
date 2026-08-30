@@ -1235,11 +1235,13 @@ export function InformationView({
 
   // "Momentky z alba" — hotlinked photos from the shared Google Photos
   // album, signed-in viewers only (the anonymous, indexable render stays
-  // photo-free). The component hides itself while loading and whenever the
-  // album gives it nothing, so this renders as a plain teaser next to the
-  // album link.
+  // photo-free). Not before the trip: whatever sits in the album then is
+  // noise (test shots, leftovers), and the hero already promotes the album
+  // link. During it's the live feed, after it's the memory reel and leads
+  // the page. The component hides itself while loading and whenever the
+  // album gives it nothing.
   const albumMomentsSection =
-    viewer.authenticated && chata.sharedAlbumUrl ? (
+    phase !== 'before' && viewer.authenticated && chata.sharedAlbumUrl ? (
       <AlbumMoments chataId={chata.id} albumUrl={chata.sharedAlbumUrl} />
     ) : null
 
@@ -1492,9 +1494,11 @@ export function InformationView({
   const body =
     phase === 'after'
       ? [
+          // memories first: real photos from the trip beat the pre-loaded
+          // gallery once the trip is over, so the gallery moves to the end
           albumMomentsSection,
-          gallerySection,
           flowColumns([destinationSection, whoWasSection], 'after-flow'),
+          gallerySection,
         ]
       : phase === 'during'
         ? [
@@ -1523,7 +1527,6 @@ export function InformationView({
             transportSection,
             contactSection,
             gallerySection,
-            albumMomentsSection,
           ]
 
   return (

@@ -353,7 +353,11 @@ API payload, no new endpoints).
   trip happens.
 - **"Momentky z alba"** (`AlbumMoments.tsx`): a strip of up to 8 photos
   hotlinked from the shared Google Photos album, next to a "celé album"
-  link — a teaser, not a replacement for the album. Google killed
+  link — a teaser, not a replacement for the album. Phase-gated: NOT shown
+  before the trip (pre-trip album content is noise; the hero already
+  promotes the album link), mid-page during, and FIRST section after —
+  where the pre-loaded gallery also drops below the recap columns, since
+  real trip photos beat promo shots once the trip is over. Google killed
   third-party API access to shared albums in 2025, so
   `GET /api/chatas/:id/album-photos` fetches the PUBLIC share page
   server-side and regexes the `lh3.googleusercontent.com/pw/…` base URLs
