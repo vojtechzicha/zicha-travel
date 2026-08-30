@@ -154,8 +154,9 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             <strong>E-maily.</strong> Posíláme jen provozní zprávy: přihlašovací odkazy,
-            potvrzení hlasu při plánování výletu, rozhodnutí o žádostech o propojení a žádosti o
-            potvrzení výdaje, který za vás zapsal někdo jiný. Žádný marketing.
+            potvrzení hlasu při plánování výletu, upozornění správcům chaty na nové hlasy při
+            plánování, rozhodnutí o žádostech o propojení a žádosti o potvrzení výdaje, který za
+            vás zapsal někdo jiný. Žádný marketing.
           </p>
           <p>
             <strong>Statistiky.</strong> Anonymní měření návštěvnosti stojí na oprávněném zájmu

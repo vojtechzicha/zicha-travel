@@ -224,7 +224,11 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      claim flow's job). Options are public read; votes are NOT (admins +
      own votes only) — the slug API ships `planning.votes` only to chata
      admins and viewers with a linked participant here, everyone else gets
-     the anonymous `voteCount` plus a "results after voting" hint
+     the anonymous `voteCount` plus a "results after voting" hint. Every
+     vote `recordVote` commits (new or changed, direct or via a confirmed
+     pending row) emails the chata's admins + superadmins — Czech-only
+     `voteAdminNotificationEmail`, sent post-commit, best-effort, the
+     voter's own account skipped
    - Pure rules (`accommodationAvailableFor`, `validateVoteSelection`,
      `canSeePlanningResults`, `tallyVotes`, `planningMonthsLabel`) in
      `src/lib/planning.ts`, unit-tested in `tests/int/planning.int.spec.ts`;

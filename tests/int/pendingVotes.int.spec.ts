@@ -7,7 +7,7 @@ import {
   verifyVoteConfirmToken,
   verifyVoteIntentToken,
 } from '@/lib/pendingVotes'
-import { voteConfirmEmail } from '@/lib/planningVoteEmail'
+import { voteAdminNotificationEmail, voteConfirmEmail } from '@/lib/planningVoteEmail'
 
 const secret = 'test-secret'
 
@@ -118,5 +118,54 @@ describe('voteConfirmEmail', () => {
     expect(cs.html).not.toContain('David <N.>')
     expect(cs.html).toContain('bez preference')
     expect(cs.text).toContain('bez preference')
+  })
+})
+
+describe('voteAdminNotificationEmail', () => {
+  const args = {
+    chataName: 'Přátelé',
+    voterName: 'David <N.>',
+    updated: false,
+    dates: ['16.–18. 10. 2026', '13.–15. 11. 2026'],
+    places: ['Chata Kloučka'],
+    voteCount: 3,
+    chataUrl: 'https://pratele.zicha.travel',
+  }
+
+  it('announces a new vote with the selection, the total and the results link', () => {
+    const mail = voteAdminNotificationEmail(args)
+    expect(mail.subject).toBe('Nový hlas na chatě Přátelé: David <N.>')
+    expect(mail.text).toContain('právě hlasoval(a)')
+    expect(mail.text).toContain('16.–18. 10. 2026, 13.–15. 11. 2026')
+    expect(mail.text).toContain('Chata Kloučka')
+    expect(mail.text).toContain('Zatím hlasovali 3 lidé.')
+    expect(mail.text).toContain(args.chataUrl)
+    expect(mail.html).toContain(args.chataUrl)
+  })
+
+  it('labels a changed vote as a change', () => {
+    const mail = voteAdminNotificationEmail({ ...args, updated: true })
+    expect(mail.subject).toBe('Změna hlasu na chatě Přátelé: David <N.>')
+    expect(mail.text).toContain('upravil(a) hlas')
+  })
+
+  it('uses the Czech plural forms for the running total', () => {
+    expect(voteAdminNotificationEmail({ ...args, voteCount: 1 }).text).toContain(
+      'Zatím hlasoval 1 člověk.',
+    )
+    expect(voteAdminNotificationEmail({ ...args, voteCount: 2 }).text).toContain(
+      'Zatím hlasovali 2 lidé.',
+    )
+    expect(voteAdminNotificationEmail({ ...args, voteCount: 5 }).text).toContain(
+      'Zatím hlasovalo 5 lidí.',
+    )
+  })
+
+  it('escapes names in the HTML and words an empty place list', () => {
+    const mail = voteAdminNotificationEmail({ ...args, places: [] })
+    expect(mail.html).toContain('David &lt;N.&gt;')
+    expect(mail.html).not.toContain('<strong>David <N.></strong>')
+    expect(mail.html).toContain('bez preference')
+    expect(mail.text).toContain('bez preference')
   })
 })
