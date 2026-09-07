@@ -118,6 +118,24 @@ export function referrerHost(referrer: string | null | undefined): string {
   }
 }
 
+/** A `$exception` the browser masked. Scripts from another origin loaded
+ *  without CORS (extensions, webview injections) throw as the literal
+ *  "Script error." with no stack — nothing to act on, so before_send drops
+ *  them. Our own cross-origin script (Turnstile) is loaded with
+ *  crossorigin="anonymous", so a real failure there arrives unmasked. */
+export function isMaskedScriptError(event: {
+  event?: string
+  properties?: Record<string, unknown> | null
+}): boolean {
+  if (event.event !== '$exception') return false
+  const list = event.properties?.$exception_list
+  if (!Array.isArray(list) || list.length === 0) return false
+  return list.every((entry) => {
+    const value = (entry as { value?: unknown } | null)?.value
+    return typeof value === 'string' && /^Script error\.?$/.test(value.trim())
+  })
+}
+
 /** Drop props whose key is on the denylist — a misuse becomes a silently
  *  missing prop (and a failing unit test), never transmitted PII. */
 export function scrubProps<T extends Record<string, unknown>>(props: T): Record<string, unknown> {
