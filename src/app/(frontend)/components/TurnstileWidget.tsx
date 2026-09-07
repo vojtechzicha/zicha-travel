@@ -44,6 +44,10 @@ function ensureScript(): Promise<TurnstileApi> {
       script.id = SCRIPT_ID
       script.src = SCRIPT_SRC
       script.async = true
+      // Cloudflare serves Access-Control-Allow-Origin: * — with the
+      // attribute the browser hands exceptions from this script to
+      // window.onerror unmasked instead of as "Script error."
+      script.crossOrigin = 'anonymous'
       script.onerror = () => reject(new Error('Turnstile script failed to load'))
       document.head.appendChild(script)
     }

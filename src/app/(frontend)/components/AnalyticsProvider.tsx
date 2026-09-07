@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import posthog from 'posthog-js'
 import {
   isCaptureEnvironment,
+  isMaskedScriptError,
   registerAnalyticsClient,
   sanitizeUrl,
   referrerHost,
@@ -49,6 +50,9 @@ export function AnalyticsProvider() {
         capture_performance: { web_vitals: true }, // $web_vitals (phase 4)
         persistence: 'localStorage+cookie',
         before_send: (event) => {
+          // a cross-origin "Script error." carries no message, file or
+          // stack — it only clutters the issue list
+          if (event && isMaskedScriptError(event)) return null
           // PRD privacy rule 4: strip identifying params from every URL-ish
           // property on every event, whatever produced it
           if (event?.properties) {
