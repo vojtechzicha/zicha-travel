@@ -368,3 +368,165 @@ route to the indexing rules (noindex, token-gated).
    request?
 6. The debt reminder cadence (7 and 21 days) and the weekly cap (3 per
    chata?) are guesses; the first real trip should decide them.
+
+## Second pass: what was hiding
+
+Reading the first pass back, it is a textbook engine (outbox, digest,
+preferences, push) bolted onto a product that is not a textbook product.
+The peculiar facts of zicha.travel are: the group is co-located for the
+trip, it already has a chat we do not own, most of the people will never
+sign in, the banker is a human hub, and money is the only thing anyone
+truly waits for. Each of those hides a better idea than "send an email".
+
+### 1. Close the loop: the missing notification is "dostal jsem to"
+
+Every settlement flow in the app ends at the debtor: the QR is shown, the
+amount is named, and then the story stops. Nobody ever learns that the
+money arrived. That confirmation is the one notification with a pulse, and
+today it is impossible, because the app never sees the banker's account.
+
+The deterministic way in: give every participant a **variable symbol** per
+chata (a short stable code derived from participant and chata ids, printed
+into the QR next to the amount). The banker then pastes or uploads their
+bank statement export (Fio, ČSOB, Air Bank, Raiffeisen all export CSV; a
+parser per format is boring code, and a paste of "VS, částka, datum" lines
+is the universal fallback). Matching by variable symbol and amount is a
+lookup, not a guess, so decision 2 (no AI) holds. Each match creates the
+`supplement` prepayment the banker would otherwise type, and fires
+**"Pokladník přijal tvých 1 240 Kč, máš hotovo"** to the payer. The banker's
+"Kdo ještě dluží" list empties itself. A Fio read-only API token could
+automate the pull later; it is a new processor and deserves its own
+decision, the statement paste is not.
+
+### 2. Uzávěrka: a deadline the group can see runs the whole after-phase
+
+The first pass asked whether settlement should be an explicit banker step
+or inferred from quiet days. Both are the banker's private decision.
+Better: a public **uzávěrka výdajů** date on the chata (default: trip end +
+7 days, editable), shown on Finance and Informace as a countdown. It gives
+every after-phase moment a natural trigger and a natural tone:
+
+- "Ještě 3 dny na zapsání výdajů" (digest, once) and "zítra je uzávěrka"
+  (instant, only to people with planned or receipt-less expenses).
+- At uzávěrka the journal freezes for frontend authors (late expenses go
+  through an admin, with a "po uzávěrce" badge), `calculateStats` becomes
+  the final bill, and the settlement emails go out **by themselves**, with
+  no banker action.
+- The banker's own moment turns from "please decide" to "vyúčtování
+  odešlo, čekáš na 3 platby".
+
+People respond to deadlines they can see, and a deadline that everyone
+shares removes the awkwardness of one person having to say "so, money".
+
+### 3. The group chat is the channel. Design for forwarding, not sending
+
+This group has a WhatsApp/Messenger thread and will keep it. Instead of
+competing with it, every digest and settlement moment renders as a
+**forwardable card**: a public-safe page (`/[chata]/novinky/<id>`) whose
+Open Graph image carries the headline in counts, never names ("Vyúčtování
+je hotové · 12 lidí · 3 doplatky"), so a pasted link unfurls into a
+poster in the thread. The banker's Finance view gets a "Poslat do skupiny"
+button that opens `https://wa.me/?text=…` (or the share sheet on mobile,
+`navigator.share`) with the humanized message prefilled. No phone number
+ever touches the server, no new processor appears, and the largest
+audience, the people who never sign in, receives the notification through
+the one channel they read. The per-person version is the same button on a
+debtor's row: "Připomenout Karlovi" → share sheet with "Ahoj Karle,
+doplatek za Lipno je 1 240 Kč, QR tady: …". Human relay, one tap.
+
+### 4. Reply is the action
+
+Signed links are scanner-safe but still need a browser and a session. For
+the money asks, let the **reply** be the answer: settlement and reminder
+emails go out with a `Reply-To` of `odpoved+<signed-token>@…` (Resend
+supports inbound mail; one new route verifies the token and reads only the
+first line). "zaplaceno" or "ano" files the self-report, "ne" or anything
+else lands in the banker's digest as a note. Mail scanners never reply, so
+the token stays safe; the token is single-use and bound to the ledger row
+like the decide links. This also opens the chata mailbox idea
+(`lipno@…` receiving the booking confirmation as an attachment on the
+chata) for free, but that is a different PRD.
+
+### 5. Rank by money at stake, not by recency
+
+A cap of N per week treats a 20 Kč share and a 3 000 Kč doplatek the same.
+The policy layer should instead score each candidate:
+
+```
+score = amountForRecipient / medianShareInThisChata × urgency(daysToDeadline) × novelty
+```
+
+and let the dial set the threshold, not a count. A tiny share never leaves
+the passive strip; a large one crosses into email; a large one with a
+deadline tomorrow crosses into push. The scale comes from the chata itself
+(median share), so a cheap weekend and an expensive fortnight both feel
+right without a settings page.
+
+### 6. Snooze and "připomeň mi"
+
+Every card in the app gets two quiet controls: **odložit** (tomorrow, in a
+week, day before uzávěrka) and, on anything with an amount, **připomeň mi
+zaplatit** with a date. Self-scheduled nudges are the only kind nobody
+resents, and they turn the inbox into a to-do list the person owns. The
+tick delivers them like any scheduled moment; the ledger row just carries
+a `remindAt`.
+
+### 7. The ledger is the chronicle
+
+Moments are already sentences. Rendered in order on a `Kronika` tab, the
+ledger becomes the trip's diary: "12. 9. Jana přijela · Karel zapsal první
+výdaj (pivo, 640 Kč) · 14. 9. odjezd · 21. 9. uzávěrka · 3. 10.
+vyúčtováno". Same visibility filters as everything else (private and
+pending rows never appear, anonymous viewers see counts). It costs nothing
+extra, it gives the "Proběhla" recap a spine, and it makes the retention
+warning read as the last line of a story rather than a threat.
+
+### 8. Tell people at the door, not at 07:00
+
+The PWA runs on the phone that is physically arriving. With a one-time,
+client-side geolocation opt-in (nothing sent to the server; the check runs
+in the app against `destinationLat/Lng` on arrival day), the "Klíče a
+Wi-Fi" card and the "kdo už dorazil" strip appear when the person is
+within a few hundred metres, and the check-out morning shows the "před
+odjezdem" list (packing, keys, photos). The right moment for that
+information is the doorstep, and no server-side schedule can find it.
+
+### 9. Send digests when the person usually opens the app
+
+`lastSeenAt` history (a handful of timestamps) gives each account a
+typical hour. The tick delivers that person's digest in the slot before it
+(the "ranní kafe" rule), so the email is on top of the inbox when they
+already reach for the app, and the open rate is not something we have to
+buy with a louder subject line. Purely derived, no analytics involved,
+falls back to 07:00.
+
+### 10. The tabule: an ambient screen at the cottage
+
+During the trip the group is in one room. A kiosk render
+(`?view=tabule`, auto-refreshing, large type, signed-in session on the
+tablet or TV) shows today's program, who has arrived, the running total
+of the pot and a QR that opens the composer. Notifications during the trip
+then need no phone at all: the room is the channel. It is a display mode,
+not an engine feature, but it answers "what do we tell people during the
+trip" better than push does, and it is the one place a morning "Dnes: výlet
+na Ještěd" line is charming every day.
+
+### What this changes in the plan
+
+- Phase 2 (settlement) grows the variable symbol, the statement paste and
+  the uzávěrka; the "Výdaje jsou kompletní" question is answered by the
+  deadline.
+- Phase 3 (digests) gains the forwardable card and the share buttons, which
+  reach more people than any email in the plan, and the ranking replaces
+  the weekly cap.
+- Reply-to-act joins phase 2 if Resend inbound proves reliable in a spike;
+  otherwise it waits.
+- Push (phase 4) becomes less important, not more: the doorstep cards and
+  the tabule cover most of what push was for during the trip, and the
+  share sheet covers the people push could never reach.
+- Open question 4 (is Web Push worth a new processor) leans "not yet".
+- New open questions: 7. which bank exports to support first (the
+  banker's own bank decides), 8. whether uzávěrka freezes the journal or
+  only badges late rows, 9. whether inbound mail is acceptable under the
+  policy's recipient table (Resend is already listed; the direction
+  changes, the processor does not).
