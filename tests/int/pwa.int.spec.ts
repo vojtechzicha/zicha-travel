@@ -116,10 +116,22 @@ describe('serviceWorkerSource', () => {
 describe('manualInstallGuide', () => {
   const IPHONE_SAFARI =
     'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+  const IPHONE_SAFARI_OLD =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1'
   const IPHONE_CHROME =
     'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.0.0 Mobile/15E148 Safari/604.1'
+  const IPHONE_CHROME_16_4 =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1'
+  const IPHONE_CHROME_16_3 =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/110.0.5481.83 Mobile/15E148 Safari/604.1'
+  const IPHONE_FIREFOX_OLD =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/107.0 Mobile/15E148 Safari/605.1.15'
+  const IPHONE_INSTAGRAM =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 350.0.0.0'
   const IPAD_OLD =
     'Mozilla/5.0 (iPad; CPU OS 12_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1'
+  const IPAD_DESKTOP_CHROME =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.0.0 Version/11.1.1 Safari/605.1.15'
   const MAC_SAFARI_17 =
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15'
   const MAC_SAFARI_16 =
@@ -135,9 +147,23 @@ describe('manualInstallGuide', () => {
   const guide = (userAgent: string, maxTouchPoints = 0, standalone = false) =>
     manualInstallGuide({ userAgent, maxTouchPoints, standalone })
 
-  it('walks iPhone users through the share sheet, whatever the browser', () => {
+  it('walks Safari on iPhone through the share sheet on any iOS version', () => {
     expect(guide(IPHONE_SAFARI, 5)).toBe('ios')
+    expect(guide(IPHONE_SAFARI_OLD, 5)).toBe('ios')
+  })
+
+  it('trusts third-party iOS browsers from 16.4, where the share sheet gained the action', () => {
     expect(guide(IPHONE_CHROME, 5)).toBe('ios')
+    expect(guide(IPHONE_CHROME_16_4, 5)).toBe('ios')
+  })
+
+  it('sends older third-party iOS browsers to Safari first', () => {
+    expect(guide(IPHONE_CHROME_16_3, 5)).toBe('ios-safari-needed')
+    expect(guide(IPHONE_FIREFOX_OLD, 5)).toBe('ios-safari-needed')
+  })
+
+  it('sends in-app browsers to Safari — their share menus never offer it', () => {
+    expect(guide(IPHONE_INSTAGRAM, 5)).toBe('ios-safari-needed')
   })
 
   it('treats a touch-capable "Macintosh" as an iPad — iPadOS Safari hides behind a Mac UA', () => {
@@ -145,7 +171,11 @@ describe('manualInstallGuide', () => {
     expect(guide(IPAD_OLD, 5)).toBe('ios')
   })
 
-  it('offers "Add to Dock" only in Safari 17+ on a real Mac', () => {
+  it('cannot read the iPadOS version behind a desktop-mode third-party browser, so plays safe', () => {
+    expect(guide(IPAD_DESKTOP_CHROME, 5)).toBe('ios-safari-needed')
+  })
+
+  it('offers "Add to Dock" in Safari 17+ on a real Mac (the macOS version is not in the UA)', () => {
     expect(guide(MAC_SAFARI_17)).toBe('mac-safari')
     expect(guide(MAC_SAFARI_16)).toBeNull()
   })

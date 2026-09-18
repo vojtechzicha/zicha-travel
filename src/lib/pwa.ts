@@ -98,17 +98,27 @@ export function buildManifest({ bridged, vercelEnv }: ManifestOptions) {
  * WebKit never does, so on iPhone/iPad (every browser there is WebKit) and
  * in Safari on the Mac the link opens a short walkthrough instead:
  *
- * - `ios`: Share button → "Add to Home Screen" (the share sheet route,
- *   which third-party iOS browsers offer too). iPadOS Safari reports a Mac
- *   user agent, so a touch-capable "Macintosh" counts as iOS.
+ * - `ios`: Share button → "Add to Home Screen" from the browser the person
+ *   is in. Safari has always had it; other browsers got it as a system
+ *   share-sheet action in iOS 16.4. iPadOS Safari reports a Mac user
+ *   agent, so a touch-capable "Macintosh" counts as iPadOS.
+ * - `ios-safari-needed`: the same walkthrough, prefixed with "open this
+ *   page in Safari" — for a third-party browser on iOS before 16.4 (or one
+ *   whose iOS version the UA hides, the iPad desktop-mode case), and for
+ *   in-app browsers (no `Safari/` token: Instagram, Facebook, mail apps),
+ *   whose share menus never offer it on any version.
  * - `mac-safari`: File → "Add to Dock", available since Safari 17. Older
  *   Safari has no install at all, and Chromium-based Mac browsers take the
- *   native path, so both yield null.
+ *   native path, so both yield null. The command also needs macOS Sonoma,
+ *   which the UA cannot tell: Safari freezes its platform string at
+ *   "Mac OS X 10_15_7" on every macOS since Catalina, so Ventura and
+ *   Sonoma look identical here. The sheet states the requirement instead
+ *   of pretending to know.
  *
  * Inside an installed app (standalone display mode) there is nothing left
  * to install, so the guide never shows there.
  */
-export type ManualInstallGuide = 'ios' | 'mac-safari'
+export type ManualInstallGuide = 'ios' | 'ios-safari-needed' | 'mac-safari'
 
 export interface InstallEnvironment {
   userAgent: string
@@ -118,7 +128,29 @@ export interface InstallEnvironment {
   standalone: boolean
 }
 
-const NON_SAFARI_ENGINES = /Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/i
+/** Browser vendor tokens that mean "WebKit, but not Safari itself". */
+const NON_SAFARI_BROWSERS = /Chrome|Chromium|CriOS|Edg|OPR|OPT|Firefox|FxiOS|DuckDuckGo/i
+
+/** iOS/iPadOS version from "CPU iPhone OS 16_4 like" / "CPU OS 16_4 like". */
+function iosVersion(userAgent: string): [number, number] | null {
+  const match = / OS (\d+)_(\d+)/.exec(userAgent)
+  return match ? [Number(match[1]), Number(match[2])] : null
+}
+
+/** iOS 16.4 opened "Add to Home Screen" to every browser's share sheet. */
+function shareSheetInstallAvailable(userAgent: string): boolean {
+  const version = iosVersion(userAgent)
+  if (!version) return false
+  const [major, minor] = version
+  return major > 16 || (major === 16 && minor >= 4)
+}
+
+function iosGuide(userAgent: string): ManualInstallGuide {
+  // An in-app browser announces itself by leaving out the Safari token
+  if (!/Safari\//.test(userAgent)) return 'ios-safari-needed'
+  if (!NON_SAFARI_BROWSERS.test(userAgent)) return 'ios'
+  return shareSheetInstallAvailable(userAgent) ? 'ios' : 'ios-safari-needed'
+}
 
 export function manualInstallGuide({
   userAgent,
@@ -126,10 +158,10 @@ export function manualInstallGuide({
   standalone,
 }: InstallEnvironment): ManualInstallGuide | null {
   if (standalone) return null
-  if (/iPhone|iPad|iPod/i.test(userAgent)) return 'ios'
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return iosGuide(userAgent)
   if (!/Macintosh/i.test(userAgent)) return null
-  if (maxTouchPoints > 1) return 'ios'
-  if (!/Safari\//.test(userAgent) || NON_SAFARI_ENGINES.test(userAgent)) return null
+  if (maxTouchPoints > 1) return iosGuide(userAgent)
+  if (!/Safari\//.test(userAgent) || NON_SAFARI_BROWSERS.test(userAgent)) return null
   const version = Number(/Version\/(\d+)/.exec(userAgent)?.[1])
   return version >= 17 ? 'mac-safari' : null
 }

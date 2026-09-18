@@ -33,8 +33,12 @@
       "step2Chip": "Add"
     },
     "note": "The icon on your home screen opens this site as an app, without going through the App Store.",
-    "noteMac": "The icon in your Dock opens this site as an app, without going through the App Store.",
-    "close": "Got it"
+    "noteMac": "The icon in your Dock opens this site as an app, without going through the App Store. The menu item is there in Safari on macOS Sonoma and later.",
+    "close": "Got it",
+    "openSafari": {
+      "step": "Open this page in Safari",
+      "hint": "This browser can't add it to the home screen. Safari can."
+    }
   },
   "offline": {
     "title": "You're offline",

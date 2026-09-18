@@ -33,8 +33,12 @@
       "step2Chip": "Přidat"
     },
     "note": "Ikona na ploše otevře tenhle web jako aplikaci, App Store k tomu nepotřebuješ.",
-    "noteMac": "Ikona v Docku otevře tenhle web jako aplikaci, App Store k tomu nepotřebuješ.",
-    "close": "Rozumím"
+    "noteMac": "Ikona v Docku otevře tenhle web jako aplikaci, App Store k tomu nepotřebuješ. Položku v nabídce má Safari na macOS Sonoma a novějším.",
+    "close": "Rozumím",
+    "openSafari": {
+      "step": "Otevři tuhle stránku v Safari",
+      "hint": "V tomhle prohlížeči přidání na plochu nejde, v Safari ano."
+    }
   },
   "offline": {
     "title": "Jsi offline",

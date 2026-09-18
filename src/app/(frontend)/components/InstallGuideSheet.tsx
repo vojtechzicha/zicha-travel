@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
-import { Dock, Share, SquarePlus, X } from 'lucide-react'
+import { Compass, Dock, Share, SquarePlus, X } from 'lucide-react'
 import type { ManualInstallGuide } from '@/lib/pwa'
 import { useAppTheme } from '../utils/useAppTheme'
 
@@ -21,6 +21,12 @@ import { useAppTheme } from '../utils/useAppTheme'
  * button — so the sheet can be matched against the real share sheet at a
  * glance rather than read.
  */
+interface Step {
+  text: string
+  chip?: React.ReactNode
+  hint?: string
+}
+
 export function InstallGuideSheet({
   guide,
   onClose,
@@ -50,27 +56,39 @@ export function InstallGuideSheet({
     }
   }, [onClose])
 
-  const steps: { text: string; chip?: React.ReactNode; hint?: string }[] =
+  const iosSteps: Step[] = [
+    {
+      text: t('ios.step1'),
+      chip: <MenuChip icon={<Share size={15} strokeWidth={2.25} />} />,
+      hint: t('ios.step1Hint'),
+    },
+    {
+      text: t('ios.step2'),
+      chip: <MenuChip icon={<SquarePlus size={15} strokeWidth={2.25} />} label={t('ios.step2Chip')} />,
+    },
+    { text: t('ios.step3'), chip: <MenuChip label={t('ios.step3Chip')} accent /> },
+  ]
+  const steps: Step[] =
     guide === 'ios'
-      ? [
-          {
-            text: t('ios.step1'),
-            chip: <MenuChip icon={<Share size={15} strokeWidth={2.25} />} />,
-            hint: t('ios.step1Hint'),
-          },
-          {
-            text: t('ios.step2'),
-            chip: <MenuChip icon={<SquarePlus size={15} strokeWidth={2.25} />} label={t('ios.step2Chip')} />,
-          },
-          { text: t('ios.step3'), chip: <MenuChip label={t('ios.step3Chip')} accent /> },
-        ]
-      : [
-          {
-            text: t('macSafari.step1'),
-            chip: <MenuChip icon={<Dock size={15} strokeWidth={2.25} />} label={t('macSafari.step1Chip')} />,
-          },
-          { text: t('macSafari.step2'), chip: <MenuChip label={t('macSafari.step2Chip')} accent /> },
-        ]
+      ? iosSteps
+      : guide === 'ios-safari-needed'
+        ? [
+            // The browser in hand cannot do it (old third-party browser or an
+            // in-app one), so Safari comes first and the rest is the same
+            {
+              text: t('openSafari.step'),
+              chip: <MenuChip icon={<Compass size={15} strokeWidth={2.25} />} label="Safari" />,
+              hint: t('openSafari.hint'),
+            },
+            ...iosSteps,
+          ]
+        : [
+            {
+              text: t('macSafari.step1'),
+              chip: <MenuChip icon={<Dock size={15} strokeWidth={2.25} />} label={t('macSafari.step1Chip')} />,
+            },
+            { text: t('macSafari.step2'), chip: <MenuChip label={t('macSafari.step2Chip')} accent /> },
+          ]
 
   return createPortal(
     <div
@@ -142,7 +160,7 @@ export function InstallGuideSheet({
         </ol>
 
         <p className="text-[13px] leading-snug text-gray-500 dark:text-slate-400 mb-4">
-          {guide === 'ios' ? t('note') : t('noteMac')}
+          {guide === 'mac-safari' ? t('noteMac') : t('note')}
         </p>
 
         <button
