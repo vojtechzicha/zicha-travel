@@ -15,6 +15,27 @@
     "signIn": "Sign in",
     "installApp": "Install the app"
   },
+  "installGuide": {
+    "title": "zicha.travel as an app",
+    "intro": "Add this site to your home screen. It then opens like an app, full screen.",
+    "ios": {
+      "step1": "Tap the Share button",
+      "step1Hint": "the square with an arrow in your browser toolbar",
+      "step2": "Scroll down the menu and choose",
+      "step2Chip": "Add to Home Screen",
+      "step3": "Confirm in the top right with",
+      "step3Chip": "Add"
+    },
+    "macSafari": {
+      "step1": "Open the File menu and choose",
+      "step1Chip": "Add to Dock",
+      "step2": "Confirm with",
+      "step2Chip": "Add"
+    },
+    "note": "The icon on your home screen opens this site as an app, without going through the App Store.",
+    "noteMac": "The icon in your Dock opens this site as an app, without going through the App Store.",
+    "close": "Got it"
+  },
   "offline": {
     "title": "You're offline",
     "body": "This page needs an internet connection. Try again once you're back online.",

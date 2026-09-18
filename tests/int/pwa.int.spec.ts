@@ -4,6 +4,7 @@ import {
   buildManifest,
   OFFLINE_PATH,
   PWA_BRIDGE_PATH,
+  manualInstallGuide,
 } from '@/lib/pwa'
 import { serviceWorkerSource } from '@/lib/serviceWorkerSource'
 
@@ -109,5 +110,58 @@ describe('serviceWorkerSource', () => {
   it('is a self-contained classic script', () => {
     expect(source).not.toMatch(/\bimport\b/)
     expect(source).not.toMatch(/\bexport\b/)
+  })
+})
+
+describe('manualInstallGuide', () => {
+  const IPHONE_SAFARI =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+  const IPHONE_CHROME =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.0.0 Mobile/15E148 Safari/604.1'
+  const IPAD_OLD =
+    'Mozilla/5.0 (iPad; CPU OS 12_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1'
+  const MAC_SAFARI_17 =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15'
+  const MAC_SAFARI_16 =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15'
+  const MAC_CHROME =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
+  const MAC_FIREFOX = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.6; rv:130.0) Gecko/20100101 Firefox/130.0'
+  const ANDROID_CHROME =
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36'
+  const WINDOWS_EDGE =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0'
+
+  const guide = (userAgent: string, maxTouchPoints = 0, standalone = false) =>
+    manualInstallGuide({ userAgent, maxTouchPoints, standalone })
+
+  it('walks iPhone users through the share sheet, whatever the browser', () => {
+    expect(guide(IPHONE_SAFARI, 5)).toBe('ios')
+    expect(guide(IPHONE_CHROME, 5)).toBe('ios')
+  })
+
+  it('treats a touch-capable "Macintosh" as an iPad — iPadOS Safari hides behind a Mac UA', () => {
+    expect(guide(MAC_SAFARI_17, 5)).toBe('ios')
+    expect(guide(IPAD_OLD, 5)).toBe('ios')
+  })
+
+  it('offers "Add to Dock" only in Safari 17+ on a real Mac', () => {
+    expect(guide(MAC_SAFARI_17)).toBe('mac-safari')
+    expect(guide(MAC_SAFARI_16)).toBeNull()
+  })
+
+  it('stays out of the way where the browser fires beforeinstallprompt itself', () => {
+    expect(guide(MAC_CHROME)).toBeNull()
+    expect(guide(ANDROID_CHROME, 5)).toBeNull()
+    expect(guide(WINDOWS_EDGE)).toBeNull()
+  })
+
+  it('has nothing to offer where no install exists', () => {
+    expect(guide(MAC_FIREFOX)).toBeNull()
+  })
+
+  it('never shows inside the installed app', () => {
+    expect(guide(IPHONE_SAFARI, 5, true)).toBeNull()
+    expect(guide(MAC_SAFARI_17, 0, true)).toBeNull()
   })
 })

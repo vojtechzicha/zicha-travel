@@ -15,6 +15,27 @@
     "signIn": "Přihlásit se",
     "installApp": "Nainstalovat aplikaci"
   },
+  "installGuide": {
+    "title": "zicha.travel jako aplikace",
+    "intro": "Přidej si web na plochu. Otevře se pak jako aplikace, na celou obrazovku.",
+    "ios": {
+      "step1": "Klepni na tlačítko Sdílet",
+      "step1Hint": "čtvereček se šipkou nahoru v liště prohlížeče",
+      "step2": "Sjeď v nabídce dolů a vyber",
+      "step2Chip": "Přidat na plochu",
+      "step3": "Vpravo nahoře potvrď",
+      "step3Chip": "Přidat"
+    },
+    "macSafari": {
+      "step1": "V nabídce Soubor vyber",
+      "step1Chip": "Přidat do Docku",
+      "step2": "Potvrď tlačítkem",
+      "step2Chip": "Přidat"
+    },
+    "note": "Ikona na ploše otevře tenhle web jako aplikaci, App Store k tomu nepotřebuješ.",
+    "noteMac": "Ikona v Docku otevře tenhle web jako aplikaci, App Store k tomu nepotřebuješ.",
+    "close": "Rozumím"
+  },
   "offline": {
     "title": "Jsi offline",
     "body": "Bez připojení k internetu se tahle stránka nenačte. Zkus to znovu, až budeš zase online.",

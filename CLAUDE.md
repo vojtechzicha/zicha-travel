@@ -686,8 +686,14 @@ notes live in `src/lib/pwa.ts`, pure parts unit-tested in
   rolling `POST /api/auth/refresh`. The localStorage throttle stamp
   `zt_session_refreshed_at` and the offline cache are disclosed in the
   privacy policy ch. 11 (both locales + both page modules) — keep in sync.
-- Footer "Nainstalovat aplikaci" (`InstallAppLink`) renders only when the
-  browser fires `beforeinstallprompt` and triggers the native dialog.
+- Footer "Nainstalovat aplikaci" (`InstallAppLink`): where the browser
+  fires `beforeinstallprompt` (Chromium) the click triggers the native
+  dialog; where WebKit never will (iPhone/iPad in any browser, Safari 17+
+  on the Mac) the same link opens `InstallGuideSheet`, a walkthrough of
+  Share → "Přidat na plochu" / Soubor → "Přidat do Docku" (strings in
+  `common.installGuide`). Which case applies is `manualInstallGuide` in
+  `src/lib/pwa.ts` (unit-tested); nothing renders elsewhere or inside the
+  installed app (standalone display mode).
 
 ### Relationship Filtering
 

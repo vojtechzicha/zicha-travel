@@ -91,3 +91,45 @@ export function buildManifest({ bridged, vercelEnv }: ManifestOptions) {
     icons,
   }
 }
+
+/**
+ * Where the install has to be done by hand. Chromium fires
+ * `beforeinstallprompt` and the footer link can trigger the native dialog;
+ * WebKit never does, so on iPhone/iPad (every browser there is WebKit) and
+ * in Safari on the Mac the link opens a short walkthrough instead:
+ *
+ * - `ios`: Share button → "Add to Home Screen" (the share sheet route,
+ *   which third-party iOS browsers offer too). iPadOS Safari reports a Mac
+ *   user agent, so a touch-capable "Macintosh" counts as iOS.
+ * - `mac-safari`: File → "Add to Dock", available since Safari 17. Older
+ *   Safari has no install at all, and Chromium-based Mac browsers take the
+ *   native path, so both yield null.
+ *
+ * Inside an installed app (standalone display mode) there is nothing left
+ * to install, so the guide never shows there.
+ */
+export type ManualInstallGuide = 'ios' | 'mac-safari'
+
+export interface InstallEnvironment {
+  userAgent: string
+  /** navigator.maxTouchPoints — tells iPadOS apart from a real Mac. */
+  maxTouchPoints?: number
+  /** Already running as an installed app. */
+  standalone: boolean
+}
+
+const NON_SAFARI_ENGINES = /Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/i
+
+export function manualInstallGuide({
+  userAgent,
+  maxTouchPoints = 0,
+  standalone,
+}: InstallEnvironment): ManualInstallGuide | null {
+  if (standalone) return null
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return 'ios'
+  if (!/Macintosh/i.test(userAgent)) return null
+  if (maxTouchPoints > 1) return 'ios'
+  if (!/Safari\//.test(userAgent) || NON_SAFARI_ENGINES.test(userAgent)) return null
+  const version = Number(/Version\/(\d+)/.exec(userAgent)?.[1])
+  return version >= 17 ? 'mac-safari' : null
+}
