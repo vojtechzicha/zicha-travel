@@ -4,6 +4,7 @@ import {
   estimatedTotal,
   mergeCartLines,
   refreshedRohlik,
+  sendRoute,
 } from '@/lib/shopping'
 
 describe('canEditShoppingItem', () => {
@@ -127,5 +128,23 @@ describe('refreshedRohlik', () => {
 
   it('keeps the stored price when Rohlík sends none', () => {
     expect(refreshedRohlik(stored, fresh({ price: null }), now).rohlik.price).toBe(34.9)
+  })
+})
+
+describe('sendRoute', () => {
+  it('sends Rohlík products to the cart', () => {
+    expect(sendRoute({ productId: '712705', inStock: true })).toBe('cart')
+    // never checked, or Rohlík didn't say: try the cart
+    expect(sendRoute({ productId: '712705' })).toBe('cart')
+    expect(sendRoute({ productId: '712705', inStock: null })).toBe('cart')
+  })
+
+  it('keeps sold-out products out of the cart', () => {
+    expect(sendRoute({ productId: '712705', inStock: false })).toBe('soldOut')
+  })
+
+  it('routes free-text items to the checklist', () => {
+    expect(sendRoute(null)).toBe('text')
+    expect(sendRoute({ productId: null, inStock: false })).toBe('text')
   })
 })

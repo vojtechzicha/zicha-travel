@@ -107,9 +107,11 @@
   "thanks": "Enjoy!",
   "stamp": "In the cart",
   "soldOut": "Sold out right now",
+  "sendAddressHint": "Before you send the list, set the chata as your delivery address on Rohlík. Stock and prices follow that address.",
   "sendHint": "Sends only what hasn't gone yet. Anything Rohlík can't take comes to you by email.",
   "finishOrder": "Finish the order on Rohlík",
   "sendEmailed": "The list of what to add by hand is in your email too.",
+  "sendSoldOut": "{count, plural, one {# item is sold out on Rohlík right now and didn't go in the cart.} other {# items are sold out on Rohlík right now and didn't go in the cart.}}",
   "allSent": "Everything's sent. The button turns on again when someone adds something.",
   "handedOver": "the banker adds it by hand",
   "stampSent": "Sent"

@@ -88,6 +88,20 @@ export function mergeCartLines(
   return [...lines.values()]
 }
 
+/**
+ * Where a pending item goes on "Poslat do košíku": a Rohlík product into
+ * the cart, unless the last check found it sold out; sold-out products and
+ * free-text items land on the "přidej ručně" checklist email instead.
+ */
+export type SendRoute = 'cart' | 'soldOut' | 'text'
+
+export function sendRoute(
+  rohlik?: { productId?: string | null; inStock?: boolean | null } | null,
+): SendRoute {
+  if (!rohlik?.productId) return 'text'
+  return rohlik.inStock === false ? 'soldOut' : 'cart'
+}
+
 export interface StoredRohlik {
   productId?: string | null
   name?: string | null

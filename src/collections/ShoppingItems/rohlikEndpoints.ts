@@ -17,7 +17,7 @@ import {
   signConnectState,
   verifyConnectState,
 } from '@/lib/rohlik/oauth'
-import { mergeCartLines } from '@/lib/shopping'
+import { mergeCartLines, sendRoute } from '@/lib/shopping'
 import type { ManualItem } from '@/lib/shoppingEmail'
 import { notifyManualItems } from '@/utils/shoppingEmail'
 import { refreshChataPrices } from '@/utils/rohlikPriceRefresh'
@@ -261,13 +261,19 @@ export const rohlikEndpoints: Endpoint[] = [
           return { item, quantity, delta: quantity - already }
         })
         .filter(({ delta }) => delta > 0)
-      const skipped = pending.filter(({ item }) => !item.rohlik?.productId).length
+      const routed = pending.map((entry) => ({ ...entry, route: sendRoute(entry.item.rohlik) }))
+      const skipped = routed.filter(({ route }) => route === 'text').length
+      // sold out at the check above: not in the cart, not marked sent, so a
+      // later send picks them up once Rohlík has them again
+      const soldOut = routed.filter(({ route }) => route === 'soldOut').length
       const lines = mergeCartLines(
-        pending.map(({ item, delta }) => ({
-          title: item.title,
-          quantity: delta,
-          rohlik: item.rohlik,
-        })),
+        routed
+          .filter(({ route }) => route === 'cart')
+          .map(({ item, delta }) => ({
+            title: item.title,
+            quantity: delta,
+            rohlik: item.rohlik,
+          })),
       )
 
       let report: Awaited<ReturnType<typeof addToCart>>
@@ -280,9 +286,9 @@ export const rohlikEndpoints: Endpoint[] = [
 
       const added = new Set(report.added)
       const sentAt = new Date().toISOString()
-      for (const { item, quantity } of pending) {
+      for (const { item, quantity, route } of routed) {
         const productId = item.rohlik?.productId
-        if (!productId || !added.has(productId)) continue
+        if (route !== 'cart' || !productId || !added.has(productId)) continue
         await req.payload.update({
           collection: 'shopping-items',
           id: item.id,
@@ -294,13 +300,14 @@ export const rohlikEndpoints: Endpoint[] = [
 
       const titlesOf = new Map(lines.map((line) => [line.productId, line.titles.join(', ')]))
 
-      // What the banker still adds by hand: free-text items and lines Rohlík
-      // refused. They get the checklist by email (src/utils/shoppingEmail.ts)
+      // What the banker still adds by hand: free-text items, sold-out
+      // products and lines Rohlík refused. They get the checklist by email
+      // (src/utils/shoppingEmail.ts)
       const failedIds = new Set(report.failed.map((failure) => failure.productId))
-      const manualPending = pending.filter(({ item }) => {
-        const productId = item.rohlik?.productId
-        return !productId || failedIds.has(productId)
-      })
+      const manualPending = routed.filter(
+        ({ item, route }) =>
+          route !== 'cart' || failedIds.has(item.rohlik?.productId ?? ''),
+      )
       let manualEmailed = false
       if (manualPending.length > 0) {
         const [chata, participants] = await Promise.all([
@@ -320,12 +327,12 @@ export const rohlikEndpoints: Endpoint[] = [
           }),
         ])
         const nameOf = new Map(participants.docs.map((p) => [String(p.id), p.name]))
-        const manualItems: ManualItem[] = manualPending.map(({ item, delta }) => ({
+        const manualItems: ManualItem[] = manualPending.map(({ item, delta, route }) => ({
           title: item.title,
           quantity: delta,
           wantedBy: item.participant != null ? (nameOf.get(refId(item.participant)) ?? null) : null,
           note: item.note ?? null,
-          reason: item.rohlik?.productId ? 'rejected' : 'text',
+          reason: route === 'cart' ? 'rejected' : route,
         }))
         manualEmailed = await notifyManualItems(req.payload, {
           chata,
@@ -336,11 +343,11 @@ export const rohlikEndpoints: Endpoint[] = [
         })
         // free-text items on the emailed checklist are handed over: the
         // banker has them, so the next send skips them (and the page stops
-        // offering a send for them). Refused Rohlík lines stay pending and
-        // go in again next time.
+        // offering a send for them). Refused and sold-out Rohlík lines stay
+        // pending and go in again next time.
         if (manualEmailed) {
-          for (const { item, quantity } of manualPending) {
-            if (item.rohlik?.productId) continue
+          for (const { item, quantity, route } of manualPending) {
+            if (route !== 'text') continue
             await req.payload.update({
               collection: 'shopping-items',
               id: item.id,
@@ -360,6 +367,7 @@ export const rohlikEndpoints: Endpoint[] = [
           reason: failure.reason,
         })),
         skipped,
+        soldOut,
         // where the banker finishes the order (Rohlík's own checkout link)
         checkoutUrl: report.checkoutUrl,
         // the "přidej ručně" checklist went out by email

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Payload } from 'payload'
 import { chataViewUrl, manualItemsEmail, productsCs } from '@/lib/shoppingEmail'
-import { manualItemsRecipients } from '@/utils/shoppingEmail'
+import { manualItemsRecipients, notifyManualItems } from '@/utils/shoppingEmail'
 
 describe('manualItemsEmail', () => {
   const base = {
@@ -54,10 +54,26 @@ describe('manualItemsEmail', () => {
     expect(email.html).not.toContain('<b>x</b>')
   })
 
+  it('asks for a substitute when a product is sold out', () => {
+    const email = manualItemsEmail({
+      ...base,
+      items: [
+        { title: 'Kefír', quantity: 2, wantedBy: 'Katka', note: 'ten malý', reason: 'soldOut' },
+      ],
+    })
+    expect(email.text).toContain(
+      '- 2× Kefír (chce Katka). Na Rohlíku je teď vyprodaná, přidej něco podobného. Poznámka: ten malý',
+    )
+  })
+
   it('uses no em or en dashes in the copy', () => {
     const email = manualItemsEmail({
       ...base,
-      items: [{ title: 'Led', quantity: 1, wantedBy: null, note: null, reason: 'text' }],
+      items: [
+        { title: 'Led', quantity: 1, wantedBy: null, note: null, reason: 'text' },
+        { title: 'Kefír', quantity: 1, wantedBy: null, note: null, reason: 'soldOut' },
+        { title: 'Pivo', quantity: 1, wantedBy: null, note: null, reason: 'rejected' },
+      ],
     })
     expect(email.text + email.subject).not.toMatch(/[–—]/)
   })
@@ -105,5 +121,45 @@ describe('manualItemsRecipients', () => {
       { email: '' },
     )
     expect(recipients).toEqual(['super@x.cz', 'chata@x.cz'])
+  })
+})
+
+describe('notifyManualItems', () => {
+  const chata = { id: 10, name: 'Přátelé 2026', shortName: 'Přátelé', slug: 'pratele', domains: null }
+
+  const stubPayload = (sent: { to: string; text?: string }[]) =>
+    ({
+      find: async () => ({ docs: [] }),
+      sendEmail: async (message: { to: string; text?: string }) => {
+        sent.push(message)
+      },
+      logger: { info: () => {}, error: () => {} },
+    }) as unknown as Payload
+
+  it('goes out when the only manual items are sold out', async () => {
+    const sent: { to: string; text?: string }[] = []
+    const ok = await notifyManualItems(stubPayload(sent), {
+      chata,
+      banker: { email: 'banker@x.cz' },
+      items: [{ title: 'Kefír', quantity: 1, wantedBy: null, note: null, reason: 'soldOut' }],
+      addedCount: 4,
+      checkoutUrl: null,
+    })
+    expect(ok).toBe(true)
+    expect(sent).toHaveLength(1)
+    expect(sent[0].text).toContain('1× Kefír. Na Rohlíku je teď vyprodaná')
+  })
+
+  it('stays quiet with nothing to add by hand', async () => {
+    const sent: { to: string; text?: string }[] = []
+    const ok = await notifyManualItems(stubPayload(sent), {
+      chata,
+      banker: { email: 'banker@x.cz' },
+      items: [],
+      addedCount: 4,
+      checkoutUrl: null,
+    })
+    expect(ok).toBe(false)
+    expect(sent).toHaveLength(0)
   })
 })
