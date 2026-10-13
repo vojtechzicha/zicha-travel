@@ -15,6 +15,7 @@ každého je co ověřit — zaškrtnout po kontrole.
 | Apple | samostatný správce | přihlášení Apple účtem | — (vlastní podmínky Applu) | dle Applu (DPF) |
 | Paylibo | příjemce | číslo účtu příjemce, částka, zpráva, IP + prohlížeč při zobrazení QR | — (veřejné API bez smluvního vztahu; uvedeno v zásadách kap. 7) | ČR/EU |
 | Open-Meteo | příjemce | IP prohlížeče při načtení počasí | — (klientské volání, bez našich dat) | EU |
+| Rohlík.cz (Velká Pecka s.r.o.) | příjemce; pro účet pokladníka samostatný správce | jen po propojení pokladníkova účtu: hledaný text, produkty s množstvím do jeho košíku; IP prohlížeče při načtení obrázků produktů (`cdn.rohlik.cz`). Objednávka a platba probíhají u Rohlíku podle jeho podmínek | — (oficiální MCP server s OAuth souhlasem pokladníka; bez smluvního vztahu s námi; uvedeno v zásadách kap. 7) | ČR/EU — **[ ] umístění hostingu MCP serveru neověřeno** |
 | Google (Fotky) | příjemce | IP prohlížeče přihlášeného návštěvníka při načtení náhledů ze sdíleného alba (`lh3.googleusercontent.com`); server načítá jen veřejnou stránku alba, bez osobních údajů | — (klientské volání, bez našich dat) | dle Googlu (DPF) |
 
 Pravidla:

@@ -4,7 +4,7 @@ Správce: Vojtěch Zicha, mail@vojtechzicha.com (jediný správce, rozhodnutí 1
 v `compliance-gaps.md`). Výjimka pro malé organizace se nepoužije:
 zpracování není příležitostné a zahrnuje finanční údaje.
 
-Poslední revize: 2026-08-30 (nepotvrzené hlasy z plánování). Pravidlo údržby:
+Poslední revize: 2026-10-13 (nákupní seznam a propojení s Rohlíkem). Pravidlo údržby:
 každá nová kategorie údajů,
 nový příjemce nebo nový účel se propíše sem, do zásad (`/soukromi`) a do
 inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
@@ -18,15 +18,20 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 - **Údaje:** jméno + skloňované tvary, bankovní spojení, zvíře, „platí za
   něj", postel/auto/spoj, podíly, zálohy, vyrovnání; účtenky k výdajům;
   hlas z plánování (vyhovující termíny a ubytování) — není veřejný, vidí ho
-  jen přihlášení účastníci chaty a její správci.
+  jen přihlášení účastníci chaty a její správci; nákupní seznam (položka,
+  množství, poznámka, pro koho, kdo ji zapsal, případně produkt z Rohlíku s
+  cenou a obrázkem) — čitelný jako ostatní záznam výletu, zapisují jen
+  přihlášení účastníci chaty.
 - **Účel:** férové rozdělení nákladů a organizace výletu.
 - **Základ:** oprávněný zájem (čl. 6 odst. 1 písm. f) — balanční test v
   `balancni-test.md`.
 - **Příjemci:** Supabase (DB + soubory), Vercel (hosting), Paylibo (údaje
-  platebního QR), viz `zpracovatele-a-predavani.md`.
+  platebního QR), Rohlík (jen po propojení pokladníkova účtu: hledaný text a
+  produkty s množstvím do jeho košíku, bez jmen a e-mailů), viz
+  `zpracovatele-a-predavani.md`.
 - **Výmaz:** bankovní spojení a účtenky 12 měsíců po „Vyúčtováno dne"
   (retenční cron `/api/retention`); záznam výletu včetně hlasů z plánování
-  po dobu provozu služby jako archiv party; anonymizace na žádost (tlačítko
+  i nákupního seznamu po dobu provozu služby jako archiv party; anonymizace na žádost (tlačítko
   v administraci).
 
 ## 2. Uživatelské účty a přihlašování
@@ -39,17 +44,21 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
   plánování (kolekce Pending Votes: jméno, výběr, účet, stav, případný
   důvod, proč se hlas nepodařilo uložit; potvrzovací odkaz platí 7 dní,
   hlas se uloží při jakémkoli přihlášení účtu); žádosti subjektů údajů
-  (kolekce Data Requests).
+  (kolekce Data Requests); u pokladníka, který propojí účet na Rohlíku,
+  šifrované přístupové a obnovovací tokeny tohoto propojení (kolekce Rohlik
+  Connections, nikdy čitelné přes API).
 - **Účel:** vedení účtu, přihlášení, propojení účastníků, doložení
   vyřízení žádostí.
 - **Základ:** plnění smlouvy (podmínky užití); u evidence žádostí právní
   povinnost/oprávněný zájem na doložitelnosti.
 - **Příjemci:** Supabase, Vercel, Resend (e-maily), Microsoft, Google a
-  Apple (každý vlastní správce svého přihlášení).
+  Apple (každý vlastní správce svého přihlášení), Rohlík (samostatný správce
+  pokladníkova účtu, OAuth).
 - **Výmaz:** účet 2 roky bez přihlášení (cron, včetně vazeb); rozhodnuté
   žádosti o propojení 12 měsíců po rozhodnutí; nepotvrzené hlasy 12 měsíců
   po potvrzení a nejpozději s vyúčtováním výletu (stejný cron); smazáním
-  účtu mizí i jeho nepotvrzené hlasy.
+  účtu mizí i jeho nepotvrzené hlasy; propojení s Rohlíkem mizí odpojením
+  a se smazáním účtu.
 
 ## 3. Provoz, bezpečnost a statistiky
 

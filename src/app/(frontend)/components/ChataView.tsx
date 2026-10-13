@@ -10,6 +10,8 @@ import { InformationView } from './InformationView'
 import { OrganizationView } from './OrganizationView'
 import { ParticipantsView } from './ParticipantsView'
 import { PlanningView } from './PlanningView'
+import { CustomTabView } from './CustomTabView'
+import { ShoppingView } from './ShoppingView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { useAppTheme } from '../utils/useAppTheme'
@@ -19,7 +21,14 @@ import type { Chata, Participant, Expense, Prepayment, JointAccount } from '@/pa
 import type { ChataStats } from '@/utils/calculateStats'
 import type { FinanceViewer, LockedParticipant } from '@/lib/financeAccess'
 import type { ViewerClaim } from '@/lib/claimRequests'
+import {
+  CUSTOM_TAB_PARAM,
+  CUSTOM_TAB_VIEW,
+  resolveCustomTab,
+  visibleCustomTabs,
+} from '@/lib/customTabs'
 import type { PlanningPayload } from '@/lib/planning'
+import type { ShoppingPayload } from '@/lib/shopping'
 
 interface ChataData {
   chata: Chata
@@ -33,6 +42,8 @@ interface ChataData {
   pendingClaims?: number[]
   viewerClaims?: ViewerClaim[]
   planning?: PlanningPayload | null
+  /** "Nákup" tab; null while the list is off or the chata is in planning */
+  shopping?: ShoppingPayload | null
 }
 
 interface ChataViewProps {
@@ -84,9 +95,15 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     | 'participants'
     | 'finance-overview'
     | 'planning'
+    | 'shopping'
+    | typeof CUSTOM_TAB_VIEW
   const initialView = searchParams.get('view') as ViewName | null
   const [currentView, setCurrentView] = useState<ViewName | null>(
     initialView || (searchParams.get('participant') ? 'finance' : null)
+  )
+  // `?view=custom&tab=<row id>` — which "Vlastní záložka" is open
+  const [customTabId, setCustomTabId] = useState<string | null>(
+    initialView === CUSTOM_TAB_VIEW ? searchParams.get(CUSTOM_TAB_PARAM) : null
   )
   const [data, setData] = useState<ChataData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -185,10 +202,12 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const handleViewChange = (view: ViewName) => {
     startTransition(() => {
       setCurrentView(view)
+      setCustomTabId(null)
     })
     // Update URL without reload
     const url = new URL(window.location.href)
     url.searchParams.set('view', view)
+    url.searchParams.delete(CUSTOM_TAB_PARAM)
     // Remove participant param when leaving finance view
     if (view !== 'finance') {
       url.searchParams.delete('participant')
@@ -197,6 +216,20 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     // pushState bypasses the Next router, so AnalyticsProvider's pathname
     // effect never sees this navigation — count it manually
     track('view_opened', { view })
+    trackPageview()
+  }
+
+  const handleCustomTabChange = (id: string) => {
+    startTransition(() => {
+      setCurrentView(CUSTOM_TAB_VIEW)
+      setCustomTabId(id)
+    })
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', CUSTOM_TAB_VIEW)
+    url.searchParams.set(CUSTOM_TAB_PARAM, id)
+    url.searchParams.delete('participant')
+    window.history.pushState({}, '', url)
+    track('view_opened', { view: CUSTOM_TAB_VIEW })
     trackPageview()
   }
 
@@ -219,7 +252,9 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     const skeletonView =
       rawSkeletonView === 'finance-overview'
         ? 'finance'
-        : rawSkeletonView === 'planning'
+        : rawSkeletonView === 'planning' ||
+            rawSkeletonView === CUSTOM_TAB_VIEW ||
+            rawSkeletonView === 'shopping'
           ? 'information'
           : rawSkeletonView
     const skeletonColors = getThemeColors(initialThemeColor)
@@ -282,9 +317,17 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
   const hasOrganization =
     !isPlanning && (chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true)
   const hasParticipants = !isPlanning && participants.length > 2
+  const hasShopping = !isPlanning && data.shopping != null
+  const customTabs = isPlanning ? [] : visibleCustomTabs(chata.customTabs)
+  // a stale `?tab=` (row deleted, emptied) falls back to the default view
+  const activeCustomTab =
+    currentView === CUSTOM_TAB_VIEW ? resolveCustomTab(customTabs, customTabId) : null
   const activeView = isPlanning
     ? 'planning'
-    : currentView && currentView !== 'planning'
+    : currentView &&
+        currentView !== 'planning' &&
+        (currentView !== CUSTOM_TAB_VIEW || activeCustomTab) &&
+        (currentView !== 'shopping' || hasShopping)
       ? currentView
       : hasInformation
         ? 'information'
@@ -292,7 +335,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
           ? 'organization'
           : 'finance'
   // The overview is a sub-view of Finance — the Finance tab stays highlighted
-  const headerView = activeView === 'finance-overview' ? 'finance' : activeView
+  const headerView =
+    activeView === 'finance-overview' ? 'finance' : activeView === CUSTOM_TAB_VIEW ? undefined : activeView
 
   return (
     <ThemeProvider chata={chata}>
@@ -321,6 +365,10 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             showInformationTab={hasInformation}
             showOrganizationTab={hasOrganization}
             showParticipantsTab={hasParticipants}
+            showShoppingTab={hasShopping}
+            customTabs={customTabs}
+            currentCustomTabId={activeCustomTab?.id ?? null}
+            onCustomTabChange={handleCustomTabChange}
             onSwitchChata={allowSwitch ? handleSwitchChata : undefined}
             theme={theme}
             onToggleTheme={toggleTheme}
@@ -366,6 +414,22 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 expenses={expenses}
                 stats={stats}
                 onBack={() => handleViewChange('finance')}
+              />
+            ) : activeView === CUSTOM_TAB_VIEW && activeCustomTab ? (
+              <CustomTabView
+                key={activeCustomTab.id}
+                title={activeCustomTab.title}
+                icon={activeCustomTab.icon}
+                content={activeCustomTab.content}
+              />
+            ) : activeView === 'shopping' && data.shopping ? (
+              <ShoppingView
+                chata={chata}
+                shopping={data.shopping}
+                viewer={data.viewer}
+                onDataChanged={async () => {
+                  await loadData({ silent: true })
+                }}
               />
             ) : activeView === 'organization' ? (
               <OrganizationView chata={chata} participants={participants} viewer={data.viewer} />

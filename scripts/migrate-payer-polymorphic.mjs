@@ -886,6 +886,94 @@ CREATE UNIQUE INDEX IF NOT EXISTS expenses_private_settlements_parent_participan
 -- participant_id must be nullable for ON DELETE SET NULL to work (helpers
 -- skip null rows); databases created before this fix carried NOT NULL
 ALTER TABLE expenses_private_settlements ALTER COLUMN participant_id DROP NOT NULL;
+
+-- "Vlastní záložky" (Chata.customTabs, src/lib/customTabs.ts): admin-authored
+-- rich-text tabs. Captured from the local dev push; additive only.
+DO $$ BEGIN
+  CREATE TYPE enum_chatas_custom_tabs_icon AS ENUM('file-text', 'mountain', 'map', 'utensils', 'sparkles', 'book-open', 'calendar', 'info');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE TABLE IF NOT EXISTS chatas_custom_tabs (
+  _order integer NOT NULL,
+  _parent_id integer NOT NULL,
+  id character varying PRIMARY KEY,
+  title character varying NOT NULL,
+  icon enum_chatas_custom_tabs_icon DEFAULT 'file-text',
+  content jsonb NOT NULL,
+  CONSTRAINT chatas_custom_tabs_parent_id_fk
+    FOREIGN KEY (_parent_id) REFERENCES chatas(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS chatas_custom_tabs_order_idx
+  ON chatas_custom_tabs USING btree (_order);
+CREATE INDEX IF NOT EXISTS chatas_custom_tabs_parent_id_idx
+  ON chatas_custom_tabs USING btree (_parent_id);
+
+-- "Nákup" (shared shopping list + Rohlík, src/lib/shopping.ts): the chata
+-- switch, the list items and the banker's encrypted Rohlík tokens. Captured
+-- from the local dev push; additive only.
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS shopping_list_enabled boolean DEFAULT false;
+CREATE TABLE IF NOT EXISTS shopping_items (
+  id serial PRIMARY KEY,
+  chata_id integer NOT NULL,
+  title character varying NOT NULL,
+  quantity numeric DEFAULT 1 NOT NULL,
+  note character varying,
+  participant_id integer,
+  rohlik_product_id character varying,
+  rohlik_name character varying,
+  rohlik_price numeric,
+  rohlik_amount character varying,
+  rohlik_image_url character varying,
+  rohlik_url character varying,
+  authored_by_id integer,
+  sent_to_cart_at timestamp(3) with time zone,
+  sent_quantity numeric,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT shopping_items_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL,
+  CONSTRAINT shopping_items_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL,
+  CONSTRAINT shopping_items_authored_by_id_users_id_fk
+    FOREIGN KEY (authored_by_id) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS shopping_items_chata_idx ON shopping_items USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS shopping_items_participant_idx ON shopping_items USING btree (participant_id);
+CREATE INDEX IF NOT EXISTS shopping_items_authored_by_idx ON shopping_items USING btree (authored_by_id);
+CREATE INDEX IF NOT EXISTS shopping_items_updated_at_idx ON shopping_items USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS shopping_items_created_at_idx ON shopping_items USING btree (created_at);
+CREATE TABLE IF NOT EXISTS rohlik_connections (
+  id serial PRIMARY KEY,
+  user_id integer NOT NULL,
+  client_id character varying,
+  redirect_uri character varying,
+  access_token character varying,
+  refresh_token character varying,
+  expires_at timestamp(3) with time zone,
+  connected_at timestamp(3) with time zone,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT rohlik_connections_user_id_users_id_fk
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS rohlik_connections_user_idx ON rohlik_connections USING btree (user_id);
+CREATE INDEX IF NOT EXISTS rohlik_connections_updated_at_idx ON rohlik_connections USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS rohlik_connections_created_at_idx ON rohlik_connections USING btree (created_at);
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS shopping_items_id integer;
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS rohlik_connections_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_shopping_items_fk
+    FOREIGN KEY (shopping_items_id) REFERENCES shopping_items(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_rohlik_connections_fk
+    FOREIGN KEY (rohlik_connections_id) REFERENCES rohlik_connections(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_shopping_items_id_idx
+  ON payload_locked_documents_rels USING btree (shopping_items_id);
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_rohlik_connections_id_idx
+  ON payload_locked_documents_rels USING btree (rohlik_connections_id);
 `
 
 async function enumLabels(typeName) {

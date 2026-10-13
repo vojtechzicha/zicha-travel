@@ -16,6 +16,8 @@ export interface UserCleanupSummary {
   expensesCleaned: number
   claimsDeleted: number
   pendingVotesDeleted: number
+  rohlikConnectionsDeleted: number
+  shoppingItemsCleaned: number
 }
 
 export async function cleanupDeletedUserReferences(
@@ -28,6 +30,8 @@ export async function cleanupDeletedUserReferences(
     expensesCleaned: 0,
     claimsDeleted: 0,
     pendingVotesDeleted: 0,
+    rohlikConnectionsDeleted: 0,
+    shoppingItemsCleaned: 0,
   }
 
   // participants.account → null (the participant stays with the trip)
@@ -131,6 +135,28 @@ export async function cleanupDeletedUserReferences(
     })
     summary.pendingVotesDeleted++
   }
+
+  // the user's Rohlík connection (encrypted tokens to THEIR shop account)
+  // is useless and unwanted once the account is gone
+  const rohlik = await payload.delete({
+    collection: 'rohlik-connections',
+    where: { user: { equals: userId } },
+    overrideAccess: true,
+    req,
+  })
+  summary.rohlikConnectionsDeleted = rohlik.docs.length
+
+  // shopping-items.authoredBy → null: the item stays on the trip's list
+  // (it belongs to a participant), only the authorship link goes
+  const shopping = await payload.update({
+    collection: 'shopping-items',
+    where: { authoredBy: { equals: userId } },
+    data: { authoredBy: null },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  summary.shoppingItemsCleaned = shopping.docs.length
 
   const decidedClaims = await payload.find({
     collection: 'claim-requests',

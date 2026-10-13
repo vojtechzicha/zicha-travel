@@ -1,0 +1,113 @@
+{
+  "title": "Co nakoupit",
+  "intro": "{name} před odjezdem objedná všechno najednou na Rohlíku. Napiš sem, co chceš mít na chatě.",
+  "introNoShopper": "Před odjezdem objednáme všechno najednou na Rohlíku. Napiš sem, co chceš mít na chatě.",
+  "addLabel": "Co přidat",
+  "searchPlaceholder": "Co dáme do košíku?",
+  "searching": "Hledám na Rohlíku…",
+  "noResults": "Na Rohlíku nic takového nevidím.",
+  "addAsText": "Přidat jen jako text: „{text}“",
+  "searchNotConnected": "Hledání na Rohlíku začne fungovat, až {name} propojí svůj účet. Zatím piš položky jako text.",
+  "searchNotConnectedNoName": "Hledání na Rohlíku začne fungovat, až pokladník propojí svůj účet. Zatím piš položky jako text.",
+  "searchUnavailable": "Rohlík teď neodpovídá. Položku můžeš přidat jako text.",
+  "clearSelection": "Zrušit výběr",
+  "less": "Méně",
+  "more": "Víc",
+  "notePlaceholder": "Poznámka, třeba bez laktózy",
+  "forWhom": "Pro koho",
+  "submit": "Přidat do seznamu",
+  "saving": "Ukládám…",
+  "saveFailed": "Uložit se to nepovedlo. Zkus to znovu.",
+  "wantedBy": "chce {name}",
+  "inCart": "v košíku",
+  "ownItem": "vlastní položka",
+  "delete": "Smazat",
+  "deleteConfirm": "Opravdu smazat?",
+  "deleteYes": "Smazat",
+  "deleteNo": "Nechat",
+  "itemsCount": "{count, plural, one {# položka} few {# položky} other {# položek}}",
+  "unpriced": "{count, plural, one {# položka je bez ceny} few {# položky jsou bez ceny} other {# položek je bez ceny}}",
+  "anonHint": "Přihlas se a přidej, co chceš mít na chatě.",
+  "signIn": "Přihlásit se",
+  "noParticipantHint": "Položky můžou přidávat jen účastníci téhle chaty.",
+  "shopperConnectIntro": "Propoj svůj účet na Rohlíku. Ostatní pak při psaní uvidí skutečné produkty s cenou a celý seznam pošleš do košíku jedním klikem.",
+  "connect": "Propojit s Rohlíkem",
+  "send": "Poslat do košíku na Rohlíku",
+  "sending": "Posílám…",
+  "nothingToSend": "V seznamu zatím není nic z Rohlíku.",
+  "sendAdded": "Do košíku šlo {count, plural, one {# produkt} few {# produkty} other {# produktů}}.",
+  "sendFailedLines": "Nepovedlo se: {titles}.",
+  "sendSkipped": "{count, plural, one {# vlastní položku} few {# vlastní položky} other {# vlastních položek}} přidej do košíku ručně.",
+  "sendFailed": "Poslat do košíku se nepovedlo. Zkus to za chvíli.",
+  "disconnect": "Odpojit Rohlík",
+  "disconnectConfirm": "Odpojit účet na Rohlíku?",
+  "disconnectYes": "Odpojit",
+  "disconnectNo": "Nechat",
+  "disconnectFailed": "Odpojit se to nepovedlo. Zkus to znovu.",
+  "connectedToast": "Rohlík je propojený.",
+  "connectErrorToast": "Propojit Rohlík se nepovedlo. Zkus to znovu.",
+  "dismiss": "Zavřít",
+  "staples": [
+    {
+      "label": "buřty",
+      "q": "buřty"
+    },
+    {
+      "label": "pivo",
+      "q": "pivo"
+    },
+    {
+      "label": "rohlíky",
+      "q": "rohlík"
+    },
+    {
+      "label": "chleba",
+      "q": "chléb"
+    },
+    {
+      "label": "hořčice",
+      "q": "hořčice"
+    },
+    {
+      "label": "kafe",
+      "q": "káva"
+    },
+    {
+      "label": "mléko",
+      "q": "mléko"
+    },
+    {
+      "label": "vajíčka",
+      "q": "vejce"
+    },
+    {
+      "label": "sýr",
+      "q": "sýr"
+    },
+    {
+      "label": "brambůrky",
+      "q": "brambůrky"
+    },
+    {
+      "label": "víno",
+      "q": "víno"
+    },
+    {
+      "label": "toaleťák",
+      "q": "toaletní papír"
+    }
+  ],
+  "peopleTitle": "Kdo co chce",
+  "peopleCount": "{count, plural, one {# věc} few {# věci} other {# věcí}}",
+  "receiptSubtitle": "Společný nákup",
+  "subtotal": "Mezisoučet",
+  "estimateNote": "Podle dnešních cen na Rohlíku.",
+  "unknownPrice": "Otazník znamená, že cenu zatím neznáme.",
+  "receiptEmpty": "Zatím prázdno. Kdo přidá první buřty?",
+  "thanks": "Ať chutná!",
+  "stamp": "V košíku",
+  "soldOut": "Teď vyprodáno",
+  "sendHint": "Pošle jen to, co v košíku ještě není.",
+  "finishOrder": "Dokončit objednávku na Rohlíku",
+  "sendEmailed": "Co přidat ručně, máš i v e-mailu."
+}

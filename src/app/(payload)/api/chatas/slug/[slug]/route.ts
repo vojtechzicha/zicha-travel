@@ -14,6 +14,8 @@ import { canViewPrivateExpense, visiblePrivatePayerIds } from '@/lib/privateExpe
 import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendingVotes'
+import { canEditShoppingItem, type ShoppingPayload } from '@/lib/shopping'
+import { isRohlikConnected } from '@/utils/rohlikConnection'
 import {
   calculateStats,
   transformExpense,
@@ -401,6 +403,68 @@ export async function GET(
       }
     }
 
+    // "Nákup" (src/lib/shopping.ts): the shared shopping list, once the trip
+    // is booked. Everyone reads it; the flags say what this viewer may do.
+    // authoredBy is compared, never shipped.
+    let shopping: ShoppingPayload | null = null
+    if (chata.shoppingListEnabled === true && chata.planningEnabled !== true) {
+      const itemsResult = await payload.find({
+        collection: 'shopping-items',
+        where: { chata: { equals: chata.id } },
+        sort: 'createdAt',
+        limit: 500,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const nameOf = new Map(participantsResult.docs.map((p: any) => [String(p.id), p.name as string]))
+      const isChataAdmin = canManageChata(user, chata.id)
+      const bankerAccountId =
+        bankerParticipant?.account != null ? refId(bankerParticipant.account) : null
+      shopping = {
+        items: itemsResult.docs.map((item) => {
+          const participantId = item.participant != null ? Number(refId(item.participant)) : null
+          const authoredBy = item.authoredBy != null ? refId(item.authoredBy) : null
+          const product = item.rohlik?.productId
+            ? {
+                productId: item.rohlik.productId,
+                name: item.rohlik.name ?? item.title,
+                price: item.rohlik.price ?? null,
+                amount: item.rohlik.amount ?? null,
+                imageUrl: item.rohlik.imageUrl ?? null,
+                url: item.rohlik.url ?? null,
+              }
+            : null
+          return {
+            id: item.id,
+            title: item.title,
+            quantity: item.quantity,
+            note: item.note ?? null,
+            participantId,
+            participantName: participantId != null ? (nameOf.get(String(participantId)) ?? null) : null,
+            mine: user != null && authoredBy === String(user.id),
+            canEdit: canEditShoppingItem({
+              viewerId: user?.id ?? null,
+              authoredBy,
+              isChataAdmin,
+              isBanker: viewerIsBanker,
+            }),
+            rohlik: product,
+            sentToCartAt: item.sentToCartAt ?? null,
+            sentQuantity: item.sentQuantity ?? null,
+          }
+        }),
+        canAdd: user != null && (isChataAdmin || viewer.linkedParticipantIds.length > 0),
+        ownParticipants: participantsResult.docs
+          .filter((p: any) => viewer.linkedParticipantIds.map(String).includes(String(p.id)))
+          .map((p: any) => ({ id: p.id, name: p.name })),
+        shopper: {
+          name: bankerParticipant?.name ?? null,
+          connected: bankerAccountId != null && (await isRohlikConnected(payload, bankerAccountId)),
+          isMe: viewerIsBanker,
+        },
+      }
+    }
+
     // Return data with populated relationships for frontend
     // (payer/from arrive populated via depth: 1 as { relationTo, value })
     return NextResponse.json({
@@ -415,6 +479,7 @@ export async function GET(
       pendingClaims,
       viewerClaims,
       planning,
+      shopping,
     })
   } catch (error) {
     console.error('Error looking up chata by slug:', error)

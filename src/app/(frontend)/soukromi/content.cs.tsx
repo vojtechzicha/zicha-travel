@@ -1,6 +1,6 @@
 // Czech content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 2, effective
-// 2026-08-25; the version history section tracks the changes).
+// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 5, effective
+// 2026-10-13; the version history section tracks the changes).
 // Edit wording there first, then mirror it here; page.tsx only picks a
 // locale. The one interactive element is the consent button in section 12.
 
@@ -38,7 +38,7 @@ export default function PrivacyContentCs() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Zásady zpracování osobních údajů"
-      lead="Služba zicha.travel · Účinnost od 25. 8. 2026 (verze 2)"
+      lead="Služba zicha.travel · Účinnost od 13. 10. 2026 (verze 5)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Kdo je správce" icon={<UserCog size={20} />}>
@@ -116,6 +116,13 @@ export default function PrivacyContentCs() {
             jinak citlivými položkami.
           </p>
           <p>
+            <strong>Nákupní seznam:</strong> pokud má chata zapnutý společný nákup, ukládáme
+            položky, které do něj přihlášení účastníci přidají: název, množství, poznámku, pro
+            koho položka je a kdo ji zapsal, případně vybraný produkt z Rohlíku s cenou a
+            obrázkem. Když pokladník propojí svůj účet na Rohlíku, ukládáme šifrovaně přístupové
+            tokeny k tomuto propojení. Heslo k Rohlíku nevidíme.
+          </p>
+          <p>
             <strong>O návštěvnících:</strong> technické záznamy o požadavcích (IP adresa v
             provozních lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
             popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o propojení)
@@ -141,7 +148,9 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             <strong>Organizace výletu.</strong> Rozdělení postelí, aut a spojů, program a seznam
-            věcí zpracováváme ze stejného oprávněného zájmu: aby výlet proběhl.
+            věcí zpracováváme ze stejného oprávněného zájmu: aby výlet proběhl. Ze stejného
+            důvodu vedeme i nákupní seznam. Propojení s Rohlíkem zapíná pokladník sám a může ho
+            kdykoli zrušit.
           </p>
           <p>
             <strong>Vedení účtu.</strong> U přihlášených uživatelů je základem plnění smlouvy,
@@ -154,8 +163,9 @@ export default function PrivacyContentCs() {
           </p>
           <p>
             <strong>E-maily.</strong> Posíláme jen provozní zprávy: přihlašovací odkazy,
-            potvrzení hlasu při plánování výletu, rozhodnutí o žádostech o propojení a žádosti o
-            potvrzení výdaje, který za vás zapsal někdo jiný. Žádný marketing.
+            potvrzení hlasu při plánování výletu, rozhodnutí o žádostech o propojení, žádosti o
+            potvrzení výdaje, který za vás zapsal někdo jiný, a pokladníkovi seznam věcí, které
+            musí do košíku na Rohlíku přidat ručně. Žádný marketing.
           </p>
           <p>
             <strong>Statistiky.</strong> Anonymní měření návštěvnosti stojí na oprávněném zájmu
@@ -202,6 +212,11 @@ export default function PrivacyContentCs() {
             Detail financí účastníka, jehož účet už byl použit k přihlášení, se nepřihlášeným
             nezobrazuje: jedno přihlášení je tedy způsob, jak svůj rozpis a zůstatek schovat.
             Jméno u výletu zůstává v obou případech.
+          </p>
+          <p>
+            Nákupní seznam chaty je vidět stejně jako program nebo rozdělení postelí, včetně
+            toho, pro koho položka je. Přidávat do něj a upravovat ho mohou jen přihlášení
+            účastníci dané chaty.
           </p>
           <p>
             Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě pokladníka,
@@ -290,11 +305,21 @@ export default function PrivacyContentCs() {
                   </td>
                   <td className="py-2.5">EU/USA</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">Paylibo</td>
                   <td className="py-2.5 pr-4">
                     generování platebního QR kódu u vyrovnání: číslo účtu příjemce, částka a
                     zpráva platby, plus IP adresa a prohlížeč každého, kdo si QR zobrazí
+                  </td>
+                  <td className="py-2.5">EU (ČR)</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">Rohlík.cz (Velká Pecka s.r.o.)</td>
+                  <td className="py-2.5 pr-4">
+                    jen když pokladník propojí svůj účet: hledané názvy zboží a seznam produktů s
+                    množstvím, které vložíme do jeho košíku. Jména ani e-maily účastníků
+                    neposíláme. Objednávka a platba probíhají přímo na Rohlíku podle jeho
+                    podmínek; pro účet pokladníka je Rohlík samostatným správcem
                   </td>
                   <td className="py-2.5">EU (ČR)</td>
                 </tr>
@@ -306,7 +331,9 @@ export default function PrivacyContentCs() {
             Open-Meteo (ta se dozví vaši IP adresu, žádné vaše údaje jí neposíláme). Přihlášeným
             návštěvníkům stránka výletu ukazuje i náhledy fotek ze sdíleného alba na Google
             Fotkách; ty prohlížeč stahuje přímo od Googlu, který se přitom dozví vaši IP adresu.
-            Odkazy na Google Kalendář a Google Mapy otevíráte sami.
+            Obrázky produktů v nákupním seznamu stahuje prohlížeč přímo od Rohlíku (
+            <span className="font-mono text-[13px]">cdn.rohlik.cz</span>), který se tak také dozví
+            vaši IP adresu. Odkazy na Google Kalendář a Google Mapy otevíráte sami.
           </p>
           <p>Údaje nikomu neprodáváme a nikomu je nepředáváme k reklamě.</p>
         </Section>
@@ -357,6 +384,16 @@ export default function PrivacyContentCs() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">hlasy z plánování výletu</td>
                   <td className="py-2.5">součást záznamu výletu, po dobu provozu služby</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">nákupní seznam chaty</td>
+                  <td className="py-2.5">součást záznamu výletu, po dobu provozu služby</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">
+                    propojení pokladníka s Rohlíkem (šifrované tokeny)
+                  </td>
+                  <td className="py-2.5">do zrušení propojení, nejpozději se smazáním účtu</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">
@@ -480,6 +517,15 @@ export default function PrivacyContentCs() {
                     drží návratovou adresu během přihlášení přes Microsoft, Google nebo Apple
                   </td>
                   <td className="py-2.5 pr-4">10 minut, jen po dobu přihlašování</td>
+                  <td className="py-2.5">nezbytná</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">rohlik-oauth-state</td>
+                  <td className="py-2.5 pr-4">
+                    chrání propojení pokladníkova účtu s Rohlíkem před podvržením a drží návratovou
+                    adresu
+                  </td>
+                  <td className="py-2.5 pr-4">10 minut, jen po dobu propojování</td>
                   <td className="py-2.5">nezbytná</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -666,6 +712,16 @@ export default function PrivacyContentCs() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">5</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">13. 10. 2026</td>
+                  <td className="py-2.5">
+                    Společný nákup: nákupní seznam chaty a jeho propojení s Rohlíkem přes účet
+                    pokladníka; Rohlík jako nový příjemce, cookie{' '}
+                    <span className="font-mono text-[13px]">rohlik-oauth-state</span> a doplnění
+                    kapitol 3, 4, 6, 7, 9 a 11.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">4</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">30. 8. 2026</td>

@@ -1,5 +1,5 @@
 /* Fonts are self-hosted via next/font in (frontend)/layout.tsx — it sets
-   --font-inter / --font-merriweather on <html>. Do NOT reintroduce a Google
+   --font-inter / --font-merriweather / --font-martian-mono on <html>. Do NOT reintroduce a Google
    Fonts @import here: it becomes the first line of the compiled CSS bundle and
    render-blocks on a third-party origin. */
 @import "tailwindcss";
@@ -17,6 +17,7 @@
 
   --font-serif: var(--font-merriweather), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-receipt: var(--font-martian-mono), ui-monospace, monospace;
 
   --radius-glass: 1rem;
   --radius-glass-lg: 1.5rem;
@@ -213,5 +214,89 @@
   .info-hero {
     padding: 25px 15px;
     box-sizing: border-box;
+  }
+}
+
+/* ── "Nákup" receipt (ShoppingView) ────────────────────────────────────────
+   Thermal paper strip with torn zigzag edges top and bottom. The paper stays
+   white in dark mode too (like the QR codes): it is an object, not chrome. */
+.receipt-paper {
+  --receipt-tooth: 9px;
+  position: relative;
+  background: #ffffff;
+  color: #2a2c31;
+  font-family: var(--font-receipt);
+  font-variation-settings: 'wdth' 87.5;
+  filter: drop-shadow(0 14px 22px rgba(23, 28, 38, 0.16));
+}
+.receipt-paper::before,
+.receipt-paper::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--receipt-tooth);
+  background:
+    linear-gradient(135deg, #ffffff 50%, transparent 50%) 0 0 / calc(var(--receipt-tooth) * 2) 100% repeat-x,
+    linear-gradient(225deg, #ffffff 50%, transparent 50%) var(--receipt-tooth) 0 / calc(var(--receipt-tooth) * 2) 100% repeat-x;
+}
+.receipt-paper::before {
+  top: calc(var(--receipt-tooth) * -1);
+  transform: scaleY(-1);
+}
+.receipt-paper::after {
+  bottom: calc(var(--receipt-tooth) * -1);
+}
+
+/* Name …… price: a dotted leader fills the gap between them */
+.receipt-leader {
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  margin: 0 0.4em 0.32em;
+  border-bottom: 2px dotted #c4c8cf;
+}
+
+/* A line just added "prints": it unrolls from the top of its own box */
+@keyframes receipt-print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-6px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+}
+.receipt-print {
+  animation: receipt-print 420ms steps(6, end) both;
+}
+
+/* The banker's "V košíku" stamp lands once, right after the send */
+@keyframes receipt-stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-11deg) scale(1.9);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-11deg) scale(0.94);
+  }
+  100% {
+    opacity: 0.9;
+    transform: rotate(-11deg) scale(1);
+  }
+}
+.receipt-stamp {
+  transform: rotate(-11deg);
+  opacity: 0.9;
+}
+.receipt-stamp-land {
+  animation: receipt-stamp 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .receipt-print,
+  .receipt-stamp-land {
+    animation: none;
   }
 }

@@ -466,3 +466,24 @@ oauth-return-to cookie rows) and both terms locales (section 4 sign-in
 methods), plus the published page modules of `/soukromi` and `/podminky`.
 No new decision was needed: decisions 1 to 13 already cover a sign-in
 provider that is an independent controller.
+
+## Addendum 2026-10-13: shopping list and Rohlík
+
+The chata gained a shared shopping list ("Nákup"): signed-in participants
+add items; the banker may connect their own Rohlík.cz account (OAuth on
+identity.rohlik.cz with dynamic client registration and PKCE) so the server
+can search products and fill the banker's Rohlík cart through Rohlík's
+official MCP server (mcp.rohlik.cz). Only search text and the merged
+product/quantity list go to Rohlík, never participant names or emails;
+ordering and payment stay on Rohlík under its own terms, and Rohlík is an
+independent controller for the banker's account. The access and refresh
+tokens are stored AES-GCM encrypted, never readable through the API, and
+removed on disconnect and with the account. The list itself is part of the
+trip record (decision 4), readable like the program (decision 5), writable
+only by signed-in participants. Product images load from `cdn.rohlik.cz`
+in the browser (CSP unchanged, `img-src https:`). Updated in the same
+change: the outbound-calls inventory (item 21), the processors/transfers
+record, the records of processing, both privacy-policy locales (sections 3,
+4, 6, 7, 9, 11 and the version history, version 5) and both `/soukromi`
+page modules. Decision 2 holds: the MCP server is called as a plain API,
+no AI runs on our side. No new decision was needed.

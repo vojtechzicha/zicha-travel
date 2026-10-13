@@ -1,0 +1,106 @@
+// "Nákup" — the chata's shared shopping list, ordered through Rohlík by the
+// banker (src/collections/ShoppingItems.ts, Rohlík wiring in
+// src/collections/ShoppingItems/rohlikEndpoints.ts). Pure rules and the
+// payload shapes shared by the collection, the slug API and the UI.
+
+/** A Rohlík product as the search endpoint returns it and an item stores it. */
+export interface RohlikProduct {
+  productId: string
+  name: string
+  /** CZK per piece; null when Rohlík didn't say */
+  price: number | null
+  /** package size as Rohlík prints it, e.g. "500 g" */
+  amount: string | null
+  imageUrl: string | null
+  url: string | null
+  /** search results only: false = sold out right now */
+  inStock?: boolean | null
+}
+
+export interface ShoppingItemView {
+  id: number
+  title: string
+  quantity: number
+  note: string | null
+  participantId: number | null
+  participantName: string | null
+  /** the viewer authored it */
+  mine: boolean
+  /** the viewer may change or remove it */
+  canEdit: boolean
+  rohlik: RohlikProduct | null
+  sentToCartAt: string | null
+  sentQuantity: number | null
+}
+
+export interface ShoppingPayload {
+  items: ShoppingItemView[]
+  /** the viewer owns a participant of this chata, or administers it */
+  canAdd: boolean
+  ownParticipants: { id: number; name: string }[]
+  /** the banker orders: whether their Rohlík account is connected */
+  shopper: { name: string | null; connected: boolean; isMe: boolean }
+}
+
+/**
+ * Who may change or delete an item: its author, the banker (they place the
+ * order, so they tidy the list) and chata admins. Everybody else only reads.
+ */
+export function canEditShoppingItem(args: {
+  viewerId: number | string | null | undefined
+  authoredBy: number | string | null | undefined
+  isChataAdmin: boolean
+  isBanker: boolean
+}): boolean {
+  if (args.viewerId == null) return false
+  if (args.isChataAdmin || args.isBanker) return true
+  return args.authoredBy != null && String(args.authoredBy) === String(args.viewerId)
+}
+
+export interface CartLine {
+  productId: string
+  quantity: number
+  /** item titles merged into this line, for the send report */
+  titles: string[]
+}
+
+/**
+ * The lines the banker's cart receives: items linked to a Rohlík product,
+ * the same product merged into one line with the quantities summed.
+ * Free-text items (no product) are left for the banker to add by hand.
+ */
+export function mergeCartLines(
+  items: { title: string; quantity: number; rohlik?: { productId?: string | null } | null }[],
+): CartLine[] {
+  const lines = new Map<string, CartLine>()
+  for (const item of items) {
+    const productId = item.rohlik?.productId
+    if (!productId) continue
+    const quantity = Math.max(1, Math.round(item.quantity || 1))
+    const line = lines.get(productId)
+    if (line) {
+      line.quantity += quantity
+      line.titles.push(item.title)
+    } else {
+      lines.set(productId, { productId, quantity, titles: [item.title] })
+    }
+  }
+  return [...lines.values()]
+}
+
+/** Rough total from Rohlík prices; items without a price are skipped and counted. */
+export function estimatedTotal(
+  items: { quantity: number; rohlik?: { price?: number | null } | null }[],
+): { total: number; unpriced: number } {
+  let total = 0
+  let unpriced = 0
+  for (const item of items) {
+    const price = item.rohlik?.price
+    if (typeof price === 'number' && Number.isFinite(price)) {
+      total += price * Math.max(1, item.quantity || 1)
+    } else {
+      unpriced += 1
+    }
+  }
+  return { total: Math.round(total * 100) / 100, unpriced }
+}
