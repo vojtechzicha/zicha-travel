@@ -7,6 +7,7 @@ import {
   getTripPhase,
   nightLabel,
   nightlyCounts,
+  transportDay,
 } from '@/app/(frontend)/utils/tripData'
 
 // Trip dates are stored at 12:00Z (see production data)
@@ -132,5 +133,27 @@ describe('arrival groups', () => {
     expect(getArrivalGroups(noRooms, everyone)).toEqual([])
     const noDates = chata({})
     expect(getArrivalGroups(noDates, everyone)).toEqual([])
+  })
+})
+
+describe('transportDay', () => {
+  const trip = chata({ tripDateFrom: d('2026-11-13'), tripDateTo: d('2026-11-15') })
+
+  it('uses the arrival day there and the departure day back', () => {
+    expect(transportDay(trip, { direction: 'tam' })).toBe(d('2026-11-13'))
+    expect(transportDay(trip, { direction: 'zpet' })).toBe(d('2026-11-15'))
+  })
+
+  it("prefers the route's own travel day (a return after an extension)", () => {
+    expect(transportDay(trip, { direction: 'zpet', travelDate: d('2026-11-17') })).toBe(
+      d('2026-11-17'),
+    )
+  })
+
+  it('gives no day for a tentative window unless the route has one', () => {
+    expect(transportDay(balt, { direction: 'tam' })).toBeNull()
+    expect(transportDay(balt, { direction: 'tam', travelDate: d('2027-07-10') })).toBe(
+      d('2027-07-10'),
+    )
   })
 })

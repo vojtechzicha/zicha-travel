@@ -158,6 +158,120 @@ const ROUTE_URL = 'https://mapy.com/s/gukesomobo'
 // by Vojta, who booked the cottage and settles with the owner. Prices from
 // the e-chalupy listing (off-season). Upserted by title, so re-runs update
 // rather than duplicate; an expense somebody marked paid keeps its state.
+// Public transport between Praha Háje and the cottage, from IDOS for the
+// exact dates (stop Řehenice, Babice, 940 m from the cottage). Four rows so
+// people can sign up per connection; `mustRide` lists who has to be on a
+// row (only Vojta, back on Tuesday), and the merge in main() keeps everybody
+// assigned later. The schema knows only trains
+// and buses, so the metro legs are typed as buses ("Metro C") for now.
+const WALK = 'Ze zastávky Řehenice, Babice je to na chatu 940 m pěšky, asi 15 minut.'
+const BACK_NOTE =
+  'Z chaty vyraz kolem 10:15, na zastávku Řehenice, Babice je to 940 m. ' +
+  'Autobus 339 jede na Budějovickou, odtud metro C na Háje.'
+const TRANSPORT = [
+  {
+    title: 'Tam v pátek ve 14:35 z Hájí',
+    travelDate: day('2026-11-13'),
+    direction: 'tam',
+    totalDuration: '1 h včetně chůze',
+    notes: `Na chatě budeš kolem 15:50, check-in je od 16:00. ${WALK}`,
+    connections: [
+      {
+        type: 'autobus',
+        number: '154',
+        from: 'Háje',
+        to: 'U Tří svatých',
+        departure: '14:35',
+        arrival: '14:55',
+      },
+      {
+        type: 'autobus',
+        number: '337',
+        from: 'U Tří svatých',
+        to: 'Řehenice, Babice',
+        departure: '14:59',
+        arrival: '15:34',
+      },
+    ],
+  },
+  {
+    title: 'Tam v pátek v 17:08 z Hájí',
+    travelDate: day('2026-11-13'),
+    direction: 'tam',
+    totalDuration: '1 h 15 min včetně chůze',
+    notes: `Na Budějovické máš na přestup 3 minuty. ${WALK} Půjdeš za tmy, vezmi si čelovku.`,
+    connections: [
+      {
+        type: 'autobus',
+        number: 'Metro C',
+        from: 'Háje',
+        to: 'Budějovická',
+        departure: '17:08',
+        arrival: '17:17',
+      },
+      {
+        type: 'autobus',
+        number: '339',
+        from: 'Budějovická',
+        to: 'Řehenice, Babice',
+        departure: '17:20',
+        arrival: '18:07',
+      },
+    ],
+  },
+  {
+    title: 'Zpět v neděli v 10:35',
+    travelDate: day('2026-11-15'),
+    direction: 'zpet',
+    totalDuration: '1 h 25 min včetně chůze',
+    notes: BACK_NOTE,
+    connections: [
+      {
+        type: 'autobus',
+        number: '339',
+        from: 'Řehenice, Babice',
+        to: 'Budějovická',
+        departure: '10:35',
+        arrival: '11:33',
+      },
+      {
+        type: 'autobus',
+        number: 'Metro C',
+        from: 'Budějovická',
+        to: 'Háje',
+        departure: '11:36',
+        arrival: '11:45',
+      },
+    ],
+  },
+  {
+    title: 'Zpět v úterý v 10:35',
+    travelDate: day('2026-11-17'),
+    direction: 'zpet',
+    totalDuration: '1 h 25 min včetně chůze',
+    notes: `${BACK_NOTE} V úterý je svátek a jede se jako v neděli. Den předem si spoj radši ověř.`,
+    mustRide: [P.vojta],
+    connections: [
+      {
+        type: 'autobus',
+        number: '339',
+        from: 'Řehenice, Babice',
+        to: 'Budějovická',
+        departure: '10:35',
+        arrival: '11:33',
+      },
+      {
+        type: 'autobus',
+        number: 'Metro C',
+        from: 'Budějovická',
+        to: 'Háje',
+        departure: '11:36',
+        arrival: '11:45',
+      },
+    ],
+  },
+]
+
 const EXPENSES = [
   {
     title: 'Chata Oáza: víkend',
@@ -343,8 +457,13 @@ const buildData = (m: MediaIds) => ({
       from: 'Z Prahy',
       duration: '0:40',
       distance: '36 km',
+      // checked on mapy.com and OSRM: D1 exit 15 is signed "107: Velké
+      // Popovice, Strančice"; the Vavřetice turn is ~3.8 km down road 603
       route:
-        'Po D1 směr Brno, pak přes Kamenici po silnici 603 do Vavřetic. Poslední kousek je štěrková cesta.',
+        'Po D1 směr Brno a na exitu 15 Všechromy sjeď na silnici 107 směr Velké Popovice. ' +
+        'Přes Velké Popovice pokračuj do Kamenice, tam odboč doleva na silnici 603 směr Benešov. ' +
+        'Asi 4 km za Kamenicí, už za Mokřany, odboč doleva do Vavřetic. ' +
+        'K chatě je to pak 600 m, posledních 150 m po štěrkové cestě.',
     },
   ],
 
@@ -553,12 +672,32 @@ async function main() {
   }
   const data = buildData(media)
 
+  // Merge the transport rows by title: keep each row's id and riders (people
+  // sign up later), keep rows somebody added in the admin
+  type RiderRow = { id?: string | null; participant: number | { id: number } }
+  type TransportRow = { id?: string | null; title: string; riders?: RiderRow[] | null }
+  const existingTransport = (chata.publicTransportOptions ?? []) as TransportRow[]
+  const riderOf = (r: RiderRow) =>
+    typeof r.participant === 'object' ? r.participant.id : r.participant
+  const publicTransportOptions = [
+    ...TRANSPORT.map((option) => {
+      const { mustRide = [], ...row } = option as typeof option & { mustRide?: number[] }
+      const existing = existingTransport.find((e) => e.title === row.title)
+      const riders: RiderRow[] = [...(existing?.riders ?? [])]
+      for (const participant of mustRide) {
+        if (!riders.some((r) => riderOf(r) === participant)) riders.push({ participant })
+      }
+      return { ...row, ...(existing?.id ? { id: existing.id } : {}), riders }
+    }),
+    ...existingTransport.filter((e) => !TRANSPORT.some((row) => row.title === e.title)),
+  ]
+
   await payload.update({
     collection: 'chatas',
     id: chata.id,
     depth: 0,
     context: { triggerAfterRead: false },
-    data: data as never,
+    data: { ...data, publicTransportOptions } as never,
   })
   console.log(`updated chata #${chata.id} (${SLUG}) on ${dbHost}`)
 

@@ -432,7 +432,14 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 }}
               />
             ) : activeView === 'organization' ? (
-              <OrganizationView chata={chata} participants={participants} viewer={data.viewer} />
+              <OrganizationView
+                chata={chata}
+                participants={participants}
+                viewer={data.viewer}
+                onDataChanged={async () => {
+                  await loadData({ silent: true })
+                }}
+              />
             ) : activeView === 'participants' ? (
               <ParticipantsView
                 chata={chata}

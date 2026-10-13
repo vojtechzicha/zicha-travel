@@ -2,6 +2,7 @@ import type { CollectionConfig, PayloadRequest } from 'payload'
 import { LinkFeature, UploadFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import type { Chata } from '../payload-types'
 import { afterReadHook } from './Chatas/hooks/afterRead'
+import { organizationEndpoints } from './Chatas/organizationEndpoints'
 import { canManageChata, ownChataAccess, superadminOnly } from '../lib/access'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 
@@ -12,6 +13,8 @@ export const Chatas: CollectionConfig = {
     plural: { en: 'Chatas', cs: 'Chaty' },
   },
   endpoints: [
+    // frontend editing of beds and cars (src/lib/organizationEditing.ts)
+    ...organizationEndpoints,
     {
       // Bulk prefill: clone selected participants from previous chatas into
       // this one — copies name, declension forms and banking info; skips
@@ -1080,8 +1083,22 @@ export const Chatas: CollectionConfig = {
               ],
               admin: {
                 description: {
-                  en: 'Day used by the "add to calendar" link: tam → arrival day, zpět → departure day',
-                  cs: 'Den použitý odkazem „přidat do kalendáře“: tam → den příjezdu, zpět → den odjezdu',
+                  en: 'Without a travel day below: tam → arrival day, zpět → departure day',
+                  cs: 'Bez dne cesty níže: tam → den příjezdu, zpět → den odjezdu',
+                },
+              },
+            },
+            {
+              // the day label and the "add to calendar" link use it; empty =
+              // arrival/departure day by direction (transportDay in tripData)
+              name: 'travelDate',
+              type: 'date',
+              label: { en: 'Travel day', cs: 'Den cesty' },
+              admin: {
+                date: { pickerAppearance: 'dayOnly' },
+                description: {
+                  en: 'Only when it differs from the arrival or departure day, e.g. a return after an extended stay.',
+                  cs: 'Jen když se liší od dne příjezdu nebo odjezdu, třeba zpáteční spoj po prodloužení pobytu.',
                 },
               },
             },

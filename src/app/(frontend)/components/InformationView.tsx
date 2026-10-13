@@ -62,6 +62,7 @@ import {
   presentOnNight,
   sleepingCapacity,
   tonightNumber,
+  transportDay,
   transportRiders,
   tripDayIndex,
   tripTotalDays,
@@ -1331,11 +1332,7 @@ export function InformationView({
               const lastArrival = connections[connections.length - 1]?.arrival
               // no calendar link while the dates are tentative — the window
               // bounds are not travel days
-              const eventDate = tentative
-                ? null
-                : option.direction === 'zpet'
-                  ? chata.tripDateTo
-                  : chata.tripDateFrom
+              const eventDate = tentative ? null : transportDay(chata, option)
               const riders = transportRiders(option, participants)
 
               return (
