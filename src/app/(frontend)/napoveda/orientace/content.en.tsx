@@ -87,8 +87,8 @@ export default function OrientaceContentEn() {
               <>Practical notes, such as where to pick up the keys or how the Wi-Fi works.</>,
               <>The drive: from where, how long, how many kilometres and where to park.</>,
               <>
-                Train and bus connections. Tapping a connection unfolds the individual legs with
-                times and train numbers.
+                Train, bus, metro and tram connections. Tapping a connection unfolds the individual
+                legs with times, train numbers and lines.
               </>,
             ]}
           />

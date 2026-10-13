@@ -76,9 +76,8 @@ export default function HelpContentCs() {
           <List
             items={[
               <>
-                <strong>Informace</strong>: termín, místo, popis, fotky a doprava. U autobusových a
-                vlakových spojení je tlačítko, které ti cestu i s přestupy uloží do Google
-                kalendáře.
+                <strong>Informace</strong>: termín, místo, popis, fotky a doprava. U spojení veřejnou
+                dopravou je tlačítko, které ti cestu i s přestupy uloží do Google kalendáře.
               </>,
               <>
                 <strong>Organizace</strong>: pokoje a postele včetně toho, kdo v které spí, a

@@ -1055,6 +1055,25 @@ async function migrateUserRoles() {
   }
 }
 
+// Public transport connections gained metro + tram next to train + bus.
+// Payload stores the select as a Postgres enum and the dev push is the only
+// thing that would extend it, so production adds the labels here. ADD VALUE
+// IF NOT EXISTS is idempotent; it runs in autocommit (outside the main
+// transaction) like migrateUserRoles, so the labels are usable right away.
+// Skipped while the enum doesn't exist yet: Payload creates it with the full
+// list on a fresh database.
+async function addTransportConnectionTypes() {
+  const labels = await enumLabels('enum_chatas_public_transport_options_connections_type')
+  if (labels.length === 0) return
+  for (const value of ['metro', 'tramvaj']) {
+    if (labels.includes(value)) continue
+    await client.query(
+      `ALTER TYPE enum_chatas_public_transport_options_connections_type ADD VALUE IF NOT EXISTS '${value}'`
+    )
+    console.log(`publicTransportOptions.connections.type: added '${value}'`)
+  }
+}
+
 // Banker banking moves onto the banker participant. The chata used to carry
 // its own `bankerAccountNumber`/`bankerIban` (both NOT NULL — a leftover from
 // the JSON-config import), which made a new chata unsavable: the banker
@@ -1202,6 +1221,7 @@ async function enableRowLevelSecurity() {
 
 async function auto() {
   await migrateUserRoles()
+  await addTransportConnectionTypes()
   await migrateBankerBanking()
 
   await client.query('BEGIN')

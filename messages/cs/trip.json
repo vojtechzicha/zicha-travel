@@ -20,6 +20,8 @@
       "total": "Celkem {duration}.",
       "bus": "bus",
       "train": "vlak",
+      "metro": "metro",
+      "tram": "tramvaj",
       "who": "Kdo jede",
       "tripPage": "Detail chaty"
     },
