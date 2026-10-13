@@ -83,7 +83,10 @@ export async function middleware(request: NextRequest) {
     // Block access to other chatas: /{any-slug} → redirect to /
     // Match paths that look like chata slugs (lowercase letters, numbers, hyphens)
     // but not special paths like /admin, /api, /login etc.
-    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky']
+    // /app-start and /offline belong to the PWA layer (launch bridge and
+    // offline fallback — see src/lib/pwa.ts); both must reach their own
+    // handlers instead of being swallowed by the slug redirect.
+    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky', '/app-start', '/offline']
     if (pathname.match(/^\/[a-z0-9-]+$/i) && !SITE_PATHS.includes(pathname)) {
       return NextResponse.redirect(new URL('/', request.url))
     }
@@ -115,7 +118,11 @@ export const config = {
      * - media (uploaded files)
      * - ingest (PostHog proxy — every analytics beacon would otherwise
      *   trigger a domain lookup incl. a fetch back into the deployment)
+     * - .well-known (discovery files: security.txt, change-password,
+     *   microsoft-identity-association.json — host-independent by design,
+     *   so the domain lookup would be a wasted round-trip; Microsoft's
+     *   publisher-domain verifier also refuses redirects)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|admin|media|ingest).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|admin|media|ingest|\\.well-known).*)',
   ],
 }

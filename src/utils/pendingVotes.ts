@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { after } from 'next/server'
 import type { Payload, PayloadRequest } from 'payload'
 import { sql } from '@payloadcms/db-postgres/drizzle'
 import type { Chata, PendingVote, User } from '../payload-types'
@@ -14,7 +15,8 @@ import {
   type VoteSelectionError,
 } from '../lib/planning'
 import { VOTE_CONFIRM_TTL_DAYS, signVoteConfirmToken } from '../lib/pendingVotes'
-import { voteConfirmEmail } from '../lib/planningVoteEmail'
+import { voteAdminNotificationEmail, voteConfirmEmail } from '../lib/planningVoteEmail'
+import { claimDecisionMakers } from './claimRequests'
 
 // Server-side plumbing of planning votes (docs/PRD-planovani.md): the one
 // place a vote is written (`recordVote`), the pending rows anonymous votes
@@ -31,7 +33,14 @@ export type RecordVoteError =
   | VoteSelectionError
 
 export type RecordVoteResult =
-  | { ok: true; voteId: number; participantId: number; created: boolean }
+  | {
+      ok: true
+      voteId: number
+      participantId: number
+      created: boolean
+      /** false when the participant already had a vote and this replaced it */
+      voteCreated: boolean
+    }
   | { ok: false; error: RecordVoteError }
 
 type DbSession = { execute?: (q: unknown) => Promise<unknown> } | undefined
@@ -77,15 +86,8 @@ async function withVoteLock<T>(
   }
 }
 
-/**
- * Record (or update) a signed-in account's vote in a chata. The voter is
- * the participant asked for (`participantId`, must be the account's own),
- * else their linked participant here, else a participant created with
- * `name`. Also closes the account's pending rows for the chata — a vote
- * cast directly supersedes what was waiting. Serialized per (account,
- * chata) — see withVoteLock.
- */
-export async function recordVote(
+/** The transactional half of recordVote: everything under the vote lock. */
+async function writeVote(
   payload: Payload,
   args: {
     chataId: number
@@ -195,6 +197,7 @@ export async function recordVote(
       accommodations: args.accommodationOptionIds,
     }
     let voteId: number
+    let voteCreated = false
     if (existingVote.docs.length > 0) {
       voteId = existingVote.docs[0].id
       await payload.update({
@@ -214,6 +217,7 @@ export async function recordVote(
         req,
       })
       voteId = vote.id
+      voteCreated = true
     }
 
     // Whatever was waiting for this account here is now superseded
@@ -247,8 +251,151 @@ export async function recordVote(
       })
     }
 
-    return { ok: true, voteId, participantId, created }
+    return { ok: true, voteId, participantId, created, voteCreated }
   })
+}
+
+/**
+ * Record (or update) a signed-in account's vote in a chata. The voter is
+ * the participant asked for (`participantId`, must be the account's own),
+ * else their linked participant here, else a participant created with
+ * `name`. Also closes the account's pending rows for the chata — a vote
+ * cast directly supersedes what was waiting. Serialized per (account,
+ * chata) — see withVoteLock. Every recorded vote emails the chata's
+ * admins and the superadmins — after the transaction commits (so the
+ * emails never describe a vote that rolled back) AND after the response
+ * is sent (`after()`), so no vote, sign-in or confirmation ever waits on
+ * the mail provider.
+ */
+export async function recordVote(
+  payload: Payload,
+  args: {
+    chataId: number
+    user: Pick<User, 'id'>
+    name?: string | null
+    participantId?: number | null
+    dateOptionIds: number[]
+    accommodationOptionIds: number[]
+  },
+): Promise<RecordVoteResult> {
+  const result = await writeVote(payload, args)
+  if (result.ok) {
+    const notify = () =>
+      notifyAdminsOfVote(payload, {
+        chataId: args.chataId,
+        voterUserId: args.user.id,
+        participantId: result.participantId,
+        updated: !result.voteCreated,
+        dateOptionIds: args.dateOptionIds,
+        accommodationOptionIds: args.accommodationOptionIds,
+      })
+    try {
+      // Off the request path: `after` runs the callback once the response
+      // is sent (backed by waitUntil on Vercel, so the emails still go
+      // out), keeping mail-provider latency out of every caller
+      after(notify)
+    } catch {
+      // No request scope (a script, a test harness): nobody is waiting
+      // on a response, so sending inline costs nothing
+      await notify()
+    }
+  }
+  return result
+}
+
+/**
+ * "Nový hlas na chatě" — tell the chata's admins and every superadmin that
+ * a vote landed (or changed), so they can watch the poll fill up without
+ * refreshing the page. Recipients are the claim decision makers minus the
+ * voter's own account (an admin voting needs no email about it).
+ * Best-effort by design: failures are only logged — a lost email must
+ * never lose or delay the vote itself.
+ */
+async function notifyAdminsOfVote(
+  payload: Payload,
+  args: {
+    chataId: number
+    voterUserId: number | string
+    participantId: number
+    updated: boolean
+    dateOptionIds: number[]
+    accommodationOptionIds: number[]
+  },
+): Promise<void> {
+  try {
+    const [chata, participant, admins] = await Promise.all([
+      payload.findByID({
+        collection: 'chatas',
+        id: args.chataId,
+        depth: 0,
+        context: { triggerAfterRead: false },
+        overrideAccess: true,
+      }),
+      payload.findByID({
+        collection: 'participants',
+        id: args.participantId,
+        depth: 0,
+        overrideAccess: true,
+      }),
+      claimDecisionMakers(payload, args.chataId),
+    ])
+    const recipients = admins.filter(
+      (admin) => admin.email && String(admin.id) !== String(args.voterUserId),
+    )
+    if (recipients.length === 0) return
+
+    const [dateOptions, accommodations, votes] = await Promise.all([
+      payload.find({
+        collection: 'trip-date-options',
+        where: { chata: { equals: args.chataId } },
+        limit: 100,
+        depth: 0,
+        overrideAccess: true,
+      }),
+      payload.find({
+        collection: 'trip-accommodation-options',
+        where: { chata: { equals: args.chataId } },
+        limit: 100,
+        depth: 0,
+        overrideAccess: true,
+      }),
+      payload.find({
+        collection: 'trip-votes',
+        where: { chata: { equals: args.chataId } },
+        limit: 1,
+        depth: 0,
+        overrideAccess: true,
+      }),
+    ])
+    const summary = describeVoteSelection(
+      {
+        dateOptionIds: args.dateOptionIds,
+        accommodationOptionIds: args.accommodationOptionIds,
+      },
+      dateOptions.docs.map((d) => ({ id: d.id, label: d.label ?? '' })),
+      accommodations.docs.map((a) => ({ id: a.id, name: a.name })),
+    )
+    const domain = chata.domains?.[0]?.domain
+    const email = voteAdminNotificationEmail({
+      chataName: chata.name,
+      voterName: participant.name,
+      updated: args.updated,
+      dates: summary.dates,
+      places: summary.places,
+      voteCount: votes.totalDocs,
+      chataUrl: domain ? `https://${domain}` : `https://zicha.travel/${chata.slug}`,
+    })
+    for (const admin of recipients) {
+      try {
+        await sendAppEmail(payload, { to: admin.email as string, ...email })
+      } catch (err) {
+        // admin id only — email addresses do not belong in logs (blocker 4)
+        payload.logger.error({ err, admin: admin.id }, 'Failed to send vote notification')
+      }
+    }
+  } catch (err) {
+    payload.logger.error({ err, chata: args.chataId }, 'Failed to notify admins of a vote')
+  }
 }
 
 export type PendingVoteSource = 'email' | 'microsoft' | 'google' | 'apple'

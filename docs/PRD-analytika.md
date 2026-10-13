@@ -103,7 +103,7 @@ Chosen: **cookieless always-on, cookie only after opt-in.**
 | ------------------- | -------------------------------- | -------- | --------------- |
 | `zt_consent`        | remembers the answer (`granted` / `denied`) | 12 months | no — strictly necessary (it *is* the consent record) |
 | `ph_*` (PostHog)    | visitor + session id             | 12 months | **yes**         |
-| `payload-token`     | login session (already exists)   | 30 d / 2 h | no — strictly necessary |
+| `payload-token`     | login session (already exists)   | 1 y (rolling) / 2 h | no — strictly necessary |
 
 `zt_consent` is set with `domain=${SESSION_COOKIE_DOMAIN}` (`.zicha.travel`),
 the same variable the auth session already uses — otherwise every chata
@@ -197,6 +197,12 @@ is good enough).
 
 - `$exception` — client-side autocapture, plus explicit
   `posthog.captureException` in the frontend error boundary.
+  Masked cross-origin errors (the literal "Script error." a browser
+  reports for extension or webview scripts loaded without CORS) are
+  dropped in `before_send` (`isMaskedScriptError`) — no message, file or
+  stack, nothing to act on. The Turnstile loader sets
+  `crossorigin="anonymous"` so a failure in the one cross-origin script
+  we load ourselves arrives unmasked.
 - `save_failed` — explicit, on every failed write from the frontend
   (expense create/update/delete, attachment upload, claim submit) with
   `{ operation, status, code }`. **Never the response body** — it can contain

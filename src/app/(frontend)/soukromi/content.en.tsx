@@ -164,9 +164,10 @@ export default function PrivacyContentEn() {
           </p>
           <p>
             <strong>Emails.</strong> We send operational messages only: login links,
-            confirmations of a trip planning vote, decisions on claim requests, requests to
-            confirm an expense somebody recorded on your behalf, and, for the banker, the list of
-            items to add to the Rohlík cart by hand. No marketing.
+            confirmations of a trip planning vote, notifications to chata admins about new
+            planning votes, decisions on claim requests, requests to confirm an expense somebody
+            recorded on your behalf, and, for the banker, the list of items to add to the Rohlík
+            cart by hand. No marketing.
           </p>
           <p>
             <strong>Statistics.</strong> Anonymous usage measurement rests on our legitimate
@@ -495,7 +496,9 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">payload-token</td>
                   <td className="py-2.5 pr-4">keeps you signed in</td>
-                  <td className="py-2.5 pr-4">30 days (2 h for admins)</td>
+                  <td className="py-2.5 pr-4">
+                    1 year, renewed each time you use the site (2 h for admins)
+                  </td>
                   <td className="py-2.5">necessary for sign-in</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -575,8 +578,8 @@ export default function PrivacyContentEn() {
           </p>
           <p>
             Besides cookies, the page keeps a few small things in your browser&rsquo;s storage
-            (localStorage). They stay on your device, are never sent to the server, and are
-            written only after you make a choice, so they need no consent:
+            (localStorage). They stay on your device, are never sent to the server, and either
+            remember a choice you made or just keep the site running, so they need no consent:
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-[14px] border-collapse">
@@ -595,13 +598,20 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5 pr-4 font-mono text-[13px]">chata-overview-mode</td>
                   <td className="py-2.5">your chosen overview layout (table or cards)</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4 font-mono text-[13px]">
                     chata-selected-participant-*
                   </td>
                   <td className="py-2.5">
                     whose finances you last had open on a given chata, so the tab reopens the
                     same way
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">zt_session_refreshed_at</td>
+                  <td className="py-2.5">
+                    when the site last renewed your sign-in, so it does not try on every page
+                    load
                   </td>
                 </tr>
               </tbody>
@@ -613,6 +623,12 @@ export default function PrivacyContentEn() {
             withdrawing consent deletes both. The Turnstile widget on public forms may keep its
             own technical data, needed to tell people from bots, inside its frame on the
             Cloudflare domain.
+          </p>
+          <p>
+            The site can be installed as an app on your phone. The browser then keeps copies of
+            recently opened pages and data in its cache (as it does on a regular visit too), so
+            the app works without a connection. This cache also stays on your device and is
+            deleted together with your browser data.
           </p>
         </Section>
 

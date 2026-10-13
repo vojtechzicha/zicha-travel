@@ -40,7 +40,18 @@ export function useAppTheme(): { theme: AppTheme; toggleTheme: () => void } {
     setTheme((prev) => {
       const next: AppTheme = prev === 'dark' ? 'light' : 'dark'
       try {
-        window.localStorage.setItem(STORAGE_KEY, next)
+        // Toggling back to what the OS currently prefers means "stop
+        // overriding": drop the stored value so the theme follows the system
+        // again (evaluated only here, at tap time — an explicit choice is
+        // never reinterpreted later when the OS preference changes)
+        const osTheme: AppTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        if (next === osTheme) {
+          window.localStorage.removeItem(STORAGE_KEY)
+        } else {
+          window.localStorage.setItem(STORAGE_KEY, next)
+        }
       } catch {
         // private mode etc. — theme still flips for this visit
       }

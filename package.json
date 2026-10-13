@@ -21,6 +21,7 @@
     "backgrounds:selfhost": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/migrate-backgrounds-selfhost.mts",
     "help:seed": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/seed-help-demo.mts",
     "help:shots": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/shoot-help-screenshots.mts",
+    "icons:pwa": "node scripts/generate-pwa-icons.mjs",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "lint": "eslint --max-warnings 0 .",
