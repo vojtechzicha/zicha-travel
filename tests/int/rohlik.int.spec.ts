@@ -18,6 +18,7 @@ import {
   cartArgs,
   cartCallFailed,
   checkoutUrlOf,
+  detailsCallFailed,
   isRohlikProductImage,
   normalizeProductDetails,
   normalizeProducts,
@@ -356,6 +357,16 @@ describe('product details (server-side verification)', () => {
 
   it('returns nothing for an error result', () => {
     expect(normalizeProductDetails({ ...details, isError: true }).size).toBe(0)
+  })
+
+  it('tells a failed details call from products that are just gone', () => {
+    expect(detailsCallFailed(details)).toBe(false)
+    // a good answer without the asked-for ids: they're delisted, not a failure
+    expect(detailsCallFailed({ structuredContent: { result: {} } })).toBe(false)
+    expect(detailsCallFailed({ ...details, isError: true })).toBe(true)
+    expect(detailsCallFailed({ content: [{ type: 'text', text: 'Internal error' }] })).toBe(true)
+    expect(detailsCallFailed({ structuredContent: { success: false } })).toBe(true)
+    expect(detailsCallFailed({})).toBe(true)
   })
 
   it('keeps only Rohlík product image URLs', () => {

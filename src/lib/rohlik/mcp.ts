@@ -231,6 +231,16 @@ export function cartCallFailed(result: McpCallResult): boolean {
   })
 }
 
+/**
+ * Did a get_product_details call fail? An error result, or one with no JSON
+ * answer at all. A product missing from a good answer is delisted; a failed
+ * call says nothing about the products, so nobody may read it as "sold out".
+ */
+export function detailsCallFailed(result: McpCallResult): boolean {
+  if (cartCallFailed(result)) return true
+  return !payloadsOf(result).some((payload) => typeof payload === 'object' && payload !== null)
+}
+
 // ─── high-level operations ───────────────────────────────────────────────
 
 /** An image URL is kept only on Rohlík's product image path (the details
@@ -291,7 +301,10 @@ export async function productDetails(
   return normalizeProductDetails(result).get(productId) ?? null
 }
 
-/** Current details of many products in batches; ids Rohlík doesn't know are absent. */
+/**
+ * Current details of many products in batches; ids Rohlík doesn't know are
+ * absent. Throws when a batch fails, so absence always means "not listed".
+ */
 export async function productDetailsBatch(
   token: string,
   productIds: string[],
@@ -304,6 +317,10 @@ export async function productDetailsBatch(
       include_description: false,
       context: CONTEXT.refresh,
     })
+    // a failed batch aborts the whole check: the caller keeps what it has
+    if (detailsCallFailed(result)) {
+      throw new Error(`Rohlík product details failed: ${firstText(result) ?? 'no answer'}`)
+    }
     for (const [id, product] of normalizeProductDetails(result)) found.set(id, product)
   }
   return found
