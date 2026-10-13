@@ -78,6 +78,7 @@ const CONTEXT = {
   addToCart: "Put the group's shopping list into the shopper's cart before the trip.",
   checkoutLink: 'Let the shopper finish the order on Rohlik.',
   details: 'Check the product picked for a shared group shopping list.',
+  refresh: 'Keep prices on a shared group shopping list current.',
 } as const
 
 /** Rohlík's image CDN; search results carry a site-relative `imgPath`. */
@@ -259,6 +260,8 @@ export function normalizeProductDetails(result: McpCallResult): Map<string, Rohl
       const name = str(entry.name)
       if (!productId || !/^\d+$/.test(productId) || !name) continue
       const prices = (entry.prices ?? {}) as Record<string, unknown>
+      const status = (entry.stock as { availabilityStatus?: unknown } | undefined)
+        ?.availabilityStatus
       products.set(productId, {
         productId,
         name,
@@ -266,6 +269,7 @@ export function normalizeProductDetails(result: McpCallResult): Map<string, Rohl
         amount: str(entry.textualAmount),
         imageUrl: null,
         url: productUrl(productId),
+        inStock: typeof status === 'string' ? status === 'AVAILABLE' : null,
       })
     }
     if (products.size > 0) return products
@@ -285,6 +289,24 @@ export async function productDetails(
     context: CONTEXT.details,
   })
   return normalizeProductDetails(result).get(productId) ?? null
+}
+
+/** Current details of many products in batches; ids Rohlík doesn't know are absent. */
+export async function productDetailsBatch(
+  token: string,
+  productIds: string[],
+): Promise<Map<string, RohlikProduct>> {
+  const ids = [...new Set(productIds.filter((id) => /^\d+$/.test(id)))]
+  const found = new Map<string, RohlikProduct>()
+  for (let i = 0; i < ids.length; i += 40) {
+    const result = await callTool(token, ROHLIK_TOOLS.details, {
+      product_ids: ids.slice(i, i + 40).map(Number),
+      include_description: false,
+      context: CONTEXT.refresh,
+    })
+    for (const [id, product] of normalizeProductDetails(result)) found.set(id, product)
+  }
+  return found
 }
 
 export async function searchProducts(token: string, query: string): Promise<RohlikProduct[]> {

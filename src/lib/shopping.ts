@@ -88,6 +88,45 @@ export function mergeCartLines(
   return [...lines.values()]
 }
 
+export interface StoredRohlik {
+  productId?: string | null
+  name?: string | null
+  price?: number | null
+  amount?: string | null
+  inStock?: boolean | null
+  checkedAt?: string | null
+  [key: string]: unknown
+}
+
+/**
+ * An item's Rohlík fields after a price check: current price, size and
+ * stock from Rohlík (a product Rohlík no longer lists counts as sold out),
+ * image and link kept, `checkedAt` stamped. `changed` says whether anything
+ * a viewer sees moved, for the run's summary.
+ */
+export function refreshedRohlik(
+  stored: StoredRohlik,
+  fresh: RohlikProduct | undefined,
+  now: Date,
+): { rohlik: StoredRohlik; changed: boolean } {
+  const next: StoredRohlik = fresh
+    ? {
+        ...stored,
+        name: fresh.name || stored.name,
+        price: fresh.price ?? stored.price ?? null,
+        amount: fresh.amount ?? stored.amount ?? null,
+        inStock: fresh.inStock ?? null,
+      }
+    : { ...stored, inStock: false }
+  next.checkedAt = now.toISOString()
+  const changed =
+    next.price !== (stored.price ?? null) ||
+    next.amount !== (stored.amount ?? null) ||
+    next.name !== stored.name ||
+    (next.inStock ?? null) !== (stored.inStock ?? null)
+  return { rohlik: next, changed }
+}
+
 /** Rough total from Rohlík prices; items without a price are skipped and counted. */
 export function estimatedTotal(
   items: { quantity: number; rohlik?: { price?: number | null } | null }[],

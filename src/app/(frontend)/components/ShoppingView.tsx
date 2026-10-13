@@ -712,6 +712,8 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                   const sent = isSent(item)
                   const meta = [
                     item.rohlik ? item.rohlik.amount : t('ownItem'),
+                    // set by the daily price check: the banker picks a substitute
+                    item.rohlik?.inStock === false ? t('soldOut') : null,
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     sent ? (item.rohlik ? t('inCart') : t('handedOver')) : null,
                   ].filter(Boolean)

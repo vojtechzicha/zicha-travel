@@ -1188,6 +1188,8 @@ export interface ShoppingItem {
     amount?: string | null;
     imageUrl?: string | null;
     url?: string | null;
+    inStock?: boolean | null;
+    checkedAt?: string | null;
   };
   authoredBy?: (number | null) | User;
   sentToCartAt?: string | null;
@@ -1753,6 +1755,8 @@ export interface ShoppingItemsSelect<T extends boolean = true> {
         amount?: T;
         imageUrl?: T;
         url?: T;
+        inStock?: T;
+        checkedAt?: T;
       };
   authoredBy?: T;
   sentToCartAt?: T;

@@ -20,6 +20,7 @@ import {
 import { mergeCartLines } from '@/lib/shopping'
 import type { ManualItem } from '@/lib/shoppingEmail'
 import { notifyManualItems } from '@/utils/shoppingEmail'
+import { refreshChataPrices } from '@/utils/rohlikPriceRefresh'
 import {
   bankerAccountId,
   deleteConnection,
@@ -234,6 +235,14 @@ export const rohlikEndpoints: Endpoint[] = [
       }
       const token = await getAccessToken(req.payload, req.user.id)
       if (!token) return Response.json({ error: 'not-connected' }, { status: 409 })
+
+      // prices first, so the receipt shows what the cart will actually cost;
+      // a failed check doesn't stop the send (Rohlík prices the cart itself)
+      try {
+        await refreshChataPrices(req.payload, chataId, token)
+      } catch (err) {
+        req.payload.logger.warn({ err }, 'Rohlík price refresh before send failed')
+      }
 
       const { docs: items } = await req.payload.find({
         collection: 'shopping-items',

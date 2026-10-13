@@ -457,7 +457,20 @@ API payload, no new endpoints).
   from `PAYLOAD_SECRET` in the hidden `rohlik-connections` collection) and
   our server talks to Rohlík's OFFICIAL MCP server (`mcp.rohlik.cz/mcp`,
   experimental per Rohlík) to search products for everyone and to fill the
-  banker's own Rohlík cart (`mergeCartLines` sums the same product). We
+  banker's own Rohlík cart (`mergeCartLines` sums the same product).
+  **Rohlík's dynamic client registration only accepts `localhost` redirect
+  URIs** ("Redirect URI is not allowed for dynamic client registration" for
+  `https://*.zicha.travel`), so "Propojit s Rohlíkem" fails on prod until
+  Rohlík allowlists our callback; the prod banker's connection was made
+  locally and moved into prod `rohlik-connections` re-encrypted with the
+  prod key (refresh works from prod: public client, no redirect involved).
+  OAuth failures log Rohlík's own `error: error_description`. Prices stay
+  current: `refreshChataPrices` (`src/utils/rohlikPriceRefresh.ts`)
+  re-checks every Rohlík item via `get_product_details` (batched, ids only)
+  right before each send and daily for live lists (`GET /api/rohlik-prices`,
+  Vercel cron 05:00 UTC, `CRON_SECRET` or a superadmin); it stores price,
+  size, `inStock` (sold out / delisted → "Teď vyprodáno" on the receipt)
+  and `checkedAt`; rule `refreshedRohlik` in `src/lib/shopping.ts`. We
   never order or pay; free-text items stay for manual adding, and every send
   that leaves something manual (free-text items, lines Rohlík refused)
   emails the "přidej ručně" checklist to the banker, or to the chata admins

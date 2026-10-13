@@ -126,6 +126,23 @@ export function buildAuthorizeUrl(args: {
 
 // ─── network: registration, code exchange, refresh ───────────────────────
 
+/**
+ * Rohlík's own reason for a refused OAuth request ("invalid_request:
+ * Redirect URI is not allowed…"), for the logs. Only the standard
+ * error/error_description fields, trimmed; a refusal carries no tokens.
+ */
+export async function oauthErrorReason(res: { text: () => Promise<string> }): Promise<string> {
+  try {
+    const body = JSON.parse(await res.text()) as { error?: unknown; error_description?: unknown }
+    const parts = [body.error, body.error_description].filter(
+      (part): part is string => typeof part === 'string' && part.trim() !== '',
+    )
+    return parts.join(': ').slice(0, 300)
+  } catch {
+    return ''
+  }
+}
+
 export class RohlikOAuthError extends Error {
   constructor(
     message: string,
@@ -153,7 +170,13 @@ export async function registerClient(
       scope: ROHLIK_SCOPE,
     }),
   })
-  if (!res.ok) throw new RohlikOAuthError('client registration failed', res.status)
+  if (!res.ok) {
+    const reason = await oauthErrorReason(res)
+    throw new RohlikOAuthError(
+      `client registration failed${reason ? ` (${reason})` : ''}`,
+      res.status,
+    )
+  }
   const body = (await res.json()) as { client_id?: unknown }
   if (typeof body.client_id !== 'string' || body.client_id === '') {
     throw new RohlikOAuthError('client registration returned no client_id')
@@ -202,7 +225,10 @@ async function tokenRequest(
     },
     body: new URLSearchParams({ ...params, resource: ROHLIK_MCP_URL }).toString(),
   })
-  if (!res.ok) throw new RohlikOAuthError('token request failed', res.status)
+  if (!res.ok) {
+    const reason = await oauthErrorReason(res)
+    throw new RohlikOAuthError(`token request failed${reason ? ` (${reason})` : ''}`, res.status)
+  }
   return res.json()
 }
 

@@ -978,6 +978,11 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_rohlik_connections_id_i
 -- Public transport "Den cesty" (travelDate): a route's own travel day when it
 -- isn't the arrival/departure day, e.g. a return after an extended stay
 ALTER TABLE chatas_public_transport_options ADD COLUMN IF NOT EXISTS travel_date timestamp(3) with time zone;
+
+-- "Nákup" price refresh (src/utils/rohlikPriceRefresh.ts): stock and the
+-- time of the last price check on each Rohlík item
+ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rohlik_in_stock boolean;
+ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rohlik_checked_at timestamp(3) with time zone;
 `
 
 async function enumLabels(typeName) {

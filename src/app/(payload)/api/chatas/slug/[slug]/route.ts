@@ -432,6 +432,7 @@ export async function GET(
                 amount: item.rohlik.amount ?? null,
                 imageUrl: item.rohlik.imageUrl ?? null,
                 url: item.rohlik.url ?? null,
+                inStock: item.rohlik.inStock ?? null,
               }
             : null
           return {
