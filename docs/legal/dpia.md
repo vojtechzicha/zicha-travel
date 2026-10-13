@@ -19,6 +19,11 @@ nenaplňuje žádné z kritérií „vysokého rizika":
 - **Děti** jsou evidovány jen jako účastníci (jméno, postel, podíl),
   zapisuje je rodič nebo správce se souhlasem rodiče, účty mít nesmí.
 
+2026-10-13: přezkoumáno s nákupním seznamem a propojením s Rohlíkem.
+Kritéria se nemění: k Rohlíku jde jen hledaný text a seznam produktů do
+košíku pokladníka, který propojení sám zapne; žádné monitorování ani AI na
+naší straně (MCP server Rohlíku voláme jako obyčejné API).
+
 Revize: při přidání AI funkce (čtení účtenek — viz zásady kap. 15, „add
 AI = reopen the legal documents first"), při otevření služby veřejnosti
 nebo při opakovaném výskytu citlivých dat na účtenkách.

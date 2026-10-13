@@ -1,24 +1,42 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { ArrowLeft, BedDouble, Info, Moon, Sun, Users, Vote, Wallet } from 'lucide-react'
+import {
+  ArrowLeft,
+  BedDouble,
+  Info,
+  Moon,
+  ShoppingCart,
+  Sun,
+  Users,
+  Vote,
+  Wallet,
+} from 'lucide-react'
 import { DynamicIcon } from './DynamicIcon'
+import { customTabIcon } from './CustomTabView'
 import type { AppTheme } from '../utils/useAppTheme'
 
 interface HeaderProps {
   chataName: string
   location?: string
   bankerName?: string
-  currentView?: 'finance' | 'information' | 'organization' | 'participants' | 'planning'
+  currentView?: 'finance' | 'information' | 'organization' | 'participants' | 'shopping' | 'planning'
   onViewChange?: (
-    view: 'finance' | 'information' | 'organization' | 'participants' | 'planning',
+    view: 'finance' | 'information' | 'organization' | 'participants' | 'shopping' | 'planning',
   ) => void
   showPlanningTab?: boolean
   showInformationTab?: boolean
   showOrganizationTab?: boolean
   showParticipantsTab?: boolean
+  /** "Nákup" — the shared shopping list */
+  showShoppingTab?: boolean
   /** hidden during the planning phase — there are no finances yet */
   showFinanceTab?: boolean
+  /** "Vlastní záložky" — admin-authored tabs, shown after the built-in ones */
+  customTabs?: Array<{ id: string; title: string; icon?: string | null }>
+  /** the custom tab being shown; null while a built-in view is active */
+  currentCustomTabId?: string | null
+  onCustomTabChange?: (id: string) => void
   onSwitchChata?: () => void
   theme?: AppTheme
   onToggleTheme?: () => void
@@ -38,7 +56,11 @@ export function Header({
   showInformationTab = false,
   showOrganizationTab = false,
   showParticipantsTab = false,
+  showShoppingTab = false,
   showFinanceTab = true,
+  customTabs = [],
+  currentCustomTabId = null,
+  onCustomTabChange,
   onSwitchChata,
   theme = 'light',
   onToggleTheme,
@@ -47,12 +69,14 @@ export function Header({
 
   // Mobile: equal-width pills in a 2-column grid (Jen's feedback — the
   // wrapped auto-width pills looked lopsided); desktop: inline pills.
-  const tabClass = (view: NonNullable<HeaderProps['currentView']>) =>
+  const pillClass = (active: boolean) =>
     `flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full font-semibold text-[13px] transition-all whitespace-nowrap ${
-      currentView === view
+      active
         ? 'bg-white text-gray-900 shadow-lg font-bold'
         : 'bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white'
     }`
+  const tabClass = (view: NonNullable<HeaderProps['currentView']>) =>
+    pillClass(currentCustomTabId === null && currentView === view)
 
   const tabs: Array<{
     view: NonNullable<HeaderProps['currentView']>
@@ -89,6 +113,12 @@ export function Header({
       show: showParticipantsTab,
       icon: <Users size={15} aria-hidden="true" />,
       label: t('tabParticipants'),
+    },
+    {
+      view: 'shopping',
+      show: showShoppingTab,
+      icon: <ShoppingCart size={15} aria-hidden="true" />,
+      label: t('tabShopping'),
     },
   ]
   const visibleTabs = tabs.filter((tab) => tab.show)
@@ -148,8 +178,10 @@ export function Header({
           </div>
         </div>
 
-        {visibleTabs.length > 1 && onViewChange && (
-          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-2 shrink-0">
+        {/* capped at 62% on desktop: with custom tabs the pills wrap
+            instead of squeezing the chata name into a narrow column */}
+        {visibleTabs.length + customTabs.length > 1 && onViewChange && (
+          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-2 shrink-0 lg:max-w-[62%] lg:justify-end">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.view}
@@ -160,6 +192,20 @@ export function Header({
                 {tab.label}
               </button>
             ))}
+            {onCustomTabChange &&
+              customTabs.map((tab) => {
+                const Icon = customTabIcon(tab.icon)
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => onCustomTabChange(tab.id)}
+                    className={pillClass(currentCustomTabId === tab.id)}
+                  >
+                    <Icon size={15} aria-hidden="true" />
+                    {tab.title}
+                  </button>
+                )
+              })}
           </div>
         )}
       </div>

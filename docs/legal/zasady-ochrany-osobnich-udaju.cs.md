@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 25. 8. 2026 (verze 2)
+Účinnost od: 13. 10. 2026 (verze 5)
 
 ## 1. Kdo je správce
 
@@ -56,6 +56,13 @@ mimoděk obsahovat i další údaje (položky nákupu, část čísla karty, adr
 prodejny). Nahrávejte jen účtenky ke společným výdajům; nepatří sem doklady
 se zdravotními nebo jinak citlivými položkami.
 
+**Nákupní seznam:** pokud má chata zapnutý společný nákup, ukládáme
+položky, které do něj přihlášení účastníci přidají: název, množství,
+poznámku, pro koho položka je a kdo ji zapsal, případně vybraný produkt
+z Rohlíku s cenou a obrázkem. Když pokladník propojí svůj účet na Rohlíku,
+ukládáme šifrovaně přístupové tokeny k tomuto propojení. Heslo k Rohlíku
+nevidíme.
+
 **O návštěvnících:** technické záznamy o požadavcích (IP adresa v provozních
 lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
 popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o
@@ -75,7 +82,9 @@ vyúčtování (čl. 6 odst. 1 písm. f GDPR). Proti tomuto zpracování můžet
 vznést námitku (kapitola 10).
 
 **Organizace výletu.** Rozdělení postelí, aut a spojů, program a seznam věcí
-zpracováváme ze stejného oprávněného zájmu: aby výlet proběhl.
+zpracováváme ze stejného oprávněného zájmu: aby výlet proběhl. Ze stejného
+důvodu vedeme i nákupní seznam. Propojení s Rohlíkem zapíná pokladník sám a
+může ho kdykoli zrušit.
 
 **Vedení účtu.** U přihlášených uživatelů je základem plnění smlouvy, tedy
 podmínek užití (čl. 6 odst. 1 písm. b GDPR): bez e-mailu vám nepošleme
@@ -84,8 +93,9 @@ je můžete sami upravit.
 
 **E-maily.** Posíláme jen provozní zprávy: přihlašovací odkazy, potvrzení
 hlasu při plánování výletu, upozornění správcům chaty na nové hlasy při
-plánování, rozhodnutí o žádostech o propojení a žádosti o potvrzení výdaje,
-který za vás zapsal někdo jiný. Žádný marketing.
+plánování, rozhodnutí o žádostech o propojení, žádosti o potvrzení výdaje,
+který za vás zapsal někdo jiný, a pokladníkovi seznam věcí, které musí do
+košíku na Rohlíku přidat ručně. Žádný marketing.
 
 **Statistiky.** Anonymní měření návštěvnosti stojí na oprávněném zájmu vědět,
 jestli web funguje. Statistické cookies ukládáme jen s vaším souhlasem
@@ -124,6 +134,10 @@ jehož účet už byl použit k přihlášení, se nepřihlášeným nezobrazuje
 jedno přihlášení je tedy způsob, jak svůj rozpis a zůstatek schovat.
 Jméno u výletu zůstává v obou případech.
 
+Nákupní seznam chaty je vidět stejně jako program nebo rozdělení postelí,
+včetně toho, pro koho položka je. Přidávat do něj a upravovat ho mohou jen
+přihlášení účastníci dané chaty.
+
 Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě
 pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi", výdaje
 čekající na potvrzení, soukromé výdaje a hlasy z plánování výletu (kdo se
@@ -159,12 +173,15 @@ Provoz služby zajišťují tito zpracovatelé a příjemci:
 | Google | přihlášení přes Google účet, pokud ho použijete | EU/USA |
 | Apple | přihlášení přes Apple účet, pokud ho použijete | EU/USA |
 | Paylibo | generování platebního QR kódu u vyrovnání: číslo účtu příjemce, částka a zpráva platby, plus IP adresa a prohlížeč každého, kdo si QR zobrazí | EU (ČR) |
+| Rohlík.cz (Velká Pecka s.r.o.) | jen když pokladník propojí svůj účet: hledané názvy zboží a seznam produktů s množstvím, které vložíme do jeho košíku. Jména ani e-maily účastníků neposíláme. Objednávka a platba probíhají přímo na Rohlíku podle jeho podmínek; pro účet pokladníka je Rohlík samostatným správcem | EU (ČR) |
 
 Váš prohlížeč navíc při zobrazení předpovědi počasí u výletu stahuje data ze
 služby Open-Meteo (ta se dozví vaši IP adresu, žádné vaše údaje jí
 neposíláme). Přihlášeným návštěvníkům stránka výletu ukazuje i náhledy fotek
 ze sdíleného alba na Google Fotkách; ty prohlížeč stahuje přímo od Googlu,
-který se přitom dozví vaši IP adresu. Odkazy na Google Kalendář a Google
+který se přitom dozví vaši IP adresu. Obrázky produktů v nákupním seznamu
+stahuje prohlížeč přímo od Rohlíku (`cdn.rohlik.cz`), který se tak také
+dozví vaši IP adresu. Odkazy na Google Kalendář a Google
 Mapy otevíráte sami.
 
 Údaje nikomu neprodáváme a nikomu je nepředáváme k reklamě.
@@ -188,6 +205,8 @@ ke konkrétnímu poskytovateli vám na vyžádání pošleme.
 | účet, který se 2 roky nepřihlásil | smažeme včetně vazeb |
 | žádosti o propojení včetně důvodu zamítnutí | smažeme do 12 měsíců od rozhodnutí |
 | hlasy z plánování výletu | součást záznamu výletu, po dobu provozu služby |
+| nákupní seznam chaty | součást záznamu výletu, po dobu provozu služby |
+| propojení pokladníka s Rohlíkem (šifrované tokeny) | do zrušení propojení, nejpozději se smazáním účtu |
 | nepotvrzené hlasy z plánování (jméno, výběr, účet, který je má potvrdit) | smažeme do 12 měsíců od potvrzení, nejpozději do 12 měsíců od vyúčtování výletu |
 | přihlašovací odkazy (tokeny) | platí 15 minut, poté jsou neplatné |
 | odkaz k potvrzení hlasu z plánování | platí 7 dní; hlas sám nepropadá, uloží se při jakémkoli přihlášení |
@@ -229,6 +248,7 @@ nejdřív nám.
 | `NEXT_LOCALE` | pamatuje si zvolený jazyk | 12 měsíců | nezbytná, ukládá se po vaší volbě v patičce |
 | `oauth-state` | náhodný bezpečnostní kód, který chrání přihlášení přes Microsoft, Google nebo Apple před podvržením | 10 minut | nezbytná |
 | `oauth-return-to` | drží návratovou adresu během přihlášení přes Microsoft, Google nebo Apple | 10 minut, jen po dobu přihlašování | nezbytná |
+| `rohlik-oauth-state` | chrání propojení pokladníkova účtu s Rohlíkem před podvržením a drží návratovou adresu | 10 minut, jen po dobu propojování | nezbytná |
 | `oauth-vote-intent` | drží váš hlas z plánování (jméno, termíny, chalupy) během přihlášení přes Microsoft, Google nebo Apple, které jste spustili z hlasovacího formuláře | 10 minut, jen po dobu přihlašování | nezbytná |
 | `zt_login_evt` | jednorázová značka „přihlášení proběhlo" pro statistiky, hned se maže | sekundy | nezbytná technická |
 | `ph_*` | stabilní anonymní identifikátor pro statistiky | 12 měsíců | jen s vaším souhlasem |
@@ -330,6 +350,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
+| 5 | 13. 10. 2026 | Společný nákup: nákupní seznam chaty a jeho propojení s Rohlíkem přes účet pokladníka; Rohlík jako nový příjemce, cookie `rohlik-oauth-state` a doplnění kapitol 3, 4, 6, 7, 9 a 11. |
 | 4 | 30. 8. 2026 | Nepotvrzené hlasy z plánování: hlas zadaný bez přihlášení čeká na potvrzení jako samostatný záznam a uloží se při jakémkoli přihlášení; potvrzovací e-mail, cookie `oauth-vote-intent` a doplnění kapitol 4, 9 a 12. |
 | 3 | 27. 8. 2026 | Soukromé výdaje: nový typ výdaje viditelný jen jeho členům, doplnění kapitoly 6 včetně zobrazení bankovního spojení plátce členům jeho rozdělení. |
 | 2 | 25. 8. 2026 | Fáze plánování výletu: hlasování o termínu a ubytování jako nová kategorie údajů, možnost přidat se k výletu hlasovacím formulářem a s tím spojené doplnění kapitol 2, 3, 5, 6 a 9. |

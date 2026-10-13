@@ -1,5 +1,5 @@
 // English content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/privacy-policy.en.md (version 2, effective 2026-08-25; the
+// docs/legal/privacy-policy.en.md (version 5, effective 2026-10-13; the
 // version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale. The one
 // interactive element is the consent button in section 12.
@@ -38,7 +38,7 @@ export default function PrivacyContentEn() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Privacy policy"
-      lead="zicha.travel · Effective from 25 August 2026 (version 2)"
+      lead="zicha.travel · Effective from 13 October 2026 (version 5)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Who the controller is" icon={<UserCog size={20} />}>
@@ -117,6 +117,13 @@ export default function PrivacyContentEn() {
             with health-related or otherwise sensitive items do not belong here.
           </p>
           <p>
+            <strong>Shopping list:</strong> when a chata has the shared shopping list switched
+            on, we store the items signed-in participants add to it: name, quantity, note, who
+            the item is for and who added it, and the chosen Rohlík product with its price and
+            image where there is one. When the banker connects their Rohlík account, we store
+            the access tokens for that connection, encrypted. We never see the Rohlík password.
+          </p>
+          <p>
             <strong>About visitors:</strong> technical request records (IP address in the
             hosting provider&rsquo;s operational logs), the cookies described in section 11 and
             the anonymous statistics described in section 12. On public forms (sign-in, claim
@@ -143,6 +150,8 @@ export default function PrivacyContentEn() {
           <p>
             <strong>Trip organization.</strong> Bed, car and transport assignments, the program
             and the packing list rest on the same legitimate interest: making the trip happen.
+            The shopping list rests on it too. The banker switches the Rohlík connection on
+            themselves and can switch it off at any time.
           </p>
           <p>
             <strong>Running your account.</strong> For signed-in users the basis is performance
@@ -156,8 +165,9 @@ export default function PrivacyContentEn() {
           <p>
             <strong>Emails.</strong> We send operational messages only: login links,
             confirmations of a trip planning vote, notifications to chata admins about new
-            planning votes, decisions on claim requests, and requests to confirm an expense
-            somebody recorded on your behalf. No marketing.
+            planning votes, decisions on claim requests, requests to confirm an expense somebody
+            recorded on your behalf, and, for the banker, the list of items to add to the Rohlík
+            cart by hand. No marketing.
           </p>
           <p>
             <strong>Statistics.</strong> Anonymous usage measurement rests on our legitimate
@@ -207,6 +217,11 @@ export default function PrivacyContentEn() {
             of a participant whose account has already been used to sign in is not shown to
             anonymous visitors: signing in once is therefore how you hide your own breakdown and
             balance. Your name stays with the trip either way.
+          </p>
+          <p>
+            The chata&rsquo;s shopping list is visible the same way as the program or the bed
+            assignments, including who each item is for. Only signed-in participants of that
+            chata can add to it or change it.
           </p>
           <p>
             Without signing in, a visitor can never see: anyone&rsquo;s bank details except the
@@ -290,12 +305,23 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5 pr-4">Apple sign-in, if you use it</td>
                   <td className="py-2.5">EU/US</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">Paylibo</td>
                   <td className="py-2.5 pr-4">
                     generating the settlement payment QR code: the recipient&rsquo;s account
                     number, amount and payment message, plus the IP address and browser of
                     anyone who views the QR
+                  </td>
+                  <td className="py-2.5">EU (CZ)</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4">Rohlík.cz (Velká Pecka s.r.o.)</td>
+                  <td className="py-2.5 pr-4">
+                    only when the banker connects their account: the product names people search
+                    for and the list of products and quantities we put into the banker&rsquo;s
+                    cart. We send no participant names or emails. Ordering and payment happen on
+                    Rohlík under its own terms; for the banker&rsquo;s account, Rohlík is an
+                    independent controller
                   </td>
                   <td className="py-2.5">EU (CZ)</td>
                 </tr>
@@ -307,7 +333,10 @@ export default function PrivacyContentEn() {
             data from Open-Meteo (which learns your IP address; none of your data is sent to
             it). For signed-in visitors the trip page also shows photo previews from the shared
             Google Photos album; your browser loads those directly from Google, which learns
-            your IP address in the process. Links to Google Calendar and Google Maps are opened
+            your IP address in the process. Product images in the shopping list are loaded by
+            your browser directly from Rohlík (
+            <span className="font-mono text-[13px]">cdn.rohlik.cz</span>), which learns your IP
+            address the same way. Links to Google Calendar and Google Maps are opened
             by you.
           </p>
           <p>We do not sell data to anyone and pass it to no one for advertising.</p>
@@ -361,6 +390,18 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">planning votes</td>
                   <td className="py-2.5">part of the trip record, for as long as the service runs</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">the chata&rsquo;s shopping list</td>
+                  <td className="py-2.5">part of the trip record, for as long as the service runs</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">
+                    the banker&rsquo;s Rohlík connection (encrypted tokens)
+                  </td>
+                  <td className="py-2.5">
+                    until the connection is removed, and when the account is deleted at the latest
+                  </td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">
@@ -487,6 +528,15 @@ export default function PrivacyContentEn() {
                     holds the return address during Microsoft, Google or Apple sign-in
                   </td>
                   <td className="py-2.5 pr-4">10 minutes, only while signing in</td>
+                  <td className="py-2.5">necessary</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4 font-mono text-[13px]">rohlik-oauth-state</td>
+                  <td className="py-2.5 pr-4">
+                    protects the connection of the banker&rsquo;s account to Rohlík against forgery
+                    and holds the return address
+                  </td>
+                  <td className="py-2.5 pr-4">10 minutes, only while connecting</td>
                   <td className="py-2.5">necessary</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -691,6 +741,16 @@ export default function PrivacyContentEn() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">5</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">13 October 2026</td>
+                  <td className="py-2.5">
+                    Shared shopping: the chata&rsquo;s shopping list and its connection to Rohlík
+                    through the banker&rsquo;s account; Rohlík as a new recipient, the{' '}
+                    <span className="font-mono text-[13px]">rohlik-oauth-state</span> cookie and
+                    additions to sections 3, 4, 6, 7, 9 and 11.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">4</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">30 August 2026</td>

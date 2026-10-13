@@ -1,4 +1,5 @@
 import type { CollectionConfig, PayloadRequest } from 'payload'
+import { LinkFeature, UploadFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import type { Chata } from '../payload-types'
 import { afterReadHook } from './Chatas/hooks/afterRead'
 import { canManageChata, ownChataAccess, superadminOnly } from '../lib/access'
@@ -868,6 +869,115 @@ export const Chatas: CollectionConfig = {
           },
         },
       ],
+    },
+
+    // Custom tabs ("Vlastní záložky", src/lib/customTabs.ts): free rich-text
+    // pages shown as extra tabs after the built-in ones. Lexical JSON, not
+    // HTML; the editor is narrowed to features that can't leak data: images
+    // only from the public `media` collection (never receipts), no internal
+    // document links and no relationship embeds.
+    {
+      type: 'collapsible',
+      label: { en: 'Custom tabs', cs: 'Vlastní záložky' },
+      admin: {
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'customTabs',
+          type: 'array',
+          labels: {
+            singular: { en: 'Custom tab', cs: 'Vlastní záložka' },
+            plural: { en: 'Custom tabs', cs: 'Vlastní záložky' },
+          },
+          admin: {
+            description: {
+              en:
+                'Extra tabs on the chata page with your own text and photos, e.g. the Saturday ' +
+                'hike or a menu plan. They appear after the standard tabs, in this order. A tab ' +
+                'without content stays hidden.',
+              cs:
+                'Další záložky na stránce chaty s vlastním textem a fotkami, třeba sobotní výlet ' +
+                'nebo jídelníček. Zobrazí se za běžnými záložkami v tomto pořadí. Záložka bez ' +
+                'obsahu se nezobrazí.',
+            },
+          },
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'title',
+                  type: 'text',
+                  required: true,
+                  maxLength: 24,
+                  label: { en: 'Tab name', cs: 'Název záložky' },
+                  admin: {
+                    width: '60%',
+                    description: {
+                      en: 'Keep it short, e.g. "Výlet".',
+                      cs: 'Stačí krátký, třeba „Výlet“.',
+                    },
+                  },
+                },
+                {
+                  name: 'icon',
+                  type: 'select',
+                  defaultValue: 'file-text',
+                  label: { en: 'Icon', cs: 'Ikona' },
+                  admin: { width: '40%' },
+                  options: [
+                    { label: { en: 'Page', cs: 'Stránka' }, value: 'file-text' },
+                    { label: { en: 'Mountain', cs: 'Hora' }, value: 'mountain' },
+                    { label: { en: 'Map', cs: 'Mapa' }, value: 'map' },
+                    { label: { en: 'Food', cs: 'Jídlo' }, value: 'utensils' },
+                    { label: { en: 'Sparkles', cs: 'Hvězdičky' }, value: 'sparkles' },
+                    { label: { en: 'Book', cs: 'Kniha' }, value: 'book-open' },
+                    { label: { en: 'Calendar', cs: 'Kalendář' }, value: 'calendar' },
+                    { label: { en: 'Info', cs: 'Info' }, value: 'info' },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'content',
+              type: 'richText',
+              required: true,
+              label: { en: 'Content', cs: 'Obsah' },
+              editor: lexicalEditor({
+                features: ({ defaultFeatures }) => [
+                  ...defaultFeatures.filter(
+                    (feature) => !['relationship', 'upload', 'link'].includes(feature.key)
+                  ),
+                  // external links only: no internal links to participants etc.
+                  LinkFeature({ enabledCollections: [] }),
+                  // public images only: receipts and the rest stay out
+                  UploadFeature({ enabledCollections: ['media'] }),
+                ],
+              }),
+            },
+          ],
+        },
+      ],
+    },
+
+    // "Nákup" (src/lib/shopping.ts): the shared shopping list tab. Items live
+    // in the shopping-items collection; the banker orders them on Rohlík.
+    {
+      name: 'shoppingListEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: { en: 'Shopping list ("Nákup" tab)', cs: 'Nákupní seznam (záložka „Nákup“)' },
+      admin: {
+        description: {
+          en:
+            'Signed-in participants add what the group should have; the banker connects their ' +
+            'Rohlík account and sends the list to the Rohlík cart.',
+          cs:
+            'Přihlášení účastníci přidávají, co má skupina mít. Pokladník propojí svůj účet na ' +
+            'Rohlíku a pošle seznam do košíku.',
+        },
+      },
     },
 
     // Transportation

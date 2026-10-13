@@ -2,7 +2,7 @@
 
 zicha.travel
 
-Effective from: 25 August 2026 (version 2)
+Effective from: 13 October 2026 (version 5)
 
 ## 1. Who the controller is
 
@@ -56,6 +56,13 @@ receipt may incidentally contain other data (purchased items, part of a card
 number, a shop address). Upload only receipts for shared expenses; documents
 with health-related or otherwise sensitive items do not belong here.
 
+**Shopping list:** when a chata has the shared shopping list switched on,
+we store the items signed-in participants add to it: name, quantity, note,
+who the item is for and who added it, and the chosen Rohlík product with
+its price and image where there is one. When the banker connects their
+Rohlík account, we store the access tokens for that connection, encrypted.
+We never see the Rohlík password.
+
 **About visitors:** technical request records (IP address in the hosting
 provider's operational logs), the cookies described in section 11 and the
 anonymous statistics described in section 12. On public forms (sign-in,
@@ -75,7 +82,8 @@ legitimate interest, and the whole group's, in a working shared settlement
 
 **Trip organization.** Bed, car and transport assignments, the program and
 the packing list rest on the same legitimate interest: making the trip
-happen.
+happen. The shopping list rests on it too. The banker switches the Rohlík
+connection on themselves and can switch it off at any time.
 
 **Running your account.** For signed-in users the basis is performance of a
 contract, namely the terms of use (Art. 6(1)(b) GDPR): without your email we
@@ -84,8 +92,9 @@ that you can edit your own does not work.
 
 **Emails.** We send operational messages only: login links, confirmations of
 a trip planning vote, notifications to chata admins about new planning votes,
-decisions on claim requests, and requests to confirm an expense somebody
-recorded on your behalf. No marketing.
+decisions on claim requests, requests to confirm an expense somebody recorded
+on your behalf, and, for the banker, the list of items to add to the Rohlík
+cart by hand. No marketing.
 
 **Statistics.** Anonymous usage measurement rests on our legitimate interest
 in knowing whether the site works. Statistics cookies are stored only with
@@ -128,6 +137,10 @@ to sign in is not shown to anonymous visitors: signing in once is
 therefore how you hide your own breakdown and balance. Your name stays
 with the trip either way.
 
+The chata's shopping list is visible the same way as the program or the
+bed assignments, including who each item is for. Only signed-in
+participants of that chata can add to it or change it.
+
 Without signing in, a visitor can never see: anyone's bank details except
 the banker's, receipts, email addresses, the "Keys and Wi-Fi" section,
 expenses waiting for confirmation, private expenses, or planning votes
@@ -165,12 +178,15 @@ The service runs on these processors and recipients:
 | Google | Google sign-in, if you use it | EU/US |
 | Apple | Apple sign-in, if you use it | EU/US |
 | Paylibo | generating the settlement payment QR code: the recipient's account number, amount and payment message, plus the IP address and browser of anyone who views the QR | EU (CZ) |
+| Rohlík.cz (Velká Pecka s.r.o.) | only when the banker connects their account: the product names people search for and the list of products and quantities we put into the banker's cart. We send no participant names or emails. Ordering and payment happen on Rohlík under its own terms; for the banker's account, Rohlík is an independent controller | EU (CZ) |
 
 In addition, when the trip's weather forecast is shown, your browser fetches
 data from Open-Meteo (which learns your IP address; none of your data is
 sent to it). For signed-in visitors the trip page also shows photo previews
 from the shared Google Photos album; your browser loads those directly from
-Google, which learns your IP address in the process. Links to Google
+Google, which learns your IP address in the process. Product images in the
+shopping list are loaded by your browser directly from Rohlík
+(`cdn.rohlik.cz`), which learns your IP address the same way. Links to Google
 Calendar and Google Maps are opened by you.
 
 We do not sell data to anyone and pass it to no one for advertising.
@@ -194,6 +210,8 @@ you the details for a specific provider on request.
 | an account with no login for 2 years | deleted, including its links |
 | claim requests, including rejection reasons | deleted within 12 months of the decision |
 | planning votes | part of the trip record, for as long as the service runs |
+| the chata's shopping list | part of the trip record, for as long as the service runs |
+| the banker's Rohlík connection (encrypted tokens) | until the connection is removed, and when the account is deleted at the latest |
 | pending planning votes (name, selection, the account meant to confirm it) | deleted within 12 months of confirmation, and within 12 months of the trip being settled at the latest |
 | login links (tokens) | valid for 15 minutes, then void |
 | planning vote confirmation link | valid for 7 days; the vote itself does not lapse, it is saved on any sign-in |
@@ -237,6 +255,7 @@ to us first.
 | `NEXT_LOCALE` | remembers the chosen language | 12 months | necessary, stored after your choice in the footer |
 | `oauth-state` | random security code protecting Microsoft, Google and Apple sign-in against forgery | 10 minutes | necessary |
 | `oauth-return-to` | holds the return address during Microsoft, Google or Apple sign-in | 10 minutes, only while signing in | necessary |
+| `rohlik-oauth-state` | protects the connection of the banker's account to Rohlík against forgery and holds the return address | 10 minutes, only while connecting | necessary |
 | `oauth-vote-intent` | holds your planning vote (name, dates, cottages) during a Microsoft, Google or Apple sign-in started from the vote form | 10 minutes, only while signing in | necessary |
 | `zt_login_evt` | one-shot "sign-in happened" marker for statistics, deleted immediately | seconds | necessary, technical |
 | `ph_*` | stable anonymous visitor identifier for statistics | 12 months | only with your consent |
@@ -340,6 +359,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
+| 5 | 13 October 2026 | Shared shopping: the chata's shopping list and its connection to Rohlík through the banker's account; Rohlík as a new recipient, the `rohlik-oauth-state` cookie and additions to sections 3, 4, 6, 7, 9 and 11. |
 | 4 | 30 August 2026 | Pending planning votes: a vote cast without signing in waits for confirmation as its own record and is saved on any sign-in; the confirmation email, the `oauth-vote-intent` cookie and additions to sections 4, 9 and 12. |
 | 3 | 27 August 2026 | Private expenses: a new expense type visible only to its members, additions to section 6 including showing the payer's bank details to the members of its split. |
 | 2 | 25 August 2026 | Trip planning phase: the date and accommodation vote as a new data category, the option to join a trip through the vote form, and the related additions to sections 2, 3, 5, 6 and 9. |

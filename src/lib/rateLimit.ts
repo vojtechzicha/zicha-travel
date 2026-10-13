@@ -81,6 +81,8 @@ export const RATE_LIMITS = {
   claimPerIp: { limit: 10, windowMs: 60 * 60 * 1000 },
   /** decide-link attempts per IP (claims + expenses) */
   decidePerIp: { limit: 30, windowMs: 60 * 60 * 1000 },
+  /** Rohlík product searches per signed-in account (typing in the shopping list) */
+  rohlikSearchPerUser: { limit: 60, windowMs: 60 * 1000 },
 } as const
 
 /** Minimum pause between two magic-link emails to the SAME address —

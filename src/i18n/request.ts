@@ -7,7 +7,16 @@ import { LOCALE_COOKIE, pickLocale } from './config'
 // import below throws at request time. Help & privacy prose lives in
 // locale-keyed page content instead of here — catalogs stay lean enough to
 // ship to the client wholesale.
-const NAMESPACES = ['common', 'chata', 'finance', 'composer', 'trip', 'auth', 'planning'] as const
+const NAMESPACES = [
+  'common',
+  'chata',
+  'finance',
+  'composer',
+  'trip',
+  'auth',
+  'planning',
+  'shopping',
+] as const
 
 export default getRequestConfig(async () => {
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])

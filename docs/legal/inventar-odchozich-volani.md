@@ -17,6 +17,8 @@ ve stejném PR.
 | Apple `appleid.apple.com` | server + redirect (callback přichází jako POST od Applu) | OAuth výměna |
 | PostHog EU | server-side jen přes rewrites `/ingest` | statistické události |
 | Google Fotky (`photos.app.goo.gl`, `photos.google.com`, `goo.gl`) | server (`api/chatas/[id]/album-photos`, cache ~6 h) | URL veřejné stránky sdíleného alba — bez osobních údajů |
+| Rohlík `identity.rohlik.cz` (OAuth, dynamická registrace klienta) | server + redirect (`api/shopping-items/rohlik/connect` a `/callback`) | OAuth výměna pokladníkova účtu (PKCE); tokeny ukládáme šifrovaně |
+| Rohlík MCP `mcp.rohlik.cz/mcp` | server (`api/shopping-items/rohlik/search` a `/send`, s tokenem pokladníka) | hledaný text a seznam produktů s množstvím do pokladníkova košíku; žádná jména ani e-maily účastníků |
 
 ## Odchozí volání (prohlížeč návštěvníka)
 
@@ -28,6 +30,7 @@ ve stejném PR.
 | `api.paylibo.com` | QRPayment (`<img>`) | účet příjemce, částka, zpráva, IP |
 | bucket S3 (presigned PUT) | ExpenseComposer upload | soubor účtenky |
 | `lh3.googleusercontent.com` | AlbumMoments (jen přihlášení, chata se sdíleným albem Google Fotek) | IP při načtení náhledů fotek |
+| `cdn.rohlik.cz` | ShoppingView (obrázky produktů v nákupním seznamu, `<img>`) | IP při načtení obrázků; CSP beze změny (`img-src https:`) |
 | Google (Kalendář/Mapy) | až po kliknutí na odkaz | obsah odkazu |
 
 Pozadí chat se od blockeru 10 hostují lokálně (fetch-and-store); staré
@@ -39,6 +42,7 @@ externí řádky převede `pnpm backgrounds:selfhost`. Admin fonty jsou v
 `payload-token` (1 rok, obnovuje se používáním / 2 h správci),
 `zt_consent` (12 m),
 `NEXT_LOCALE` (12 m), `oauth-state` + `oauth-return-to` (10 min),
+`rohlik-oauth-state` (10 min, propojení pokladníka s Rohlíkem),
 `zt_login_evt` (sekundy), `ph_*` (12 m, jen se souhlasem). Detaily a
 právní režim: zásady kap. 11.
 

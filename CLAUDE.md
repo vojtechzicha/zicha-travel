@@ -409,6 +409,56 @@ API payload, no new endpoints).
   Outbound-calls inventory, zpracovatelé table and the `/soukromi` policy
   (ch. 7 paragraph, both locales + both markdowns) name the Google
   hotlink; CSP needs nothing new (`img-src https:`).
+- **"Vlastní záložky"** (`customTabs`: title ≤ 24 chars, icon select,
+  `content` richText): admin-authored tabs rendered after the built-in
+  ones (`?view=custom&tab=<row id>`; a stale id falls back to the default
+  view; hidden during planning). Lexical JSON, NEVER raw HTML: chata
+  admins aren't all superadmins, the page is public and the session cookie
+  spans every subdomain, so admin markup would be stored XSS. The field's
+  editor drops relationship embeds and internal links
+  (`LinkFeature({ enabledCollections: [] })`) and allows images only from
+  `media` (`UploadFeature`), so receipts can't be embedded. `media` create
+  is still superadmin-only: chata admins pick existing images, uploading
+  new ones needs a superadmin. Frontend `CustomTabView.tsx` renders via
+  `RichText` from `@payloadcms/richtext-lexical/react` with own link
+  (`safeLinkHref`: http(s)/mailto/tel/same-site only) and image
+  (lazy, shared `PhotoLightbox`) converters; the slug API's depth 2
+  populates the image nodes. Pure helpers (`visibleCustomTabs`,
+  `hasRichTextContent`, `resolveCustomTab`, `safeLinkHref`) in
+  `src/lib/customTabs.ts`, tested in `tests/int/customTabs.int.spec.ts`;
+  DDL appended to `NEW_SCHEMA_DDL`.
+- **"Nákup"** (shared shopping list + Rohlík, `Chata.shoppingListEnabled`,
+  collection `shopping-items`): a tab where signed-in participants add what
+  the group should have (for themselves or their own other participants,
+  e.g. a child); the author edits/deletes their items, the banker and chata
+  admins tidy everything, anonymous visitors read only. Enforced in the
+  collection's beforeChange hook + update/delete access (`bankerChataIds`);
+  `authoredBy` is maxDepth 0 and never shipped by the slug API, which sends
+  `shopping` (items with `mine`/`canEdit` flags, `canAdd`, the viewer's
+  participants, `shopper`) — null while disabled or planning. The BANKER
+  connects their Rohlík account (OAuth on identity.rohlik.cz with dynamic
+  client registration + PKCE, tokens AES-GCM-encrypted with a key derived
+  from `PAYLOAD_SECRET` in the hidden `rohlik-connections` collection) and
+  our server talks to Rohlík's OFFICIAL MCP server (`mcp.rohlik.cz/mcp`,
+  experimental per Rohlík) to search products for everyone and to fill the
+  banker's own Rohlík cart (`mergeCartLines` sums the same product). We
+  never order or pay; free-text items stay for manual adding, and every send
+  that leaves something manual (free-text items, lines Rohlík refused)
+  emails the "přidej ručně" checklist to the banker, or to the chata admins
+  when the banker's account has no email (`src/utils/shoppingEmail.ts`,
+  builder `src/lib/shoppingEmail.ts`, Czech tykání). Emailed free-text
+  items count as sent (handed over), refused lines stay pending; the send
+  button is live while anything is pending. Product fields are NEVER taken
+  from a REST body: a new `rohlik.productId` is verified with Rohlík's
+  `get_product_details` through the banker's connection and its own name,
+  price and size are stored (title follows the product name); the same id
+  keeps the stored values; an unverifiable id turns the item into free
+  text (`verifiedRohlikProduct`). Endpoints in
+  `src/collections/ShoppingItems/rohlikEndpoints.ts`, client in
+  `src/lib/rohlik/`, rules in `src/lib/shopping.ts`; tests
+  `tests/int/shopping.int.spec.ts` (pure) and `shoppingApi.int.spec.ts`
+  (access matrix). Strings in the `shopping` i18n namespace. Legal: Rohlík
+  is listed in the outbound-calls inventory and the policy's recipients.
 - Public transport assignment (`publicTransportOptions[].riders`, same
   `{ participant }` array shape as car passengers): Organizace renders a
   "Veřejnou dopravou" block next to the cars (route title, Tam/Zpět badge,

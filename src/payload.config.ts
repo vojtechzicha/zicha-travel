@@ -13,6 +13,7 @@ import { adminTranslations } from './i18n/adminTranslations'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { RohlikConnections } from './collections/RohlikConnections'
 import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
 import { Expenses } from './collections/Expenses'
@@ -24,6 +25,7 @@ import { TripDateOptions } from './collections/TripDateOptions'
 import { TripAccommodationOptions } from './collections/TripAccommodationOptions'
 import { TripVotes } from './collections/TripVotes'
 import { PendingVotes } from './collections/PendingVotes'
+import { ShoppingItems } from './collections/ShoppingItems'
 import { DataRequests } from './collections/DataRequests'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
@@ -80,11 +82,13 @@ export default buildConfig({
     TripAccommodationOptions,
     TripVotes,
     PendingVotes,
+    ShoppingItems,
     ExpenseAttachments,
     Backgrounds,
     Icons,
     Users,
     Media,
+    RohlikConnections,
     DataRequests,
   ],
   editor: lexicalEditor(),

@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Metadata, Viewport } from 'next'
-import { Inter, Merriweather } from 'next/font/google'
+import { Inter, Martian_Mono, Merriweather } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getTranslations } from 'next-intl/server'
@@ -29,6 +29,16 @@ const merriweather = Merriweather({
   subsets: ['latin', 'latin-ext'],
   display: 'swap',
   variable: '--font-merriweather',
+})
+
+// The "Nákup" receipt only (ShoppingView): a receipt-printer mono, slightly
+// condensed through the width axis. Not preloaded — no other screen uses it.
+const martianMono = Martian_Mono({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  axes: ['wdth'],
+  preload: false,
+  variable: '--font-martian-mono',
 })
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -78,7 +88,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const consentDecision = resolveConsent(cookieStore.get(CONSENT_COOKIE)?.value, new Date())
 
   return (
-    <html lang={locale} className={`${inter.variable} ${merriweather.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${merriweather.variable} ${martianMono.variable}`}>
       <body className="flex flex-col min-h-screen">
         <NextIntlClientProvider>
           {/* Wraps content AND footer: photo credits are raised inside the

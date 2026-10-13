@@ -1,0 +1,116 @@
+{
+  "title": "Shopping list",
+  "intro": "{name} orders everything in one go on Rohlík before the trip. Add what you'd like to have at the chata.",
+  "introNoShopper": "We order everything in one go on Rohlík before the trip. Add what you'd like to have at the chata.",
+  "addLabel": "What to add",
+  "searchPlaceholder": "What goes in the cart?",
+  "searching": "Searching Rohlík…",
+  "noResults": "Nothing like that on Rohlík.",
+  "addAsText": "Add as plain text: \"{text}\"",
+  "searchNotConnected": "Rohlík search starts working once {name} connects their account. Until then, add items as text.",
+  "searchNotConnectedNoName": "Rohlík search starts working once the banker connects their account. Until then, add items as text.",
+  "searchUnavailable": "Rohlík isn't responding right now. You can still add the item as text.",
+  "clearSelection": "Clear selection",
+  "less": "Fewer",
+  "more": "More",
+  "notePlaceholder": "Note, e.g. lactose-free",
+  "forWhom": "For",
+  "submit": "Add to list",
+  "saving": "Saving…",
+  "saveFailed": "That didn't save. Try again.",
+  "wantedBy": "for {name}",
+  "inCart": "in cart",
+  "ownItem": "custom item",
+  "delete": "Delete",
+  "deleteConfirm": "Delete it?",
+  "deleteYes": "Delete",
+  "deleteNo": "Keep",
+  "itemsCount": "{count, plural, one {# item} other {# items}}",
+  "unpriced": "{count, plural, one {# item has no price} other {# items have no price}}",
+  "anonHint": "Sign in to add what you'd like at the chata.",
+  "signIn": "Sign in",
+  "noParticipantHint": "Only participants of this chata can add items.",
+  "shopperConnectIntro": "Connect your Rohlík account. Everyone will then see real products with prices as they type, and you can send the whole list to your cart in one click.",
+  "connect": "Connect Rohlík",
+  "send": "Send to Rohlík cart",
+  "sending": "Sending…",
+  "nothingToSend": "The list is empty so far.",
+  "sendAdded": "Added {count, plural, one {# product} other {# products}} to the cart.",
+  "sendFailedLines": "Couldn't add: {titles}.",
+  "sendSkipped": "Add {count, plural, one {# custom item} other {# custom items}} to the cart by hand.",
+  "sendFailed": "Sending to the cart didn't work. Try again in a moment.",
+  "disconnect": "Disconnect Rohlík",
+  "disconnectConfirm": "Disconnect your Rohlík account?",
+  "disconnectYes": "Disconnect",
+  "disconnectNo": "Keep",
+  "disconnectFailed": "Disconnecting didn't work. Try again.",
+  "connectedToast": "Rohlík is connected.",
+  "connectErrorToast": "Connecting Rohlík didn't work. Try again.",
+  "dismiss": "Close",
+  "staples": [
+    {
+      "label": "sausages",
+      "q": "buřty"
+    },
+    {
+      "label": "beer",
+      "q": "pivo"
+    },
+    {
+      "label": "rolls",
+      "q": "rohlík"
+    },
+    {
+      "label": "bread",
+      "q": "chléb"
+    },
+    {
+      "label": "mustard",
+      "q": "hořčice"
+    },
+    {
+      "label": "coffee",
+      "q": "káva"
+    },
+    {
+      "label": "milk",
+      "q": "mléko"
+    },
+    {
+      "label": "eggs",
+      "q": "vejce"
+    },
+    {
+      "label": "cheese",
+      "q": "sýr"
+    },
+    {
+      "label": "crisps",
+      "q": "brambůrky"
+    },
+    {
+      "label": "wine",
+      "q": "víno"
+    },
+    {
+      "label": "toilet paper",
+      "q": "toaletní papír"
+    }
+  ],
+  "peopleTitle": "Who wants what",
+  "peopleCount": "{count, plural, one {# thing} other {# things}}",
+  "receiptSubtitle": "Group shopping",
+  "subtotal": "Subtotal",
+  "estimateNote": "At today's Rohlík prices.",
+  "unknownPrice": "A question mark means we don't know the price yet.",
+  "receiptEmpty": "Nothing here yet. Who's adding the first sausages?",
+  "thanks": "Enjoy!",
+  "stamp": "In the cart",
+  "soldOut": "Sold out right now",
+  "sendHint": "Sends only what hasn't gone yet. Anything Rohlík can't take comes to you by email.",
+  "finishOrder": "Finish the order on Rohlík",
+  "sendEmailed": "The list of what to add by hand is in your email too.",
+  "allSent": "Everything's sent. The button turns on again when someone adds something.",
+  "handedOver": "the banker adds it by hand",
+  "stampSent": "Sent"
+}

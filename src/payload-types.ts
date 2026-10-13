@@ -77,11 +77,13 @@ export interface Config {
     'trip-accommodation-options': TripAccommodationOption;
     'trip-votes': TripVote;
     'pending-votes': PendingVote;
+    'shopping-items': ShoppingItem;
     'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
     users: User;
     media: Media;
+    'rohlik-connections': RohlikConnection;
     'data-requests': DataRequest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -109,11 +111,13 @@ export interface Config {
     'trip-accommodation-options': TripAccommodationOptionsSelect<false> | TripAccommodationOptionsSelect<true>;
     'trip-votes': TripVotesSelect<false> | TripVotesSelect<true>;
     'pending-votes': PendingVotesSelect<false> | PendingVotesSelect<true>;
+    'shopping-items': ShoppingItemsSelect<false> | ShoppingItemsSelect<true>;
     'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'rohlik-connections': RohlikConnectionsSelect<false> | RohlikConnectionsSelect<true>;
     'data-requests': DataRequestsSelect<false> | DataRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -383,6 +387,38 @@ export interface Chata {
    * Link to the shared photo album. Offered before and during the trip so people add photos as they go, and featured again in the recap.
    */
   sharedAlbumUrl?: string | null;
+  /**
+   * Extra tabs on the chata page with your own text and photos, e.g. the Saturday hike or a menu plan. They appear after the standard tabs, in this order. A tab without content stays hidden.
+   */
+  customTabs?:
+    | {
+        /**
+         * Keep it short, e.g. "Výlet".
+         */
+        title: string;
+        icon?: ('file-text' | 'mountain' | 'map' | 'utensils' | 'sparkles' | 'book-open' | 'calendar' | 'info') | null;
+        content: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Signed-in participants add what the group should have; the banker connects their Rohlík account and sends the list to the Rohlík cart.
+   */
+  shoppingListEnabled?: boolean | null;
   /**
    * Parking information
    */
@@ -1126,6 +1162,54 @@ export interface PendingVote {
   createdAt: string;
 }
 /**
+ * What participants want bought for the trip. The banker orders it on Rohlík.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shopping-items".
+ */
+export interface ShoppingItem {
+  id: number;
+  chata: number | Chata;
+  title: string;
+  quantity: number;
+  note?: string | null;
+  participant?: (number | null) | Participant;
+  /**
+   * Filled in when the item was picked from the Rohlík search. Empty for a free-text item.
+   */
+  rohlik?: {
+    productId?: string | null;
+    name?: string | null;
+    price?: number | null;
+    amount?: string | null;
+    imageUrl?: string | null;
+    url?: string | null;
+  };
+  authoredBy?: (number | null) | User;
+  sentToCartAt?: string | null;
+  sentQuantity?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Rohlík accounts connected by bankers for the shopping list. Created by the connect flow on the chata page; tokens are encrypted and not shown. Delete a row to disconnect.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rohlik-connections".
+ */
+export interface RohlikConnection {
+  id: number;
+  user: number | User;
+  clientId?: string | null;
+  redirectUri?: string | null;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  expiresAt?: string | null;
+  connectedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Log of GDPR data-subject requests (access, copy, rectification, erasure...). One row per request; the policy promises an answer within one month of receivedAt.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1213,6 +1297,10 @@ export interface PayloadLockedDocument {
         value: number | PendingVote;
       } | null)
     | ({
+        relationTo: 'shopping-items';
+        value: number | ShoppingItem;
+      } | null)
+    | ({
         relationTo: 'expense-attachments';
         value: number | ExpenseAttachment;
       } | null)
@@ -1231,6 +1319,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'rohlik-connections';
+        value: number | RohlikConnection;
       } | null)
     | ({
         relationTo: 'data-requests';
@@ -1377,6 +1469,15 @@ export interface ChatasSelect<T extends boolean = true> {
         id?: T;
       };
   sharedAlbumUrl?: T;
+  customTabs?:
+    | T
+    | {
+        title?: T;
+        icon?: T;
+        content?: T;
+        id?: T;
+      };
+  shoppingListEnabled?: T;
   parking?: T;
   carRoutes?:
     | T
@@ -1630,6 +1731,32 @@ export interface PendingVotesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shopping-items_select".
+ */
+export interface ShoppingItemsSelect<T extends boolean = true> {
+  chata?: T;
+  title?: T;
+  quantity?: T;
+  note?: T;
+  participant?: T;
+  rohlik?:
+    | T
+    | {
+        productId?: T;
+        name?: T;
+        price?: T;
+        amount?: T;
+        imageUrl?: T;
+        url?: T;
+      };
+  authoredBy?: T;
+  sentToCartAt?: T;
+  sentQuantity?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "expense-attachments_select".
  */
 export interface ExpenseAttachmentsSelect<T extends boolean = true> {
@@ -1719,6 +1846,21 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rohlik-connections_select".
+ */
+export interface RohlikConnectionsSelect<T extends boolean = true> {
+  user?: T;
+  clientId?: T;
+  redirectUri?: T;
+  accessToken?: T;
+  refreshToken?: T;
+  expiresAt?: T;
+  connectedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
