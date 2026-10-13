@@ -198,10 +198,12 @@ export function placeInBed(
                 ? b
                 : {
                     ...b,
-                    occupants: [
-                      ...(b.occupants ?? []),
-                      { participant: Number(args.participantId), nights: wanted },
-                    ],
+                    occupants: addOccupant(
+                      b.occupants ?? [],
+                      args.participantId,
+                      wanted,
+                      args.totalNights,
+                    ),
                   },
             ),
           },
@@ -236,6 +238,26 @@ export function roomHasSpace(
         return n == null || n.includes(night)
       }).length < max,
   )
+}
+
+/**
+ * Add a person to a bed's occupants. If they already sleep in this bed on
+ * other nights (per-night mode), their nights merge into that one row
+ * instead of a second chip appearing for the same person.
+ */
+function addOccupant(
+  occupants: OccupantRow[],
+  participantId: Id,
+  nights: number[] | null,
+  totalNights: number,
+): OccupantRow[] {
+  const target = String(participantId)
+  const existing = occupants.find((o) => refOf(o.participant) === target)
+  if (!existing) return [...occupants, { participant: Number(participantId), nights }]
+  const current = nightsOf(existing, totalNights)
+  const merged =
+    nights == null || current == null ? null : normalizeNights([...current, ...nights], totalNights)
+  return occupants.map((o) => (o === existing ? { ...o, nights: merged } : o))
 }
 
 // ─── cars ────────────────────────────────────────────────────────────────

@@ -245,7 +245,8 @@
     "carWhenOther": "When and where are they leaving from?",
     "carExtraOther": "Bringing anything else?",
     "backHere": "Back seat",
-    "travelBack": "{title}, by public transport."
+    "travelBack": "{title}, by public transport.",
+    "iDriveOther": "Drives"
   },
   "participants": {
     "title": "Who's coming?",

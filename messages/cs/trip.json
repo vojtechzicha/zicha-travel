@@ -245,7 +245,8 @@
     "carWhenOther": "Kdy a odkud vyráží?",
     "carExtraOther": "Veze něco navíc?",
     "backHere": "Vzadu",
-    "travelBack": "{title}, veřejnou dopravou."
+    "travelBack": "{title}, veřejnou dopravou.",
+    "iDriveOther": "Jede autem"
   },
   "participants": {
     "title": "Kdo všechno jede?",

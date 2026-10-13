@@ -6,7 +6,9 @@ import {
   getArrivalGroups,
   getTripPhase,
   nightLabel,
+  getBedAssignments,
   nightlyCounts,
+  personNights,
   transportDay,
 } from '@/app/(frontend)/utils/tripData'
 
@@ -155,5 +157,39 @@ describe('transportDay', () => {
     expect(transportDay(balt, { direction: 'tam', travelDate: d('2027-07-10') })).toBe(
       d('2027-07-10'),
     )
+  })
+})
+
+describe('split-night bed assignments', () => {
+  const people = [
+    { id: 1, name: 'Eva' },
+    { id: 2, name: 'Jan' },
+  ] as Participant[]
+  const split = chata({
+    tripDateFrom: d('2026-11-13'),
+    tripDateTo: d('2026-11-16'),
+    rooms: [
+      {
+        name: 'Velký',
+        maxSleepingSpaces: 2,
+        beds: [{ name: 'A', occupants: [{ participant: 1, nights: [1, 2] }, { participant: 2 }] }],
+      },
+      {
+        name: 'Malý',
+        maxSleepingSpaces: 1,
+        beds: [{ name: 'B', occupants: [{ participant: 1, nights: [3] }] }],
+      },
+    ] as Chata['rooms'],
+  })
+
+  it('unions the nights of every row and shows the bed with the most nights', () => {
+    const eva = getBedAssignments(split, people).get(1)
+    expect(eva?.roomName).toBe('Velký')
+    expect(eva?.nights).toEqual([1, 2, 3])
+  })
+
+  it('counts every night in the person-night total', () => {
+    // Eva 3 nights (two rows) + Jan the whole 3-night stay
+    expect(personNights(split, people)).toBe(6)
   })
 })

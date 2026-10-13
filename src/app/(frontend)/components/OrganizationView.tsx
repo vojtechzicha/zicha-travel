@@ -195,9 +195,14 @@ export function OrganizationView({
     return participants.filter((p) => !carSeats.has(p.id) && !transportByDirection.get(p.id)?.there)
   }, [hasCars, sharedCars, participants, carSeats, transportByDirection])
 
-  // the viewer's own participants, the account holder (first) leading
-  const own = useMemo(() => participants.filter((p) => myIds.includes(p.id)), [participants, myIds])
-  const selfId = own[0]?.id ?? null
+  // the viewer's own participants in a stable order. Nothing marks which of
+  // several (a parent and a child) is the account holder, so first-person
+  // wording ("ty") is used only when the account has exactly one here
+  const own = useMemo(
+    () => participants.filter((p) => myIds.includes(p.id)).sort((a, b) => a.id - b.id),
+    [participants, myIds],
+  )
+  const selfId = own.length === 1 ? own[0].id : null
   const byId = useMemo(() => new Map(participants.map((p) => [p.id, p])), [participants])
 
   // ── who may edit (the server checks the same rules) ──
@@ -481,7 +486,7 @@ export function OrganizationView({
       )
     } else {
       const canRide = canEdit && anyCarWithSeatFor(participant.id)
-      const canDrive = canEdit && self && !drivingIds.has(String(participant.id))
+      const canDrive = canEdit && !drivingIds.has(String(participant.id))
       travel = (
         <>
           <span className="text-[14px] text-gray-500 dark:text-slate-400">
@@ -504,7 +509,7 @@ export function OrganizationView({
               }
               className={linkButtonClass}
             >
-              {o('iDrive')}
+              {self ? o('iDrive') : o('iDriveOther')}
             </button>
           )}
         </>

@@ -163,6 +163,31 @@ describe('beds', () => {
     expect(occupantsOf(result.value, 'r2')).toEqual([{ p: '10', n: [2] }])
   })
 
+  it('merges nights into one row when the person picks a bed they already have', () => {
+    const first = placeInBed(rooms(), {
+      roomId: 'r2',
+      bedId: 'b2',
+      participantId: 11,
+      perNight: true,
+      totalNights: 2,
+      nights: [1],
+    })
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    const second = placeInBed(first.value, {
+      roomId: 'r2',
+      bedId: 'b2',
+      participantId: 11,
+      perNight: true,
+      totalNights: 2,
+      nights: [2],
+    })
+    expect(second.ok).toBe(true)
+    if (!second.ok) return
+    // one row, both nights = the whole stay
+    expect(occupantsOf(second.value, 'r2')).toEqual([{ p: '11', n: null }])
+  })
+
   it('stores all nights as the whole stay', () => {
     expect(normalizeNights([2, 1, 2], 2)).toBeNull()
     expect(normalizeNights([3, 0, 'x', 1], 2)).toEqual([1])
