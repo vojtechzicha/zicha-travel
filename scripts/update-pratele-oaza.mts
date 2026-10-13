@@ -158,22 +158,172 @@ const ROUTE_URL = 'https://mapy.com/s/gukesomobo'
 // by Vojta, who booked the cottage and settles with the owner. Prices from
 // the e-chalupy listing (off-season). Upserted by title, so re-runs update
 // rather than duplicate; an expense somebody marked paid keeps its state.
-const EXPENSES = [
+// Public transport between Praha Háje and the cottage, from IDOS for the
+// exact dates (stop Řehenice, Babice, 940 m from the cottage). Four rows so
+// people can sign up per connection; `mustRide` lists who has to be on a
+// row (only Vojta, back on Tuesday), and the merge in main() keeps everybody
+// assigned later. The schema knows only trains
+// and buses, so the metro legs are typed as buses ("Metro C") for now.
+const WALK = 'Ze zastávky Řehenice, Babice je to na chatu 940 m pěšky, asi 15 minut.'
+const BACK_NOTE =
+  'Z chaty vyraz kolem 10:15, na zastávku Řehenice, Babice je to 940 m. ' +
+  'Autobus 339 jede na Budějovickou, odtud metro C na Háje.'
+const TRANSPORT = [
   {
-    title: 'Chata Oáza: víkend',
-    amount: 14000,
-    split: 'all',
-    date: '2026-10-13T10:00:00.000Z',
-    note: 'Celá chata na dvě noci, z pátku 13. 11. do neděle 15. 11. Mimosezónní cena za víkend.',
+    title: 'Tam v pátek ve 14:35 z Hájí',
+    travelDate: day('2026-11-13'),
+    direction: 'tam',
+    totalDuration: '1 h včetně chůze',
+    notes: `Na chatě budeš kolem 15:50, check-in je od 16:00. ${WALK}`,
+    connections: [
+      {
+        type: 'autobus',
+        number: '154',
+        from: 'Háje',
+        to: 'U Tří svatých',
+        departure: '14:35',
+        arrival: '14:55',
+      },
+      {
+        type: 'autobus',
+        number: '337',
+        from: 'U Tří svatých',
+        to: 'Řehenice, Babice',
+        departure: '14:59',
+        arrival: '15:34',
+      },
+    ],
   },
   {
-    title: 'Chata Oáza: prodloužení do úterý',
-    amount: 9000,
-    split: 'extension',
-    date: '2026-10-13T10:00:00.000Z',
+    title: 'Tam v pátek v 17:08 z Hájí',
+    travelDate: day('2026-11-13'),
+    direction: 'tam',
+    totalDuration: '1 h 15 min včetně chůze',
+    notes: `Na Budějovické máš na přestup 3 minuty. ${WALK} Půjdeš za tmy, vezmi si čelovku.`,
+    connections: [
+      {
+        type: 'autobus',
+        number: 'Metro C',
+        from: 'Háje',
+        to: 'Budějovická',
+        departure: '17:08',
+        arrival: '17:17',
+      },
+      {
+        type: 'autobus',
+        number: '339',
+        from: 'Budějovická',
+        to: 'Řehenice, Babice',
+        departure: '17:20',
+        arrival: '18:07',
+      },
+    ],
+  },
+  {
+    title: 'Zpět v neděli v 10:35',
+    travelDate: day('2026-11-15'),
+    direction: 'zpet',
+    totalDuration: '1 h 25 min včetně chůze',
+    notes: BACK_NOTE,
+    connections: [
+      {
+        type: 'autobus',
+        number: '339',
+        from: 'Řehenice, Babice',
+        to: 'Budějovická',
+        departure: '10:35',
+        arrival: '11:33',
+      },
+      {
+        type: 'autobus',
+        number: 'Metro C',
+        from: 'Budějovická',
+        to: 'Háje',
+        departure: '11:36',
+        arrival: '11:45',
+      },
+    ],
+  },
+  {
+    title: 'Zpět v úterý v 10:35',
+    travelDate: day('2026-11-17'),
+    direction: 'zpet',
+    totalDuration: '1 h 25 min včetně chůze',
+    notes: `${BACK_NOTE} V úterý je svátek a jede se jako v neděli. Den předem si spoj radši ověř.`,
+    mustRide: [P.vojta],
+    connections: [
+      {
+        type: 'autobus',
+        number: '339',
+        from: 'Řehenice, Babice',
+        to: 'Budějovická',
+        departure: '10:35',
+        arrival: '11:33',
+      },
+      {
+        type: 'autobus',
+        number: 'Metro C',
+        from: 'Budějovická',
+        to: 'Háje',
+        departure: '11:36',
+        arrival: '11:45',
+      },
+    ],
+  },
+]
+
+// The owner's offer (Radim Prokop): weekend 14 000 + 2 × 4 500 for the
+// extension = 23 000, rounded down to 22 000; the 1 000 discount sits on the
+// extension (8 000), the weekend is the standard price. 50 % deposit within
+// 7 days of booking, the rest a week before arrival. Plus energy and the
+// municipal fee of 15 Kč per adult and night.
+const EXPENSES = [
+  {
+    title: 'Chata Oáza: záloha za víkend',
+    amount: 7000,
+    split: 'all',
+    date: '2026-10-20T10:00:00.000Z',
     note:
-      'Dvě noci navíc, z neděle 15. 11. do úterý 17. 11., po 4 500 Kč za celou chatu. ' +
-      'Dělí se mezi ty, kdo zůstanou; kdo se přidá, připíšeme ho do rozdělení.',
+      'Polovina ceny za víkend (14 000 Kč za celou chatu, pátek až neděle). ' +
+      'Záloha se platí do 7 dnů od rezervace.',
+  },
+  {
+    title: 'Chata Oáza: doplatek za víkend',
+    amount: 7000,
+    split: 'all',
+    date: '2026-11-06T10:00:00.000Z',
+    note: 'Druhá polovina ceny za víkend, splatná týden před příjezdem.',
+  },
+  {
+    title: 'Chata Oáza: záloha za prodloužení',
+    amount: 4000,
+    split: 'extension',
+    date: '2026-10-20T10:00:00.000Z',
+    note:
+      'Polovina ceny za dvě noci navíc, z neděle 15. 11. do úterý 17. 11. Majitel dal za ' +
+      'celý pobyt 22 000 Kč místo 23 000 Kč, sleva je započtená tady. Dělí se mezi ty, ' +
+      'kdo zůstanou; kdo se přidá, připíšeme ho do rozdělení.',
+  },
+  {
+    title: 'Chata Oáza: doplatek za prodloužení',
+    amount: 4000,
+    split: 'extension',
+    date: '2026-11-06T10:00:00.000Z',
+    note: 'Druhá polovina ceny za prodloužení, splatná týden před příjezdem.',
+  },
+  {
+    title: 'Poplatek obci za víkend',
+    amount: 270,
+    split: 'all',
+    date: '2026-11-13T16:00:00.000Z',
+    note: '15 Kč za dospělého a noc: 9 lidí, 2 noci.',
+  },
+  {
+    title: 'Poplatek obci za prodloužení',
+    amount: 30,
+    split: 'extension',
+    date: '2026-11-17T10:00:00.000Z',
+    note: '15 Kč za dospělého a noc za neděli a pondělí. Upravíme podle toho, kdo zůstane.',
   },
   {
     title: 'Kauce',
@@ -200,6 +350,9 @@ const EXPENSES = [
       'Po odečtu při odjezdu částku opravíme.',
   },
 ] as const
+
+// expenses an earlier version created, replaced by the deposit/balance pairs
+const RETIRED_EXPENSES = ['Chata Oáza: víkend', 'Chata Oáza: prodloužení do úterý']
 
 const buildData = (m: MediaIds) => ({
   location: 'Vavřetice, Benešovsko',
@@ -262,6 +415,9 @@ const buildData = (m: MediaIds) => ({
     {
       info: 'Kdo může, zůstane až do úterý 17. 11. (státní svátek). Prodloužení je s majitelem potvrzené.',
     },
+    {
+      info: 'Společný nákup objedná Vojta na Rohlíku s doručením přímo na chatu v pátek večer, až budeme všichni. Co chceš, přidej v záložce Nákup.',
+    },
     { info: 'Při předání klíčů se skládá vratná kauce.' },
     { info: 'Povlečení, ručníky, tablety do myčky a základní drogerie jsou v ceně.' },
     { info: 'Pejsci můžou s námi.' },
@@ -291,12 +447,17 @@ const buildData = (m: MediaIds) => ({
     { item: 'Boty a oblečení na sobotní výlet' },
     { item: 'Teplé oblečení na večer u ohně' },
     { item: 'Přezůvky' },
-    { item: 'Jídlo a pití na páteční večer (obchod je 5 km od chaty)' },
+    { item: 'Něco k jídlu na páteční odpoledne, nákup z Rohlíku dorazí večer' },
+    { item: 'Notebook, kdo zůstává do úterý' },
     { item: 'Pelíšek a misky pro pejska' },
   ],
 
   program: [
-    { date: day('2026-11-13'), description: 'Příjezd od 16:00, večer sauna a vířivka' },
+    {
+      date: day('2026-11-13'),
+      description:
+        'Příjezd od 16:00. Večer, až budeme všichni, přiveze Rohlík společný nákup. Pak sauna a vířivka',
+    },
     {
       date: day('2026-11-14'),
       description: 'Okruh k Sázavě (13 km) s obědem v Nespekách, víc v záložce Sobotní výlet',
@@ -306,11 +467,19 @@ const buildData = (m: MediaIds) => ({
       description:
         'Úklid a odjezd do 10:00. Kdo může, zůstává do úterý, víc v záložce Pokračujeme do úterý',
     },
+    {
+      date: day('2026-11-16'),
+      description: 'Kdo zůstal, pracuje z chaty. Večer sauna a vířivka',
+    },
+    {
+      date: day('2026-11-17'),
+      description: 'Státní svátek. Úklid a odjezd do 10:00, autobus z Řehenic v 10:35',
+    },
   ],
 
   surroundings: [
     { name: 'Les', note: 'hned za plotem', category: 'place' },
-    { name: 'Autobusová zastávka', note: '500 m', category: 'place' },
+    { name: 'Autobusová zastávka Řehenice, Babice', note: '940 m pěšky', category: 'place' },
     { name: 'Pošta a bankomat', note: '2 km', category: 'place' },
     { name: 'Restaurace', note: '4 km', category: 'place' },
     { name: 'Obchod', note: '5 km', category: 'place' },
@@ -343,10 +512,19 @@ const buildData = (m: MediaIds) => ({
       from: 'Z Prahy',
       duration: '0:40',
       distance: '36 km',
+      // checked on mapy.com and OSRM: D1 exit 15 is signed "107: Velké
+      // Popovice, Strančice"; the Vavřetice turn is ~3.8 km down road 603
       route:
-        'Po D1 směr Brno, pak přes Kamenici po silnici 603 do Vavřetic. Poslední kousek je štěrková cesta.',
+        'Po D1 směr Brno a na exitu 15 Všechromy sjeď na silnici 107 směr Velké Popovice. ' +
+        'Přes Velké Popovice pokračuj do Kamenice, tam odboč doleva na silnici 603 směr Benešov. ' +
+        'Asi 4 km za Kamenicí, už za Mokřany, odboč doleva do Vavřetic. ' +
+        'K chatě je to pak 600 m, posledních 150 m po štěrkové cestě.',
     },
   ],
+
+  // signed-in viewers only ("Klíče a Wi-Fi"): a private person's phone
+  // doesn't belong on the public page. Wi-Fi and keys come later.
+  privateInfo: [{ label: 'Majitel chaty', value: 'Radim Prokop, 725 384 866' }],
 
   bedroomOrganizationEnabled: true,
   advancedBedroomMode: false,
@@ -522,6 +700,23 @@ async function main() {
   const chata = found.docs[0]
   if (!chata) throw new Error(`chata ${SLUG} not found`)
 
+  // the ninth person (the booking is for 9): created once, matched by name;
+  // he picks his own bed on the Organizace tab
+  const stepan = await payload.find({
+    collection: 'participants',
+    where: { and: [{ chata: { equals: chata.id } }, { name: { equals: 'Štěpán' } }] },
+    limit: 1,
+    depth: 0,
+  })
+  if (stepan.docs.length === 0) {
+    const doc = await payload.create({
+      collection: 'participants',
+      depth: 0,
+      data: { chata: chata.id, name: 'Štěpán', akuzativ: 'Štěpána', vokativ: 'Štěpáne' },
+    })
+    console.log(`created participant #${doc.id} Štěpán`)
+  }
+
   const media = {} as MediaIds
   for (const [key, photo] of Object.entries(PHOTOS) as [
     keyof typeof PHOTOS,
@@ -553,12 +748,32 @@ async function main() {
   }
   const data = buildData(media)
 
+  // Merge the transport rows by title: keep each row's id and riders (people
+  // sign up later), keep rows somebody added in the admin
+  type RiderRow = { id?: string | null; participant: number | { id: number } }
+  type TransportRow = { id?: string | null; title: string; riders?: RiderRow[] | null }
+  const existingTransport = (chata.publicTransportOptions ?? []) as TransportRow[]
+  const riderOf = (r: RiderRow) =>
+    typeof r.participant === 'object' ? r.participant.id : r.participant
+  const publicTransportOptions = [
+    ...TRANSPORT.map((option) => {
+      const { mustRide = [], ...row } = option as typeof option & { mustRide?: number[] }
+      const existing = existingTransport.find((e) => e.title === row.title)
+      const riders: RiderRow[] = [...(existing?.riders ?? [])]
+      for (const participant of mustRide) {
+        if (!riders.some((r) => riderOf(r) === participant)) riders.push({ participant })
+      }
+      return { ...row, ...(existing?.id ? { id: existing.id } : {}), riders }
+    }),
+    ...existingTransport.filter((e) => !TRANSPORT.some((row) => row.title === e.title)),
+  ]
+
   await payload.update({
     collection: 'chatas',
     id: chata.id,
     depth: 0,
     context: { triggerAfterRead: false },
-    data: data as never,
+    data: { ...data, publicTransportOptions } as never,
   })
   console.log(`updated chata #${chata.id} (${SLUG}) on ${dbHost}`)
 
@@ -588,12 +803,15 @@ async function main() {
       approvalStatus: 'approved' as const,
       authoredBy: vojtaAccount,
     }
+    // an existing expense keeps its split: people who joined the extension
+    // were added there by hand and must not be dropped by a re-run
+    const { splitType: _splitType, weights: _weights, ...updateFields } = fields
     const doc = existing.docs[0]
       ? await payload.update({
           collection: 'expenses',
           id: existing.docs[0].id,
           depth: 0,
-          data: fields,
+          data: updateFields,
         })
       : await payload.create({
           collection: 'expenses',
@@ -601,6 +819,14 @@ async function main() {
           data: { ...fields, isPlanned: true },
         })
     console.log(`${existing.docs[0] ? 'updated' : 'created'} expense #${doc.id} ${expense.title}`)
+  }
+  for (const title of RETIRED_EXPENSES) {
+    const removed = await payload.delete({
+      collection: 'expenses',
+      where: { and: [{ chata: { equals: chata.id } }, { title: { equals: title } }] },
+      depth: 0,
+    })
+    for (const doc of removed.docs) console.log(`removed expense #${doc.id} ${title}`)
   }
   process.exit(0)
 }

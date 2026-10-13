@@ -91,13 +91,29 @@ export function getBedAssignments(
   participants: Participant[],
 ): Map<number, BedAssignment> {
   const byId = new Map(participants.map((p) => [p.id, p]))
-  const result = new Map<number, BedAssignment>()
+  // In per-night mode one person can have several rows (night 1 here,
+  // night 2 elsewhere): their nights are the union of all rows, and the
+  // bed shown is the one covering the most nights.
+  const result = new Map<number, BedAssignment & { coverage: number }>()
   for (const room of chata.rooms || []) {
     for (const bed of room.beds || []) {
       const occupants = bed.occupants || []
       for (const occupant of occupants) {
         const id = participantId(occupant.participant)
-        if (id == null || result.has(id)) continue
+        if (id == null) continue
+        const nights = getOccupantNights(occupant)
+        const coverage = nights === null ? Number.POSITIVE_INFINITY : nights.length
+        const previous = result.get(id)
+        const unionNights =
+          previous === undefined
+            ? nights
+            : previous.nights === null || nights === null
+              ? null
+              : [...new Set([...previous.nights, ...nights])].sort((a, b) => a - b)
+        if (previous && previous.coverage >= coverage) {
+          previous.nights = unionNights
+          continue
+        }
         const roommates = occupants
           .map((o) => participantId(o.participant))
           .filter((otherId): otherId is number => otherId != null && otherId !== id)
@@ -107,12 +123,15 @@ export function getBedAssignments(
           roomName: room.name,
           bedName: bed.name,
           roommates,
-          nights: getOccupantNights(occupant),
+          nights: unionNights,
+          coverage,
         })
       }
     }
   }
-  return result
+  return new Map(
+    [...result].map(([id, { coverage: _coverage, ...assignment }]) => [id, assignment]),
+  )
 }
 
 export type CarRole = 'driver' | 'front' | 'back'
@@ -251,10 +270,7 @@ export function nightlyCounts(chata: Chata, participants: Participant[]): number
 
 /** Total sleeping places across rooms (0 when no rozpis). */
 export function sleepingCapacity(chata: Chata): number {
-  return (chata.rooms || []).reduce(
-    (acc, room: Room) => acc + (room.maxSleepingSpaces || 0),
-    0,
-  )
+  return (chata.rooms || []).reduce((acc, room: Room) => acc + (room.maxSleepingSpaces || 0), 0)
 }
 
 /** Occupied sleeping places (people assigned to any bed). */
@@ -279,10 +295,7 @@ export function personNights(chata: Chata, participants: Participant[]): number 
 }
 
 /** Participants assigned to no shared car (train riders etc.). */
-export function participantsWithoutCar(
-  chata: Chata,
-  participants: Participant[],
-): Participant[] {
+export function participantsWithoutCar(chata: Chata, participants: Participant[]): Participant[] {
   const assigned = getCarAssignments(chata)
   return participants.filter((p) => !assigned.has(p.id))
 }
@@ -317,4 +330,18 @@ export function navigateUrl(chata: Chata): string | null {
   const query = chata.destinationLocation || chata.destinationName
   if (!query) return null
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`
+}
+
+/**
+ * The day a public-transport route travels on: its own `travelDate`, else
+ * the arrival day ("tam") or the departure day ("zpět"). Null while the
+ * trip dates are only a tentative window.
+ */
+export function transportDay(
+  chata: Pick<Chata, 'tripDateFrom' | 'tripDateTo' | 'tripDatesTentative'>,
+  option: Pick<TransportOption, 'direction' | 'travelDate'>,
+): string | null {
+  if (option.travelDate) return option.travelDate
+  if (chata.tripDatesTentative === true) return null
+  return (option.direction === 'zpet' ? chata.tripDateTo : chata.tripDateFrom) ?? null
 }

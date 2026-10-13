@@ -974,6 +974,10 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_shopping_items_id_idx
   ON payload_locked_documents_rels USING btree (shopping_items_id);
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_rohlik_connections_id_idx
   ON payload_locked_documents_rels USING btree (rohlik_connections_id);
+
+-- Public transport "Den cesty" (travelDate): a route's own travel day when it
+-- isn't the arrival/departure day, e.g. a return after an extended stay
+ALTER TABLE chatas_public_transport_options ADD COLUMN IF NOT EXISTS travel_date timestamp(3) with time zone;
 `
 
 async function enumLabels(typeName) {

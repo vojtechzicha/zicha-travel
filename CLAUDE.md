@@ -331,6 +331,22 @@ API payload, no new endpoints).
   hidden after the trip, viewer's bed/car highlighted in the theme color,
   cars show driver/front/back + `seats` occupancy + equipment chips,
   participants in no car are listed with a pointer to Informace.
+  **Frontend editing** (beds + shared cars; public transport stays
+  admin-only): a signed-in participant places/moves/removes THEIR OWN
+  participants (a parent and a child); the banker and chata admins
+  ("organizers") move anybody. Beds: pick a free place for the whole stay
+  (per-night mode also picks nights), room `maxSleepingSpaces` is the
+  per-night limit, rooms/beds stay admin-defined. Cars: anyone offers their
+  own car (becomes driver; one car per driver, a driver can't ride
+  elsewhere), others take front/back seats up to `seats` (driver
+  included); the driver or an organizer edits/withdraws it. Placing MOVES
+  (one bed per night, one seat). One endpoint `POST /api/chatas/:id/
+  organization` with an `action` (`bed.place|bed.leave|car.offer|
+  car.update|car.remove|car.seat|car.leave`), run in a transaction holding
+  a `pg_advisory_xact_lock` on the chata so the last free place has one
+  winner. Pure rules in `src/lib/organizationEditing.ts`; tests
+  `tests/int/organizationEditing.int.spec.ts` (rules) and
+  `organizationApi.int.spec.ts` (role matrix + race, real DB).
 - **ParticipantsView**: cards with account-link status; for anonymous
   visitors this is the claim-flow entry ("To jsem já" on unlinked names,
   reusing ClaimFlow; same eligibility rules as the Finance banner).
@@ -463,9 +479,14 @@ API payload, no new endpoints).
   `{ participant }` array shape as car passengers): Organizace renders a
   "Veřejnou dopravou" block next to the cars (route title, Tam/Zpět badge,
   date + times, rider chips, viewer highlighted) and the "bez auta" note
-  skips assigned riders; Informace shows a quiet "Jede: …" line on the
-  route row as a nudge. Helpers `getTransportAssignments`/`transportRiders`
-  in `utils/tripData.ts`.
+  skips riders of a "tam" route (a ride BACK doesn't get you there, so the
+  Organizace hub still offers cars to them and shows the return as an extra
+  line); Informace shows a quiet "Jede: …" line on the route row as a
+  nudge. A route's day is its optional `travelDate` ("Den cesty"), else the
+  arrival day (tam) or departure day (zpět) — `transportDay()`, used by the
+  day label and the calendar link (a return after an extension needs it).
+  Helpers `getTransportAssignments`/`transportRiders`/`transportDay` in
+  `utils/tripData.ts`.
 
 ### Settlement Threshold
 

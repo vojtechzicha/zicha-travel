@@ -454,9 +454,13 @@ export interface Chata {
          */
         title: string;
         /**
-         * Day used by the "add to calendar" link: tam → arrival day, zpět → departure day
+         * Without a travel day below: tam → arrival day, zpět → departure day
          */
         direction?: ('tam' | 'zpet') | null;
+        /**
+         * Only when it differs from the arrival or departure day, e.g. a return after an extended stay.
+         */
+        travelDate?: string | null;
         /**
          * Participants travelling on this connection. Shown next to the cars in Organization and as a note on the route in Information.
          */
@@ -1493,6 +1497,7 @@ export interface ChatasSelect<T extends boolean = true> {
     | {
         title?: T;
         direction?: T;
+        travelDate?: T;
         riders?:
           | T
           | {
