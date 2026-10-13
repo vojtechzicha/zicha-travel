@@ -78,6 +78,7 @@ const CONTEXT = {
   addToCart: "Put the group's shopping list into the shopper's cart before the trip.",
   checkoutLink: 'Let the shopper finish the order on Rohlik.',
   details: 'Check the product picked for a shared group shopping list.',
+  refresh: 'Keep prices on a shared group shopping list current.',
 } as const
 
 /** Rohlík's image CDN; search results carry a site-relative `imgPath`. */
@@ -230,6 +231,16 @@ export function cartCallFailed(result: McpCallResult): boolean {
   })
 }
 
+/**
+ * Did a get_product_details call fail? An error result, or one with no JSON
+ * answer at all. A product missing from a good answer is delisted; a failed
+ * call says nothing about the products, so nobody may read it as "sold out".
+ */
+export function detailsCallFailed(result: McpCallResult): boolean {
+  if (cartCallFailed(result)) return true
+  return !payloadsOf(result).some((payload) => typeof payload === 'object' && payload !== null)
+}
+
 // ─── high-level operations ───────────────────────────────────────────────
 
 /** An image URL is kept only on Rohlík's product image path (the details
@@ -259,6 +270,8 @@ export function normalizeProductDetails(result: McpCallResult): Map<string, Rohl
       const name = str(entry.name)
       if (!productId || !/^\d+$/.test(productId) || !name) continue
       const prices = (entry.prices ?? {}) as Record<string, unknown>
+      const status = (entry.stock as { availabilityStatus?: unknown } | undefined)
+        ?.availabilityStatus
       products.set(productId, {
         productId,
         name,
@@ -266,6 +279,7 @@ export function normalizeProductDetails(result: McpCallResult): Map<string, Rohl
         amount: str(entry.textualAmount),
         imageUrl: null,
         url: productUrl(productId),
+        inStock: typeof status === 'string' ? status === 'AVAILABLE' : null,
       })
     }
     if (products.size > 0) return products
@@ -285,6 +299,31 @@ export async function productDetails(
     context: CONTEXT.details,
   })
   return normalizeProductDetails(result).get(productId) ?? null
+}
+
+/**
+ * Current details of many products in batches; ids Rohlík doesn't know are
+ * absent. Throws when a batch fails, so absence always means "not listed".
+ */
+export async function productDetailsBatch(
+  token: string,
+  productIds: string[],
+): Promise<Map<string, RohlikProduct>> {
+  const ids = [...new Set(productIds.filter((id) => /^\d+$/.test(id)))]
+  const found = new Map<string, RohlikProduct>()
+  for (let i = 0; i < ids.length; i += 40) {
+    const result = await callTool(token, ROHLIK_TOOLS.details, {
+      product_ids: ids.slice(i, i + 40).map(Number),
+      include_description: false,
+      context: CONTEXT.refresh,
+    })
+    // a failed batch aborts the whole check: the caller keeps what it has
+    if (detailsCallFailed(result)) {
+      throw new Error(`Rohlík product details failed: ${firstText(result) ?? 'no answer'}`)
+    }
+    for (const [id, product] of normalizeProductDetails(result)) found.set(id, product)
+  }
+  return found
 }
 
 export async function searchProducts(token: string, query: string): Promise<RohlikProduct[]> {

@@ -88,6 +88,65 @@ export function mergeCartLines(
   return [...lines.values()]
 }
 
+/**
+ * Where a pending item goes on "Poslat do košíku": a Rohlík product into
+ * the cart, unless the check just before the send found it sold out;
+ * sold-out products and free-text items land on the "přidej ručně"
+ * checklist email instead. When that check failed, a stored "sold out" may
+ * be stale, so every product tries the cart and Rohlík decides.
+ */
+export type SendRoute = 'cart' | 'soldOut' | 'text'
+
+export function sendRoute(
+  rohlik: { productId?: string | null; inStock?: boolean | null } | null | undefined,
+  stockChecked: boolean,
+): SendRoute {
+  if (!rohlik?.productId) return 'text'
+  return stockChecked && rohlik.inStock === false ? 'soldOut' : 'cart'
+}
+
+export interface StoredRohlik {
+  productId?: string | null
+  name?: string | null
+  price?: number | null
+  amount?: string | null
+  inStock?: boolean | null
+  checkedAt?: string | null
+  [key: string]: unknown
+}
+
+/**
+ * An item's Rohlík fields after a price check: current price, size and
+ * stock from Rohlík (a product Rohlík no longer lists counts as sold out),
+ * image and link kept, `checkedAt` stamped. `changed` says whether anything
+ * a viewer sees moved, for the run's summary.
+ */
+export function refreshedRohlik(
+  stored: StoredRohlik,
+  fresh: RohlikProduct | undefined,
+  now: Date,
+): { rohlik: StoredRohlik; title: string | null; changed: boolean } {
+  const next: StoredRohlik = fresh
+    ? {
+        ...stored,
+        name: fresh.name || stored.name,
+        price: fresh.price ?? stored.price ?? null,
+        amount: fresh.amount ?? stored.amount ?? null,
+        inStock: fresh.inStock ?? null,
+      }
+    : { ...stored, inStock: false }
+  next.checkedAt = now.toISOString()
+  const changed =
+    next.price !== (stored.price ?? null) ||
+    next.amount !== (stored.amount ?? null) ||
+    next.name !== stored.name ||
+    (next.inStock ?? null) !== (stored.inStock ?? null)
+  // a product item is named after the product (the collection hook's rule),
+  // so a renamed product renames the item too
+  const title = typeof next.name === 'string' && next.name.trim() !== '' ? next.name : null
+  return { rohlik: next, title, changed }
+}
+
 /** Rough total from Rohlík prices; items without a price are skipped and counted. */
 export function estimatedTotal(
   items: { quantity: number; rohlik?: { price?: number | null } | null }[],

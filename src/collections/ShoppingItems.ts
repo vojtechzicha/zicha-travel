@@ -48,6 +48,8 @@ const NO_PRODUCT = {
   amount: null,
   imageUrl: null,
   url: null,
+  inStock: null,
+  checkedAt: null,
 }
 
 const isHttpsUrl = (value: unknown): boolean =>
@@ -250,6 +252,15 @@ export const ShoppingItems: CollectionConfig = {
         { name: 'amount', type: 'text', label: { en: 'Package', cs: 'Balení' } },
         { name: 'imageUrl', type: 'text', label: { en: 'Image URL', cs: 'URL obrázku' } },
         { name: 'url', type: 'text', label: { en: 'Product page', cs: 'Stránka produktu' } },
+        // kept current by src/utils/rohlikPriceRefresh.ts (before each send
+        // and daily); false = sold out or no longer listed
+        { name: 'inStock', type: 'checkbox', label: { en: 'In stock', cs: 'Skladem' } },
+        {
+          name: 'checkedAt',
+          type: 'date',
+          label: { en: 'Price checked', cs: 'Cena ověřena' },
+          admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } },
+        },
       ],
     },
     {

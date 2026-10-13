@@ -7,7 +7,9 @@ import {
   callbackUrl,
   createPkce,
   parseTokenResponse,
+  oauthErrorReason,
   pkceChallenge,
+  registerClient,
   signConnectState,
   verifyConnectState,
   type RohlikConnectState,
@@ -16,6 +18,7 @@ import {
   cartArgs,
   cartCallFailed,
   checkoutUrlOf,
+  detailsCallFailed,
   isRohlikProductImage,
   normalizeProductDetails,
   normalizeProducts,
@@ -344,13 +347,26 @@ describe('product details (server-side verification)', () => {
       amount: '1 l',
       imageUrl: null,
       url: 'https://www.rohlik.cz/712705',
+      inStock: true,
     })
     expect(products.get('1406260')?.price).toBe(29.9)
+    // no stock block in the answer: unknown, not sold out
+    expect(products.get('1406260')?.inStock).toBeNull()
     expect(products.size).toBe(2)
   })
 
   it('returns nothing for an error result', () => {
     expect(normalizeProductDetails({ ...details, isError: true }).size).toBe(0)
+  })
+
+  it('tells a failed details call from products that are just gone', () => {
+    expect(detailsCallFailed(details)).toBe(false)
+    // a good answer without the asked-for ids: they're delisted, not a failure
+    expect(detailsCallFailed({ structuredContent: { result: {} } })).toBe(false)
+    expect(detailsCallFailed({ ...details, isError: true })).toBe(true)
+    expect(detailsCallFailed({ content: [{ type: 'text', text: 'Internal error' }] })).toBe(true)
+    expect(detailsCallFailed({ structuredContent: { success: false } })).toBe(true)
+    expect(detailsCallFailed({})).toBe(true)
   })
 
   it('keeps only Rohlík product image URLs', () => {
@@ -361,5 +377,38 @@ describe('product details (server-side verification)', () => {
     expect(isRohlikProductImage('https://cdn.rohlik.cz/other/x.jpg')).toBe(false)
     expect(isRohlikProductImage('javascript:alert(1)')).toBe(false)
     expect(isRohlikProductImage(null)).toBe(false)
+  })
+})
+
+describe('OAuth error reasons', () => {
+  const response = (status: number, body: string) =>
+    new Response(body, { status, headers: { 'content-type': 'application/json' } })
+
+  it("reads Rohlík's error and description", async () => {
+    expect(
+      await oauthErrorReason(
+        response(
+          400,
+          JSON.stringify({
+            error: 'invalid_request',
+            error_description: 'Redirect URI is not allowed for dynamic client registration.',
+          }),
+        ),
+      ),
+    ).toBe('invalid_request: Redirect URI is not allowed for dynamic client registration.')
+  })
+
+  it("stays empty for a body that isn't OAuth JSON", async () => {
+    expect(await oauthErrorReason(response(502, '<html>bad gateway</html>'))).toBe('')
+  })
+
+  it('puts the reason into the registration error for the logs', async () => {
+    const refused = () =>
+      Promise.resolve(
+        response(400, JSON.stringify({ error: 'invalid_request', error_description: 'nope' })),
+      )
+    await expect(
+      registerClient('https://pratele.zicha.travel/cb', refused as typeof fetch),
+    ).rejects.toThrow('client registration failed (invalid_request: nope)')
   })
 })

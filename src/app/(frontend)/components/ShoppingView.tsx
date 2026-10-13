@@ -48,6 +48,8 @@ interface SendResult {
   added: number
   failed: { title: string; reason: string }[]
   skipped: number
+  /** sold out on Rohlík: kept off the cart, listed in the email */
+  soldOut?: number
   checkoutUrl?: string | null
   /** the "přidej ručně" checklist went out by email */
   manualEmailed?: boolean
@@ -712,6 +714,8 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                   const sent = isSent(item)
                   const meta = [
                     item.rohlik ? item.rohlik.amount : t('ownItem'),
+                    // set by the daily price check: the banker picks a substitute
+                    item.rohlik?.inStock === false ? t('soldOut') : null,
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     sent ? (item.rohlik ? t('inCart') : t('handedOver')) : null,
                   ].filter(Boolean)
@@ -842,6 +846,9 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                 </>
               ) : (
                 <>
+                  <p className="text-center text-[12px] text-gray-500 dark:text-slate-400">
+                    {t('sendAddressHint')}
+                  </p>
                   <button
                     type="button"
                     onClick={sendToCart}
@@ -878,6 +885,9 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                       )}
                       {sendResult.skipped > 0 && (
                         <p>{t('sendSkipped', { count: sendResult.skipped })}</p>
+                      )}
+                      {(sendResult.soldOut ?? 0) > 0 && (
+                        <p>{t('sendSoldOut', { count: sendResult.soldOut ?? 0 })}</p>
                       )}
                       {sendResult.manualEmailed && <p>{t('sendEmailed')}</p>}
                       <a

@@ -1,6 +1,6 @@
 // "Nákup": the email that follows the banker's "Poslat do košíku" when
 // something could not go into the Rohlík cart on its own — free-text items
-// (no Rohlík product) and lines Rohlík refused. A checklist for the banker
+// (no Rohlík product), products sold out right now and lines Rohlík refused. A checklist for the banker
 // (src/utils/shoppingEmail.ts picks the recipients and sends it). Czech
 // only, tykání, like the other emails to the trip's organizers.
 
@@ -9,8 +9,11 @@ export interface ManualItem {
   quantity: number
   wantedBy: string | null
   note: string | null
-  /** 'text' = never was a Rohlík product, 'rejected' = Rohlík refused it */
-  reason: 'text' | 'rejected'
+  /**
+   * 'text' = never was a Rohlík product, 'soldOut' = Rohlík has none right
+   * now, 'rejected' = Rohlík refused it
+   */
+  reason: 'text' | 'soldOut' | 'rejected'
 }
 
 export interface ManualItemsEmail {
@@ -42,6 +45,7 @@ function lineText(item: ManualItem): string {
   let line = `${item.quantity}× ${item.title}`
   if (item.wantedBy) line += ` (chce ${item.wantedBy})`
   if (item.reason === 'rejected') line += '. Rohlík ji nepřijal'
+  if (item.reason === 'soldOut') line += '. Na Rohlíku je teď vyprodaná, přidej něco podobného'
   if (item.note) line += `. Poznámka: ${item.note}`
   return line
 }
