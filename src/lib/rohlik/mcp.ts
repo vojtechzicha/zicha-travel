@@ -70,12 +70,14 @@ export const ROHLIK_TOOLS = {
   search: 'batch_search_products',
   addToCart: 'add_items_to_cart',
   checkoutLink: 'get_checkout_link',
+  details: 'get_product_details',
 } as const
 
 const CONTEXT = {
   search: 'Find products for a shared group shopping list for a cottage trip.',
   addToCart: "Put the group's shopping list into the shopper's cart before the trip.",
   checkoutLink: 'Let the shopper finish the order on Rohlik.',
+  details: 'Check the product picked for a shared group shopping list.',
 } as const
 
 /** Rohlík's image CDN; search results carry a site-relative `imgPath`. */
@@ -229,6 +231,61 @@ export function cartCallFailed(result: McpCallResult): boolean {
 }
 
 // ─── high-level operations ───────────────────────────────────────────────
+
+/** An image URL is kept only on Rohlík's product image path (the details
+ * call carries no image, so the picked product's image rides along). */
+export function isRohlikProductImage(url: unknown): url is string {
+  return (
+    typeof url === 'string' &&
+    /^https:\/\/cdn\.rohlik\.cz\/images\/grocery\/products\/[\w./-]+$/.test(url)
+  )
+}
+
+/**
+ * Products out of a get_product_details result
+ * ({ result: { "<id>": { productId, name, textualAmount, prices: {
+ * salePrice, originalPrice } } } }), keyed by product id. No image here.
+ */
+export function normalizeProductDetails(result: McpCallResult): Map<string, RohlikProduct> {
+  const products = new Map<string, RohlikProduct>()
+  if (result.isError) return products
+  for (const payload of payloadsOf(result)) {
+    const root = (payload as { result?: unknown })?.result ?? payload
+    if (typeof root !== 'object' || root === null) continue
+    for (const raw of Object.values(root as Record<string, unknown>)) {
+      if (typeof raw !== 'object' || raw === null) continue
+      const entry = raw as Record<string, unknown>
+      const productId = str(entry.productId)
+      const name = str(entry.name)
+      if (!productId || !/^\d+$/.test(productId) || !name) continue
+      const prices = (entry.prices ?? {}) as Record<string, unknown>
+      products.set(productId, {
+        productId,
+        name,
+        price: parsePrice(prices.salePrice) ?? parsePrice(prices.originalPrice),
+        amount: str(entry.textualAmount),
+        imageUrl: null,
+        url: productUrl(productId),
+      })
+    }
+    if (products.size > 0) return products
+  }
+  return products
+}
+
+/** Current details of one product, straight from Rohlík; null when unknown. */
+export async function productDetails(
+  token: string,
+  productId: string,
+): Promise<RohlikProduct | null> {
+  if (!/^\d+$/.test(productId)) return null
+  const result = await callTool(token, ROHLIK_TOOLS.details, {
+    product_ids: [Number(productId)],
+    include_description: false,
+    context: CONTEXT.details,
+  })
+  return normalizeProductDetails(result).get(productId) ?? null
+}
 
 export async function searchProducts(token: string, query: string): Promise<RohlikProduct[]> {
   const result = await callTool(token, ROHLIK_TOOLS.search, searchArgs(query))

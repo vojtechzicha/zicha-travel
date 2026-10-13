@@ -325,6 +325,22 @@ export const rohlikEndpoints: Endpoint[] = [
           addedCount: report.added.length,
           checkoutUrl: report.checkoutUrl,
         })
+        // free-text items on the emailed checklist are handed over: the
+        // banker has them, so the next send skips them (and the page stops
+        // offering a send for them). Refused Rohlík lines stay pending and
+        // go in again next time.
+        if (manualEmailed) {
+          for (const { item, quantity } of manualPending) {
+            if (item.rohlik?.productId) continue
+            await req.payload.update({
+              collection: 'shopping-items',
+              id: item.id,
+              data: { sentToCartAt: sentAt, sentQuantity: quantity },
+              depth: 0,
+              overrideAccess: true,
+            })
+          }
+        }
       }
 
       return Response.json({

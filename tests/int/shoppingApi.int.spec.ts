@@ -164,7 +164,8 @@ describe('shopping-items create', () => {
     ).rejects.toThrow()
   })
 
-  it('drops non-https Rohlík links and server-owned send marks', async () => {
+  it('never trusts product fields from the body: an unverifiable product becomes free text', async () => {
+    // the fixture banker has no Rohlík connection, so nothing can be verified
     const item = await payload.create({
       collection: 'shopping-items',
       depth: 0,
@@ -175,6 +176,7 @@ describe('shopping-items create', () => {
         rohlik: {
           productId: '1234',
           name: 'Rohlík',
+          price: 1,
           url: 'javascript:alert(1)',
           imageUrl: 'https://cdn.example.com/rohlik.jpg',
         },
@@ -183,10 +185,56 @@ describe('shopping-items create', () => {
       },
       ...asUser(users.author),
     })
-    expect(item.rohlik?.url).toBeNull()
-    expect(item.rohlik?.imageUrl).toBe('https://cdn.example.com/rohlik.jpg')
+    expect(item.rohlik?.productId ?? null).toBeNull()
+    expect(item.rohlik?.price ?? null).toBeNull()
+    expect(item.rohlik?.url ?? null).toBeNull()
+    expect(item.rohlik?.imageUrl ?? null).toBeNull()
+    expect(item.title).toBe('Rohlíky')
     expect(item.sentToCartAt ?? null).toBeNull()
     expect(item.sentQuantity ?? null).toBeNull()
+  })
+
+  it('keeps a stored product when the body repeats its id with other details', async () => {
+    // a verified product as the trusted path stores it (no user = server)
+    const stored = await payload.create({
+      collection: 'shopping-items',
+      depth: 0,
+      data: {
+        chata: chata.id,
+        title: 'Pivo Braník',
+        quantity: 2,
+        participant: people.author.id,
+        authoredBy: users.author.id,
+        rohlik: {
+          productId: '1290309',
+          name: 'Pivo Braník',
+          price: 50.9,
+          amount: '2 l',
+          imageUrl: 'https://cdn.rohlik.cz/images/grocery/products/1290309/1.jpg',
+          url: 'https://www.rohlik.cz/1290309',
+        },
+      },
+    })
+    const same = await payload.update({
+      collection: 'shopping-items',
+      id: stored.id,
+      depth: 0,
+      data: { title: 'Rohlíky', rohlik: { productId: '1290309', name: 'Rohlíky', price: 1 } },
+      ...asUser(users.author),
+    })
+    expect(same.rohlik?.name).toBe('Pivo Braník')
+    expect(same.rohlik?.price).toBe(50.9)
+    expect(same.title).toBe('Pivo Braník')
+
+    // a different id must verify on Rohlík; without a connection it can't
+    const swapped = await payload.update({
+      collection: 'shopping-items',
+      id: stored.id,
+      depth: 0,
+      data: { rohlik: { productId: '9999999', name: 'Pivo Braník', price: 50.9 } },
+      ...asUser(users.author),
+    })
+    expect(swapped.rohlik?.productId ?? null).toBeNull()
   })
 })
 

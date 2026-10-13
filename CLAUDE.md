@@ -442,7 +442,14 @@ API payload, no new endpoints).
   that leaves something manual (free-text items, lines Rohlík refused)
   emails the "přidej ručně" checklist to the banker, or to the chata admins
   when the banker's account has no email (`src/utils/shoppingEmail.ts`,
-  builder `src/lib/shoppingEmail.ts`, Czech tykání). Endpoints in
+  builder `src/lib/shoppingEmail.ts`, Czech tykání). Emailed free-text
+  items count as sent (handed over), refused lines stay pending; the send
+  button is live while anything is pending. Product fields are NEVER taken
+  from a REST body: a new `rohlik.productId` is verified with Rohlík's
+  `get_product_details` through the banker's connection and its own name,
+  price and size are stored (title follows the product name); the same id
+  keeps the stored values; an unverifiable id turns the item into free
+  text (`verifiedRohlikProduct`). Endpoints in
   `src/collections/ShoppingItems/rohlikEndpoints.ts`, client in
   `src/lib/rohlik/`, rules in `src/lib/shopping.ts`; tests
   `tests/int/shopping.int.spec.ts` (pure) and `shoppingApi.int.spec.ts`

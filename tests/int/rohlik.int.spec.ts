@@ -16,6 +16,8 @@ import {
   cartArgs,
   cartCallFailed,
   checkoutUrlOf,
+  isRohlikProductImage,
+  normalizeProductDetails,
   normalizeProducts,
   parsePrice,
   searchArgs,
@@ -306,5 +308,58 @@ describe('cart and checkout results', () => {
         content: [{ type: 'text', text: 'https://www.rohlik.cz/x' }],
       }),
     ).toBeNull()
+  })
+})
+
+describe('product details (server-side verification)', () => {
+  // shape captured from get_product_details on 2026-10-13
+  const details = {
+    structuredContent: {
+      result: {
+        '712705': {
+          productId: 712705,
+          name: 'Olma Čerstvé mléko polotučné 1,5 %',
+          brand: null,
+          textualAmount: '1 l',
+          prices: { originalPrice: 34.9, salePrice: null, unitPrice: 34.9, currency: 'CZK' },
+          stock: { availabilityStatus: 'AVAILABLE' },
+        },
+        '1406260': {
+          productId: 1406260,
+          name: 'Miil Selské mléko',
+          textualAmount: '1 l',
+          prices: { originalPrice: 39.9, salePrice: 29.9 },
+        },
+        broken: { name: 'no id' },
+      },
+    },
+  }
+
+  it('maps details by id, preferring the sale price', () => {
+    const products = normalizeProductDetails(details)
+    expect(products.get('712705')).toEqual({
+      productId: '712705',
+      name: 'Olma Čerstvé mléko polotučné 1,5 %',
+      price: 34.9,
+      amount: '1 l',
+      imageUrl: null,
+      url: 'https://www.rohlik.cz/712705',
+    })
+    expect(products.get('1406260')?.price).toBe(29.9)
+    expect(products.size).toBe(2)
+  })
+
+  it('returns nothing for an error result', () => {
+    expect(normalizeProductDetails({ ...details, isError: true }).size).toBe(0)
+  })
+
+  it('keeps only Rohlík product image URLs', () => {
+    expect(
+      isRohlikProductImage('https://cdn.rohlik.cz/images/grocery/products/712705/712705-1.jpg'),
+    ).toBe(true)
+    expect(isRohlikProductImage('https://cdn.example.com/x.jpg')).toBe(false)
+    expect(isRohlikProductImage('https://cdn.rohlik.cz/other/x.jpg')).toBe(false)
+    expect(isRohlikProductImage('javascript:alert(1)')).toBe(false)
+    expect(isRohlikProductImage(null)).toBe(false)
   })
 })

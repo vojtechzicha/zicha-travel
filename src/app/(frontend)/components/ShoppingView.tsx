@@ -371,12 +371,13 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, shopper } = shopping
   const { total, unpriced } = estimatedTotal(items)
-  const rohlikItems = items.filter((item) => item.rohlik?.productId)
-  const hasRohlikItems = rohlikItems.length > 0
-  // everything from Rohlík is in the banker's cart, in the current amounts
-  const allInCart =
-    hasRohlikItems &&
-    rohlikItems.every((item) => item.sentToCartAt && (item.sentQuantity ?? 0) >= item.quantity)
+  // sent = in the banker's Rohlík cart, or (free text) on the checklist
+  // email they got, in the current amounts
+  const isSent = (item: ShoppingItemView) =>
+    Boolean(item.sentToCartAt && (item.sentQuantity ?? 0) >= item.quantity)
+  const pendingCount = items.filter((item) => !isSent(item)).length
+  const allSent = items.length > 0 && pendingCount === 0
+  const allFromRohlik = items.every((item) => item.rohlik?.productId)
   const showDropdown =
     dropdownOpen && !selected && query.trim().length >= SEARCH_MIN_CHARS && search.kind !== 'idle'
   const loginHref = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'
@@ -676,14 +677,14 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
         {/* ─── the receipt ─── */}
         <div className="flex flex-col items-center gap-6 rounded-[22px] bg-[#eef1f4] px-4 py-10 dark:bg-white/[0.04] sm:px-8">
           <div className="receipt-paper w-full max-w-[440px] px-5 pb-6 pt-7 sm:px-7">
-            {allInCart && (
+            {allSent && (
               <div
                 aria-hidden="true"
                 className={`receipt-stamp pointer-events-none absolute right-3 top-16 rounded-md border-[3px] border-primary px-2.5 py-1 text-[15px] font-extrabold uppercase tracking-[0.06em] text-primary ${
                   justSent ? 'receipt-stamp-land' : ''
                 }`}
               >
-                {t('stamp')}
+                {allFromRohlik ? t('stamp') : t('stampSent')}
               </div>
             )}
 
@@ -708,13 +709,11 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                       ? item.rohlik.price * Math.max(1, item.quantity)
                       : null
                   const busy = busyId === item.id
-                  const inCart = Boolean(
-                    item.sentToCartAt && (item.sentQuantity ?? 0) >= item.quantity,
-                  )
+                  const sent = isSent(item)
                   const meta = [
                     item.rohlik ? item.rohlik.amount : t('ownItem'),
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
-                    inCart ? t('inCart') : null,
+                    sent ? (item.rohlik ? t('inCart') : t('handedOver')) : null,
                   ].filter(Boolean)
                   return (
                     <li
@@ -737,7 +736,7 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                           </div>
                           <div className="text-[11px] leading-snug text-[#8b9099]">
                             {meta.join(', ')}
-                            {inCart && <span aria-hidden="true"> ✓</span>}
+                            {sent && <span aria-hidden="true"> ✓</span>}
                           </div>
                           {item.note && (
                             <div className="text-[11px] italic leading-snug text-[#5d626b]">
@@ -846,14 +845,18 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                   <button
                     type="button"
                     onClick={sendToCart}
-                    disabled={sending || !hasRohlikItems || allInCart}
+                    disabled={sending || pendingCount === 0}
                     className={primaryButtonClass}
                   >
                     <ShoppingCart size={16} aria-hidden="true" />
                     {sending ? t('sending') : t('send')}
                   </button>
                   <p className="text-center text-[12px] text-gray-500 dark:text-slate-400">
-                    {hasRohlikItems ? t('sendHint') : t('nothingToSend')}
+                    {items.length === 0
+                      ? t('nothingToSend')
+                      : pendingCount === 0
+                        ? t('allSent')
+                        : t('sendHint')}
                   </p>
                   {sendError && (
                     <p className="text-center text-[13px] text-red-600 dark:text-red-400">

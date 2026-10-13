@@ -34,7 +34,7 @@
   "connect": "Connect Rohlík",
   "send": "Send to Rohlík cart",
   "sending": "Sending…",
-  "nothingToSend": "Nothing on the list comes from Rohlík yet.",
+  "nothingToSend": "The list is empty so far.",
   "sendAdded": "Added {count, plural, one {# product} other {# products}} to the cart.",
   "sendFailedLines": "Couldn't add: {titles}.",
   "sendSkipped": "Add {count, plural, one {# custom item} other {# custom items}} to the cart by hand.",
@@ -107,7 +107,10 @@
   "thanks": "Enjoy!",
   "stamp": "In the cart",
   "soldOut": "Sold out right now",
-  "sendHint": "Sends only what isn't in the cart yet.",
+  "sendHint": "Sends only what hasn't gone yet. Anything Rohlík can't take comes to you by email.",
   "finishOrder": "Finish the order on Rohlík",
-  "sendEmailed": "The list of what to add by hand is in your email too."
+  "sendEmailed": "The list of what to add by hand is in your email too.",
+  "allSent": "Everything's sent. The button turns on again when someone adds something.",
+  "handedOver": "the banker adds it by hand",
+  "stampSent": "Sent"
 }

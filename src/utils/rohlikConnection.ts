@@ -3,6 +3,8 @@ import { refId } from '@/lib/access'
 import { linkedParticipantIds } from '@/lib/expenseAuthoring'
 import { decryptToken, encryptToken } from '@/lib/rohlik/crypto'
 import { refreshTokens, type RohlikTokens } from '@/lib/rohlik/oauth'
+import { productDetails } from '@/lib/rohlik/mcp'
+import type { RohlikProduct } from '@/lib/shopping'
 
 // Side effects of the banker's Rohlík connection (collection
 // rohlik-connections): storing the encrypted tokens, handing out a fresh
@@ -167,4 +169,27 @@ export async function viewerParticipantIds(
     overrideAccess: true,
   })
   return linkedParticipantIds(userId, participants.docs)
+}
+
+/**
+ * The product as Rohlík itself describes it right now, looked up with the
+ * chata banker's connection; null when there is no connection, the id is
+ * unknown or Rohlík doesn't answer. Item writes trust only this, never the
+ * product fields of a REST body (src/collections/ShoppingItems.ts).
+ */
+export async function verifiedRohlikProduct(
+  payload: Payload,
+  chataId: number | string,
+  productId: string,
+): Promise<RohlikProduct | null> {
+  try {
+    const accountId = await bankerAccountId(payload, chataId)
+    if (!accountId) return null
+    const token = await getAccessToken(payload, accountId)
+    if (!token) return null
+    return await productDetails(token, productId)
+  } catch (err) {
+    payload.logger.warn({ err }, 'Rohlík product lookup failed')
+    return null
+  }
 }

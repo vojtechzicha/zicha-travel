@@ -34,7 +34,7 @@
   "connect": "Propojit s Rohlíkem",
   "send": "Poslat do košíku na Rohlíku",
   "sending": "Posílám…",
-  "nothingToSend": "V seznamu zatím není nic z Rohlíku.",
+  "nothingToSend": "Seznam je zatím prázdný.",
   "sendAdded": "Do košíku šlo {count, plural, one {# produkt} few {# produkty} other {# produktů}}.",
   "sendFailedLines": "Nepovedlo se: {titles}.",
   "sendSkipped": "{count, plural, one {# vlastní položku} few {# vlastní položky} other {# vlastních položek}} přidej do košíku ručně.",
@@ -107,7 +107,10 @@
   "thanks": "Ať chutná!",
   "stamp": "V košíku",
   "soldOut": "Teď vyprodáno",
-  "sendHint": "Pošle jen to, co v košíku ještě není.",
+  "sendHint": "Pošle jen to, co ještě nebylo odeslané. Co nejde přes Rohlík, ti přijde e-mailem.",
   "finishOrder": "Dokončit objednávku na Rohlíku",
-  "sendEmailed": "Co přidat ručně, máš i v e-mailu."
+  "sendEmailed": "Co přidat ručně, máš i v e-mailu.",
+  "allSent": "Všechno je odeslané. Tlačítko se zase zapne, až někdo něco přidá.",
+  "handedOver": "pokladník přidá ručně",
+  "stampSent": "Odesláno"
 }

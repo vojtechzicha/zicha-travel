@@ -1,6 +1,8 @@
 import { APIError, type Access, type CollectionConfig, type Payload, type Where } from 'payload'
 import { canManageChata, isSuperadmin, refId } from '../lib/access'
 import { linkedParticipantIds } from '../lib/expenseAuthoring'
+import { isRohlikProductImage } from '../lib/rohlik/mcp'
+import { verifiedRohlikProduct } from '../utils/rohlikConnection'
 import { rohlikEndpoints } from './ShoppingItems/rohlikEndpoints'
 
 /** Chatas whose banker participant is linked to this account. */
@@ -37,6 +39,15 @@ const editAccess: Access = async ({ req }) => {
   const banker = await bankerChataIds(req.payload, user.id)
   if (banker.length > 0) or.push({ chata: { in: banker } })
   return { or }
+}
+
+const NO_PRODUCT = {
+  productId: null,
+  name: null,
+  price: null,
+  amount: null,
+  imageUrl: null,
+  url: null,
 }
 
 const isHttpsUrl = (value: unknown): boolean =>
@@ -94,6 +105,41 @@ export const ShoppingItems: CollectionConfig = {
         // Local API scripts and the send endpoint run without a user
         if (!user) return data
         const managesThisChata = canManageChata(user, chataId)
+
+        // The product an item points at decides what lands in the banker's
+        // cart, so a REST body never sets it: a new product id is looked up
+        // on Rohlík (banker's connection) and its own name, price and size
+        // replace whatever came in; the same id keeps the stored values. An
+        // id that can't be verified turns the item into free text, which
+        // never goes into the cart.
+        if (data.rohlik !== undefined) {
+          const incoming = data.rohlik as Record<string, unknown> | null
+          const productId =
+            incoming?.productId != null && String(incoming.productId).trim() !== ''
+              ? String(incoming.productId).trim()
+              : null
+          const stored = originalDoc?.rohlik as Record<string, unknown> | undefined
+          if (!productId) {
+            data.rohlik = { ...NO_PRODUCT }
+          } else if (operation === 'update' && stored?.productId === productId) {
+            data.rohlik = { ...NO_PRODUCT, ...stored }
+          } else {
+            const product = await verifiedRohlikProduct(req.payload, chataId, productId)
+            data.rohlik = product
+              ? {
+                  ...product,
+                  imageUrl: isRohlikProductImage(incoming?.imageUrl) ? incoming.imageUrl : null,
+                }
+              : { ...NO_PRODUCT }
+          }
+        }
+        // a product item is named after the product, whatever the body says
+        const product = (data.rohlik ?? originalDoc?.rohlik) as
+          | { productId?: unknown; name?: unknown }
+          | undefined
+        if (product?.productId && typeof product.name === 'string' && product.name.trim() !== '') {
+          data.title = product.name
+        }
 
         if (operation === 'create') data.authoredBy = user.id
         else if (!managesThisChata) data.authoredBy = originalDoc?.authoredBy
