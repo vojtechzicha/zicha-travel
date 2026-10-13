@@ -129,6 +129,14 @@ describe('refreshedRohlik', () => {
   it('keeps the stored price when Rohlík sends none', () => {
     expect(refreshedRohlik(stored, fresh({ price: null }), now).rohlik.price).toBe(34.9)
   })
+
+  it('renames the item along with the product', () => {
+    const renamed = refreshedRohlik(stored, fresh({ name: 'Olma mléko 1,5 %' }), now)
+    expect(renamed.title).toBe('Olma mléko 1,5 %')
+    expect(renamed.changed).toBe(true)
+    expect(refreshedRohlik(stored, fresh(), now).title).toBe('Mléko')
+    expect(refreshedRohlik({ ...stored, name: null }, undefined, now).title).toBeNull()
+  })
 })
 
 describe('sendRoute', () => {

@@ -125,7 +125,7 @@ export function refreshedRohlik(
   stored: StoredRohlik,
   fresh: RohlikProduct | undefined,
   now: Date,
-): { rohlik: StoredRohlik; changed: boolean } {
+): { rohlik: StoredRohlik; title: string | null; changed: boolean } {
   const next: StoredRohlik = fresh
     ? {
         ...stored,
@@ -141,7 +141,10 @@ export function refreshedRohlik(
     next.amount !== (stored.amount ?? null) ||
     next.name !== stored.name ||
     (next.inStock ?? null) !== (stored.inStock ?? null)
-  return { rohlik: next, changed }
+  // a product item is named after the product (the collection hook's rule),
+  // so a renamed product renames the item too
+  const title = typeof next.name === 'string' && next.name.trim() !== '' ? next.name : null
+  return { rohlik: next, title, changed }
 }
 
 /** Rough total from Rohlík prices; items without a price are skipped and counted. */

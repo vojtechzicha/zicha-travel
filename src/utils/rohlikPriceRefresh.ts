@@ -45,11 +45,12 @@ export async function refreshChataPrices(
     )
     if (next.changed) changed += 1
     // no user on the request: the collection hook leaves server-set
-    // product details alone (only REST bodies are re-verified)
+    // product details alone (only REST bodies are re-verified) and skips
+    // its title sync, so the title rides along here
     await payload.update({
       collection: 'shopping-items',
       id: item.id,
-      data: { rohlik: next.rohlik },
+      data: next.title ? { rohlik: next.rohlik, title: next.title } : { rohlik: next.rohlik },
       depth: 0,
       overrideAccess: true,
     })
