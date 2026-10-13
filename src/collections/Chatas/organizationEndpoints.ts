@@ -18,6 +18,7 @@ import {
   type RoomRow,
 } from '@/lib/organizationEditing'
 import { getTripNights } from '@/app/(frontend)/utils/participantHelpers'
+import { getTripPhase } from '@/app/(frontend)/utils/tripData'
 
 // POST /api/chatas/:id/organization — frontend editing of "Organizace"
 // (beds and shared cars; rules in src/lib/organizationEditing.ts). Every
@@ -35,7 +36,7 @@ function transactionSession(payload: Payload, tid: number | string): DbSession {
 
 class ActionError extends Error {
   constructor(
-    readonly code: OrganizationError | 'disabled' | 'planning' | 'invalid',
+    readonly code: OrganizationError | 'disabled' | 'planning' | 'trip-over' | 'invalid',
     readonly status: number,
   ) {
     super(code)
@@ -105,6 +106,8 @@ export const organizationEndpoints: Endpoint[] = [
           context: { triggerAfterRead: false },
         })) as Chata
         if (chata.planningEnabled === true) throw new ActionError('planning', 409)
+        // after the trip the rozpis is a record, read-only like in the UI
+        if (getTripPhase(chata) === 'after') throw new ActionError('trip-over', 409)
 
         const participants = await payload.find({
           collection: 'participants',

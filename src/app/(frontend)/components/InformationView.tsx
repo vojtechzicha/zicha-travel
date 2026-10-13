@@ -206,10 +206,7 @@ export function InformationView({
     0,
   )
   const mySpent = viewerCost(stats, myNames)
-  const myBalance = myNames.reduce(
-    (sum, name) => sum + (stats.participants[name]?.balance ?? 0),
-    0,
-  )
+  const myBalance = myNames.reduce((sum, name) => sum + (stats.participants[name]?.balance ?? 0), 0)
 
   if (!chata.informationEnabled) {
     return (
@@ -529,7 +526,11 @@ export function InformationView({
           <div className="font-serif text-[21px] sm:text-[27px] font-black text-gray-900 dark:text-gray-100">
             {longDayLabel(new Date(), locale)}{' '}
             <span className="text-gray-400 dark:text-slate-500 font-normal text-[15px] sm:text-[19px]">
-              · {t('information.dayOfTrip', { day: tripDayIndex(chata), total: tripTotalDays(chata) })}
+              ·{' '}
+              {t('information.dayOfTrip', {
+                day: tripDayIndex(chata),
+                total: tripTotalDays(chata),
+              })}
             </span>
           </div>
         </div>
@@ -673,73 +674,78 @@ export function InformationView({
   const settlement = settlementFromBalance(myBalance)
 
   const personalCard =
-    phase === 'after'
-      ? me && (
-          <AccentCard
-            label={t('information.yourSettlement')}
-            action={
-              settlement.status === 'debtor' && onOpenFinance ? (
-                <button
-                  type="button"
-                  onClick={onOpenFinance}
-                  className="rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-semibold px-3.5 py-2 transition-colors whitespace-nowrap"
-                >
-                  {t('information.payAction')}
-                </button>
-              ) : undefined
-            }
-          >
-            <div className="text-sm text-gray-800 dark:text-slate-200">
-              {settlement.status === 'debtor'
-                ? t('information.youOwe', { amount: formatCurrency(settlement.amount, locale) })
-                : settlement.status === 'creditor'
-                  ? t('information.youReceive', {
-                      amount: formatCurrency(settlement.amount, locale),
-                    })
-                  : t('information.youAreSettled')}
-            </div>
-          </AccentCard>
-        )
-      : me && (myBedLine || myCarLine || myNightsLine || myAdvance > 0 || (phase === 'during' && mySpent != null)) ? (
-          <AccentCard
-            label={t('information.yourCard')}
-            action={
-              onOpenFinance ? (
-                <button
-                  type="button"
-                  onClick={onOpenFinance}
-                  className="text-[13px] font-semibold text-primary-dark dark:text-primary-light hover:underline whitespace-nowrap"
-                >
-                  {t('information.financeDetail')}
-                </button>
-              ) : undefined
-            }
-          >
-            <div className="grid gap-x-5 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-4">
-              {myBedLine && cardCell(t('information.yourCardSleep'), myBedLine, 'bed')}
-              {myCarLine && cardCell(t('information.yourCardRide'), myCarLine, 'car')}
-              {phase !== 'during' &&
-                myNightsLine &&
-                cardCell(t('information.yourCardNights'), myNightsLine, 'nights')}
-              {phase === 'during' && mySpent != null
-                ? cardCell(
-                    t('information.yourCardSpent'),
-                    formatCurrency(Math.round(mySpent), locale),
-                    'spent',
-                  )
-                : myAdvance > 0
-                  ? cardCell(
-                      t('information.yourCardDeposit'),
-                      <span className="inline-flex items-center gap-2">
-                        {formatCurrency(myAdvance, locale)}
-                        <StatusBadge tone="green">{t('information.paidBadge')}</StatusBadge>
-                      </span>,
-                      'deposit',
-                    )
-                  : null}
-            </div>
-          </AccentCard>
-        ) : null
+    phase === 'after' ? (
+      me && (
+        <AccentCard
+          label={t('information.yourSettlement')}
+          action={
+            settlement.status === 'debtor' && onOpenFinance ? (
+              <button
+                type="button"
+                onClick={onOpenFinance}
+                className="rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-semibold px-3.5 py-2 transition-colors whitespace-nowrap"
+              >
+                {t('information.payAction')}
+              </button>
+            ) : undefined
+          }
+        >
+          <div className="text-sm text-gray-800 dark:text-slate-200">
+            {settlement.status === 'debtor'
+              ? t('information.youOwe', { amount: formatCurrency(settlement.amount, locale) })
+              : settlement.status === 'creditor'
+                ? t('information.youReceive', {
+                    amount: formatCurrency(settlement.amount, locale),
+                  })
+                : t('information.youAreSettled')}
+          </div>
+        </AccentCard>
+      )
+    ) : me &&
+      (myBedLine ||
+        myCarLine ||
+        myNightsLine ||
+        myAdvance > 0 ||
+        (phase === 'during' && mySpent != null)) ? (
+      <AccentCard
+        label={t('information.yourCard')}
+        action={
+          onOpenFinance ? (
+            <button
+              type="button"
+              onClick={onOpenFinance}
+              className="text-[13px] font-semibold text-primary-dark dark:text-primary-light hover:underline whitespace-nowrap"
+            >
+              {t('information.financeDetail')}
+            </button>
+          ) : undefined
+        }
+      >
+        <div className="grid gap-x-5 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {myBedLine && cardCell(t('information.yourCardSleep'), myBedLine, 'bed')}
+          {myCarLine && cardCell(t('information.yourCardRide'), myCarLine, 'car')}
+          {phase !== 'during' &&
+            myNightsLine &&
+            cardCell(t('information.yourCardNights'), myNightsLine, 'nights')}
+          {phase === 'during' && mySpent != null
+            ? cardCell(
+                t('information.yourCardSpent'),
+                formatCurrency(Math.round(mySpent), locale),
+                'spent',
+              )
+            : myAdvance > 0
+              ? cardCell(
+                  t('information.yourCardDeposit'),
+                  <span className="inline-flex items-center gap-2">
+                    {formatCurrency(myAdvance, locale)}
+                    <StatusBadge tone="green">{t('information.paidBadge')}</StatusBadge>
+                  </span>,
+                  'deposit',
+                )
+              : null}
+        </div>
+      </AccentCard>
+    ) : null
 
   const anonymousHint =
     !viewer.authenticated && phase !== 'after' ? (
@@ -851,7 +857,11 @@ export function InformationView({
         icon={MapPin}
         title={phase === 'after' ? t('information.whereWereTitle') : t('information.whereTitle')}
       />
-      <div className={photos.length > 0 && phase !== 'after' ? 'grid gap-5 md:grid-cols-[1.15fr_1fr]' : ''}>
+      <div
+        className={
+          photos.length > 0 && phase !== 'after' ? 'grid gap-5 md:grid-cols-[1.15fr_1fr]' : ''
+        }
+      >
         <div className="rounded-2xl border-l-[5px] border-primary bg-white shadow-[0_6px_20px_rgba(0,0,0,0.07)] dark:bg-white/[0.03] dark:shadow-none dark:border-l-primary px-5 py-5 sm:px-6">
           {chata.destinationName && (
             <h4 className="font-serif text-lg sm:text-[21px] font-bold text-gray-900 dark:text-gray-100 m-0 mb-2.5">
@@ -870,7 +880,9 @@ export function InformationView({
             {(chata.checkInTime || chata.checkOutTime) && phase !== 'after' && (
               <InfoRow label={t('information.checkInLabel')}>
                 {[
-                  chata.checkInTime ? `${t('information.checkInPrefix')} ${chata.checkInTime}` : null,
+                  chata.checkInTime
+                    ? `${t('information.checkInPrefix')} ${chata.checkInTime}`
+                    : null,
                   chata.checkOutTime
                     ? `${t('information.checkOutPrefix')} ${chata.checkOutTime}`
                     : null,
@@ -1005,52 +1017,49 @@ export function InformationView({
     ) : null
 
   const whoIsHereSection =
-    phase === 'during' && tonight > 0 ? (
-      (() => {
-        const present = presentOnNight(chata, participants, tonight)
-        if (present.length === 0) return null
-        return (
-          <div>
-            <SheetHeading icon={Users} title={t('information.whoIsHereTitle')} />
-            {viewer.authenticated ? (
-              <div className="flex flex-wrap gap-1.5">
-                {present.map((p) => (
-                  <PersonChip
-                    key={p.id}
-                    highlight={viewer.linkedParticipantIds.includes(p.id)}
-                  >
-                    {p.name +
-                      petSuffix(p) +
-                      (viewer.linkedParticipantIds.includes(p.id)
-                        ? ` ${t('information.youSuffix')}`
-                        : '')}
-                  </PersonChip>
-                ))}
-                {arrivalsToday.length > 0 && (
-                  <PersonChip dashed>
-                    {arrivalsToday.map((p) => p.name + petSuffix(p)).join(', ')} ·{' '}
-                    {t('information.arrivingToday')}
-                  </PersonChip>
-                )}
-              </div>
-            ) : (
-              // Anonymous (indexable) render: counts, no names — the names
-              // stay one click away on the noindexed Účastníci tab
-              <div className="text-sm text-gray-700 dark:text-slate-300">
-                {t('information.whoIsHereCount', { count: present.length })}
-                {arrivalsToday.length > 0 &&
-                  ` ${t('information.todayArrivesCount', { count: arrivalsToday.length })}.`}
-              </div>
-            )}
-            {capacity > 0 && (
-              <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-3">
-                {t('information.sleepsTonight', { count: present.length, capacity })}
-              </div>
-            )}
-          </div>
-        )
-      })()
-    ) : null
+    phase === 'during' && tonight > 0
+      ? (() => {
+          const present = presentOnNight(chata, participants, tonight)
+          if (present.length === 0) return null
+          return (
+            <div>
+              <SheetHeading icon={Users} title={t('information.whoIsHereTitle')} />
+              {viewer.authenticated ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {present.map((p) => (
+                    <PersonChip key={p.id} highlight={viewer.linkedParticipantIds.includes(p.id)}>
+                      {p.name +
+                        petSuffix(p) +
+                        (viewer.linkedParticipantIds.includes(p.id)
+                          ? ` ${t('information.youSuffix')}`
+                          : '')}
+                    </PersonChip>
+                  ))}
+                  {arrivalsToday.length > 0 && (
+                    <PersonChip dashed>
+                      {arrivalsToday.map((p) => p.name + petSuffix(p)).join(', ')} ·{' '}
+                      {t('information.arrivingToday')}
+                    </PersonChip>
+                  )}
+                </div>
+              ) : (
+                // Anonymous (indexable) render: counts, no names — the names
+                // stay one click away on the noindexed Účastníci tab
+                <div className="text-sm text-gray-700 dark:text-slate-300">
+                  {t('information.whoIsHereCount', { count: present.length })}
+                  {arrivalsToday.length > 0 &&
+                    ` ${t('information.todayArrivesCount', { count: arrivalsToday.length })}.`}
+                </div>
+              )}
+              {capacity > 0 && (
+                <div className="text-[13px] text-gray-500 dark:text-slate-400 mt-3">
+                  {t('information.sleepsTonight', { count: present.length, capacity })}
+                </div>
+              )}
+            </div>
+          )
+        })()
+      : null
 
   const programSection =
     phase !== 'after' && programItems.length > 0 ? (
@@ -1295,9 +1304,7 @@ export function InformationView({
               <div
                 key={route.id || idx}
                 className={`rounded-xl bg-white shadow-[0_4px_14px_rgba(0,0,0,0.06)] dark:bg-white/[0.03] dark:shadow-none px-4 py-3.5 border-l-4 ${
-                  idx === 0
-                    ? 'border-primary'
-                    : 'border-gray-200 dark:border-white/[0.12]'
+                  idx === 0 ? 'border-primary' : 'border-gray-200 dark:border-white/[0.12]'
                 }`}
               >
                 <div className="flex justify-between items-baseline gap-3 mb-1">
@@ -1330,9 +1337,9 @@ export function InformationView({
               const connections = option.connections || []
               const firstDeparture = connections[0]?.departure
               const lastArrival = connections[connections.length - 1]?.arrival
-              // no calendar link while the dates are tentative — the window
-              // bounds are not travel days
-              const eventDate = tentative ? null : transportDay(chata, option)
+              // a route's own travel day, else arrival/departure day; null
+              // for a tentative window (its bounds are not travel days)
+              const eventDate = transportDay(chata, option)
               const riders = transportRiders(option, participants)
 
               return (
@@ -1370,7 +1377,11 @@ export function InformationView({
                     {isExpanded ? (
                       <ChevronUp size={18} className="text-gray-400 shrink-0" aria-hidden="true" />
                     ) : (
-                      <ChevronDown size={18} className="text-gray-400 shrink-0" aria-hidden="true" />
+                      <ChevronDown
+                        size={18}
+                        className="text-gray-400 shrink-0"
+                        aria-hidden="true"
+                      />
                     )}
                   </div>
                   {/* who takes this connection — a quiet nudge, the full
@@ -1442,9 +1453,7 @@ export function InformationView({
                       )}
                       {firstDeparture && lastArrival && eventDate && (
                         <div className="mt-1">
-                          <PrimaryAction
-                            href={transportEventUrl(option, chataName, eventDate, t)}
-                          >
+                          <PrimaryAction href={transportEventUrl(option, chataName, eventDate, t)}>
                             <CalendarPlus size={13} aria-hidden="true" />{' '}
                             {t('information.addToCalendar')}
                           </PrimaryAction>
@@ -1477,10 +1486,7 @@ export function InformationView({
     return (
       <div key={key} className="md:columns-2 md:gap-x-11">
         {present.map((section, idx) => (
-          <div
-            key={idx}
-            className="md:break-inside-avoid md:pt-9 md:[&_.sheet-heading]:mt-0"
-          >
+          <div key={idx} className="md:break-inside-avoid md:pt-9 md:[&_.sheet-heading]:mt-0">
             {section}
           </div>
         ))}

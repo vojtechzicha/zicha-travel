@@ -11,6 +11,14 @@ import { organizationEndpoints } from '@/collections/Chatas/organizationEndpoint
 
 let payload: Payload
 const SLUG = 'vitest-organization'
+// a 2-night trip a month ahead: relative, so the tests never run "after the trip"
+const inDays = (days: number) => {
+  const date = new Date()
+  date.setUTCDate(date.getUTCDate() + days)
+  return `${date.toISOString().slice(0, 10)}T12:00:00.000Z`
+}
+const TRIP_FROM = inDays(30)
+const TRIP_TO = inDays(32)
 let chata: Chata
 const users: Record<string, User> = {}
 const people: Record<string, Participant> = {}
@@ -97,8 +105,8 @@ beforeAll(async () => {
       shortName: 'Org',
       location: 'Test',
       slug: SLUG,
-      tripDateFrom: '2026-11-13T12:00:00.000Z',
-      tripDateTo: '2026-11-15T12:00:00.000Z',
+      tripDateFrom: TRIP_FROM,
+      tripDateTo: TRIP_TO,
       bedroomOrganizationEnabled: true,
       sharedCarsEnabled: true,
     },
@@ -303,5 +311,30 @@ describe('cars', () => {
     ).toEqual({
       error: 'invalid',
     })
+  })
+})
+
+describe('after the trip', () => {
+  it('refuses edits, like the read-only UI', async () => {
+    await payload.update({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: { tripDateFrom: '2020-01-10T12:00:00.000Z', tripDateTo: '2020-01-12T12:00:00.000Z' },
+    })
+    try {
+      expect(
+        await call(users.banker, { action: 'bed.leave', participantId: people.parent.id }),
+      ).toEqual({ status: 409, body: { error: 'trip-over' } })
+    } finally {
+      await payload.update({
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        context: { triggerAfterRead: false },
+        data: { tripDateFrom: TRIP_FROM, tripDateTo: TRIP_TO },
+      })
+    }
   })
 })
