@@ -77,9 +77,9 @@ export default function HelpContentEn() {
           <List
             items={[
               <>
-                <strong>Information</strong>: dates, location, description, photos and travel. Bus
-                and train connections have a button that saves the journey, transfers included, to
-                your Google calendar.
+                <strong>Information</strong>: dates, location, description, photos and travel.
+                Public transport connections have a button that saves the journey, transfers
+                included, to your Google calendar.
               </>,
               <>
                 <strong>Organization</strong>: rooms and beds, including who sleeps in which, and

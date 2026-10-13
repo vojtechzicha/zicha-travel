@@ -480,9 +480,9 @@ export interface Chata {
         notes?: string | null;
         connections?:
           | {
-              type: 'vlak' | 'autobus';
+              type: 'vlak' | 'autobus' | 'metro' | 'tramvaj';
               /**
-               * Train/bus number
+               * Train/bus number, or the metro/tram line
                */
               number: string;
               from: string;

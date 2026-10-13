@@ -20,6 +20,8 @@
       "total": "Total {duration}.",
       "bus": "bus",
       "train": "train",
+      "metro": "metro",
+      "tram": "tram",
       "who": "Who's going",
       "tripPage": "Chata page"
     },
@@ -155,7 +157,7 @@
     "youSuffix": "(you)",
     "frontSeat": "Front",
     "backSeat": "Back",
-    "trainRidersNote": "No car yet: {names}. Train times are under Information",
+    "trainRidersNote": "No car yet: {names}. Connections are under Information",
     "withoutCarNote": "No car yet: {names}",
     "ptTitle": "By public transport",
     "ptDetailNote": "full connections are under Information",

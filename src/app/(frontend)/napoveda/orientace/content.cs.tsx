@@ -83,8 +83,8 @@ export default function OrientaceContentCs() {
               <>Praktické poznámky, třeba kde se vyzvedávají klíče nebo jak je to s Wi-Fi.</>,
               <>Cestu autem: odkud, jak dlouho, kolik kilometrů a kde se parkuje.</>,
               <>
-                Spojení vlakem a autobusem. Klepnutím na spoj se rozbalí jednotlivé úseky s časy a
-                čísly vlaků.
+                Spojení vlakem, autobusem, metrem nebo tramvají. Klepnutím na spoj se rozbalí
+                jednotlivé úseky s časy, čísly vlaků a linkami.
               </>,
             ]}
           />

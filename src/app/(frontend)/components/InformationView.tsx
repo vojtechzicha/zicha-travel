@@ -27,9 +27,12 @@ import {
   Phone,
   Sun,
   Train,
+  TrainFrontTunnel,
+  TramFront,
   Users,
   Wallet,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import type { AppLocale } from '@/i18n/config'
 import type { Chata, Media, Participant } from '@/payload-types'
@@ -135,9 +138,27 @@ function petSuffix(participant: Participant): string {
 
 // ─── public transport (kept from the previous view, restyled) ─────────────
 
+const VEHICLE_ICONS: Record<TransportConnection['type'], LucideIcon> = {
+  vlak: Train,
+  autobus: Bus,
+  metro: TrainFrontTunnel,
+  tramvaj: TramFront,
+}
+
+const VEHICLE_LABEL_KEYS = {
+  vlak: 'information.calendar.train',
+  autobus: 'information.calendar.bus',
+  metro: 'information.calendar.metro',
+  tramvaj: 'information.calendar.tram',
+} as const satisfies Record<TransportConnection['type'], string>
+
+function VehicleIcon({ type }: { type: TransportConnection['type'] }) {
+  const Icon = VEHICLE_ICONS[type] ?? Train
+  return <Icon size={12} aria-hidden="true" />
+}
+
 function connectionLine(conn: TransportConnection, t: Translator): string {
-  const vehicle =
-    conn.type === 'autobus' ? t('information.calendar.bus') : t('information.calendar.train')
+  const vehicle = t(VEHICLE_LABEL_KEYS[conn.type] ?? VEHICLE_LABEL_KEYS.vlak)
   return `<b>${vehicle} ${conn.number}</b>: ${conn.from} (${conn.departure}) -> ${conn.to} (${conn.arrival})`
 }
 
@@ -1428,11 +1449,7 @@ export function InformationView({
                           {/* vehicle chip sizes to its content — real train names
                               ("Ex2 (EC 122 „Valašský expres“)") overflow a fixed column */}
                           <span className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 text-gray-500 dark:bg-white/[0.07] dark:text-slate-400 font-mono text-xs px-2 py-1 shrink-0 whitespace-nowrap">
-                            {conn.type === 'autobus' ? (
-                              <Bus size={12} aria-hidden="true" />
-                            ) : (
-                              <Train size={12} aria-hidden="true" />
-                            )}
+                            <VehicleIcon type={conn.type} />
                             {conn.number}
                           </span>
                           <span className="text-gray-700 dark:text-slate-300">

@@ -1165,6 +1165,8 @@ export const Chatas: CollectionConfig = {
                   options: [
                     { label: { en: 'Train', cs: 'Vlak' }, value: 'vlak' },
                     { label: { en: 'Bus', cs: 'Autobus' }, value: 'autobus' },
+                    { label: { en: 'Metro', cs: 'Metro' }, value: 'metro' },
+                    { label: { en: 'Tram', cs: 'Tramvaj' }, value: 'tramvaj' },
                   ],
                 },
                 {
@@ -1173,8 +1175,8 @@ export const Chatas: CollectionConfig = {
                   required: true,
                   admin: {
                     description: {
-                      en: 'Train/bus number',
-                      cs: 'Číslo vlaku/autobusu',
+                      en: 'Train/bus number, or the metro/tram line',
+                      cs: 'Číslo vlaku/autobusu, nebo linka metra/tramvaje',
                     },
                   },
                 },
