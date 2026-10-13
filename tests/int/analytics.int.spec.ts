@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { commonProps, referrerHost, sanitizeUrl, scrubProps } from '@/lib/analytics'
+import {
+  commonProps,
+  isMaskedScriptError,
+  referrerHost,
+  sanitizeUrl,
+  scrubProps,
+} from '@/lib/analytics'
 
 describe('sanitizeUrl', () => {
   it('strips the participant id — the public API resolves it to a real name', () => {
@@ -81,5 +87,32 @@ describe('commonProps', () => {
       role: 'anonymous',
       surface: 'desktop',
     })
+  })
+})
+
+describe('isMaskedScriptError', () => {
+  const exception = (values: string[]) => ({
+    event: '$exception',
+    properties: { $exception_list: values.map((value) => ({ type: 'Error', value })) },
+  })
+
+  it('flags the cross-origin placeholder, with or without the trailing dot', () => {
+    expect(isMaskedScriptError(exception(['Script error.']))).toBe(true)
+    expect(isMaskedScriptError(exception(['Script error']))).toBe(true)
+    expect(isMaskedScriptError(exception([' Script error. ']))).toBe(true)
+  })
+
+  it('keeps real exceptions', () => {
+    expect(isMaskedScriptError(exception(['TypeError: x is undefined']))).toBe(false)
+    expect(isMaskedScriptError(exception(['Script error.', 'Cause: boom']))).toBe(false)
+  })
+
+  it('never touches other events or malformed exception lists', () => {
+    expect(isMaskedScriptError({ event: '$pageview', properties: {} })).toBe(false)
+    expect(isMaskedScriptError({ event: '$exception', properties: {} })).toBe(false)
+    expect(isMaskedScriptError({ event: '$exception', properties: { $exception_list: [] } })).toBe(
+      false,
+    )
+    expect(isMaskedScriptError({ event: '$exception', properties: null })).toBe(false)
   })
 })

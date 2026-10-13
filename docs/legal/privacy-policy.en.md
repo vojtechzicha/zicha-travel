@@ -91,9 +91,10 @@ cannot send you a login link, and without a record of your expenses the rule
 that you can edit your own does not work.
 
 **Emails.** We send operational messages only: login links, confirmations of
-a trip planning vote, decisions on claim requests, requests to confirm an
-expense somebody recorded on your behalf, and, for the banker, the list of items
-to add to the Rohlík cart by hand. No marketing.
+a trip planning vote, notifications to chata admins about new planning votes,
+decisions on claim requests, requests to confirm an expense somebody recorded
+on your behalf, and, for the banker, the list of items to add to the Rohlík
+cart by hand. No marketing.
 
 **Statistics.** Anonymous usage measurement rests on our legitimate interest
 in knowing whether the site works. Statistics cookies are stored only with
@@ -249,7 +250,7 @@ to us first.
 
 | Cookie | Purpose | Lifetime | Consent |
 | --- | --- | --- | --- |
-| `payload-token` | keeps you signed in | 30 days (2 h for admins) | necessary for sign-in |
+| `payload-token` | keeps you signed in | 1 year, renewed each time you use the site (2 h for admins) | necessary for sign-in |
 | `zt_consent` | remembers your choice in the consent bar | 12 months | necessary, it is itself the record of consent |
 | `NEXT_LOCALE` | remembers the chosen language | 12 months | necessary, stored after your choice in the footer |
 | `oauth-state` | random security code protecting Microsoft, Google and Apple sign-in against forgery | 10 minutes | necessary |
@@ -265,20 +266,26 @@ applies everywhere and the bar does not ask again on every address.
 
 Besides cookies, the page keeps a few small things in your browser's
 storage (localStorage). They stay on your device, are never sent to the
-server, and are written only after you make a choice, so they need no
-consent:
+server, and either remember a choice you made or just keep the site
+running, so they need no consent:
 
 | Key | Purpose |
 | --- | --- |
 | `zt_theme` | your dark or light mode choice |
 | `chata-overview-mode` | your chosen overview layout (table or cards) |
 | `chata-selected-participant-*` | whose finances you last had open on a given chata, so the tab reopens the same way |
+| `zt_session_refreshed_at` | when the site last renewed your sign-in, so it does not try on every page load |
 
 With statistics consent, PostHog stores its anonymous identifier in
 localStorage as well as the cookie (keys `ph_*`); withdrawing consent
 deletes both. The Turnstile widget on public forms may keep its own
 technical data, needed to tell people from bots, inside its frame on the
 Cloudflare domain.
+
+The site can be installed as an app on your phone. The browser then keeps
+copies of recently opened pages and data in its cache (as it does on a
+regular visit too), so the app works without a connection. This cache also
+stays on your device and is deleted together with your browser data.
 
 ## 12. Usage statistics
 

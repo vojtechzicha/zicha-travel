@@ -74,8 +74,11 @@ with this code, so the dev schema push finds the enum already migrated.
 Both flows end the same way: a JWT signed with `PAYLOAD_SECRET` in the
 `payload-token` cookie, verified by the always-registered `app-jwt` strategy
 (`src/collections/Users.ts`), so one session works for the frontend *and* the
-admin panel. Sessions: 30 days for `user`, 2 hours for admin roles
-(`src/lib/auth/session.ts`). `SESSION_COOKIE_DOMAIN=.zicha.travel` makes the
+admin panel. Sessions: 1 year for `user` (the site installs as an app on
+phones and trips are months apart), 2 hours for admin roles
+(`src/lib/auth/session.ts`); a rolling refresh (`POST /api/auth/refresh`,
+called throttled by `PwaProvider`) re-signs the cookie on use, so active
+accounts never expire. `SESSION_COOKIE_DOMAIN=.zicha.travel` makes the
 cookie work across chata subdomains.
 
 ### Magic link
