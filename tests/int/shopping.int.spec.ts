@@ -133,18 +133,22 @@ describe('refreshedRohlik', () => {
 
 describe('sendRoute', () => {
   it('sends Rohlík products to the cart', () => {
-    expect(sendRoute({ productId: '712705', inStock: true })).toBe('cart')
+    expect(sendRoute({ productId: '712705', inStock: true }, true)).toBe('cart')
     // never checked, or Rohlík didn't say: try the cart
-    expect(sendRoute({ productId: '712705' })).toBe('cart')
-    expect(sendRoute({ productId: '712705', inStock: null })).toBe('cart')
+    expect(sendRoute({ productId: '712705' }, true)).toBe('cart')
+    expect(sendRoute({ productId: '712705', inStock: null }, true)).toBe('cart')
   })
 
   it('keeps sold-out products out of the cart', () => {
-    expect(sendRoute({ productId: '712705', inStock: false })).toBe('soldOut')
+    expect(sendRoute({ productId: '712705', inStock: false }, true)).toBe('soldOut')
+  })
+
+  it("doesn't trust a stale sold-out when the check before the send failed", () => {
+    expect(sendRoute({ productId: '712705', inStock: false }, false)).toBe('cart')
   })
 
   it('routes free-text items to the checklist', () => {
-    expect(sendRoute(null)).toBe('text')
-    expect(sendRoute({ productId: null, inStock: false })).toBe('text')
+    expect(sendRoute(null, true)).toBe('text')
+    expect(sendRoute({ productId: null, inStock: false }, false)).toBe('text')
   })
 })

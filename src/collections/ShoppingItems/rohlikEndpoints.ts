@@ -238,9 +238,11 @@ export const rohlikEndpoints: Endpoint[] = [
 
       // prices first, so the receipt shows what the cart will actually cost;
       // a failed check doesn't stop the send (Rohlík prices the cart itself)
+      let stockChecked = true
       try {
         await refreshChataPrices(req.payload, chataId, token)
       } catch (err) {
+        stockChecked = false
         req.payload.logger.warn({ err }, 'Rohlík price refresh before send failed')
       }
 
@@ -261,10 +263,11 @@ export const rohlikEndpoints: Endpoint[] = [
           return { item, quantity, delta: quantity - already }
         })
         .filter(({ delta }) => delta > 0)
-      const routed = pending.map((entry) => ({ ...entry, route: sendRoute(entry.item.rohlik) }))
+      const routed = pending.map((entry) => ({ ...entry, route: sendRoute(entry.item.rohlik, stockChecked) }))
       const skipped = routed.filter(({ route }) => route === 'text').length
-      // sold out at the check above: not in the cart, not marked sent, so a
-      // later send picks them up once Rohlík has them again
+      // sold out at the check above (only a check that worked counts): not
+      // in the cart, not marked sent, so a later send picks them up once
+      // Rohlík has them again
       const soldOut = routed.filter(({ route }) => route === 'soldOut').length
       const lines = mergeCartLines(
         routed

@@ -473,7 +473,7 @@ API payload, no new endpoints).
   and `checkedAt`; rule `refreshedRohlik` in `src/lib/shopping.ts`. A
   failed details batch throws (`detailsCallFailed`), so a Rohlík error never
   reads as "sold out". Items sold out at the send's check skip the cart
-  (`sendRoute`), go on the checklist email asking for a substitute and stay
+  (`sendRoute`; only when that check worked), go on the checklist email asking for a substitute and stay
   pending for the next send. The till reminds the banker that Rohlík's
   stock and prices follow the delivery address set in their account. We
   never order or pay; free-text items stay for manual adding, and every send
