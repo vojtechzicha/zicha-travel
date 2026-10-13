@@ -205,6 +205,8 @@ const buildData = (m: MediaIds) => ({
   location: 'Vavřetice, Benešovsko',
   banker: P.vojta,
   shoppingListEnabled: true,
+  // cars come from the participants themselves ("Nabídnout auto"); none at the start
+  sharedCarsEnabled: true,
 
   planningEnabled: false,
 
