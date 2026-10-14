@@ -769,7 +769,7 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                   </p>
                 ) : null}
               </div>
-              {!beer.closedAt && items.length > 0 && (
+              {!beer.closedAt && (
                 <CloseListButton
                   label={t('close')}
                   confirmText={t('closeConfirm')}

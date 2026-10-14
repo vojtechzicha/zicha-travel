@@ -121,10 +121,20 @@ export const Expenses: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
+      // `sourceList` marks the row a closed "Nákup"/"Pivo" writes
+      // (src/utils/listExpense.ts) and is how closing again finds it: only
+      // that server-side path (no user on the request) sets it. Every other
+      // writer keeps the stored value, so nobody can claim or hijack it.
+      ({ data, operation, originalDoc, req }) => {
+        if (req.user && data && 'sourceList' in data) {
+          data.sourceList = operation === 'update' ? (originalDoc?.sourceList ?? null) : null
+        }
+        return data
+      },
       // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): the structural rules a
       // private expense must obey, enforced for EVERY writer — the admin
-      // panel included — so no path can produce one that leaks. Runs first,
-      // because the authoring guard below early-returns for chata admins.
+      // panel included — so no path can produce one that leaks. Runs before
+      // the authoring guard below, which early-returns for chata admins.
       async ({ data, operation, req, originalDoc }) => {
         if (req.context?.expenseDecision === true) return data
         if (req.context?.expensePrivateSettle === true) return data

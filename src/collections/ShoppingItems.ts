@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
+import { pickValidationMessage } from '../i18n/adminTranslations'
 import { refId } from '../lib/access'
 import { isRohlikProductImage } from '../lib/rohlik/mcp'
 import { verifiedRohlikProduct } from '../utils/rohlikConnection'
@@ -149,6 +150,15 @@ export const ShoppingItems: CollectionConfig = {
           min: 1,
           max: 999,
           defaultValue: 1,
+          // whole pieces: the receipt and the Finance row price the same number
+          validate: (value: number | null | undefined, { req }: { req: PayloadRequest }) =>
+            value == null || Number.isInteger(value)
+              ? true
+              : pickValidationMessage(
+                  req,
+                  'The quantity must be a whole number',
+                  'Počet musí být celé číslo',
+                ),
           label: { en: 'Quantity', cs: 'Počet' },
           admin: { width: '30%' },
         },

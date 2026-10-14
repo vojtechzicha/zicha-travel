@@ -6,6 +6,7 @@ import type { Chata, KegItem, Participant, User } from '@/payload-types'
 import type { PayloadRequest } from 'payload'
 import { closeListEndpoint } from '@/collections/listItemRules'
 import { setOptOut as setOptOutEndpoint } from '@/collections/ListOptOuts'
+import { syncListExpense } from '@/utils/listExpense'
 
 // "Pivo" (src/collections/KegItems.ts) against the real local API with its
 // own fixture chata: product fields always come from the price list, the
@@ -375,5 +376,82 @@ describe('opting out and the Finance row', () => {
       depth: 0,
     })
     expect(left.docs).toHaveLength(0)
+  })
+})
+
+describe("the list expense stays the list's own", () => {
+  const listExpense = async () =>
+    (
+      await payload.find({
+        collection: 'expenses',
+        where: { and: [{ chata: { equals: chata.id } }, { sourceList: { equals: 'beer' } }] },
+        depth: 0,
+      })
+    ).docs
+
+  it("never lets a participant mark an expense as the list's", async () => {
+    const own = await payload.create({
+      collection: 'expenses',
+      depth: 0,
+      data: {
+        chata: chata.id,
+        title: 'Podvržené pivo',
+        amount: 100,
+        payer: { relationTo: 'participants', value: people.author.id },
+        splitType: 'equal',
+        sourceList: 'beer',
+      },
+      ...asUser(users.author),
+    })
+    expect(own.sourceList ?? null).toBeNull()
+    const updated = await payload.update({
+      collection: 'expenses',
+      id: own.id,
+      depth: 0,
+      data: { sourceList: 'beer' },
+      ...asUser(users.author),
+    })
+    expect(updated.sourceList ?? null).toBeNull()
+    await payload.delete({ collection: 'expenses', id: own.id, depth: 0 })
+  })
+
+  it('moves a planned row to the current banker', async () => {
+    const [expense] = await listExpense()
+    await payload.update({
+      collection: 'expenses',
+      id: expense.id,
+      data: { isPlanned: true },
+      depth: 0,
+    })
+    await payload.update({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: { banker: people.other.id },
+    })
+    await syncListExpense(payload, chata.id, 'beer')
+    const [after] = await listExpense()
+    expect(String((after.payer as { value: unknown }).value)).toBe(String(people.other.id))
+    await payload.update({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: { banker: people.banker.id },
+    })
+  })
+
+  it('removes a planned row once nothing priced is left', async () => {
+    const { docs: left } = await payload.find({
+      collection: 'keg-items',
+      where: { chata: { equals: chata.id } },
+      depth: 0,
+    })
+    for (const item of left)
+      await payload.delete({ collection: 'keg-items', id: item.id, depth: 0 })
+    const result = await syncListExpense(payload, chata.id, 'beer')
+    expect(result.status).toBe('removed')
+    expect(await listExpense()).toHaveLength(0)
   })
 })

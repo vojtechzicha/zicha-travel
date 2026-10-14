@@ -859,7 +859,7 @@ export function ShoppingView({
           </div>
 
           {/* ─── the banker's till (gone once the list is closed: it's ordered) ─── */}
-          {shopper.isMe && !shopping.closedAt && items.length > 0 && (
+          {shopper.isMe && !shopping.closedAt && (
             <CloseListButton
               label={t('close')}
               confirmText={t('closeConfirm')}

@@ -17,5 +17,6 @@
   "expenseUpdated": "The expense in Finance was recalculated: {amount}.",
   "expenseSkippedEmpty": "Nothing on the list has a price, so no expense was added to Finance.",
   "expenseSkippedNoBanker": "The chata has no banker, so no expense was added to Finance.",
-  "expenseFailed": "The list is closed, but the expense didn't make it into Finance. Reopen it and close it again."
+  "expenseFailed": "The list is closed, but the expense didn't make it into Finance. Reopen it and close it again.",
+  "expenseRemoved": "Nothing with a price is left on the list, so the expense was removed from Finance."
 }

@@ -63,7 +63,7 @@ export async function listSplitItems(
       id: item.id,
       cost:
         typeof item.rohlik?.price === 'number'
-          ? item.rohlik.price * Math.max(1, Math.round(item.quantity || 1))
+          ? item.rohlik.price * Math.max(1, item.quantity || 1)
           : null,
     }))
   }
@@ -89,6 +89,7 @@ export async function listSplitItems(
 
 export type ListExpenseResult =
   | { status: 'created' | 'updated'; expenseId: number; amount: number }
+  | { status: 'removed'; expenseId: number }
   | { status: 'skipped'; reason: 'no-banker' | 'empty' }
 
 export async function syncListExpense(
@@ -132,8 +133,16 @@ export async function syncListExpense(
   })
   const current = existing[0]
   const keepAmount = current != null && current.isPlanned !== true
+  // nothing priced left: a planned row would linger with an old estimate, so
+  // it goes; a paid one is a real bill and stays as it is
+  if (Math.round(split.total) <= 0) {
+    if (current && !keepAmount) {
+      await payload.delete({ collection: 'expenses', id: current.id, overrideAccess: true })
+      return { status: 'removed', expenseId: current.id }
+    }
+    return { status: 'skipped', reason: 'empty' }
+  }
   const amount = keepAmount ? current.amount : Math.round(split.total)
-  if (amount <= 0) return { status: 'skipped', reason: 'empty' }
   const weights = [
     ...(keepAmount ? scaledShares(split.shares, amount) : roundedShares(split.shares)),
   ].map(([participant, weight]) => ({ participant: Number(participant), weight }))
@@ -152,7 +161,13 @@ export async function syncListExpense(
     await payload.update({
       collection: 'expenses',
       id: current.id,
-      data: { amount, splitType: 'weighted', weights, ...(keepAmount ? {} : { note }) },
+      // a planned row follows the current banker; a paid one keeps who paid
+      data: {
+        amount,
+        splitType: 'weighted',
+        weights,
+        ...(keepAmount ? {} : { note, payer: { relationTo: 'participants', value: bankerId } }),
+      },
       depth: 0,
       overrideAccess: true,
     })

@@ -17,5 +17,6 @@
   "expenseUpdated": "Výdaj ve Financích je přepočítaný: {amount}.",
   "expenseSkippedEmpty": "Na seznamu není nic s cenou, takže ve Financích výdaj nevznikl.",
   "expenseSkippedNoBanker": "Chata nemá pokladníka, takže ve Financích výdaj nevznikl.",
-  "expenseFailed": "Seznam je uzavřený, ale výdaj se do Financí zapsat nepovedlo. Otevři ho a uzavři znovu."
+  "expenseFailed": "Seznam je uzavřený, ale výdaj se do Financí zapsat nepovedlo. Otevři ho a uzavři znovu.",
+  "expenseRemoved": "Na seznamu nic s cenou nezbylo, takže výdaj z Financí zmizel."
 }

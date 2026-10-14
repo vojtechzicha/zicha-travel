@@ -109,6 +109,7 @@ export function useListClosing(
 
 export type ListExpenseOutcome =
   | { status: 'created' | 'updated'; amount: number }
+  | { status: 'removed' }
   | { status: 'skipped'; reason: 'no-banker' | 'empty' }
   | { status: 'failed' }
 
@@ -121,11 +122,13 @@ export function ListExpenseNote({ outcome }: { outcome: ListExpenseOutcome }) {
       ? t('expenseCreated', { amount: formatCurrency(outcome.amount, locale) })
       : outcome.status === 'updated'
         ? t('expenseUpdated', { amount: formatCurrency(outcome.amount, locale) })
-        : outcome.status === 'skipped'
-          ? outcome.reason === 'empty'
-            ? t('expenseSkippedEmpty')
-            : t('expenseSkippedNoBanker')
-          : t('expenseFailed')
+        : outcome.status === 'removed'
+          ? t('expenseRemoved')
+          : outcome.status === 'skipped'
+            ? outcome.reason === 'empty'
+              ? t('expenseSkippedEmpty')
+              : t('expenseSkippedNoBanker')
+            : t('expenseFailed')
   return (
     <p
       role="status"
