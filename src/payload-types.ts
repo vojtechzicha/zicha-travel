@@ -437,6 +437,7 @@ export interface Chata {
   beerTapDays?: number | null;
   beerSummarySentAt?: string | null;
   beerSummarySignature?: string | null;
+  beerClosedTapDays?: number | null;
   /**
    * Set by the banker's "Uzavřít objednávku" on the tab: the order stays visible but takes no more changes. Clear it to reopen.
    */
@@ -1566,6 +1567,7 @@ export interface ChatasSelect<T extends boolean = true> {
   beerTapDays?: T;
   beerSummarySentAt?: T;
   beerSummarySignature?: T;
+  beerClosedTapDays?: T;
   beerClosedAt?: T;
   parking?: T;
   carRoutes?:

@@ -7,6 +7,7 @@ import type { PayloadRequest } from 'payload'
 import { closeListEndpoint } from '@/collections/listItemRules'
 import { setOptOut as setOptOutEndpoint } from '@/collections/ListOptOuts'
 import { syncListExpense } from '@/utils/listExpense'
+import { tapRentalDays } from '@/lib/beer'
 
 // "Pivo" (src/collections/KegItems.ts) against the real local API with its
 // own fixture chata: product fields always come from the price list, the
@@ -573,5 +574,37 @@ describe('whose an item is', () => {
     })
     expect(updated.quantity).toBe(2)
     expect(String(updated.participant)).toBe(String(people.author.id))
+  })
+})
+
+describe('a closed order keeps its tap rental days', () => {
+  it('prices the receipt with the days it was closed with, until reopened', async () => {
+    const setChata = (data: Record<string, unknown>) =>
+      payload.update({
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        context: { triggerAfterRead: false },
+        data,
+      })
+    const read = () =>
+      payload.findByID({
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        context: { triggerAfterRead: false },
+      })
+    const closeAs = (closed: boolean) =>
+      closeListEndpoint('beerClosedAt').handler({
+        payload,
+        user: { ...users.banker, collection: 'users' },
+        json: async () => ({ chata: chata.id, closed }),
+      } as unknown as PayloadRequest)
+    await setChata({ beerTapDays: 4 })
+    expect((await closeAs(true)).status).toBe(200)
+    await setChata({ beerTapDays: 2 })
+    expect(tapRentalDays(await read())).toBe(4)
+    expect((await closeAs(false)).status).toBe(200)
+    expect(tapRentalDays(await read())).toBe(2)
   })
 })

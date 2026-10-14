@@ -101,6 +101,16 @@ describe('pricePerLiter, tapRentalDays and lineCost', () => {
     expect(tapRentalDays({ ...weekend, beerTapDays: 4 })).toBe(4)
     expect(tapRentalDays({ tripDatesTentative: true, tripPlannedNights: 3 })).toBe(3)
     expect(tapRentalDays({})).toBe(1)
+    // a closed order keeps the days it was closed with
+    expect(
+      tapRentalDays({
+        ...weekend,
+        beerTapDays: 2,
+        beerClosedAt: '2026-11-10',
+        beerClosedTapDays: 4,
+      }),
+    ).toBe(4)
+    expect(tapRentalDays({ ...weekend, beerTapDays: 2, beerClosedTapDays: 4 })).toBe(2)
   })
 
   it('prices kegs by the piece and taps by the piece and day', () => {

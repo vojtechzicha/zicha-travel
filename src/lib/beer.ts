@@ -111,15 +111,22 @@ export function pricePerLiter(keg: { price: number; liters: number | null }): nu
  * How many days the taps are rented: the chata's own `beerTapDays` when the
  * banker set it (e.g. Friday to Tuesday although the trip ends on Sunday),
  * else the nights of the stay (picked up on arrival, returned on departure).
- * At least one.
+ * At least one. A CLOSED order keeps the days it was closed with
+ * (`beerClosedTapDays`), so editing the trip later can't re-price a receipt
+ * whose Finance row is already written.
  */
 export function tapRentalDays(chata: {
+  beerClosedAt?: string | null
+  beerClosedTapDays?: number | null
   beerTapDays?: number | null
   tripDateFrom?: string | null
   tripDateTo?: string | null
   tripDatesTentative?: boolean | null
   tripPlannedNights?: number | null
 }): number {
+  if (chata.beerClosedAt && chata.beerClosedTapDays && chata.beerClosedTapDays > 0) {
+    return chata.beerClosedTapDays
+  }
   if (chata.beerTapDays && chata.beerTapDays > 0) return Math.round(chata.beerTapDays)
   let nights = 0
   if (chata.tripDatesTentative) nights = chata.tripPlannedNights ?? 0

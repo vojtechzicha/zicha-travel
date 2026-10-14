@@ -1036,6 +1036,8 @@ ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_tap_days numeric;
 -- what the last beer order summary carried (src/lib/beer.ts orderSignature)
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_sent_at timestamp(3) with time zone;
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_signature character varying;
+-- the tap rental days a closed beer order was priced with
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_closed_tap_days numeric;
 
 -- "Kdo se skládá" (src/lib/listSplit.ts): opt-outs from list items or whole
 -- lists, and the expense a closed list became (src/utils/listExpense.ts).

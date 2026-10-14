@@ -1059,6 +1059,12 @@ export const Chatas: CollectionConfig = {
       type: 'text',
       admin: { hidden: true },
     },
+    // the tap rental days a closed order was priced with (tapRentalDays)
+    {
+      name: 'beerClosedTapDays',
+      type: 'number',
+      admin: { hidden: true },
+    },
     {
       name: 'beerClosedAt',
       type: 'date',

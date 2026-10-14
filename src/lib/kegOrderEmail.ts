@@ -150,6 +150,8 @@ export interface KegOrderChata {
   tripPlannedNights?: number | null
   checkInTime?: string | null
   beerTapDays?: number | null
+  beerClosedAt?: string | null
+  beerClosedTapDays?: number | null
 }
 
 /**
