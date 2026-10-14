@@ -1,9 +1,8 @@
 import { APIError, type CollectionConfig, type Endpoint, type PayloadRequest } from 'payload'
 import { canManageChata, refId } from '../lib/access'
-import { beerProduct, mergeOrderLines, orderSignature, tapRentalDays } from '../lib/beer'
+import { beerProduct } from '../lib/beer'
 import { pickValidationMessage } from '../i18n/adminTranslations'
-import { arrivalDayCs, kegOrderEmail } from '../lib/kegOrderEmail'
-import { chataViewUrl } from '../lib/shoppingEmail'
+import { buildKegOrderEmail, kegOrderFingerprint } from '../lib/kegOrderEmail'
 import { sendAppEmail } from '../lib/email'
 import { bankerAccountId } from '../utils/rohlikConnection'
 import { manualItemsRecipients } from '../utils/shoppingEmail'
@@ -76,33 +75,7 @@ const orderSummary: Endpoint = {
     ])
     if (items.length === 0) return Response.json({ error: 'empty' }, { status: 409 })
 
-    const nameOf = new Map(participants.map((p) => [String(p.id), p.name]))
-    const lines = mergeOrderLines(
-      items.map((item) => ({
-        code: item.code,
-        name: item.name ?? item.code,
-        liters: item.liters ?? null,
-        price: item.price ?? 0,
-        unit: item.unit === 'day' ? 'day' : 'keg',
-        quantity: item.quantity,
-        wantedBy:
-          item.participant != null ? (nameOf.get(String(refId(item.participant))) ?? null) : null,
-        note: item.note ?? null,
-      })),
-    )
-    const place = [chata.destinationName, chata.destinationLocation].filter(Boolean).join(', ')
-    const arrival =
-      chata.tripDateFrom && !chata.tripDatesTentative
-        ? [arrivalDayCs(chata.tripDateFrom), chata.checkInTime].filter(Boolean).join(', ')
-        : null
-    const email = kegOrderEmail({
-      chataName: chata.shortName || chata.name,
-      lines,
-      tapDays: tapRentalDays(chata),
-      place: place || null,
-      arrival,
-      listUrl: chataViewUrl(chata, 'beer'),
-    })
+    const email = buildKegOrderEmail(chata, items, participants)
 
     const banker =
       bankerAccount != null
@@ -127,7 +100,7 @@ const orderSummary: Endpoint = {
     await req.payload.update({
       collection: 'chatas',
       id: chataId,
-      data: { beerSummarySentAt: sentAt, beerSummarySignature: orderSignature(items) },
+      data: { beerSummarySentAt: sentAt, beerSummarySignature: kegOrderFingerprint(email) },
       depth: 0,
       overrideAccess: true,
       context: { triggerAfterRead: false },
@@ -141,7 +114,7 @@ const orderSummary: Endpoint = {
         overrideAccess: true,
       })
     }
-    return Response.json({ emailed, lines: lines.length })
+    return Response.json({ emailed })
   },
 }
 

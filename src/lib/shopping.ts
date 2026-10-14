@@ -41,7 +41,13 @@ export interface ShoppingPayload {
   canAdd: boolean
   ownParticipants: { id: number; name: string }[]
   /** the banker orders: whether their Rohlík account is connected */
-  shopper: { name: string | null; connected: boolean; isMe: boolean }
+  shopper: {
+    name: string | null
+    connected: boolean
+    isMe: boolean
+    /** may close or reopen the list: the banker or a chata admin */
+    canManage: boolean
+  }
   /** the banker closed the list: everything stays readable, nothing changes */
   closedAt: string | null
   /** who doesn't chip in for what ("tohle nechci", src/lib/listSplit.ts) */

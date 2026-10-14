@@ -296,7 +296,7 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
               text={t('closedText', { date: formatDate(beer.closedAt, locale) })}
               reopenLabel={t('reopen')}
               failedLabel={t('closeFailed')}
-              canReopen={orderer.isMe}
+              canReopen={orderer.canManage}
               busy={closing.busy}
               failed={closing.failed}
               onReopen={() => void closing.setClosed(false)}
@@ -743,7 +743,7 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
           </div>
 
           {/* ─── the banker's till ─── */}
-          {orderer.isMe && (
+          {orderer.canManage && (
             <div className="flex w-full max-w-[440px] flex-col gap-3">
               <p className="text-[13px] leading-relaxed text-gray-600 dark:text-slate-300">
                 {t('ordererIntro')}

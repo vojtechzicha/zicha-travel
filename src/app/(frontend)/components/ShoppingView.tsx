@@ -446,7 +446,7 @@ export function ShoppingView({
               text={t('closedText', { date: formatDate(shopping.closedAt, locale) })}
               reopenLabel={t('reopen')}
               failedLabel={t('closeFailed')}
-              canReopen={shopper.isMe}
+              canReopen={shopper.canManage}
               busy={closing.busy}
               failed={closing.failed}
               onReopen={() => void closing.setClosed(false)}
@@ -859,7 +859,7 @@ export function ShoppingView({
           </div>
 
           {/* ─── the banker's till (gone once the list is closed: it's ordered) ─── */}
-          {shopper.isMe && !shopping.closedAt && (
+          {shopper.canManage && !shopping.closedAt && (
             <CloseListButton
               label={t('close')}
               confirmText={t('closeConfirm')}

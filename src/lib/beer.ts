@@ -232,37 +232,6 @@ export function mergeOrderLines(
   })
 }
 
-/**
- * A fingerprint of the order as it stands: every item with everything the
- * summary email carries (product, quantity, whose it is, the note). The summary endpoint stores it on the chata; any later add,
- * change or delete gives a different one, so the tab can say the emailed
- * summary is out of date (a deleted item leaves no row to compare).
- */
-export function orderSignature(
-  items: {
-    id: number | string
-    code: string
-    quantity: number
-    participant?: number | string | { id: number | string } | null
-    note?: string | null
-  }[],
-): string {
-  const participantId = (value: unknown) =>
-    value != null && typeof value === 'object' ? (value as { id: unknown }).id : value
-  return items
-    .map((item) =>
-      JSON.stringify([
-        item.id,
-        item.code,
-        item.quantity,
-        participantId(item.participant) ?? null,
-        item.note ?? null,
-      ]),
-    )
-    .sort()
-    .join(',')
-}
-
 export interface BeerItemView {
   id: number
   code: string
@@ -289,7 +258,12 @@ export interface BeerPayload {
   canAdd: boolean
   ownParticipants: { id: number; name: string }[]
   /** the banker orders: they get the summary email */
-  orderer: { name: string | null; isMe: boolean }
+  orderer: {
+    name: string | null
+    isMe: boolean
+    /** may send the summary and close or reopen: the banker or a chata admin */
+    canManage: boolean
+  }
   /** when the last order summary went out */
   summarySentAt: string | null
   /** the order changed since that summary (adds, edits and deletes) */

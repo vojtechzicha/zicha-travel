@@ -7,11 +7,17 @@ import {
   tapRentalDays,
   filterKegs,
   mergeOrderLines,
-  orderSignature,
   pricePerLiter,
 } from '@/lib/beer'
 import { KEG_CATALOG } from '@/lib/kegCatalog'
-import { daysCs, kegOrderEmail, kegsCs, orderLineText } from '@/lib/kegOrderEmail'
+import {
+  buildKegOrderEmail,
+  daysCs,
+  kegOrderEmail,
+  kegOrderFingerprint,
+  kegsCs,
+  orderLineText,
+} from '@/lib/kegOrderEmail'
 
 describe('KEG_CATALOG', () => {
   it('has unique codes, real prices and only the four keg sizes', () => {
@@ -217,32 +223,37 @@ describe('kegOrderEmail', () => {
   })
 })
 
-describe('orderSignature', () => {
-  const items = [
-    { id: 1, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30', quantity: 2 },
-    { id: 2, code: 'VYCEP-KOHOUT', quantity: 1 },
+describe('kegOrderFingerprint', () => {
+  const chata = {
+    name: 'Přátelé',
+    slug: 'pratele',
+    destinationName: 'Chata Oáza',
+    tripDateFrom: '2026-11-13T12:00:00.000Z',
+    tripDateTo: '2026-11-15T12:00:00.000Z',
+    beerTapDays: 4,
+  }
+  const people = [
+    { id: 1, name: 'Vojta' },
+    { id: 2, name: 'Martin' },
   ]
+  const items = [
+    { ...beerProduct('BENE-KOFOLA-50')!, quantity: 1, participant: 1, note: null as string | null },
+    { ...beerProduct(TAP_RENTAL.code)!, quantity: 1, participant: 2, note: null as string | null },
+  ]
+  const print = (c = chata, i = items, p = people) =>
+    kegOrderFingerprint(buildKegOrderEmail(c, i, p))
 
-  it('ignores the order of the rows', () => {
-    expect(orderSignature([...items].reverse())).toBe(orderSignature(items))
+  it('is stable for the same order', () => {
+    expect(print()).toBe(print())
   })
 
-  it('changes on a new quantity, a new row and a deleted row', () => {
-    const base = orderSignature(items)
-    expect(orderSignature([{ ...items[0], quantity: 3 }, items[1]])).not.toBe(base)
-    expect(
-      orderSignature([...items, { id: 3, code: 'BENE-PILSNER-URQUELL-12-30', quantity: 1 }]),
-    ).not.toBe(base)
-    expect(orderSignature([items[0]])).not.toBe(base)
-  })
-
-  it('changes on a new note or a new "pro koho", both in the email', () => {
-    const base = orderSignature(items)
-    expect(orderSignature([{ ...items[0], note: 'na sobotu' }, items[1]])).not.toBe(base)
-    expect(orderSignature([{ ...items[0], participant: 7 }, items[1]])).not.toBe(base)
-    // a populated participant reads the same as its id
-    expect(orderSignature([{ ...items[0], participant: { id: 7 } }, items[1]])).toBe(
-      orderSignature([{ ...items[0], participant: 7 }, items[1]]),
-    )
+  it('changes with anything the email shows', () => {
+    const base = print()
+    expect(print(chata, [{ ...items[0], note: 'na sobotu' }, items[1]])).not.toBe(base)
+    expect(print(chata, [{ ...items[0], participant: 2 }, items[1]])).not.toBe(base)
+    expect(print({ ...chata, beerTapDays: 2 })).not.toBe(base)
+    expect(print({ ...chata, destinationName: 'Jinde' })).not.toBe(base)
+    expect(print(chata, items, [{ id: 1, name: 'Vojtěch' }, people[1]])).not.toBe(base)
+    expect(print(chata, [items[0]])).not.toBe(base)
   })
 })

@@ -4,8 +4,17 @@
 // the phone, plus who asked for what. Czech only, tykání, like the other
 // emails to the trip's organizers. Nothing here goes to the shop itself.
 
+import { createHash } from 'node:crypto'
 import { formatCurrency } from './formatCurrency'
-import { BEER_SHOP, beerTotals, lineCost, type OrderLine } from './beer'
+import {
+  BEER_SHOP,
+  beerTotals,
+  lineCost,
+  mergeOrderLines,
+  tapRentalDays,
+  type OrderLine,
+} from './beer'
+import { chataViewUrl } from './shoppingEmail'
 import { KEG_CATALOG_PRINTED } from './kegCatalog'
 
 export interface KegOrderEmail {
@@ -125,4 +134,81 @@ export function kegOrderEmail(args: {
         </p>
       </div>`,
   }
+}
+
+/** The chata fields the summary email reads. */
+export interface KegOrderChata {
+  name: string
+  shortName?: string | null
+  slug?: string | null
+  domains?: { domain: string }[] | null
+  destinationName?: string | null
+  destinationLocation?: string | null
+  tripDateFrom?: string | null
+  tripDateTo?: string | null
+  tripDatesTentative?: boolean | null
+  tripPlannedNights?: number | null
+  checkInTime?: string | null
+  beerTapDays?: number | null
+}
+
+/**
+ * The summary email for a chata's beer order as it stands now. The endpoint
+ * sends it; the slug API rebuilds it to tell whether the last one sent is
+ * still current (kegOrderFingerprint), so both read the same inputs.
+ */
+export function buildKegOrderEmail(
+  chata: KegOrderChata,
+  items: {
+    code: string
+    name?: string | null
+    liters?: number | null
+    price?: number | null
+    unit?: string | null
+    quantity: number
+    participant?: number | string | { id: number | string } | null
+    note?: string | null
+  }[],
+  participants: { id: number | string; name: string }[],
+): KegOrderEmail {
+  const nameOf = new Map(participants.map((p) => [String(p.id), p.name]))
+  const participantId = (value: unknown) =>
+    value != null && typeof value === 'object' ? (value as { id: unknown }).id : value
+  const lines = mergeOrderLines(
+    items.map((item) => ({
+      code: item.code,
+      name: item.name ?? item.code,
+      liters: item.liters ?? null,
+      price: item.price ?? 0,
+      unit: item.unit === 'day' ? 'day' : 'keg',
+      quantity: item.quantity,
+      wantedBy:
+        item.participant != null
+          ? (nameOf.get(String(participantId(item.participant))) ?? null)
+          : null,
+      note: item.note ?? null,
+    })),
+  )
+  const place = [chata.destinationName, chata.destinationLocation].filter(Boolean).join(', ')
+  const arrival =
+    chata.tripDateFrom && !chata.tripDatesTentative
+      ? [arrivalDayCs(chata.tripDateFrom), chata.checkInTime].filter(Boolean).join(', ')
+      : null
+  return kegOrderEmail({
+    chataName: chata.shortName || chata.name,
+    lines,
+    tapDays: tapRentalDays(chata),
+    place: place || null,
+    arrival,
+    listUrl: chataViewUrl(chata, 'beer'),
+  })
+}
+
+/**
+ * What a sent summary said, as a short hash of its subject and text: any
+ * change the email would show (items, notes, names, rental days, place,
+ * arrival) changes it.
+ */
+export function kegOrderFingerprint(email: Pick<KegOrderEmail, 'subject' | 'text'>): string {
+  return createHash('sha256').update(`${email.subject}\n${email.text}`).digest('hex')
 }
