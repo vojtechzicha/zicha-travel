@@ -1038,6 +1038,8 @@ ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_sent_at timestamp(3) wi
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_signature character varying;
 -- the tap rental days a closed beer order was priced with
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_closed_tap_days numeric;
+-- ...and whether the bar's weekend price applied (src/lib/beer.ts tapRental)
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_closed_tap_weekend boolean;
 
 -- "Kdo se skládá" (src/lib/listSplit.ts): opt-outs from list items or whole
 -- lists, and the expense a closed list became (src/utils/listExpense.ts).
@@ -1289,6 +1291,87 @@ async function backfillExpenseApproval() {
 }
 
 /**
+ * "Pivo": the bar item ('VYCEP-KOHOUT') still counts taps, but it is now
+ * ONE item per order priced per bar (barPlan in src/lib/beer.ts) and named
+ * "Výčep"; before, anyone could add their own tap row. An open order's tap
+ * rows merge into its oldest one, the taps summed. An item opt-out
+ * ("nechci") survives the merge only for somebody who opted out of every
+ * merged row: one bar can't keep a per-row split, and nobody gets left out
+ * of taps they didn't refuse. The stored name and price per bar and day
+ * (mirrored here, this script can't import TypeScript) follow, so the admin
+ * shows what the page uses.
+ *
+ * A CLOSED order with old tap rows (closed before the weekend flag existed)
+ * would show a receipt the bar plan reprices, out of step with its Finance
+ * row, so the deploy stops instead: none existed when this shipped. Reopen
+ * such an order (then the next deploy merges it) or fix it by hand.
+ * Idempotent: nothing matches once done.
+ */
+async function refreshTapItems() {
+  const legacyClosed = await client.query(`
+    SELECT DISTINCT c.id, c.slug FROM chatas c JOIN keg_items k ON k.chata_id = c.id
+      WHERE k.code = 'VYCEP-KOHOUT'
+        AND c.beer_closed_at IS NOT NULL
+        AND c.beer_closed_tap_weekend IS NULL`)
+  if (legacyClosed.rowCount > 0) {
+    throw new Error(
+      'Closed beer orders still priced per tap: ' +
+        legacyClosed.rows.map((row) => row.slug ?? row.id).join(', ') +
+        '. Reopen them (Pivo, "Znovu otevřít") and deploy again.',
+    )
+  }
+  const { rows } = await client.query(`
+    SELECT k.id, k.quantity,
+           first_value(k.id) OVER (PARTITION BY k.chata_id ORDER BY k.created_at, k.id) AS keep_id
+      FROM keg_items k JOIN chatas c ON c.id = k.chata_id
+      WHERE k.code = 'VYCEP-KOHOUT' AND c.beer_closed_at IS NULL`)
+  const merged = rows.filter((row) => row.id !== row.keep_id)
+  if (merged.length > 0) {
+    const groups = new Map()
+    for (const row of rows) {
+      const group = groups.get(row.keep_id) ?? { taps: 0, ids: [] }
+      group.taps += Math.max(1, Math.round(Number(row.quantity) || 1))
+      group.ids.push(row.id)
+      groups.set(row.keep_id, group)
+    }
+    for (const [keepId, group] of groups) {
+      if (group.ids.length < 2) continue
+      await client.query('UPDATE keg_items SET quantity = $2, updated_at = now() WHERE id = $1', [
+        keepId,
+        group.taps,
+      ])
+      // who opted out of every merged row keeps it on the one bar
+      const { rows: refusers } = await client.query(
+        `SELECT participant_id FROM list_opt_outs
+          WHERE list = 'beer' AND item_id = ANY($1::numeric[])
+          GROUP BY participant_id
+          HAVING count(DISTINCT item_id) = $2`,
+        [group.ids, group.ids.length],
+      )
+      const keep = refusers.map((row) => row.participant_id)
+      await client.query(
+        `DELETE FROM list_opt_outs
+          WHERE list = 'beer' AND item_id = ANY($1::numeric[])
+            AND NOT (item_id = $2 AND participant_id = ANY($3::int[]))`,
+        [group.ids, keepId, keep],
+      )
+    }
+    await client.query('DELETE FROM keg_items WHERE id = ANY($1::int[])', [
+      merged.map((row) => row.id),
+    ])
+    console.log(`keg_items: merged ${merged.length} extra bar row(s) into one per order`)
+  }
+  const res = await client.query(`
+    UPDATE keg_items k SET name = 'Výčep', price = 300, updated_at = now()
+      FROM chatas c
+      WHERE c.id = k.chata_id
+        AND k.code = 'VYCEP-KOHOUT'
+        AND c.beer_closed_at IS NULL
+        AND (k.name IS DISTINCT FROM 'Výčep' OR k.price IS DISTINCT FROM 300)`)
+  if (res.rowCount > 0) console.log(`keg_items: ${res.rowCount} bar row(s) renamed and repriced`)
+}
+
+/**
  * Supabase exposes every table in the public schema through its
  * auto-generated Data API (PostgREST) with the public anon key — a path
  * that bypasses Payload's access control entirely, since the app only ever
@@ -1337,6 +1420,7 @@ async function auto() {
     // Steady state (every normal deploy): the payer refs are already in
     // expenses_rels, so the approval backfill can run right away
     await backfillExpenseApproval()
+    await refreshTapItems()
     await client.query('COMMIT')
     console.log('Schema already migrated — nothing to do.')
     return
@@ -1418,6 +1502,7 @@ async function auto() {
   }
 
   await backfillExpenseApproval()
+  await refreshTapItems()
 
   await client.query('COMMIT')
   console.log(

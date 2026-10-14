@@ -10,7 +10,8 @@
 // becomes "Pilsner Urquell 12°"); the size lives in `liters`.
 //
 // A static copy on purpose: the shop has no API and publishes the list as a
-// PDF. Refresh by hand when they print a new one (and bump the date below).
+// PDF (https://www.benecentrum.cz/cenik.pdf, BEER_SHOP.priceListUrl). Refresh
+// by hand when they print a new one (and bump the date below).
 
 export type KegKind = 'beer' | 'nonalcoholic' | 'soft' | 'cider' | 'wine'
 

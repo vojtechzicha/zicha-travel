@@ -2,7 +2,7 @@
 
 // "Pivo" — the chata's shared keg order from Benecentrum (src/lib/beer.ts).
 // Signed-in participants pick kegs from the shop's price list
-// (src/lib/kegCatalog.ts) and the tap rental; the banker emails themselves
+// (src/lib/kegCatalog.ts) and the bar ("výčep"); the banker emails themselves
 // the order summary and orders from the shop by phone or email. Anonymous
 // visitors read along.
 //
@@ -19,14 +19,18 @@ import type { AppLocale } from '@/i18n/config'
 import type { FinanceViewer } from '@/lib/financeAccess'
 import {
   BEER_SHOP,
-  TAP_RENTAL,
+  TAP_CODE,
+  barPlan,
+  beerLineCosts,
   beerTotals,
   filterKegs,
-  lineCost,
   pricePerLiter,
+  weekendPriced,
+  type BarPlan,
   type BeerItemView,
   type BeerPayload,
   type KegGroup,
+  type TapRental,
 } from '@/lib/beer'
 import { KEG_CATALOG, KEG_CATALOG_PRINTED, type KegEntry } from '@/lib/kegCatalog'
 import { formatCurrency, formatDate } from '@/lib/formatCurrency'
@@ -171,12 +175,22 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
     if (next < 1) return
     setBusyId(item.id)
     try {
-      const res = await fetch(`/api/keg-items/${item.id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity: next }),
-      })
+      // the bar is shared: one tap more or less, counted on the server, so
+      // two people's "+" never collapse into one
+      const res =
+        item.code === TAP_CODE
+          ? await fetch('/api/keg-items/taps', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item: item.id, delta: next > item.quantity ? 1 : -1 }),
+            })
+          : await fetch(`/api/keg-items/${item.id}`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quantity: next }),
+            })
       if (!res.ok) track('save_failed', { operation: 'keg_item_update', status: res.status })
       await onDataChanged()
     } finally {
@@ -229,7 +243,27 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
 
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, orderer } = beer
-  const totals = beerTotals(items, beer.tapDays)
+  const rental = useMemo<TapRental>(
+    () => ({
+      days: beer.tapDays,
+      weekend: beer.tapWeekend === true,
+    }),
+    [beer.tapDays, beer.tapWeekend],
+  )
+  const totals = beerTotals(items, rental)
+  // the bar's cost is planned for the whole order (barPlan), so per item
+  // costs come for all items at once
+  const costById = useMemo(() => {
+    const costs = beerLineCosts(beer.items, rental)
+    return new Map(beer.items.map((item, index) => [item.id, costs[index]]))
+  }, [beer.items, rental])
+  // "Výčep se dvěma kohouty a výčep s jedním kohoutem"
+  const barLabel = (plan: BarPlan) => {
+    const text = new Intl.ListFormat(locale, { type: 'conjunction' }).format(
+      plan.bars.map((bar) => t('barPart', { count: bar.count, taps: bar.taps })),
+    )
+    return text.charAt(0).toUpperCase() + text.slice(1)
+  }
   const closing = useListClosing('/api/keg-items/close', chata.id, onDataChanged)
   const optOut = useOptOut(chata.id, 'beer', onDataChanged)
   const itemOptOutText = useItemOptOutText(beer.optOuts, participants)
@@ -239,15 +273,15 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
   const myShare = useMemo(() => {
     const split = listShares(
       participants.map((p) => p.id),
-      beer.items.map((item) => ({ id: item.id, cost: lineCost(item, beer.tapDays) })),
+      beer.items.map((item) => ({ id: item.id, cost: costById.get(item.id) ?? 0 })),
       { list: beer.optOuts.list ?? [], items: beer.optOuts.items ?? {} },
     )
     return ownIds.reduce((sum, id) => sum + (split.shares.get(String(id)) ?? 0), 0)
-  }, [participants, beer.items, beer.tapDays, beer.optOuts, ownIds])
+  }, [participants, beer.items, costById, beer.optOuts, ownIds])
   const changedSinceSummary = beer.summaryChanged
   const loginHref = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'
 
-  // "Kdo co chce": kegs per participant (the tap is everybody's)
+  // "Kdo co chce": kegs per participant (the bar is everybody's)
   const people = useMemo(() => {
     const counts = new Map<string, number>()
     for (const item of items) {
@@ -481,31 +515,31 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                 <p className="text-[13px] text-red-600 dark:text-red-400">{t('saveFailed')}</p>
               )}
 
-              {/* the taps: anyone adds one; every tap is rented for the same days */}
-              <section className="rounded-2xl bg-gray-50 px-4 py-4 dark:bg-white/[0.04]">
-                <h4 className="text-[14px] font-semibold text-gray-900 dark:text-gray-100">
-                  {t('tapTitle')}
-                </h4>
-                <p className="mt-1 text-[13px] leading-relaxed text-gray-600 dark:text-slate-400">
-                  {t('tapText', { price: money(TAP_RENTAL.pricePerDay), days: beer.tapDays })}{' '}
-                  {orderer.name ? t('tapPriceBy', { name: orderer.name }) : t('tapPriceByShop')}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={() => void create(TAP_RENTAL.code, 1, '')}
-                    className={linkButtonClass}
-                  >
-                    {t('tapAdd')}
-                  </button>
-                  {totals.taps > 0 && (
-                    <span className="text-[13px] text-gray-600 dark:text-slate-400">
-                      {t('tapCount', { count: totals.taps })}
-                    </span>
-                  )}
-                </div>
-              </section>
+              {/* the bar: until somebody adds one; then the receipt shows it */}
+              {totals.taps === 0 && (
+                <section className="rounded-2xl bg-gray-50 px-4 py-4 dark:bg-white/[0.04]">
+                  <h4 className="text-[14px] font-semibold text-gray-900 dark:text-gray-100">
+                    {t('tapTitle')}
+                  </h4>
+                  <p className="mt-1 text-[13px] leading-relaxed text-gray-600 dark:text-slate-400">
+                    {t('tapText', {
+                      price: money(barPlan(1, rental).cost),
+                      days: rental.days,
+                    })}{' '}
+                    {orderer.name ? t('tapPriceBy', { name: orderer.name }) : t('tapPriceByShop')}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void create(TAP_CODE, 1, '')}
+                      className={linkButtonClass}
+                    >
+                      {t('tapAdd')}
+                    </button>
+                  </div>
+                </section>
+              )}
             </>
           ) : (
             <HintCard>
@@ -596,8 +630,13 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                     item.summaryQuantity != null &&
                     item.summaryQuantity === item.quantity
                   const meta = [
-                    isTap ? t('days', { count: beer.tapDays }) : kindLabel(item.kind),
-                    item.participantName ? t('wantedBy', { name: item.participantName }) : null,
+                    isTap ? t('tapCount', { count: item.quantity }) : kindLabel(item.kind),
+                    isTap ? t('days', { count: rental.days }) : null,
+                    isTap && weekendPriced(rental) ? t('weekendPrice') : null,
+                    // the bar is everybody's: no "chce" on it
+                    item.participantName && !isTap
+                      ? t('wantedBy', { name: item.participantName })
+                      : null,
                     summarized ? t('summarized') : null,
                     itemOptOutText(item.id),
                   ].filter(Boolean)
@@ -609,16 +648,19 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                       }`}
                     >
                       <div className="grid grid-cols-[2.4em_minmax(0,1fr)] text-[13px] leading-snug">
-                        <span className="shrink-0 tabular-nums">{item.quantity}×</span>
+                        {/* the bar's quantity is taps: its name says what that makes */}
+                        <span className="shrink-0 tabular-nums">
+                          {isTap ? '' : `${item.quantity}×`}
+                        </span>
                         <div className="min-w-0">
                           <div className="flex items-end">
                             <span className="min-w-0 break-words">
-                              {item.name}
+                              {isTap ? barLabel(barPlan(item.quantity, rental)) : item.name}
                               {item.liters ? ` ${item.liters} l` : ''}
                             </span>
                             <span className="receipt-leader" aria-hidden="true" />
                             <span className="shrink-0 tabular-nums">
-                              {plain(lineCost(item, beer.tapDays))}
+                              {plain(costById.get(item.id) ?? 0)}
                             </span>
                           </div>
                           {meta.length > 0 && (
@@ -652,15 +694,17 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                               </button>
                             </div>
                           ) : (
-                            (item.canEdit || beer.optOuts.canSetFor.length > 0) && (
+                            (item.canEdit ||
+                              item.canChangeTaps ||
+                              beer.optOuts.canSetFor.length > 0) && (
                               <div className="mt-1 flex flex-wrap items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-                                {item.canEdit && (
+                                {(item.canEdit || item.canChangeTaps) && (
                                   <>
                                     <button
                                       type="button"
                                       onClick={() => changeQuantity(item, item.quantity - 1)}
                                       disabled={busy || item.quantity <= 1}
-                                      aria-label={t('less')}
+                                      aria-label={isTap ? t('lessTaps') : t('less')}
                                       className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
                                     >
                                       <Minus size={13} />
@@ -669,20 +713,22 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                                       type="button"
                                       onClick={() => changeQuantity(item, item.quantity + 1)}
                                       disabled={busy}
-                                      aria-label={t('more')}
+                                      aria-label={isTap ? t('moreTaps') : t('more')}
                                       className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
                                     >
                                       <Plus size={13} />
                                     </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setConfirmDeleteId(item.id)}
-                                      disabled={busy}
-                                      aria-label={t('delete')}
-                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
+                                    {item.canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteId(item.id)}
+                                        disabled={busy}
+                                        aria-label={t('delete')}
+                                        className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
                                   </>
                                 )}
                                 <ItemOptOutControls
@@ -806,7 +852,7 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                   </a>
                 </div>
                 <a
-                  href={`${BEER_SHOP.url}#Cenik`}
+                  href={BEER_SHOP.priceListUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1.5 inline-block text-[12px] text-gray-500 underline underline-offset-2 hover:text-gray-800 dark:text-slate-400 dark:hover:text-slate-200"

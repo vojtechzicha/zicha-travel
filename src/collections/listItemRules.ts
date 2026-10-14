@@ -13,7 +13,7 @@ import { canManageChata, isSuperadmin, refId } from '../lib/access'
 import { linkedParticipantIds } from '../lib/expenseAuthoring'
 import { bankerAccountId } from '../utils/rohlikConnection'
 import { syncListExpense } from '../utils/listExpense'
-import { tapRentalDays } from '../lib/beer'
+import { tapRental } from '../lib/beer'
 import { lockList } from '../utils/listLock'
 
 // The rules the chata's shared lists have in common: "Nákup"
@@ -258,18 +258,18 @@ export function closeListEndpoint(field: ListCloseField): Endpoint {
           return Response.json({ error: 'disabled' }, { status: 409 })
         }
         const closedAt = closing ? new Date().toISOString() : null
+        // a closed beer order keeps its bar rental period (tapRental)
+        const rental = closedAt && list === 'beer' ? tapRental({ ...chata, beerClosedAt: null }) : null
         await req.payload.update({
           req,
           collection: 'chatas',
           id: chataId,
-          // a closed beer order keeps its tap rental days (tapRentalDays)
           data:
             list === 'beer'
               ? {
                   beerClosedAt: closedAt,
-                  beerClosedTapDays: closedAt
-                    ? tapRentalDays({ ...chata, beerClosedAt: null })
-                    : null,
+                  beerClosedTapDays: rental?.days ?? null,
+                  beerClosedTapWeekend: rental?.weekend ?? null,
                 }
               : { [field]: closedAt },
           depth: 0,

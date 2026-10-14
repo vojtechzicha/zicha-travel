@@ -7,12 +7,18 @@
 import { createHash } from 'node:crypto'
 import { formatCurrency } from './formatCurrency'
 import {
+  BAR_OPTIONS,
   BEER_SHOP,
+  barPlan,
+  beerLineCosts,
+  weekendPriced,
   beerTotals,
-  lineCost,
   mergeOrderLines,
-  tapRentalDays,
+  type BarPlan,
+  tapRental,
   type OrderLine,
+  type TapRental,
+  type TapRentalChata,
 } from './beer'
 import { chataViewUrl } from './shoppingEmail'
 import { KEG_CATALOG_PRINTED } from './kegCatalog'
@@ -34,6 +40,18 @@ export const kegsCs = (count: number) => plural(count, 'sud', 'sudy', 'sudů')
 /** 1 den / 2 dny / 5 dní */
 export const daysCs = (count: number) => plural(count, 'den', 'dny', 'dní')
 
+/** "Výčep se dvěma kohouty a výčep s jedním kohoutem", "2 výčepy se dvěma kohouty" */
+export function barPlanCs(plan: BarPlan): string {
+  const text = plan.bars
+    .map(
+      ({ taps, count }) =>
+        `${count === 1 ? 'výčep' : plural(count, 'výčep', 'výčepy', 'výčepů')} ` +
+        (taps === 1 ? 's jedním kohoutem' : 'se dvěma kohouty'),
+    )
+    .join(' a ')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 /** "pátek 13. 11. 2026" (dates are stored at noon UTC, read in Prague) */
 export function arrivalDayCs(date: string): string {
   return new Intl.DateTimeFormat('cs-CZ', {
@@ -46,9 +64,12 @@ export function arrivalDayCs(date: string): string {
 }
 
 /** One order line as the shop should read it. */
-export function orderLineText(line: OrderLine, tapDays: number): string {
+export function orderLineText(line: OrderLine, rental: TapRental): string {
   if (line.unit === 'day') {
-    return `${line.quantity}× ${line.name} na ${daysCs(tapDays)}`
+    // the line's quantity is the taps everybody asked for
+    return `${barPlanCs(barPlan(line.quantity, rental))} na ${daysCs(rental.days)}${
+      weekendPriced(rental) ? ' (víkendová cena)' : ''
+    }`
   }
   // our codes mean nothing to the shop: name and size are what it needs
   return `${line.quantity}× ${line.name}, sud ${line.liters} l, ${formatCurrency(line.price)} za sud`
@@ -57,17 +78,20 @@ export function orderLineText(line: OrderLine, tapDays: number): string {
 export function kegOrderEmail(args: {
   chataName: string
   lines: OrderLine[]
-  /** rental days of every tap (tapRentalDays) */
-  tapDays: number
+  /** the bar's rental period (tapRental) */
+  rental: TapRental
   /** where the beer should go: the cottage's name and address */
   place: string | null
   /** arrival day and check-in time, as the chata states them */
   arrival: string | null
   listUrl: string
 }): KegOrderEmail {
-  const { chataName, lines, tapDays, place, arrival, listUrl } = args
-  const totals = beerTotals(lines, tapDays)
-  const tap = lines.find((line) => line.unit === 'day')
+  const { chataName, lines, rental, place, arrival, listUrl } = args
+  const totals = beerTotals(lines, rental)
+  const barCost = beerLineCosts(lines, rental)
+    .filter((_, index) => lines[index].unit === 'day')
+    .reduce((sum, cost) => sum + cost, 0)
+  const bar = BAR_OPTIONS[0]
   const printed = new Intl.DateTimeFormat('cs-CZ', {
     day: 'numeric',
     month: 'numeric',
@@ -77,20 +101,23 @@ export function kegOrderEmail(args: {
   const intro =
     `Tady je objednávka piva, kterou parta poskládala na stránce ${chataName}. ` +
     `Přepošli ji na ${BEER_SHOP.email}, nebo ji nadiktuj na ${BEER_SHOP.phone}.`
-  const order = lines.map((line) => orderLineText(line, tapDays))
+  const order = lines.map((line) => orderLineText(line, rental))
   const where = [place ? `Na chatu: ${place}.` : null, arrival ? `Příjezd: ${arrival}.` : null]
   const sum =
     `Celkem ${kegsCs(totals.kegs)}, ${totals.liters} l. Podle ceníku z ${printed} ` +
     `to vychází asi na ${formatCurrency(totals.total)}` +
-    (tap
-      ? `, z toho kohouty ${formatCurrency(lineCost(tap, tapDays))} podle orientační ceny ` +
-        `${formatCurrency(tap.price)} za kohout a den.`
+    (totals.bars > 0
+      ? `, z toho výčep ${formatCurrency(barCost)} podle orientační ceny ` +
+        `${formatCurrency(bar.pricePerDay)} na den za výčep` +
+        (weekendPriced(rental) ? ` (víkend ${formatCurrency(bar.weekendPrice)}).` : '.')
       : '.')
-  const caveat = 'Zálohu na sudy, kohouty a dopravu ceník neuvádí, domluv je s obchodem.'
+  const caveat = 'Zálohu na sudy, výčep a dopravu ceník neuvádí, domluv je s obchodem.'
+  // the bar is everybody's (anyone changes its taps): no names on it
   const who = lines
+    .map((line) => (line.unit === 'day' ? { ...line, wantedBy: [] } : line))
     .filter((line) => line.wantedBy.length > 0 || line.notes.length > 0)
     .map((line) => {
-      const label = line.unit === 'day' ? line.name : `${line.name} ${line.liters} l`
+      const label = line.unit === 'day' ? 'Výčep' : `${line.name} ${line.liters} l`
       const parts = [line.wantedBy.join(', '), ...line.notes.map((note) => `„${note}“`)]
       return `${label}: ${parts.filter(Boolean).join('; ')}`
     })
@@ -137,7 +164,7 @@ export function kegOrderEmail(args: {
 }
 
 /** The chata fields the summary email reads. */
-export interface KegOrderChata {
+export interface KegOrderChata extends TapRentalChata {
   name: string
   shortName?: string | null
   slug?: string | null
@@ -149,9 +176,6 @@ export interface KegOrderChata {
   tripDatesTentative?: boolean | null
   tripPlannedNights?: number | null
   checkInTime?: string | null
-  beerTapDays?: number | null
-  beerClosedAt?: string | null
-  beerClosedTapDays?: number | null
 }
 
 /**
@@ -199,7 +223,7 @@ export function buildKegOrderEmail(
   return kegOrderEmail({
     chataName: chata.shortName || chata.name,
     lines,
-    tapDays: tapRentalDays(chata),
+    rental: tapRental(chata),
     place: place || null,
     arrival,
     listUrl: chataViewUrl(chata, 'beer'),

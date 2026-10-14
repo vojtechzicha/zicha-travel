@@ -1,14 +1,26 @@
-import { APIError, type CollectionConfig, type Endpoint, type PayloadRequest } from 'payload'
+import {
+  APIError,
+  commitTransaction,
+  initTransaction,
+  killTransaction,
+  type Access,
+  type CollectionConfig,
+  type Endpoint,
+  type PayloadRequest,
+  type Where,
+} from 'payload'
 import { canManageChata, refId } from '../lib/access'
-import { beerProduct } from '../lib/beer'
+import { TAP_CODE, beerProduct } from '../lib/beer'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 import { buildKegOrderEmail, kegOrderFingerprint } from '../lib/kegOrderEmail'
 import { sendAppEmail } from '../lib/email'
 import { bankerAccountId } from '../utils/rohlikConnection'
 import { manualItemsRecipients } from '../utils/shoppingEmail'
+import { lockList } from '../utils/listLock'
 import {
   applyListAuthorship,
   assertListOpen,
+  bankerChataIds,
   closeListEndpoint,
   dropItemOptOuts,
   guardDeleteWhenClosed,
@@ -118,8 +130,94 @@ const orderSummary: Endpoint = {
   },
 }
 
+// POST /api/keg-items/taps { item, delta }: one tap more (+1) or less (-1)
+// on the bar. Several people change the same row, so the new count is read
+// under the list's lock and written in the same transaction: two "+" at once
+// make two taps, never one (a PATCH carries an absolute count from a page
+// that may be out of date). The update runs as the caller, so the access
+// rules and hooks are the usual ones.
+const changeTaps: Endpoint = {
+  path: '/taps',
+  method: 'post',
+  handler: async (req) => {
+    const body = await readBody(req)
+    const itemId = chataIdOf(body.item)
+    const delta = body.delta === 1 || body.delta === -1 ? body.delta : null
+    if (itemId == null || delta == null) return Response.json({ error: 'invalid' }, { status: 400 })
+    if (!req.user) return Response.json({ error: 'forbidden' }, { status: 403 })
+    const shouldCommit = await initTransaction(req)
+    try {
+      const item = await req.payload
+        .findByID({ req, collection: 'keg-items', id: itemId, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      if (!item || item.code !== TAP_CODE) {
+        if (shouldCommit) await commitTransaction(req)
+        return Response.json({ error: 'not-found' }, { status: 404 })
+      }
+      await lockList(req, refId(item.chata), 'beer')
+      const current = await req.payload.findByID({
+        req,
+        collection: 'keg-items',
+        id: itemId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const quantity = Math.min(99, Math.max(1, Math.round(current.quantity || 1) + delta))
+      await req.payload.update({
+        req,
+        collection: 'keg-items',
+        id: itemId,
+        data: { quantity },
+        depth: 0,
+        overrideAccess: false,
+        user: req.user,
+      })
+      if (shouldCommit) await commitTransaction(req)
+      return Response.json({ quantity })
+    } catch (err) {
+      await killTransaction(req)
+      const status = err instanceof APIError ? err.status : 403
+      return Response.json({ error: 'refused' }, { status })
+    }
+  },
+}
+
+// The bar is everybody's: besides the usual editors (listEditAccess), any
+// participant of the chata changes its taps; the hook keeps the rest of the
+// row as it was for them.
+const kegUpdateAccess: Access = async (args) => {
+  const base = await listEditAccess(args)
+  const user = args.req.user
+  if (base === true || !user) return base
+  const own = await args.req.payload.find({
+    collection: 'participants',
+    where: { account: { equals: user.id } },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const chataIds = [...new Set(own.docs.map((p) => Number(refId(p.chata))))]
+  if (chataIds.length === 0) return base
+  const bar: Where = { and: [{ code: { equals: TAP_CODE } }, { chata: { in: chataIds } }] }
+  return base ? { or: [base as Where, bar] } : bar
+}
+
+/** Changing taps on somebody else's bar: not its author, banker or chata admin. */
+async function changesTapsOnly(
+  req: PayloadRequest,
+  chataId: string,
+  originalDoc: Record<string, unknown> | undefined,
+): Promise<boolean> {
+  const user = req.user
+  if (!user || originalDoc?.code !== TAP_CODE || canManageChata(user, chataId)) return false
+  if (originalDoc.authoredBy != null && refId(originalDoc.authoredBy) === String(user.id)) {
+    return false
+  }
+  return !(await bankerChataIds(req.payload, user.id)).map(String).includes(chataId)
+}
+
 // "Pivo" — the chata's shared keg order (src/lib/beer.ts). Signed-in
-// participants pick kegs from Benecentrum's price list and the taps;
+// participants pick kegs from Benecentrum's price list and the bar;
 // the banker orders it all from the shop. Same people rules as "Nákup"
 // (listItemRules.ts). Public read like the rest of the chata data;
 // `authoredBy` stays an id (maxDepth 0), never a populated user.
@@ -133,17 +231,17 @@ export const KegItems: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'liters', 'quantity', 'chata', 'participant'],
     description: {
-      en: 'Kegs and taps participants want for the trip. The banker orders them from Benecentrum.',
-      cs: 'Sudy a kohouty, které chtějí účastníci na výlet. Pokladník je objedná v Benecentru.',
+      en: 'Kegs and the bar participants want for the trip. The banker orders them from Benecentrum.',
+      cs: 'Sudy a výčep, které chtějí účastníci na výlet. Pokladník je objedná v Benecentru.',
     },
   },
   access: {
     read: () => true,
     create: ({ req }) => Boolean(req.user),
-    update: listEditAccess,
+    update: kegUpdateAccess,
     delete: listEditAccess,
   },
-  endpoints: [orderSummary, closeListEndpoint('beerClosedAt')],
+  endpoints: [orderSummary, changeTaps, closeListEndpoint('beerClosedAt')],
   hooks: {
     beforeDelete: [guardDeleteWhenClosed('keg-items', 'beerClosedAt')],
     afterDelete: [dropItemOptOuts('beer')],
@@ -151,19 +249,47 @@ export const KegItems: CollectionConfig = {
       async ({ data, operation, originalDoc, req }) => {
         const chataId = listItemChataId(data, operation, originalDoc)
         await assertListOpen(req, chataId, 'beerClosedAt')
+        if (operation === 'update' && (await changesTapsOnly(req, chataId, originalDoc))) {
+          // only the number of taps changes; the bar stays whose it is
+          data.code = originalDoc?.code
+          data.note = originalDoc?.note ?? null
+          data.participant = originalDoc?.participant ?? null
+        }
 
         // The product decides what the shop is asked for, so a body only
         // names a code: name, size and price always come from the catalog,
         // whoever writes (scripts included)
         const code = data.code ?? originalDoc?.code
         const product = beerProduct(code)
-        if (!product) throw new APIError('Tohle v ceníku Benecentra není', 400)
+        if (!product) throw new APIError('Tohle v ceníku není', 400)
         data.code = product.code
         data.name = product.name
         data.liters = product.liters
         data.price = product.price
         data.unit = product.unit
         data.kind = product.kind
+
+        // the bar is one item counting taps (barPlan picks the bars), so
+        // more taps go onto it rather than into a second one, whether added
+        // or made by changing another item's code. assertListOpen
+        // holds the list's lock, so two adds can't both get through
+        if (product.code === TAP_CODE && originalDoc?.code !== TAP_CODE) {
+          const existing = await req.payload.count({
+            req,
+            collection: 'keg-items',
+            where: {
+              and: [
+                { chata: { equals: chataId } },
+                { code: { equals: TAP_CODE } },
+                ...(originalDoc?.id != null ? [{ id: { not_equals: originalDoc.id } }] : []),
+              ],
+            },
+            overrideAccess: true,
+          })
+          if (existing.totalDocs > 0) {
+            throw new APIError('Výčep už v objednávce je, kohouty se přidávají u něj', 409)
+          }
+        }
 
         await applyListAuthorship({
           data,
@@ -195,8 +321,8 @@ export const KegItems: CollectionConfig = {
       label: { en: 'Product code', cs: 'Kód produktu' },
       admin: {
         description: {
-          en: 'Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.',
-          cs: 'Kód z katalogu (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro kohout.',
+          en: 'Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for the bar (one per order; the quantity is the number of taps).',
+          cs: 'Kód z katalogu (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro výčep (jeden na objednávku, počet je počet kohoutů).',
         },
       },
     },
@@ -220,7 +346,7 @@ export const KegItems: CollectionConfig = {
                   'The quantity must be a whole number',
                   'Počet musí být celé číslo',
                 ),
-          label: { en: 'Quantity (kegs or taps)', cs: 'Počet (sudů nebo kohoutů)' },
+          label: { en: 'Quantity (kegs, or taps for the bar)', cs: 'Počet (sudů, u výčepu kohoutů)' },
           admin: { width: '30%' },
         },
         {
@@ -266,7 +392,7 @@ export const KegItems: CollectionConfig = {
           type: 'select',
           options: [
             { label: { en: 'keg', cs: 'sud' }, value: 'keg' },
-            { label: { en: 'tap and day', cs: 'kohout a den' }, value: 'day' },
+            { label: { en: 'bar and day', cs: 'výčep a den' }, value: 'day' },
           ],
           label: { en: 'Per', cs: 'Za' },
           admin: { readOnly: true, width: '15%' },
