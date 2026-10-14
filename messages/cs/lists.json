@@ -1,0 +1,21 @@
+{
+  "listTitle": "Kdo se skládá",
+  "listIntro": "Každá položka se dělí rovným dílem mezi všechny. Kdo nechce nic z tohohle seznamu, odškrtne se tady, a platí to i pro věci přidané později. Jednotlivou položku odmítneš tlačítkem Nechci na účtence.",
+  "listOutNames": "Na celý seznam se neskládá: {names}.",
+  "listOutCount": "{count, plural, one {# člověk se neskládá na celý seznam.} few {# lidé se neskládají na celý seznam.} other {# lidí se neskládá na celý seznam.}}",
+  "listOutHint": "Na celý seznam se neskládáš.",
+  "notWanted": "Nechci",
+  "wantedAgain": "Chci taky",
+  "whoChipsIn": "Kdo se skládá",
+  "optedOutNames": "{count, plural, one {nechce {names}} other {nechtějí {names}}}",
+  "optedOutCount": "{count, plural, one {# člověk to nechce} few {# lidé to nechtějí} other {# lidí to nechce}}",
+  "optOutFailed": "Nepovedlo se to. Zkus to znovu.",
+  "yourShare": "Tvůj podíl zatím vychází asi na {amount}.",
+  "yourShareNone": "Z tohohle seznamu zatím neplatíš nic.",
+  "orphaned": "Tohle nechce nikdo, takže se na to skládají všichni.",
+  "expenseCreated": "Do Financí přibyl výdaj {amount}, rozdělený podle toho, kdo se na co skládá.",
+  "expenseUpdated": "Výdaj ve Financích je přepočítaný: {amount}.",
+  "expenseSkippedEmpty": "Na seznamu není nic s cenou, takže ve Financích výdaj nevznikl.",
+  "expenseSkippedNoBanker": "Chata nemá pokladníka, takže ve Financích výdaj nevznikl.",
+  "expenseFailed": "Seznam je uzavřený, ale výdaj se do Financí zapsat nepovedlo. Otevři ho a uzavři znovu."
+}

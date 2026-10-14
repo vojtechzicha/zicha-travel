@@ -30,16 +30,24 @@ import { track } from '@/lib/analytics'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
 import {
   CloseListButton,
+  ItemOptOutControls,
   ListClosedNotice,
+  ListExpenseNote,
+  ListOptOutPanel,
   QuantityStepper,
   initials,
+  useItemOptOutText,
   useListClosing,
+  useOptOut,
 } from './ListUi'
+import { listShares } from '@/lib/listSplit'
 
 interface ShoppingViewProps {
   chata: Chata
   shopping: ShoppingPayload
   viewer?: FinanceViewer
+  /** every participant of the chata, for "kdo se skládá" */
+  participants: { id: number; name: string }[]
   onDataChanged: () => Promise<void> | void
 }
 
@@ -104,8 +112,15 @@ function ProductThumb({ product, size = 44 }: { product: RohlikProduct | null; s
   )
 }
 
-export function ShoppingView({ chata, shopping, viewer, onDataChanged }: ShoppingViewProps) {
+export function ShoppingView({
+  chata,
+  shopping,
+  viewer,
+  participants,
+  onDataChanged,
+}: ShoppingViewProps) {
   const t = useTranslations('shopping')
+  const tl = useTranslations('lists')
   const locale = useLocale() as AppLocale
   const money = (amount: number) => formatCurrency(amount, locale)
 
@@ -329,6 +344,24 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, shopper } = shopping
   const closing = useListClosing('/api/shopping-items/close', chata.id, onDataChanged)
+  const optOut = useOptOut(chata.id, 'shopping', onDataChanged)
+  const itemOptOutText = useItemOptOutText(shopping.optOuts, participants)
+  const ownIds = useMemo(
+    () => shopping.ownParticipants.map((p) => p.id),
+    [shopping.ownParticipants],
+  )
+  // what the viewer's own participants pay from this list so far
+  const myShare = useMemo(() => {
+    const split = listShares(
+      participants.map((p) => p.id),
+      items.map((item) => ({
+        id: item.id,
+        cost: item.rohlik?.price != null ? item.rohlik.price * Math.max(1, item.quantity) : null,
+      })),
+      { list: shopping.optOuts.list ?? [], items: shopping.optOuts.items ?? {} },
+    )
+    return ownIds.reduce((sum, id) => sum + (split.shares.get(String(id)) ?? 0), 0)
+  }, [participants, items, shopping.optOuts, ownIds])
   const { total, unpriced } = estimatedTotal(items)
   // sent = in the banker's Rohlík cart, or (free text) on the checklist
   // email they got, in the current amounts
@@ -607,6 +640,9 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
             </HintCard>
           )}
 
+          {closing.expense && <ListExpenseNote outcome={closing.expense} />}
+          <ListOptOutPanel optOuts={shopping.optOuts} participants={participants} optOut={optOut} />
+
           {people.length > 0 && (
             <section aria-label={t('peopleTitle')}>
               <h4 className="mb-2.5 text-[13px] font-semibold text-gray-700 dark:text-slate-300">
@@ -689,6 +725,7 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                     item.rohlik?.inStock === false ? t('soldOut') : null,
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     sent ? (item.rohlik ? t('inCart') : t('handedOver')) : null,
+                    itemOptOutText(item.id),
                   ].filter(Boolean)
                   return (
                     <li
@@ -718,57 +755,69 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                               {item.note}
                             </div>
                           )}
-                          {item.canEdit &&
-                            (confirmDeleteId === item.id ? (
-                              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px]">
-                                {t('deleteConfirm')}
-                                <button
-                                  type="button"
-                                  onClick={() => deleteItem(item)}
-                                  disabled={busy}
-                                  className="font-bold text-red-600 hover:underline"
-                                >
-                                  {t('deleteYes')}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  className="font-bold hover:underline"
-                                >
-                                  {t('deleteNo')}
-                                </button>
+                          {confirmDeleteId === item.id ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px]">
+                              {t('deleteConfirm')}
+                              <button
+                                type="button"
+                                onClick={() => deleteItem(item)}
+                                disabled={busy}
+                                className="font-bold text-red-600 hover:underline"
+                              >
+                                {t('deleteYes')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="font-bold hover:underline"
+                              >
+                                {t('deleteNo')}
+                              </button>
+                            </div>
+                          ) : (
+                            (item.canEdit || shopping.optOuts.canSetFor.length > 0) && (
+                              <div className="mt-1 flex flex-wrap items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
+                                {item.canEdit && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => changeQuantity(item, item.quantity - 1)}
+                                      disabled={busy || item.quantity <= 1}
+                                      aria-label={t('less')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
+                                    >
+                                      <Minus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => changeQuantity(item, item.quantity + 1)}
+                                      disabled={busy}
+                                      aria-label={t('more')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
+                                    >
+                                      <Plus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteId(item.id)}
+                                      disabled={busy}
+                                      aria-label={t('delete')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </>
+                                )}
+                                <ItemOptOutControls
+                                  itemId={item.id}
+                                  optOuts={shopping.optOuts}
+                                  participants={participants}
+                                  ownIds={ownIds}
+                                  optOut={optOut}
+                                />
                               </div>
-                            ) : (
-                              <div className="mt-1 flex items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-                                <button
-                                  type="button"
-                                  onClick={() => changeQuantity(item, item.quantity - 1)}
-                                  disabled={busy || item.quantity <= 1}
-                                  aria-label={t('less')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
-                                >
-                                  <Minus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => changeQuantity(item, item.quantity + 1)}
-                                  disabled={busy}
-                                  aria-label={t('more')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
-                                >
-                                  <Plus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(item.id)}
-                                  disabled={busy}
-                                  aria-label={t('delete')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </li>
@@ -786,6 +835,13 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                     {locale === 'en' ? `CZK ${plain(total)}` : `${plain(total)} Kč`}
                   </span>
                 </div>
+                {ownIds.length > 0 && (
+                  <div className="mt-1 text-[13px]">
+                    {myShare > 0
+                      ? tl('yourShare', { amount: money(myShare) })
+                      : tl('yourShareNone')}
+                  </div>
+                )}
                 <div className="mt-2 text-[11px] leading-relaxed text-[#8b9099]">
                   <div>{t('itemsCount', { count: items.length })}</div>
                   <div>{t('estimateNote')}</div>

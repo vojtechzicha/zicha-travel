@@ -300,6 +300,16 @@ export const Participants: CollectionConfig = {
       },
     ],
     beforeDelete: [
+      // "Kdo se skládá" (src/lib/listSplit.ts): a deleted participant's
+      // opt-outs go with them (the rows can't outlive the participant)
+      async ({ id, req }) => {
+        await req.payload.delete({
+          collection: 'list-opt-outs',
+          where: { participant: { equals: id } },
+          overrideAccess: true,
+          req,
+        })
+      },
       // "Soukromý výdaj" (docs/PRD-soukromy-vydaj.md): deleting a participant
       // must not bypass the private-expense invariants. The payer anchors the
       // whole expense — the circle, the settlement target, the payerAccount

@@ -435,6 +435,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
                 chata={chata}
                 shopping={data.shopping}
                 viewer={data.viewer}
+                participants={participants.map((p) => ({ id: p.id, name: p.name }))}
                 onDataChanged={async () => {
                   await loadData({ silent: true })
                 }}
@@ -443,7 +444,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
               <BeerView
                 chata={chata}
                 beer={data.beer}
-                participantCount={participants.length}
+                participants={participants.map((p) => ({ id: p.id, name: p.name }))}
                 viewer={data.viewer}
                 onDataChanged={async () => {
                   await loadData({ silent: true })

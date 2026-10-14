@@ -6,6 +6,7 @@
 // and the UI.
 
 import { KEG_CATALOG, type KegEntry, type KegKind } from './kegCatalog'
+import type { OptOutView } from './listSplit'
 
 /** Max pivotéka's contacts, as the shop publishes them on maxpivoteka.cz. */
 export const BEER_SHOP = {
@@ -280,4 +281,6 @@ export interface BeerPayload {
   tapDays: number
   /** the banker closed the order: everything stays readable, nothing changes */
   closedAt: string | null
+  /** who doesn't chip in for what ("tohle nechci", src/lib/listSplit.ts) */
+  optOuts: OptOutView
 }

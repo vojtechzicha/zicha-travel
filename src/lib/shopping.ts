@@ -3,6 +3,8 @@
 // src/collections/ShoppingItems/rohlikEndpoints.ts). Pure rules and the
 // payload shapes shared by the collection, the slug API and the UI.
 
+import type { OptOutView } from './listSplit'
+
 /** A Rohlík product as the search endpoint returns it and an item stores it. */
 export interface RohlikProduct {
   productId: string
@@ -42,6 +44,8 @@ export interface ShoppingPayload {
   shopper: { name: string | null; connected: boolean; isMe: boolean }
   /** the banker closed the list: everything stays readable, nothing changes */
   closedAt: string | null
+  /** who doesn't chip in for what ("tohle nechci", src/lib/listSplit.ts) */
+  optOuts: OptOutView
 }
 
 /**

@@ -1,0 +1,21 @@
+{
+  "listTitle": "Who chips in",
+  "listIntro": "Every item is split equally between everyone. If you want nothing from this list, untick yourself here; it covers things added later too. To skip a single item, use Skip on the receipt.",
+  "listOutNames": "Not chipping in for the whole list: {names}.",
+  "listOutCount": "{count, plural, one {# person isn't chipping in for the whole list.} other {# people aren't chipping in for the whole list.}}",
+  "listOutHint": "You're not chipping in for the whole list.",
+  "notWanted": "Skip",
+  "wantedAgain": "Count me in",
+  "whoChipsIn": "Who chips in",
+  "optedOutNames": "skipped by {names}",
+  "optedOutCount": "{count, plural, one {# person skips it} other {# people skip it}}",
+  "optOutFailed": "That didn't work. Try again.",
+  "yourShare": "Your share comes to about {amount} so far.",
+  "yourShareNone": "You're not paying for anything on this list so far.",
+  "orphaned": "Nobody wants this, so everyone chips in for it.",
+  "expenseCreated": "A {amount} expense was added to Finance, split by who chips in for what.",
+  "expenseUpdated": "The expense in Finance was recalculated: {amount}.",
+  "expenseSkippedEmpty": "Nothing on the list has a price, so no expense was added to Finance.",
+  "expenseSkippedNoBanker": "The chata has no banker, so no expense was added to Finance.",
+  "expenseFailed": "The list is closed, but the expense didn't make it into Finance. Reopen it and close it again."
+}

@@ -7,6 +7,7 @@ import {
   applyListAuthorship,
   assertListOpen,
   closeListEndpoint,
+  dropItemOptOuts,
   guardDeleteWhenClosed,
   listEditAccess,
   listItemChataId,
@@ -53,6 +54,7 @@ export const ShoppingItems: CollectionConfig = {
   endpoints: [...rohlikEndpoints, closeListEndpoint('shoppingClosedAt')],
   hooks: {
     beforeDelete: [guardDeleteWhenClosed('shopping-items', 'shoppingClosedAt')],
+    afterDelete: [dropItemOptOuts('shopping')],
     beforeChange: [
       async ({ data, operation, originalDoc, req }) => {
         const user = req.user

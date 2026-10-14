@@ -4,8 +4,12 @@
 // and "Pivo" (BeerView).
 
 import { useState } from 'react'
-import { Lock, LockOpen, Minus, Plus } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import { Check, Lock, LockOpen, Minus, Plus, Users } from 'lucide-react'
+import type { AppLocale } from '@/i18n/config'
 import { track } from '@/lib/analytics'
+import { formatCurrency } from '@/lib/formatCurrency'
+import type { ListKind, OptOutView } from '@/lib/listSplit'
 
 /** Two letters for the "kdo co chce" bubbles: "Martin Procházka" → "MP". */
 export const initials = (name: string) =>
@@ -70,9 +74,12 @@ export function useListClosing(
 ) {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
+  // what closing did in Finance (src/utils/listExpense.ts)
+  const [expense, setExpense] = useState<ListExpenseOutcome | null>(null)
   const setClosed = async (closed: boolean) => {
     setBusy(true)
     setFailed(false)
+    setExpense(null)
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -88,6 +95,8 @@ export function useListClosing(
         setFailed(true)
         return
       }
+      const body = (await res.json().catch(() => ({}))) as { expense?: ListExpenseOutcome }
+      if (body.expense) setExpense(body.expense)
       await onDataChanged()
     } catch {
       setFailed(true)
@@ -95,7 +104,266 @@ export function useListClosing(
       setBusy(false)
     }
   }
-  return { busy, failed, setClosed }
+  return { busy, failed, expense, setClosed }
+}
+
+export type ListExpenseOutcome =
+  | { status: 'created' | 'updated'; amount: number }
+  | { status: 'skipped'; reason: 'no-banker' | 'empty' }
+  | { status: 'failed' }
+
+/** What closing wrote into Finance, said in one line. */
+export function ListExpenseNote({ outcome }: { outcome: ListExpenseOutcome }) {
+  const t = useTranslations('lists')
+  const locale = useLocale() as AppLocale
+  const text =
+    outcome.status === 'created'
+      ? t('expenseCreated', { amount: formatCurrency(outcome.amount, locale) })
+      : outcome.status === 'updated'
+        ? t('expenseUpdated', { amount: formatCurrency(outcome.amount, locale) })
+        : outcome.status === 'skipped'
+          ? outcome.reason === 'empty'
+            ? t('expenseSkippedEmpty')
+            : t('expenseSkippedNoBanker')
+          : t('expenseFailed')
+  return (
+    <p
+      role="status"
+      className={`text-center text-[13px] ${
+        outcome.status === 'failed'
+          ? 'text-red-600 dark:text-red-400'
+          : 'text-gray-600 dark:text-slate-300'
+      }`}
+    >
+      {text}
+    </p>
+  )
+}
+
+/** "Tohle nechci": sets or clears one participant's opt-out, then reloads. */
+export function useOptOut(
+  chataId: number,
+  list: ListKind,
+  onDataChanged: () => Promise<void> | void,
+) {
+  const [busyKey, setBusyKey] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+  const setOut = async (item: number | null, participant: number, out: boolean) => {
+    setBusyKey(`${item ?? 'list'}:${participant}`)
+    setFailed(false)
+    try {
+      const res = await fetch('/api/list-opt-outs/set', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chata: chataId, list, item, participant, out }),
+      })
+      if (!res.ok) {
+        track('save_failed', { operation: 'list_opt_out', status: res.status })
+        setFailed(true)
+        return
+      }
+      await onDataChanged()
+    } catch {
+      setFailed(true)
+    } finally {
+      setBusyKey(null)
+    }
+  }
+  return { busyKey, failed, setOut }
+}
+
+type OptOut = ReturnType<typeof useOptOut>
+interface Person {
+  id: number
+  name: string
+}
+
+const chipClass = (on: boolean) =>
+  `inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] transition-colors disabled:opacity-50 ${
+    on
+      ? 'border-primary bg-primary/10 text-primary-dark dark:text-primary-light'
+      : 'border-gray-200 text-gray-500 line-through decoration-gray-400 dark:border-white/[0.14] dark:text-slate-400'
+  }`
+
+/**
+ * Chips for the people this viewer may opt in or out; a ticked chip chips
+ * in, an unticked one doesn't.
+ */
+function OptOutChips({
+  people,
+  isOut,
+  item,
+  optOut,
+  lockedOut,
+}: {
+  people: Person[]
+  isOut: (participant: number) => boolean
+  item: number | null
+  optOut: OptOut
+  /** out of the whole list: shown, not toggled per item */
+  lockedOut?: Set<number>
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {people.map((person) => {
+        const out = isOut(person.id)
+        return (
+          <button
+            key={person.id}
+            type="button"
+            aria-pressed={!out}
+            disabled={
+              lockedOut?.has(person.id) || optOut.busyKey === `${item ?? 'list'}:${person.id}`
+            }
+            onClick={() => void optOut.setOut(item, person.id, !out)}
+            className={chipClass(!out)}
+          >
+            {!out && <Check size={12} aria-hidden="true" />}
+            {person.name}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * The whole-list opt-out ("na tohle se neskládám", items added later
+ * included): your own participants, or everyone for the banker. Others
+ * read who opted out.
+ */
+export function ListOptOutPanel({
+  optOuts,
+  participants,
+  optOut,
+}: {
+  optOuts: OptOutView
+  participants: Person[]
+  optOut: OptOut
+}) {
+  const t = useTranslations('lists')
+  const outIds = new Set(optOuts.list ?? [])
+  const settable = participants.filter((p) => optOuts.canSetFor.includes(p.id))
+  const outNames = participants.filter((p) => outIds.has(p.id)).map((p) => p.name)
+  if (settable.length === 0 && optOuts.listCount === 0) return null
+  return (
+    <section aria-label={t('listTitle')} className="flex flex-col gap-2">
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-slate-300">
+        {t('listTitle')}
+      </h4>
+      {settable.length > 0 && (
+        <>
+          <p className="text-[12px] leading-relaxed text-gray-500 dark:text-slate-400">
+            {t('listIntro')}
+          </p>
+          <OptOutChips
+            people={settable}
+            isOut={(id) => outIds.has(id)}
+            item={null}
+            optOut={optOut}
+          />
+        </>
+      )}
+      {outNames.length > 0 && settable.length < participants.length && (
+        <p className="text-[12px] text-gray-500 dark:text-slate-400">
+          {t('listOutNames', { names: outNames.join(', ') })}
+        </p>
+      )}
+      {optOuts.list == null && optOuts.listCount > 0 && (
+        <p className="text-[12px] text-gray-500 dark:text-slate-400">
+          {t('listOutCount', { count: optOuts.listCount })}
+        </p>
+      )}
+      {optOut.failed && (
+        <p className="text-[12px] text-red-600 dark:text-red-400">{t('optOutFailed')}</p>
+      )}
+    </section>
+  )
+}
+
+/** Who skips one receipt line, said plainly; null when everybody chips in. */
+export function useItemOptOutText(optOuts: OptOutView, participants: Person[]) {
+  const t = useTranslations('lists')
+  return (itemId: number): string | null => {
+    const ids = optOuts.items?.[String(itemId)]
+    if (ids) {
+      const names = participants.filter((p) => ids.includes(p.id)).map((p) => p.name)
+      return names.length > 0
+        ? t('optedOutNames', { count: names.length, names: names.join(', ') })
+        : null
+    }
+    const count = optOuts.itemCounts[String(itemId)] ?? 0
+    return count > 0 ? t('optedOutCount', { count }) : null
+  }
+}
+
+/**
+ * A receipt line's opt-out controls: one tap for the viewer's own
+ * participant ("Nechci" / "Chci taky"), plus "Kdo se skládá" chips when they
+ * may set it for more people (the banker, a parent).
+ */
+export function ItemOptOutControls({
+  itemId,
+  optOuts,
+  participants,
+  ownIds,
+  optOut,
+}: {
+  itemId: number
+  optOuts: OptOutView
+  participants: Person[]
+  ownIds: number[]
+  optOut: OptOut
+}) {
+  const t = useTranslations('lists')
+  const [open, setOpen] = useState(false)
+  const settable = participants.filter((p) => optOuts.canSetFor.includes(p.id))
+  if (settable.length === 0) return null
+  const outOfItem = new Set(optOuts.items?.[String(itemId)] ?? [])
+  const outOfList = new Set(optOuts.list ?? [])
+  const isOut = (id: number) => outOfItem.has(id) || outOfList.has(id)
+  const me = settable.find((p) => ownIds.includes(p.id))
+  const more = settable.length > (me ? 1 : 0)
+  const buttonClass =
+    'inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-semibold text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-40'
+  return (
+    <>
+      {me && (
+        <button
+          type="button"
+          disabled={outOfList.has(me.id) || optOut.busyKey === `${itemId}:${me.id}`}
+          title={outOfList.has(me.id) ? t('listOutHint') : undefined}
+          onClick={() => void optOut.setOut(itemId, me.id, !outOfItem.has(me.id))}
+          className={buttonClass}
+        >
+          {outOfItem.has(me.id) ? t('wantedAgain') : t('notWanted')}
+        </button>
+      )}
+      {more && (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className={buttonClass}
+        >
+          <Users size={12} aria-hidden="true" />
+          {t('whoChipsIn')}
+        </button>
+      )}
+      {open && (
+        <div className="basis-full pt-1">
+          <OptOutChips
+            people={settable}
+            isOut={isOut}
+            item={itemId}
+            optOut={optOut}
+            lockedOut={outOfList}
+          />
+        </div>
+      )}
+    </>
+  )
 }
 
 /** The closed list's notice, in place of the add form; the banker may reopen. */

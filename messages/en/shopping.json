@@ -118,7 +118,7 @@
   "closedText": "The shopping list has been closed since {date}. What's on the receipt is ordered, and it can't change any more.",
   "reopen": "Reopen",
   "close": "Close the shopping list",
-  "closeConfirm": "Close it? Nobody can add or change anything after that.",
+  "closeConfirm": "Close it? Nobody can add or change anything after that, and an expense goes into Finance.",
   "closeYes": "Close",
   "closeNo": "Keep it open",
   "closeFailed": "That didn't work. Try again.",

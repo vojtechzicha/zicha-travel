@@ -131,6 +131,12 @@ export default function PrivacyContentEn() {
             the order on themselves.
           </p>
           <p>
+            <strong>Who chips in:</strong> for the shopping list and the beer order we store who
+            doesn&rsquo;t chip in for which item (or for a whole list) and who set it. When the
+            list is closed, it becomes an expense in the trip&rsquo;s accounts, split by who chips
+            in for what.
+          </p>
+          <p>
             <strong>About visitors:</strong> technical request records (IP address in the
             hosting provider&rsquo;s operational logs), the cookies described in section 11 and
             the anonymous statistics described in section 12. On public forms (sign-in, claim
@@ -228,7 +234,8 @@ export default function PrivacyContentEn() {
           <p>
             The chata&rsquo;s shopping list and beer order are visible the same way as the
             program or the bed assignments, including who each item is for. Only signed-in
-            participants of that chata can add to them or change them.
+            participants of that chata can add to them or change them. Who doesn&rsquo;t chip in
+            for what is shown to signed-in visitors only; anonymous visitors see just the count.
           </p>
           <p>
             Without signing in, a visitor can never see: anyone&rsquo;s bank details except the
@@ -753,8 +760,8 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5 pr-4 whitespace-nowrap">14 October 2026</td>
                   <td className="py-2.5">
                     Beer order: the kegs and the tap participants pick from the shop&rsquo;s
-                    price list, and the order summary for the banker; additions to sections 3, 4,
-                    6 and 9.
+                    price list, and the order summary for the banker; who chips in for what, and
+                    the expense a closed list becomes; additions to sections 3, 4, 6 and 9.
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">

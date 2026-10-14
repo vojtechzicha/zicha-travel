@@ -5,6 +5,7 @@ import { describe, it, beforeAll, afterAll, expect } from 'vitest'
 import type { Chata, KegItem, Participant, User } from '@/payload-types'
 import type { PayloadRequest } from 'payload'
 import { closeListEndpoint } from '@/collections/listItemRules'
+import { setOptOut as setOptOutEndpoint } from '@/collections/ListOptOuts'
 
 // "Pivo" (src/collections/KegItems.ts) against the real local API with its
 // own fixture chata: product fields always come from the price list, the
@@ -35,7 +36,7 @@ async function removeFixture() {
   })
   const found = existing.docs[0]
   if (found) {
-    for (const collection of ['keg-items', 'participants'] as const) {
+    for (const collection of ['expenses', 'list-opt-outs', 'keg-items', 'participants'] as const) {
       await payload.delete({ collection, where: { chata: { equals: found.id } }, depth: 0 })
     }
     await payload.delete({ collection: 'chatas', id: found.id, depth: 0 })
@@ -277,5 +278,102 @@ describe('closing the order', () => {
       ...asUser(users.author),
     })
     expect(updated.quantity).toBe(4)
+  })
+})
+
+describe('opting out and the Finance row', () => {
+  const setOut = (user: User, participant: Participant, item: number | null, out = true) =>
+    setOptOutEndpoint.handler({
+      payload,
+      user: { ...user, collection: 'users' },
+      json: async () => ({ chata: chata.id, list: 'beer', item, participant: participant.id, out }),
+    } as unknown as PayloadRequest)
+  const close = (closed: boolean) =>
+    closeListEndpoint('beerClosedAt').handler({
+      payload,
+      user: { ...users.banker, collection: 'users' },
+      json: async () => ({ chata: chata.id, closed }),
+    } as unknown as PayloadRequest)
+  let plzen: KegItem
+
+  beforeAll(async () => {
+    plzen = await payload.create({
+      collection: 'keg-items',
+      depth: 0,
+      data: { chata: chata.id, code: 'PIV024PLZ', quantity: 1 },
+      ...asUser(users.other),
+    })
+  })
+
+  it('lets people opt themselves out, never somebody else', async () => {
+    expect((await setOut(users.other, people.other, plzen.id)).status).toBe(200)
+    expect((await setOut(users.other, people.author, plzen.id)).status).toBe(403)
+    // the banker may do it for anyone
+    expect((await setOut(users.banker, people.author, plzen.id)).status).toBe(200)
+  })
+
+  it('turns the closed order into one expense split by who chips in', async () => {
+    const res = await close(true)
+    const body = (await res.json()) as { expense: { status: string; amount: number } }
+    // the closing tests above already created it once: this close recalculates it
+    expect(body.expense.status).toBe('updated')
+    const { docs } = await payload.find({
+      collection: 'expenses',
+      where: { and: [{ chata: { equals: chata.id } }, { sourceList: { equals: 'beer' } }] },
+      depth: 0,
+    })
+    expect(docs).toHaveLength(1)
+    const expense = docs[0]
+    const kegs = await payload.find({
+      collection: 'keg-items',
+      where: { chata: { equals: chata.id } },
+      depth: 0,
+    })
+    const plzenCost = 1926
+    const othersCost = kegs.docs
+      .filter((item) => item.id !== plzen.id)
+      .reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0)
+    expect(expense.amount).toBe(plzenCost + othersCost)
+    expect(String(expense.payer && (expense.payer as { value: unknown }).value)).toBe(
+      String(people.banker.id),
+    )
+    const weightOf = (p: Participant) =>
+      expense.weights?.find((w) => String(w.participant) === String(p.id))?.weight ?? 0
+    // only the banker wanted the Plzeň; everything else is split three ways
+    expect(weightOf(people.banker) - weightOf(people.other)).toBeCloseTo(plzenCost, -1)
+    expect(Math.abs(weightOf(people.author) - weightOf(people.other))).toBeLessThanOrEqual(1)
+    expect(expense.weights?.reduce((sum, w) => sum + w.weight, 0)).toBe(expense.amount)
+  })
+
+  it('keeps the real bill and rescales the shares when closed again', async () => {
+    const { docs } = await payload.find({
+      collection: 'expenses',
+      where: { and: [{ chata: { equals: chata.id } }, { sourceList: { equals: 'beer' } }] },
+      depth: 0,
+    })
+    await payload.update({
+      collection: 'expenses',
+      id: docs[0].id,
+      data: { isPlanned: false, amount: 20000 },
+      depth: 0,
+    })
+    expect((await close(false)).status).toBe(200)
+    const res = await close(true)
+    const body = (await res.json()) as { expense: { status: string; amount: number } }
+    expect(body.expense).toMatchObject({ status: 'updated', amount: 20000 })
+    const again = await payload.findByID({ collection: 'expenses', id: docs[0].id, depth: 0 })
+    expect(again.amount).toBe(20000)
+    expect(again.weights?.reduce((sum, w) => sum + w.weight, 0)).toBe(20000)
+    expect((await close(false)).status).toBe(200)
+  })
+
+  it("drops an item's opt-outs with the item", async () => {
+    await payload.delete({ collection: 'keg-items', id: plzen.id, ...asUser(users.other) })
+    const left = await payload.find({
+      collection: 'list-opt-outs',
+      where: { itemId: { equals: plzen.id } },
+      depth: 0,
+    })
+    expect(left.docs).toHaveLength(0)
   })
 })

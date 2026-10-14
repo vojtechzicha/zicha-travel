@@ -118,7 +118,7 @@
   "closedText": "Nákup je uzavřený od {date}. Co je na účtence, je objednané, a změny už nejdou.",
   "reopen": "Znovu otevřít",
   "close": "Uzavřít nákup",
-  "closeConfirm": "Uzavřít? Pak už nikdo nic nepřidá ani nezmění.",
+  "closeConfirm": "Uzavřít? Pak už nikdo nic nepřidá ani nezmění a do Financí se zapíše výdaj.",
   "closeYes": "Uzavřít",
   "closeNo": "Nechat otevřený",
   "closeFailed": "Nepovedlo se to. Zkus to znovu.",

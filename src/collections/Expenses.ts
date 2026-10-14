@@ -1274,6 +1274,18 @@ export const Expenses: CollectionConfig = {
         condition: (data) => data?.approvalDecidedAt != null,
       },
     },
+    // set when closing "Nákup" / "Pivo" created this expense
+    // (src/utils/listExpense.ts); closing again updates the same row
+    {
+      name: 'sourceList',
+      type: 'select',
+      options: [
+        { label: { en: 'Shopping list', cs: 'Nákup' }, value: 'shopping' },
+        { label: { en: 'Beer order', cs: 'Pivo' }, value: 'beer' },
+      ],
+      label: { en: 'Created from', cs: 'Vzniklo ze seznamu' },
+      admin: { position: 'sidebar', readOnly: true },
+    },
     {
       name: 'isPlanned',
       type: 'checkbox',

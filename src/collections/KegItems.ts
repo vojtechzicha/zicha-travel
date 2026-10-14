@@ -11,6 +11,7 @@ import {
   applyListAuthorship,
   assertListOpen,
   closeListEndpoint,
+  dropItemOptOuts,
   guardDeleteWhenClosed,
   listEditAccess,
   listItemChataId,
@@ -169,6 +170,7 @@ export const KegItems: CollectionConfig = {
   endpoints: [orderSummary, closeListEndpoint('beerClosedAt')],
   hooks: {
     beforeDelete: [guardDeleteWhenClosed('keg-items', 'beerClosedAt')],
+    afterDelete: [dropItemOptOuts('beer')],
     beforeChange: [
       async ({ data, operation, originalDoc, req }) => {
         const chataId = listItemChataId(data, operation, originalDoc)

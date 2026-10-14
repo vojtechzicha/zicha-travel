@@ -79,6 +79,7 @@ export interface Config {
     'pending-votes': PendingVote;
     'shopping-items': ShoppingItem;
     'keg-items': KegItem;
+    'list-opt-outs': ListOptOut;
     'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
@@ -114,6 +115,7 @@ export interface Config {
     'pending-votes': PendingVotesSelect<false> | PendingVotesSelect<true>;
     'shopping-items': ShoppingItemsSelect<false> | ShoppingItemsSelect<true>;
     'keg-items': KegItemsSelect<false> | KegItemsSelect<true>;
+    'list-opt-outs': ListOptOutsSelect<false> | ListOptOutsSelect<true>;
     'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
@@ -1007,6 +1009,7 @@ export interface Expense {
    */
   approvalDecidedBy?: (number | null) | User;
   approvalDecidedAt?: string | null;
+  sourceList?: ('shopping' | 'beer') | null;
   /**
    * Planned expense (not yet paid) - uncheck when actually paid
    */
@@ -1245,6 +1248,25 @@ export interface KegItem {
   createdAt: string;
 }
 /**
+ * Who does not chip in for an item of the shopping list or the beer order (no item = the whole list). Set from the tab.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "list-opt-outs".
+ */
+export interface ListOptOut {
+  id: number;
+  chata: number | Chata;
+  list: 'shopping' | 'beer';
+  /**
+   * Empty = the whole list, items added later included.
+   */
+  itemId?: number | null;
+  participant: number | Participant;
+  setBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Rohlík accounts connected by bankers for the shopping list. Created by the connect flow on the chata page; tokens are encrypted and not shown. Delete a row to disconnect.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1356,6 +1378,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'keg-items';
         value: number | KegItem;
+      } | null)
+    | ({
+        relationTo: 'list-opt-outs';
+        value: number | ListOptOut;
       } | null)
     | ({
         relationTo: 'expense-attachments';
@@ -1686,6 +1712,7 @@ export interface ExpensesSelect<T extends boolean = true> {
   approvalNote?: T;
   approvalDecidedBy?: T;
   approvalDecidedAt?: T;
+  sourceList?: T;
   isPlanned?: T;
   isPrivate?: T;
   updatedAt?: T;
@@ -1839,6 +1866,19 @@ export interface KegItemsSelect<T extends boolean = true> {
   authoredBy?: T;
   summarySentAt?: T;
   summaryQuantity?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "list-opt-outs_select".
+ */
+export interface ListOptOutsSelect<T extends boolean = true> {
+  chata?: T;
+  list?: T;
+  itemId?: T;
+  participant?: T;
+  setBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

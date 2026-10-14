@@ -24,6 +24,9 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
   počet, poznámka, pro koho, kdo ho zapsal) — obojí čitelné jako ostatní
   záznam výletu, zapisují jen přihlášení účastníci chaty. Objednávka piva
   nikam neodchází: shrnutí dostane e-mailem pokladník a obchodu ho předá sám.
+  U obou seznamů i to, kdo se na kterou položku nebo na celý seznam
+  neskládá a kdo to nastavil (jména vidí jen přihlášení); uzavřený seznam se
+  stane jedním výdajem, rozděleným podle toho, kdo se na co skládá.
 - **Účel:** férové rozdělení nákladů a organizace výletu.
 - **Základ:** oprávněný zájem (čl. 6 odst. 1 písm. f) — balanční test v
   `balancni-test.md`.

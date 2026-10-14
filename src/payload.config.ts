@@ -27,6 +27,7 @@ import { TripVotes } from './collections/TripVotes'
 import { PendingVotes } from './collections/PendingVotes'
 import { ShoppingItems } from './collections/ShoppingItems'
 import { KegItems } from './collections/KegItems'
+import { ListOptOuts } from './collections/ListOptOuts'
 import { DataRequests } from './collections/DataRequests'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
@@ -85,6 +86,7 @@ export default buildConfig({
     PendingVotes,
     ShoppingItems,
     KegItems,
+    ListOptOuts,
     ExpenseAttachments,
     Backgrounds,
     Icons,

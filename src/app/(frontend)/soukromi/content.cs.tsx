@@ -129,6 +129,11 @@ export default function PrivacyContentCs() {
             kdo ho zapsal. Obchodu nic neposíláme, objednávku mu předá pokladník sám.
           </p>
           <p>
+            <strong>Kdo se skládá:</strong> u nákupního seznamu i objednávky piva ukládáme, kdo se
+            na kterou položku (nebo na celý seznam) neskládá a kdo to nastavil. Po uzavření seznamu
+            z něj vznikne výdaj ve vyúčtování, rozdělený podle toho, kdo se na co skládá.
+          </p>
+          <p>
             <strong>O návštěvnících:</strong> technické záznamy o požadavcích (IP adresa v
             provozních lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
             popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o propojení)
@@ -223,7 +228,8 @@ export default function PrivacyContentCs() {
           <p>
             Nákupní seznam a objednávka piva jsou vidět stejně jako program nebo rozdělení
             postelí, včetně toho, pro koho položka je. Přidávat do nich a upravovat je mohou jen
-            přihlášení účastníci dané chaty.
+            přihlášení účastníci dané chaty. Kdo se na co neskládá, vidí jen přihlášení;
+            nepřihlášení vidí jen počet.
           </p>
           <p>
             Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě pokladníka,
@@ -740,7 +746,8 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5 pr-4 whitespace-nowrap">14. 10. 2026</td>
                   <td className="py-2.5">
                     Objednávka sudového piva: sudy a výčep, které účastníci vyberou z ceníku
-                    obchodu, a shrnutí objednávky pro pokladníka; doplnění kapitol 3, 4, 6 a 9.
+                    obchodu, a shrnutí objednávky pro pokladníka; kdo se na co skládá a výdaj z
+                    uzavřeného seznamu; doplnění kapitol 3, 4, 6 a 9.
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">

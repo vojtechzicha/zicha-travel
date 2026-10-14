@@ -171,6 +171,16 @@ export async function cleanupDeletedUserReferences(
   })
   summary.kegItemsCleaned = kegs.docs.length
 
+  // list-opt-outs.setBy → null: the opt-out belongs to the participant
+  await payload.update({
+    collection: 'list-opt-outs',
+    where: { setBy: { equals: userId } },
+    data: { setBy: null },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+
   const decidedClaims = await payload.find({
     collection: 'claim-requests',
     where: { decidedBy: { equals: userId } },

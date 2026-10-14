@@ -35,17 +35,23 @@ import { track } from '@/lib/analytics'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
 import {
   CloseListButton,
+  ItemOptOutControls,
   ListClosedNotice,
+  ListExpenseNote,
+  ListOptOutPanel,
   QuantityStepper,
   initials,
+  useItemOptOutText,
   useListClosing,
+  useOptOut,
 } from './ListUi'
+import { listShares } from '@/lib/listSplit'
 
 interface BeerViewProps {
   chata: Chata
   beer: BeerPayload
-  /** participants of the chata, for litres per head */
-  participantCount: number
+  /** every participant of the chata: litres per head, "kdo se skládá" */
+  participants: { id: number; name: string }[]
   viewer?: FinanceViewer
   onDataChanged: () => Promise<void> | void
 }
@@ -70,8 +76,9 @@ const chipClass = (active: boolean) =>
       : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary-dark dark:border-white/[0.14] dark:bg-white/[0.03] dark:text-slate-300 dark:hover:text-primary-light'
   }`
 
-export function BeerView({ chata, beer, participantCount, viewer, onDataChanged }: BeerViewProps) {
+export function BeerView({ chata, beer, participants, viewer, onDataChanged }: BeerViewProps) {
   const t = useTranslations('beer')
+  const tl = useTranslations('lists')
   const locale = useLocale() as AppLocale
   const money = (amount: number) => formatCurrency(amount, locale)
   // receipts print plain numbers; the currency sits in the subtotal row
@@ -224,6 +231,19 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
   const { items, orderer } = beer
   const totals = beerTotals(items, beer.tapDays)
   const closing = useListClosing('/api/keg-items/close', chata.id, onDataChanged)
+  const optOut = useOptOut(chata.id, 'beer', onDataChanged)
+  const itemOptOutText = useItemOptOutText(beer.optOuts, participants)
+  const ownIds = useMemo(() => beer.ownParticipants.map((p) => p.id), [beer.ownParticipants])
+  const participantCount = participants.length
+  // what the viewer's own participants pay from this order so far
+  const myShare = useMemo(() => {
+    const split = listShares(
+      participants.map((p) => p.id),
+      beer.items.map((item) => ({ id: item.id, cost: lineCost(item, beer.tapDays) })),
+      { list: beer.optOuts.list ?? [], items: beer.optOuts.items ?? {} },
+    )
+    return ownIds.reduce((sum, id) => sum + (split.shares.get(String(id)) ?? 0), 0)
+  }, [participants, beer.items, beer.tapDays, beer.optOuts, ownIds])
   const changedSinceSummary = beer.summaryChanged
   const loginHref = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'
 
@@ -501,6 +521,9 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
             </HintCard>
           )}
 
+          {closing.expense && <ListExpenseNote outcome={closing.expense} />}
+          <ListOptOutPanel optOuts={beer.optOuts} participants={participants} optOut={optOut} />
+
           {people.length > 0 && (
             <section aria-label={t('peopleTitle')}>
               <h4 className="mb-2.5 text-[13px] font-semibold text-gray-700 dark:text-slate-300">
@@ -571,6 +594,7 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                     isTap ? t('days', { count: beer.tapDays }) : kindLabel(item.kind),
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     summarized ? t('summarized') : null,
+                    itemOptOutText(item.id),
                   ].filter(Boolean)
                   return (
                     <li
@@ -603,57 +627,69 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                               {item.note}
                             </div>
                           )}
-                          {item.canEdit &&
-                            (confirmDeleteId === item.id ? (
-                              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px]">
-                                {t('deleteConfirm')}
-                                <button
-                                  type="button"
-                                  onClick={() => deleteItem(item)}
-                                  disabled={busy}
-                                  className="font-bold text-red-600 hover:underline"
-                                >
-                                  {t('deleteYes')}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  className="font-bold hover:underline"
-                                >
-                                  {t('deleteNo')}
-                                </button>
+                          {confirmDeleteId === item.id ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px]">
+                              {t('deleteConfirm')}
+                              <button
+                                type="button"
+                                onClick={() => deleteItem(item)}
+                                disabled={busy}
+                                className="font-bold text-red-600 hover:underline"
+                              >
+                                {t('deleteYes')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="font-bold hover:underline"
+                              >
+                                {t('deleteNo')}
+                              </button>
+                            </div>
+                          ) : (
+                            (item.canEdit || beer.optOuts.canSetFor.length > 0) && (
+                              <div className="mt-1 flex flex-wrap items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
+                                {item.canEdit && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => changeQuantity(item, item.quantity - 1)}
+                                      disabled={busy || item.quantity <= 1}
+                                      aria-label={t('less')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
+                                    >
+                                      <Minus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => changeQuantity(item, item.quantity + 1)}
+                                      disabled={busy}
+                                      aria-label={t('more')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
+                                    >
+                                      <Plus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteId(item.id)}
+                                      disabled={busy}
+                                      aria-label={t('delete')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </>
+                                )}
+                                <ItemOptOutControls
+                                  itemId={item.id}
+                                  optOuts={beer.optOuts}
+                                  participants={participants}
+                                  ownIds={ownIds}
+                                  optOut={optOut}
+                                />
                               </div>
-                            ) : (
-                              <div className="mt-1 flex items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-                                <button
-                                  type="button"
-                                  onClick={() => changeQuantity(item, item.quantity - 1)}
-                                  disabled={busy || item.quantity <= 1}
-                                  aria-label={t('less')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
-                                >
-                                  <Minus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => changeQuantity(item, item.quantity + 1)}
-                                  disabled={busy}
-                                  aria-label={t('more')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
-                                >
-                                  <Plus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(item.id)}
-                                  disabled={busy}
-                                  aria-label={t('delete')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </li>
@@ -674,6 +710,13 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                 {totals.liters > 0 && (
                   <div className="mt-1 text-[13px]">
                     {t('liters', { liters: totals.liters, pints: totals.pints })}
+                  </div>
+                )}
+                {ownIds.length > 0 && (
+                  <div className="mt-1 text-[13px]">
+                    {myShare > 0
+                      ? tl('yourShare', { amount: money(myShare) })
+                      : tl('yourShareNone')}
                   </div>
                 )}
                 <div className="mt-2 text-[11px] leading-relaxed text-[#8b9099]">

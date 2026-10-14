@@ -9,6 +9,7 @@ import {
 import { canManageChata, isSuperadmin, refId } from '../lib/access'
 import { linkedParticipantIds } from '../lib/expenseAuthoring'
 import { bankerAccountId } from '../utils/rohlikConnection'
+import { syncListExpense } from '../utils/listExpense'
 
 // The rules the chata's shared lists have in common: "Nákup"
 // (shopping-items) and "Pivo" (keg-items). Anyone reads; signed-in
@@ -160,6 +161,18 @@ export async function assertListOpen(
   if (chata?.[field]) throw new APIError('Objednávka je uzavřená, změny už nejdou', 409)
 }
 
+/** afterDelete: a removed item takes its "tohle nechci" rows with it. */
+export function dropItemOptOuts(list: 'shopping' | 'beer') {
+  return async ({ req, id }: { req: PayloadRequest; id: number | string }) => {
+    await req.payload.delete({
+      collection: 'list-opt-outs',
+      where: { and: [{ list: { equals: list } }, { itemId: { equals: Number(id) } }] },
+      overrideAccess: true,
+      req,
+    })
+  }
+}
+
 /** beforeDelete: the same guard, looked up from the item being deleted. */
 export function guardDeleteWhenClosed(
   collection: 'shopping-items' | 'keg-items',
@@ -177,9 +190,11 @@ export function guardDeleteWhenClosed(
 /**
  * POST <collection>/close { chata, closed }: the banker (or a chata admin)
  * closes the list after ordering, or opens it again. Stamps or clears the
- * chata's close field and returns it.
+ * chata's close field; closing also writes the list's Finance row
+ * (syncListExpense) and reports it.
  */
 export function closeListEndpoint(field: ListCloseField): Endpoint {
+  const list = field === 'shoppingClosedAt' ? 'shopping' : 'beer'
   return {
     path: '/close',
     method: 'post',
@@ -208,7 +223,15 @@ export function closeListEndpoint(field: ListCloseField): Endpoint {
         overrideAccess: true,
         context: { triggerAfterRead: false },
       })
-      return Response.json({ closedAt })
+      if (!closedAt) return Response.json({ closedAt })
+      try {
+        const expense = await syncListExpense(req.payload, chataId, list)
+        return Response.json({ closedAt, expense })
+      } catch (err) {
+        // the list is closed either way; the banker can close it again
+        req.payload.logger.error({ err }, 'Writing the list expense failed')
+        return Response.json({ closedAt, expense: { status: 'failed' } })
+      }
     },
   }
 }

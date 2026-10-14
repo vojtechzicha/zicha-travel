@@ -506,6 +506,20 @@ API payload, no new endpoints).
   chata admins and server-side writes pass), the Rohlík send answers 409
   and the daily price check skips it, so ordered prices stay put. "Znovu
   otevřít" (or clearing the date in the admin) reopens it.
+  **"Kdo se skládá"** (opt-outs, `src/lib/listSplit.ts`, collection
+  `list-opt-outs`): every item of both lists is split equally among ALL
+  participants of the chata; a participant opts out of one item ("Nechci")
+  or a whole list (covers later items too). Set only through
+  `POST /api/list-opt-outs/set` (own participants, or anyone as banker /
+  chata admin; never on a closed list); the slug API ships names to
+  signed-in viewers only (anonymous get counts). An item nobody wants falls
+  back to everyone. CLOSING a list writes ONE expense (`syncListExpense`,
+  `src/utils/listExpense.ts`): payer = banker, planned, weights = each
+  person's share in whole crowns (sum = amount, so the composer reads them
+  as exact amounts), `Expense.sourceList` marks it. Closing again updates
+  that row: a still-planned one gets the new estimate, a paid one keeps its
+  real amount and only the shares are rescaled. Unpriced Rohlík items stay
+  out of the estimate. Item and participant deletes drop their opt-outs.
 - **"Pivo"** (shared keg order from Max pivotéka in Benešov,
   `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
   generic. Same tab shape and people rules as "Nákup", but no shop API: the

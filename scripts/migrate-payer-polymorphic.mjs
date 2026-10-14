@@ -1036,6 +1036,46 @@ ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_tap_days numeric;
 -- what the last beer order summary carried (src/lib/beer.ts orderSignature)
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_sent_at timestamp(3) with time zone;
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_signature character varying;
+
+-- "Kdo se skládá" (src/lib/listSplit.ts): opt-outs from list items or whole
+-- lists, and the expense a closed list became (src/utils/listExpense.ts).
+-- Captured from the local dev push; additive only.
+DO $$ BEGIN
+  CREATE TYPE enum_list_opt_outs_list AS ENUM('shopping', 'beer');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE enum_expenses_source_list AS ENUM('shopping', 'beer');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS source_list enum_expenses_source_list;
+CREATE TABLE IF NOT EXISTS list_opt_outs (
+  id serial PRIMARY KEY,
+  chata_id integer NOT NULL,
+  list enum_list_opt_outs_list NOT NULL,
+  item_id numeric,
+  participant_id integer NOT NULL,
+  set_by_id integer,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT list_opt_outs_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL,
+  CONSTRAINT list_opt_outs_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL,
+  CONSTRAINT list_opt_outs_set_by_id_users_id_fk
+    FOREIGN KEY (set_by_id) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS list_opt_outs_chata_idx ON list_opt_outs USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS list_opt_outs_participant_idx ON list_opt_outs USING btree (participant_id);
+CREATE INDEX IF NOT EXISTS list_opt_outs_set_by_idx ON list_opt_outs USING btree (set_by_id);
+CREATE INDEX IF NOT EXISTS list_opt_outs_updated_at_idx ON list_opt_outs USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS list_opt_outs_created_at_idx ON list_opt_outs USING btree (created_at);
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS list_opt_outs_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_list_opt_outs_fk
+    FOREIGN KEY (list_opt_outs_id) REFERENCES list_opt_outs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_list_opt_outs_id_idx
+  ON payload_locked_documents_rels USING btree (list_opt_outs_id);
 `
 
 async function enumLabels(typeName) {

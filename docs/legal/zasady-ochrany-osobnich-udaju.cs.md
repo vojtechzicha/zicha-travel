@@ -69,6 +69,11 @@ z ceníku obchodu: pivo, velikost sudu, cenu podle ceníku, počet, poznámku,
 pro koho sud je a kdo ho zapsal. Obchodu nic neposíláme, objednávku mu
 předá pokladník sám.
 
+**Kdo se skládá:** u nákupního seznamu i objednávky piva ukládáme, kdo se
+na kterou položku (nebo na celý seznam) neskládá a kdo to nastavil. Po
+uzavření seznamu z něj vznikne výdaj ve vyúčtování, rozdělený podle toho,
+kdo se na co skládá.
+
 **O návštěvnících:** technické záznamy o požadavcích (IP adresa v provozních
 lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
 popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o
@@ -143,7 +148,8 @@ Jméno u výletu zůstává v obou případech.
 
 Nákupní seznam a objednávka piva jsou vidět stejně jako program nebo
 rozdělení postelí, včetně toho, pro koho položka je. Přidávat do nich a
-upravovat je mohou jen přihlášení účastníci dané chaty.
+upravovat je mohou jen přihlášení účastníci dané chaty. Kdo se na co
+neskládá, vidí jen přihlášení; nepřihlášení vidí jen počet.
 
 Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě
 pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi", výdaje
@@ -357,7 +363,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
-| 6 | 14. 10. 2026 | Objednávka sudového piva: sudy a výčep, které účastníci vyberou z ceníku obchodu, a shrnutí objednávky pro pokladníka; doplnění kapitol 3, 4, 6 a 9. |
+| 6 | 14. 10. 2026 | Objednávka sudového piva: sudy a výčep, které účastníci vyberou z ceníku obchodu, a shrnutí objednávky pro pokladníka; kdo se na co skládá a výdaj z uzavřeného seznamu; doplnění kapitol 3, 4, 6 a 9. |
 | 5 | 13. 10. 2026 | Společný nákup: nákupní seznam chaty a jeho propojení s Rohlíkem přes účet pokladníka; Rohlík jako nový příjemce, cookie `rohlik-oauth-state` a doplnění kapitol 3, 4, 6, 7, 9 a 11. |
 | 4 | 30. 8. 2026 | Nepotvrzené hlasy z plánování: hlas zadaný bez přihlášení čeká na potvrzení jako samostatný záznam a uloží se při jakémkoli přihlášení; potvrzovací e-mail, cookie `oauth-vote-intent` a doplnění kapitol 4, 9 a 12. |
 | 3 | 27. 8. 2026 | Soukromé výdaje: nový typ výdaje viditelný jen jeho členům, doplnění kapitoly 6 včetně zobrazení bankovního spojení plátce členům jeho rozdělení. |

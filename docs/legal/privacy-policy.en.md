@@ -69,6 +69,11 @@ shop's price list: the beer, the keg size, the listed price, the quantity, a
 note, who it is for and who added it. We send nothing to the shop; the
 banker passes the order on themselves.
 
+**Who chips in:** for the shopping list and the beer order we store who
+doesn't chip in for which item (or for a whole list) and who set it. When
+the list is closed, it becomes an expense in the trip's accounts, split by
+who chips in for what.
+
 **About visitors:** technical request records (IP address in the hosting
 provider's operational logs), the cookies described in section 11 and the
 anonymous statistics described in section 12. On public forms (sign-in,
@@ -145,7 +150,9 @@ with the trip either way.
 
 The chata's shopping list and beer order are visible the same way as the
 program or the bed assignments, including who each item is for. Only
-signed-in participants of that chata can add to them or change them.
+signed-in participants of that chata can add to them or change them. Who
+doesn't chip in for what is shown to signed-in visitors only; anonymous
+visitors see just the count.
 
 Without signing in, a visitor can never see: anyone's bank details except
 the banker's, receipts, email addresses, the "Keys and Wi-Fi" section,
@@ -365,7 +372,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
-| 6 | 14 October 2026 | Beer order: the kegs and the tap participants pick from the shop's price list, and the order summary for the banker; additions to sections 3, 4, 6 and 9. |
+| 6 | 14 October 2026 | Beer order: the kegs and the tap participants pick from the shop's price list, and the order summary for the banker; who chips in for what, and the expense a closed list becomes; additions to sections 3, 4, 6 and 9. |
 | 5 | 13 October 2026 | Shared shopping: the chata's shopping list and its connection to Rohlík through the banker's account; Rohlík as a new recipient, the `rohlik-oauth-state` cookie and additions to sections 3, 4, 6, 7, 9 and 11. |
 | 4 | 30 August 2026 | Pending planning votes: a vote cast without signing in waits for confirmation as its own record and is saved on any sign-in; the confirmation email, the `oauth-vote-intent` cookie and additions to sections 4, 9 and 12. |
 | 3 | 27 August 2026 | Private expenses: a new expense type visible only to its members, additions to section 6 including showing the payer's bank details to the members of its split. |

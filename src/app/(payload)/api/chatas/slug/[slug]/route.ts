@@ -22,6 +22,8 @@ import {
   type BeerPayload,
 } from '@/lib/beer'
 import { isRohlikConnected } from '@/utils/rohlikConnection'
+import { optOutView } from '@/lib/listSplit'
+import { loadListOptOuts } from '@/utils/listExpense'
 import {
   calculateStats,
   transformExpense,
@@ -409,6 +411,20 @@ export async function GET(
       }
     }
 
+    // "tohle nechci" (src/lib/listSplit.ts): the banker and chata admins may
+    // set anyone's opt-out, everybody else only their own participants';
+    // nobody on a closed list
+    const optOutsFor = async (list: 'shopping' | 'beer', closed: boolean) =>
+      optOutView(await loadListOptOuts(payload, chata.id, list), {
+        signedIn: user != null,
+        canSetFor:
+          user == null || closed
+            ? []
+            : viewerIsBanker || canManageChata(user, chata.id)
+              ? participantsResult.docs.map((p: any) => Number(p.id))
+              : viewer.linkedParticipantIds.map(Number),
+      })
+
     // "Nákup" (src/lib/shopping.ts): the shared shopping list, once the trip
     // is booked. Everyone reads it; the flags say what this viewer may do.
     // authoredBy is compared, never shipped.
@@ -470,6 +486,7 @@ export async function GET(
           .filter((p: any) => viewer.linkedParticipantIds.map(String).includes(String(p.id)))
           .map((p: any) => ({ id: p.id, name: p.name })),
         closedAt: chata.shoppingClosedAt ?? null,
+        optOuts: await optOutsFor('shopping', Boolean(chata.shoppingClosedAt)),
         shopper: {
           name: bankerParticipant?.name ?? null,
           connected: bankerAccountId != null && (await isRohlikConnected(payload, bankerAccountId)),
@@ -531,6 +548,7 @@ export async function GET(
           .map((p: any) => ({ id: p.id, name: p.name })),
         tapDays: tapRentalDays(chata),
         closedAt: chata.beerClosedAt ?? null,
+        optOuts: await optOutsFor('beer', Boolean(chata.beerClosedAt)),
         orderer: { name: bankerParticipant?.name ?? null, isMe: viewerIsBanker },
         summarySentAt,
         summaryChanged:
