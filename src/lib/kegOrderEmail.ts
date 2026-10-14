@@ -112,7 +112,9 @@ export function kegOrderEmail(args: {
         (weekendPriced(rental) ? ` (víkend ${formatCurrency(bar.weekendPrice)}).` : '.')
       : '.')
   const caveat = 'Zálohu na sudy, výčep a dopravu ceník neuvádí, domluv je s obchodem.'
+  // the bar is everybody's (anyone changes its taps): no names on it
   const who = lines
+    .map((line) => (line.unit === 'day' ? { ...line, wantedBy: [] } : line))
     .filter((line) => line.wantedBy.length > 0 || line.notes.length > 0)
     .map((line) => {
       const label = line.unit === 'day' ? 'Výčep' : `${line.name} ${line.liters} l`

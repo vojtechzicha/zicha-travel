@@ -316,6 +316,19 @@ describe('kegOrderEmail', () => {
       'to vychází asi na 3 492 Kč, z toho výčep 1 000 Kč podle orientační ceny 300 Kč na den za výčep (víkend 1 000 Kč).',
     )
     expect(email.text).toContain('Velkopopovický Kozel 11° 30 l: Martin')
+    // the bar is shared: nobody's name on it
+    expect(
+      kegOrderEmail({
+        chataName: 'Přátelé',
+        lines: mergeOrderLines([
+          { ...beerProduct(TAP_CODE)!, quantity: 2, wantedBy: 'Alice', note: null },
+        ]),
+        rental: weekendRental,
+        place: null,
+        arrival: null,
+        listUrl: 'https://example.test',
+      }).text,
+    ).not.toContain('Alice')
     expect(email.text).not.toMatch(/[—–]/)
     expect(email.html).toContain('benesov@bene.cz')
   })

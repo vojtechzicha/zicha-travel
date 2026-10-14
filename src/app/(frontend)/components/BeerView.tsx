@@ -633,7 +633,10 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                     isTap ? t('tapCount', { count: item.quantity }) : kindLabel(item.kind),
                     isTap ? t('days', { count: rental.days }) : null,
                     isTap && weekendPriced(rental) ? t('weekendPrice') : null,
-                    item.participantName ? t('wantedBy', { name: item.participantName }) : null,
+                    // the bar is everybody's: no "chce" on it
+                    item.participantName && !isTap
+                      ? t('wantedBy', { name: item.participantName })
+                      : null,
                     summarized ? t('summarized') : null,
                     itemOptOutText(item.id),
                   ].filter(Boolean)
