@@ -139,7 +139,8 @@ export type ListCloseField = 'shoppingClosedAt' | 'beerClosedAt'
 /**
  * A closed list stays readable but takes no changes from the page: once the
  * banker has ordered, nobody may add, change or remove items until they
- * reopen it. Scripts and the lists' own endpoints (no user) and chata admins
+ * reopen it. Same for a list that's switched off or a trip still in
+ * planning. Scripts and the lists' own endpoints (no user) and chata admins
  * (fixing things in the admin panel) pass.
  */
 export async function assertListOpen(
@@ -158,7 +159,13 @@ export async function assertListOpen(
       context: { triggerAfterRead: false },
     })
     .catch(() => null)
-  if (chata?.[field]) throw new APIError('Objednávka je uzavřená, změny už nejdou', 409)
+  // a switched-off list, or a trip still being planned, takes nothing: the
+  // slug API hides it, and items written now would surface later unseen
+  const enabled = field === 'shoppingClosedAt' ? chata?.shoppingListEnabled : chata?.beerListEnabled
+  if (!chata || enabled !== true || chata.planningEnabled === true) {
+    throw new APIError('Tenhle seznam teď není zapnutý', 409)
+  }
+  if (chata[field]) throw new APIError('Objednávka je uzavřená, změny už nejdou', 409)
 }
 
 /** afterDelete: a removed item takes its "tohle nechci" rows with it. */

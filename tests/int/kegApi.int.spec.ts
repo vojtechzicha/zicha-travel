@@ -455,3 +455,47 @@ describe("the list expense stays the list's own", () => {
     expect(await listExpense()).toHaveLength(0)
   })
 })
+
+describe('closing at the same time and switched-off lists', () => {
+  it('writes one Finance row even when two closes race', async () => {
+    await payload.create({
+      collection: 'keg-items',
+      depth: 0,
+      data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1, participant: people.author.id },
+    })
+    await Promise.all([
+      syncListExpense(payload, chata.id, 'beer'),
+      syncListExpense(payload, chata.id, 'beer'),
+    ])
+    const { docs } = await payload.find({
+      collection: 'expenses',
+      where: { and: [{ chata: { equals: chata.id } }, { sourceList: { equals: 'beer' } }] },
+      depth: 0,
+    })
+    expect(docs).toHaveLength(1)
+  })
+
+  it('refuses writes while the list is switched off or the trip is being planned', async () => {
+    const setChata = (data: { beerListEnabled?: boolean; planningEnabled?: boolean }) =>
+      payload.update({
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        context: { triggerAfterRead: false },
+        data,
+      })
+    const attempt = () =>
+      payload.create({
+        collection: 'keg-items',
+        depth: 0,
+        data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1 },
+        ...asUser(users.author),
+      })
+    await setChata({ beerListEnabled: false })
+    await expect(attempt()).rejects.toThrow()
+    await setChata({ beerListEnabled: true, planningEnabled: true })
+    await expect(attempt()).rejects.toThrow()
+    await setChata({ planningEnabled: false })
+    expect((await attempt()).code).toBe('PIV311KOZ')
+  })
+})

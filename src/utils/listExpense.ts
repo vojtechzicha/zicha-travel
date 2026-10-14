@@ -1,4 +1,5 @@
-import type { Payload } from 'payload'
+import { sql } from '@payloadcms/db-postgres/drizzle'
+import type { Payload, PayloadRequest } from 'payload'
 import { refId } from '@/lib/access'
 import { lineCost, tapRentalDays } from '@/lib/beer'
 import {
@@ -27,8 +28,10 @@ export async function loadListOptOuts(
   payload: Payload,
   chataId: number | string,
   list: ListKind,
+  req?: PayloadRequest,
 ): Promise<ListOptOuts> {
   const { docs } = await payload.find({
+    req,
     collection: 'list-opt-outs',
     where: { and: [{ chata: { equals: chataId } }, { list: { equals: list } }] },
     limit: 5000,
@@ -50,9 +53,11 @@ export async function listSplitItems(
   chataId: number | string,
   list: ListKind,
   tapDays: number,
+  req?: PayloadRequest,
 ): Promise<SplitItem[]> {
   if (list === 'shopping') {
     const { docs } = await payload.find({
+      req,
       collection: 'shopping-items',
       where: { chata: { equals: chataId } },
       limit: 1000,
@@ -68,6 +73,7 @@ export async function listSplitItems(
     }))
   }
   const { docs } = await payload.find({
+    req,
     collection: 'keg-items',
     where: { chata: { equals: chataId } },
     limit: 1000,
@@ -92,12 +98,46 @@ export type ListExpenseResult =
   | { status: 'removed'; expenseId: number }
   | { status: 'skipped'; reason: 'no-banker' | 'empty' }
 
+type DbSession = { execute?: (query: unknown) => Promise<unknown> } | undefined
+
+/**
+ * Closing writes the row inside one transaction holding an advisory lock per
+ * chata and list, so two closes at once can't both create it: the second
+ * one waits and then finds and updates the first one's row.
+ */
 export async function syncListExpense(
   payload: Payload,
   chataId: number,
   list: ListKind,
 ): Promise<ListExpenseResult> {
+  const tid = await payload.db.beginTransaction()
+  if (tid == null) return syncListExpenseIn(payload, chataId, list, undefined)
+  const req = { transactionID: tid } as unknown as PayloadRequest
+  try {
+    const session = (payload.db as unknown as { sessions?: Record<string, { db?: DbSession }> })
+      .sessions?.[String(tid)]?.db
+    if (session?.execute) {
+      await session.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${`list-expense:${chataId}:${list}`}))`,
+      )
+    }
+    const result = await syncListExpenseIn(payload, chataId, list, req)
+    await payload.db.commitTransaction(tid)
+    return result
+  } catch (err) {
+    await payload.db.rollbackTransaction(tid).catch(() => undefined)
+    throw err
+  }
+}
+
+async function syncListExpenseIn(
+  payload: Payload,
+  chataId: number,
+  list: ListKind,
+  req: PayloadRequest | undefined,
+): Promise<ListExpenseResult> {
   const chata = await payload.findByID({
+    req,
     collection: 'chatas',
     id: chataId,
     depth: 0,
@@ -109,14 +149,15 @@ export async function syncListExpense(
 
   const [{ docs: participants }, optOuts, items] = await Promise.all([
     payload.find({
+      req,
       collection: 'participants',
       where: { chata: { equals: chataId } },
       limit: 1000,
       depth: 0,
       overrideAccess: true,
     }),
-    loadListOptOuts(payload, chataId, list),
-    listSplitItems(payload, chataId, list, tapRentalDays(chata)),
+    loadListOptOuts(payload, chataId, list, req),
+    listSplitItems(payload, chataId, list, tapRentalDays(chata), req),
   ])
   const split = listShares(
     participants.map((p) => p.id),
@@ -125,6 +166,7 @@ export async function syncListExpense(
   )
 
   const { docs: existing } = await payload.find({
+    req,
     collection: 'expenses',
     where: { and: [{ chata: { equals: chataId } }, { sourceList: { equals: list } }] },
     limit: 1,
@@ -137,7 +179,7 @@ export async function syncListExpense(
   // it goes; a paid one is a real bill and stays as it is
   if (Math.round(split.total) <= 0) {
     if (current && !keepAmount) {
-      await payload.delete({ collection: 'expenses', id: current.id, overrideAccess: true })
+      await payload.delete({ req, collection: 'expenses', id: current.id, overrideAccess: true })
       return { status: 'removed', expenseId: current.id }
     }
     return { status: 'skipped', reason: 'empty' }
@@ -159,6 +201,7 @@ export async function syncListExpense(
 
   if (current) {
     await payload.update({
+      req,
       collection: 'expenses',
       id: current.id,
       // a planned row follows the current banker; a paid one keeps who paid
@@ -174,6 +217,7 @@ export async function syncListExpense(
     return { status: 'updated', expenseId: current.id, amount }
   }
   const created = await payload.create({
+    req,
     collection: 'expenses',
     data: {
       chata: chataId,
