@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { refId } from '@/lib/access'
 import { productDetailsBatch } from '@/lib/rohlik/mcp'
 import { refreshedRohlik, type StoredRohlik } from '@/lib/shopping'
@@ -21,8 +21,11 @@ export async function refreshChataPrices(
   chataId: number | string,
   token: string,
   now: Date = new Date(),
+  /** the send's transaction (it holds the list's lock); none = own writes */
+  req?: PayloadRequest,
 ): Promise<PriceRefreshSummary> {
   const { docs } = await payload.find({
+    req,
     collection: 'shopping-items',
     where: { and: [{ chata: { equals: chataId } }, { 'rohlik.productId': { exists: true } }] },
     limit: 1000,
@@ -48,6 +51,7 @@ export async function refreshChataPrices(
     // product details alone (only REST bodies are re-verified) and skips
     // its title sync, so the title rides along here
     await payload.update({
+      req,
       collection: 'shopping-items',
       id: item.id,
       data: next.title ? { rohlik: next.rohlik, title: next.title } : { rohlik: next.rohlik },
