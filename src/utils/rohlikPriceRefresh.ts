@@ -3,6 +3,7 @@ import { refId } from '@/lib/access'
 import { productDetailsBatch } from '@/lib/rohlik/mcp'
 import { refreshedRohlik, type StoredRohlik } from '@/lib/shopping'
 import { bankerAccountId, getAccessToken } from './rohlikConnection'
+import { lockList } from './listLock'
 
 // Keeps the "Nákup" prices current: an item stores the price from the
 // moment it was added, so the receipt's estimate drifts as Rohlík changes
@@ -91,12 +92,31 @@ export async function refreshAllPrices(
       summary.skipped += 1
       continue
     }
+    // under the list's lock, re-checking the close stamp there: a close
+    // that lands while Rohlík answers must not get its receipt changed later
+    const tid = await payload.db.beginTransaction()
+    const req = { transactionID: tid ?? undefined, payload } as unknown as PayloadRequest
     try {
-      const result = await refreshChataPrices(payload, chata.id, token, now)
+      await lockList(req, chata.id, 'shopping')
+      const current = await payload.findByID({
+        req,
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        overrideAccess: true,
+        context: { triggerAfterRead: false },
+      })
+      if (current.shoppingClosedAt) {
+        if (tid != null) await payload.db.commitTransaction(tid)
+        continue
+      }
+      const result = await refreshChataPrices(payload, chata.id, token, now, req)
+      if (tid != null) await payload.db.commitTransaction(tid)
       summary.chatas += 1
       summary.checked += result.checked
       summary.changed += result.changed
     } catch (err) {
+      if (tid != null) await payload.db.rollbackTransaction(tid).catch(() => undefined)
       summary.skipped += 1
       payload.logger.error({ err, chata: refId(chata.id) }, 'Rohlík price refresh failed')
     }

@@ -555,3 +555,23 @@ describe('closing rules, round 4', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('whose an item is', () => {
+  it('stays put when the banker sends an empty "pro koho"', async () => {
+    const item = await payload.create({
+      collection: 'keg-items',
+      depth: 0,
+      data: { chata: chata.id, code: 'BENE-KOFOLA-20', quantity: 1 },
+      ...asUser(users.author),
+    })
+    const updated = await payload.update({
+      collection: 'keg-items',
+      id: item.id,
+      depth: 0,
+      data: { participant: null, quantity: 2 },
+      ...asUser(users.banker),
+    })
+    expect(updated.quantity).toBe(2)
+    expect(String(updated.participant)).toBe(String(people.author.id))
+  })
+})

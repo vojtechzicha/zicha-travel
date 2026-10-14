@@ -105,6 +105,11 @@ export async function applyListAuthorship(args: {
   for (const field of args.serverFields) {
     data[field] = operation === 'update' ? (originalDoc?.[field] ?? null) : null
   }
+  // an item always belongs to somebody: an update can't blank "pro koho"
+  // (the banker tidies others' items without changing whose they are)
+  if (operation === 'update' && 'participant' in data && data.participant == null) {
+    data.participant = originalDoc?.participant ?? null
+  }
 
   const participants = await req.payload.find({
     collection: 'participants',
