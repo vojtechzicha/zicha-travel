@@ -1000,7 +1000,7 @@ export const Chatas: CollectionConfig = {
       },
     },
 
-    // "Pivo" (src/lib/beer.ts): the shared keg order from Max pivotéka in
+    // "Pivo" (src/lib/beer.ts): the shared keg order from Benecentrum in
     // Benešov. Items live in the keg-items collection; the banker emails
     // themselves the order summary and orders by phone or email.
     {
@@ -1011,10 +1011,10 @@ export const Chatas: CollectionConfig = {
       admin: {
         description: {
           en:
-            'Signed-in participants pick kegs and the tap from the Max pivotéka (Benešov) price ' +
+            'Signed-in participants pick kegs and taps from the Benecentrum (Benešov) price ' +
             'list; the banker emails themselves the order summary and orders from the shop.',
           cs:
-            'Přihlášení účastníci vybírají sudy a výčep z ceníku Max pivotéky v Benešově. ' +
+            'Přihlášení účastníci vybírají sudy a kohouty z ceníku Benecentra v Benešově. ' +
             'Pokladník si nechá poslat souhrn objednávky e-mailem a objedná v obchodě.',
         },
       },

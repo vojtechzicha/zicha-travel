@@ -96,7 +96,7 @@ beforeAll(async () => {
   authorItem = await payload.create({
     collection: 'keg-items',
     depth: 0,
-    data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1 },
+    data: { chata: chata.id, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30', quantity: 1 },
     ...asUser(users.author),
   })
 }, 60_000)
@@ -109,7 +109,12 @@ describe('keg-items create', () => {
   it('stamps the author, their participant and the catalog fields', () => {
     expect(String(authorItem.authoredBy)).toBe(String(users.author.id))
     expect(String(authorItem.participant)).toBe(String(people.author.id))
-    expect(authorItem).toMatchObject({ name: 'Kozel 11°', liters: 30, price: 1230, unit: 'keg' })
+    expect(authorItem).toMatchObject({
+      name: 'Velkopopovický Kozel 11°',
+      liters: 30,
+      price: 1246,
+      unit: 'keg',
+    })
   })
 
   it('never takes name, size, price or summary fields from the body', async () => {
@@ -118,7 +123,7 @@ describe('keg-items create', () => {
       depth: 0,
       data: {
         chata: chata.id,
-        code: 'PIV024PLZ',
+        code: 'BENE-PILSNER-URQUELL-12-30',
         quantity: 1,
         name: 'Zdarma',
         price: 1,
@@ -128,7 +133,7 @@ describe('keg-items create', () => {
       },
       ...asUser(users.author),
     })
-    expect(item).toMatchObject({ name: 'Plzeň 12°', price: 1926, liters: 30 })
+    expect(item).toMatchObject({ name: 'Pilsner Urquell 12°', price: 1952, liters: 30 })
     expect(item.summarySentAt ?? null).toBeNull()
     expect(item.summaryQuantity ?? null).toBeNull()
   })
@@ -138,7 +143,7 @@ describe('keg-items create', () => {
       payload.create({
         collection: 'keg-items',
         depth: 0,
-        data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1.5 },
+        data: { chata: chata.id, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30', quantity: 1.5 },
         ...asUser(users.author),
       }),
     ).rejects.toThrow()
@@ -162,7 +167,7 @@ describe('keg-items create', () => {
         depth: 0,
         data: {
           chata: chata.id,
-          code: 'PIV311KOZ',
+          code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30',
           quantity: 1,
           ...(participant ? { participant } : {}),
         },
@@ -180,10 +185,10 @@ describe('keg-items update and delete', () => {
       collection: 'keg-items',
       id: authorItem.id,
       depth: 0,
-      data: { quantity: 2, code: 'PIV312KOZ', price: 1 },
+      data: { quantity: 2, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-50', price: 1 },
       ...asUser(users.author),
     })
-    expect(updated).toMatchObject({ quantity: 2, liters: 50, price: 1980 })
+    expect(updated).toMatchObject({ quantity: 2, liters: 50, price: 2006 })
   })
 
   it('refuses another participant', async () => {
@@ -249,7 +254,7 @@ describe('closing the order', () => {
       payload.create({
         collection: 'keg-items',
         depth: 0,
-        data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1 },
+        data: { chata: chata.id, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30', quantity: 1 },
         ...asUser(users.author),
       }),
     ).rejects.toThrow()
@@ -301,7 +306,7 @@ describe('opting out and the Finance row', () => {
     plzen = await payload.create({
       collection: 'keg-items',
       depth: 0,
-      data: { chata: chata.id, code: 'PIV024PLZ', quantity: 1 },
+      data: { chata: chata.id, code: 'BENE-PILSNER-URQUELL-12-30', quantity: 1 },
       ...asUser(users.other),
     })
   })
@@ -330,7 +335,7 @@ describe('opting out and the Finance row', () => {
       where: { chata: { equals: chata.id } },
       depth: 0,
     })
-    const plzenCost = 1926
+    const plzenCost = 1952
     const othersCost = kegs.docs
       .filter((item) => item.id !== plzen.id)
       .reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0)
@@ -461,7 +466,12 @@ describe('closing at the same time and switched-off lists', () => {
     await payload.create({
       collection: 'keg-items',
       depth: 0,
-      data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1, participant: people.author.id },
+      data: {
+        chata: chata.id,
+        code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30',
+        quantity: 1,
+        participant: people.author.id,
+      },
     })
     await Promise.all([
       syncListExpense(payload, chata.id, 'beer'),
@@ -488,7 +498,7 @@ describe('closing at the same time and switched-off lists', () => {
       payload.create({
         collection: 'keg-items',
         depth: 0,
-        data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1 },
+        data: { chata: chata.id, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30', quantity: 1 },
         ...asUser(users.author),
       })
     await setChata({ beerListEnabled: false })
@@ -496,6 +506,6 @@ describe('closing at the same time and switched-off lists', () => {
     await setChata({ beerListEnabled: true, planningEnabled: true })
     await expect(attempt()).rejects.toThrow()
     await setChata({ planningEnabled: false })
-    expect((await attempt()).code).toBe('PIV311KOZ')
+    expect((await attempt()).code).toBe('BENE-VELKOPOPOVICKY-KOZEL-11-30')
   })
 })

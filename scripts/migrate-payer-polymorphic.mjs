@@ -984,7 +984,7 @@ ALTER TABLE chatas_public_transport_options ADD COLUMN IF NOT EXISTS travel_date
 ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rohlik_in_stock boolean;
 ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rohlik_checked_at timestamp(3) with time zone;
 
--- "Pivo" (shared keg order from Max pivotéka, src/lib/beer.ts): the chata
+-- "Pivo" (shared keg order, src/lib/beer.ts): the chata
 -- switch and the keg items. Captured from the local dev push; additive only.
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_list_enabled boolean DEFAULT false;
 DO $$ BEGIN

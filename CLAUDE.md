@@ -520,12 +520,15 @@ API payload, no new endpoints).
   that row: a still-planned one gets the new estimate, a paid one keeps its
   real amount and only the shares are rescaled. Unpriced Rohlík items stay
   out of the estimate. Item and participant deletes drop their opt-outs.
-- **"Pivo"** (shared keg order from Max pivotéka in Benešov,
+- **"Pivo"** (shared keg order from Benecentrum in Benešov,
   `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
   generic. Same tab shape and people rules as "Nákup", but no shop API: the
-  catalog is a STATIC copy of the shop's two keg price-list PDFs
-  (`src/lib/kegCatalog.ts`, 15/20/30/50 l kegs plus the 25 l prosecco, shop product codes, printed
-  date in `KEG_CATALOG_PRINTED`; refresh by hand when they print new ones)
+  catalog is a STATIC copy of the keg rows of Benecentrum's price-list PDF
+  (`src/lib/kegCatalog.ts`, 15/20/30/50 l, with the list's stock flag; the
+  list has no product codes, so `code` is ours from name + size and the
+  order summary quotes name + size; printed date in `KEG_CATALOG_PRINTED`;
+  refresh by hand when they print a new one). The shop moved from Max
+  pivotéka (no Kofola) to Benecentrum before release
   plus the taps (`TAP_RENTAL`, "Výčepní kohout", 250 Kč per tap and day, a
   rough figure the banker set because the shop publishes no rental prices).
   A tap item's quantity is the NUMBER of taps (anyone adds one); the rental

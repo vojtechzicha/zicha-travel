@@ -1,6 +1,6 @@
-// "Pivo" — the chata's shared keg order from Max pivotéka in Benešov
+// "Pivo" — the chata's shared keg order from Benecentrum in Benešov
 // (src/collections/KegItems.ts). Participants pick kegs from the shop's
-// price list (src/lib/kegCatalog.ts) and the tap rental; the banker emails
+// price list (src/lib/kegCatalog.ts) and the taps; the banker emails
 // themselves a summary and orders by phone or email (the shop has no API).
 // Pure rules and the payload shapes shared by the collection, the slug API
 // and the UI.
@@ -8,22 +8,22 @@
 import { KEG_CATALOG, type KegEntry, type KegKind } from './kegCatalog'
 import type { OptOutView } from './listSplit'
 
-/** Max pivotéka's contacts, as the shop publishes them on maxpivoteka.cz. */
+/** Benecentrum Benešov, as the shop publishes it on bene.cz/kontakt. */
 export const BEER_SHOP = {
-  name: 'Max pivotéka',
-  address: 'Červené Vršky 2086, Benešov',
-  /** the shop manager; the site gives this number for rentals and delivery */
-  phone: '+420 731 179 453',
-  email: 'obchod@maxpivoteka.cz',
-  url: 'https://maxpivoteka.cz/',
+  name: 'Benecentrum',
+  address: 'Nádražní 2142, 256 01 Benešov',
+  /** the shop floor ("prodejna"); the office is +420 775 776 176 */
+  phone: '+420 727 941 964',
+  email: 'benesov@bene.cz',
+  url: 'https://www.bene.cz/',
 } as const
 
 /**
- * A tap ("výčepní kohout") from the shop's rental. An item's quantity is the
- * number of taps; the rental days are the same for every tap and come from
- * the chata (tapRentalDays). The shop publishes no rental prices; 250 Kč per
- * tap and day is the banker's working figure until they agree the real one
- * with the shop, so the UI calls it a rough price.
+ * A tap ("výčepní kohout"). An item's quantity is the number of taps; the
+ * rental days are the same for every tap and come from the chata
+ * (tapRentalDays). The price list has no taps; 250 Kč per tap and day is the
+ * banker's working figure until they agree the real one, so the UI calls it
+ * a rough price.
  */
 export const TAP_RENTAL = {
   code: 'VYCEP-KOHOUT',
@@ -70,7 +70,7 @@ export function beerProduct(code: unknown): BeerProduct | null {
   return byCode.get(code) ?? null
 }
 
-export type KegGroup = 'all' | 'draught' | 'special' | 'nonalcoholic'
+export type KegGroup = 'all' | 'beer' | 'nonalcoholic' | 'other'
 
 const fold = (value: string) =>
   value
@@ -80,9 +80,9 @@ const fold = (value: string) =>
 
 /**
  * The picker's filter: every word of the query must appear in the name
- * (accents ignored, so "plzen" finds "Plzeň"), the size must match when one
- * is chosen. Groups follow the shop's two lists, except "nealko", which
- * collects alcohol-free beer and soft drinks from both.
+ * (accents ignored, so "kozel" finds "Velkopopovický Kozel"), the size must
+ * match when one is chosen. Groups: beer, alcohol-free beer and soft drinks
+ * ("nealko a limo"), and everything else (wine, spritz, cider).
  */
 export function filterKegs(
   catalog: readonly KegEntry[],
@@ -94,8 +94,9 @@ export function filterKegs(
   const group = filter.group ?? 'all'
   return catalog.filter((keg) => {
     if (filter.liters && keg.liters !== filter.liters) return false
+    if (group === 'beer' && keg.kind !== 'beer') return false
     if (group === 'nonalcoholic' && keg.kind !== 'nonalcoholic' && keg.kind !== 'soft') return false
-    if ((group === 'draught' || group === 'special') && keg.list !== group) return false
+    if (group === 'other' && keg.kind !== 'wine' && keg.kind !== 'cider') return false
     const name = fold(keg.name)
     return words.every((word) => name.includes(word))
   })

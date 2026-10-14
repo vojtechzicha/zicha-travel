@@ -194,7 +194,7 @@ async function syncListExpenseIn(
   const note =
     (list === 'shopping'
       ? 'Ze společného nákupu, odhad podle cen na Rohlíku. '
-      : 'Ze sudového piva, odhad podle ceníku Max pivotéky (kohouty orientačně). ') +
+      : 'Ze sudového piva, odhad podle ceníku Benecentra (kohouty orientačně). ') +
     'Každá položka se dělí mezi ty, kdo se z ní neodhlásili. ' +
     (split.unpriced > 0 ? `Položky bez ceny (${split.unpriced}) v odhadu nejsou. ` : '') +
     'Až bude známá skutečná částka, oprav ji; podíly se přepočítají poměrně.'

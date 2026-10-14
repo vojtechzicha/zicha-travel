@@ -1,5 +1,5 @@
 // "Pivo": the order summary the banker emails themselves from the tab
-// (POST /api/keg-items/order-summary). Max pivotéka has no API, so this is
+// (POST /api/keg-items/order-summary). Benecentrum has no API, so this is
 // the order written out once, ready to forward to the shop or read out on
 // the phone, plus who asked for what. Czech only, tykání, like the other
 // emails to the trip's organizers. Nothing here goes to the shop itself.
@@ -41,10 +41,8 @@ export function orderLineText(line: OrderLine, tapDays: number): string {
   if (line.unit === 'day') {
     return `${line.quantity}× ${line.name} na ${daysCs(tapDays)}`
   }
-  return (
-    `${line.quantity}× ${line.name}, sud ${line.liters} l (kód ${line.code}), ` +
-    `${formatCurrency(line.price)} za sud`
-  )
+  // our codes mean nothing to the shop: name and size are what it needs
+  return `${line.quantity}× ${line.name}, sud ${line.liters} l, ${formatCurrency(line.price)} za sud`
 }
 
 export function kegOrderEmail(args: {
@@ -79,8 +77,7 @@ export function kegOrderEmail(args: {
       ? `, z toho kohouty ${formatCurrency(lineCost(tap, tapDays))} podle orientační ceny ` +
         `${formatCurrency(tap.price)} za kohout a den.`
       : '.')
-  const caveat =
-    'Zálohu na sudy, skutečnou cenu kohoutů a dopravu ceník neuvádí, domluv je s obchodem.'
+  const caveat = 'Zálohu na sudy, kohouty a dopravu ceník neuvádí, domluv je s obchodem.'
   const who = lines
     .filter((line) => line.wantedBy.length > 0 || line.notes.length > 0)
     .map((line) => {
@@ -106,7 +103,7 @@ export function kegOrderEmail(args: {
       .join('')}</ul>`
 
   return {
-    subject: `${chataName}: objednávka piva do Max pivotéky`,
+    subject: `${chataName}: objednávka piva do Benecentra`,
     text,
     html: `
       <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto;">

@@ -428,7 +428,7 @@ export interface Chata {
    */
   shoppingClosedAt?: string | null;
   /**
-   * Signed-in participants pick kegs and the tap from the Max pivotéka (Benešov) price list; the banker emails themselves the order summary and orders from the shop.
+   * Signed-in participants pick kegs and taps from the Benecentrum (Benešov) price list; the banker emails themselves the order summary and orders from the shop.
    */
   beerListEnabled?: boolean | null;
   /**
@@ -1221,7 +1221,7 @@ export interface ShoppingItem {
   createdAt: string;
 }
 /**
- * Kegs and the tap participants want for the trip. The banker orders them from Max pivotéka.
+ * Kegs and taps participants want for the trip. The banker orders them from Benecentrum.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "keg-items".
@@ -1230,7 +1230,7 @@ export interface KegItem {
   id: number;
   chata: number | Chata;
   /**
-   * Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.
+   * Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.
    */
   code: string;
   quantity: number;

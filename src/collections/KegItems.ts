@@ -143,7 +143,7 @@ const orderSummary: Endpoint = {
 }
 
 // "Pivo" — the chata's shared keg order (src/lib/beer.ts). Signed-in
-// participants pick kegs from Max pivotéka's price list and the tap rental;
+// participants pick kegs from Benecentrum's price list and the taps;
 // the banker orders it all from the shop. Same people rules as "Nákup"
 // (listItemRules.ts). Public read like the rest of the chata data;
 // `authoredBy` stays an id (maxDepth 0), never a populated user.
@@ -157,8 +157,8 @@ export const KegItems: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'liters', 'quantity', 'chata', 'participant'],
     description: {
-      en: 'Kegs and the tap participants want for the trip. The banker orders them from Max pivotéka.',
-      cs: 'Sudy a výčep, které chtějí účastníci na výlet. Pokladník je objedná v Max pivotéce.',
+      en: 'Kegs and taps participants want for the trip. The banker orders them from Benecentrum.',
+      cs: 'Sudy a kohouty, které chtějí účastníci na výlet. Pokladník je objedná v Benecentru.',
     },
   },
   access: {
@@ -181,7 +181,7 @@ export const KegItems: CollectionConfig = {
         // whoever writes (scripts included)
         const code = data.code ?? originalDoc?.code
         const product = beerProduct(code)
-        if (!product) throw new APIError('Tohle v ceníku Max pivotéky není', 400)
+        if (!product) throw new APIError('Tohle v ceníku Benecentra není', 400)
         data.code = product.code
         data.name = product.name
         data.liters = product.liters
@@ -219,8 +219,8 @@ export const KegItems: CollectionConfig = {
       label: { en: 'Product code', cs: 'Kód produktu' },
       admin: {
         description: {
-          en: 'Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.',
-          cs: 'Kód produktu Max pivotéky (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro kohout.',
+          en: 'Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.',
+          cs: 'Kód z katalogu (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro kohout.',
         },
       },
     },

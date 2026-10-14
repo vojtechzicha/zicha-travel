@@ -1,6 +1,6 @@
 'use client'
 
-// "Pivo" — the chata's shared keg order from Max pivotéka (src/lib/beer.ts).
+// "Pivo" — the chata's shared keg order from Benecentrum (src/lib/beer.ts).
 // Signed-in participants pick kegs from the shop's price list
 // (src/lib/kegCatalog.ts) and the tap rental; the banker emails themselves
 // the order summary and orders from the shop by phone or email. Anonymous
@@ -58,7 +58,7 @@ interface BeerViewProps {
 
 // the size chips: every keg size the price list has
 const SIZES = [...new Set(KEG_CATALOG.map((keg) => keg.liters))].sort((a, b) => a - b)
-const GROUPS: KegGroup[] = ['all', 'draught', 'special', 'nonalcoholic']
+const GROUPS: KegGroup[] = ['all', 'beer', 'nonalcoholic', 'other']
 
 const primaryButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:hover:bg-primary text-white text-[14px] font-semibold px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2'
@@ -276,8 +276,8 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
             : null
   const groupLabel: Record<KegGroup, string> = {
     all: t('groupAll'),
-    draught: t('groupDraught'),
-    special: t('groupSpecial'),
+    beer: t('groupBeer'),
+    other: t('groupOther'),
     nonalcoholic: t('groupNonalcoholic'),
   }
 
@@ -459,6 +459,7 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                                         ? t('perLiter', { price: money(perLiter) })
                                         : null,
                                       kind,
+                                      keg.inStock ? null : t('outOfStock'),
                                     ]
                                       .filter(Boolean)
                                       .join(', ')}

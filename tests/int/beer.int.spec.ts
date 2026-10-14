@@ -18,9 +18,7 @@ describe('KEG_CATALOG', () => {
     const codes = KEG_CATALOG.map((keg) => keg.code)
     expect(new Set(codes).size).toBe(codes.length)
     for (const keg of KEG_CATALOG) {
-      // the four beer sizes, and the 25 l prosecco
-      expect([15, 20, 25, 30, 50]).toContain(keg.liters)
-      // the 1 Kč placeholder row stays out
+      expect([15, 20, 30, 50]).toContain(keg.liters)
       expect(keg.price).toBeGreaterThan(100)
       expect(keg.name).not.toMatch(/\bkeg\b|\d+\s*l\b/i)
     }
@@ -29,11 +27,11 @@ describe('KEG_CATALOG', () => {
 
 describe('beerProduct', () => {
   it('resolves a keg from the price list', () => {
-    expect(beerProduct('PIV311KOZ')).toEqual({
-      code: 'PIV311KOZ',
-      name: 'Kozel 11°',
+    expect(beerProduct('BENE-VELKOPOPOVICKY-KOZEL-11-30')).toEqual({
+      code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30',
+      name: 'Velkopopovický Kozel 11°',
       liters: 30,
-      price: 1230,
+      price: 1246,
       unit: 'keg',
       kind: 'beer',
     })
@@ -52,26 +50,32 @@ describe('beerProduct', () => {
 
 describe('filterKegs', () => {
   it('ignores accents and case and needs every word', () => {
-    const found = filterKegs(KEG_CATALOG, { query: 'PLZEN 12' })
-    expect(found.map((keg) => keg.code).sort()).toEqual(['PIV023PLZ', 'PIV024PLZ', 'PIV025PLZ'])
+    const found = filterKegs(KEG_CATALOG, { query: 'PILSNER 12' })
+    expect(found.map((keg) => keg.code).sort()).toEqual([
+      'BENE-PILSNER-URQUELL-12-15',
+      'BENE-PILSNER-URQUELL-12-30',
+      'BENE-PILSNER-URQUELL-12-50',
+    ])
+    // accents don't matter: "kozel" finds "Velkopopovický Kozel"
+    expect(filterKegs(KEG_CATALOG, { query: 'velkopopovicky kozel' }).length).toBe(5)
   })
 
   it('filters by size', () => {
     const found = filterKegs(KEG_CATALOG, { query: 'kozel 11', liters: 50 })
-    expect(found.map((keg) => keg.code)).toEqual(['PIV312KOZ'])
+    expect(found.map((keg) => keg.code)).toEqual(['BENE-VELKOPOPOVICKY-KOZEL-11-50'])
   })
 
-  it('collects alcohol-free beer and soft drinks from both lists', () => {
+  it('collects alcohol-free beer and soft drinks, Kofola included', () => {
     const found = filterKegs(KEG_CATALOG, { group: 'nonalcoholic' })
-    expect(found.length).toBeGreaterThan(0)
     expect(found.every((keg) => keg.kind === 'nonalcoholic' || keg.kind === 'soft')).toBe(true)
-    expect(found.some((keg) => keg.list === 'special')).toBe(true)
+    expect(found.map((keg) => keg.name)).toContain('Kofola')
   })
 
-  it('follows the shop lists for classics and specials', () => {
-    expect(filterKegs(KEG_CATALOG, { group: 'special' }).every((k) => k.list === 'special')).toBe(
-      true,
-    )
+  it('keeps beer and the rest apart', () => {
+    expect(filterKegs(KEG_CATALOG, { group: 'beer' }).every((k) => k.kind === 'beer')).toBe(true)
+    const other = filterKegs(KEG_CATALOG, { group: 'other' })
+    expect(other.length).toBeGreaterThan(0)
+    expect(other.every((k) => k.kind === 'wine' || k.kind === 'cider')).toBe(true)
   })
 })
 
@@ -134,14 +138,14 @@ describe('mergeOrderLines', () => {
   it('merges the same keg, keeps who wants it, puts the tap last', () => {
     const lines = mergeOrderLines([
       item(TAP_RENTAL.code, 3, 'Vojta'),
-      item('PIV311KOZ', 1, 'Martin'),
-      item('PIV311KOZ', 2, 'Vojta', 'na sobotu'),
-      item('PIV311KOZ', 1, 'Martin'),
-      item('KEG001BIR', 1, 'Daniela'),
+      item('BENE-VELKOPOPOVICKY-KOZEL-11-30', 1, 'Martin'),
+      item('BENE-VELKOPOPOVICKY-KOZEL-11-30', 2, 'Vojta', 'na sobotu'),
+      item('BENE-VELKOPOPOVICKY-KOZEL-11-30', 1, 'Martin'),
+      item('BENE-BIRELL-15', 1, 'Daniela'),
     ])
     expect(lines.map((line) => [line.code, line.quantity])).toEqual([
-      ['KEG001BIR', 1],
-      ['PIV311KOZ', 4],
+      ['BENE-BIRELL-15', 1],
+      ['BENE-VELKOPOPOVICKY-KOZEL-11-30', 4],
       [TAP_RENTAL.code, 3],
     ])
     expect(lines[1].wantedBy).toEqual(['Martin', 'Vojta'])
@@ -151,14 +155,19 @@ describe('mergeOrderLines', () => {
 
 describe('kegOrderEmail', () => {
   const lines = mergeOrderLines([
-    { ...beerProduct('PIV311KOZ')!, quantity: 2, wantedBy: 'Martin', note: null },
+    {
+      ...beerProduct('BENE-VELKOPOPOVICKY-KOZEL-11-30')!,
+      quantity: 2,
+      wantedBy: 'Martin',
+      note: null,
+    },
     { ...beerProduct(TAP_RENTAL.code)!, quantity: 2, wantedBy: null, note: null },
   ])
 
   it('writes the order line the shop needs, with the code', () => {
     // Intl separates thousands and the currency with no-break spaces
     expect(orderLineText(lines[0], 4).replace(/\s/g, ' ')).toBe(
-      '2× Kozel 11°, sud 30 l (kód PIV311KOZ), 1 230 Kč za sud',
+      '2× Velkopopovický Kozel 11°, sud 30 l, 1 246 Kč za sud',
     )
     expect(orderLineText(lines[1], 4)).toBe('2× Výčepní kohout na 4 dny')
   })
@@ -172,14 +181,14 @@ describe('kegOrderEmail', () => {
       arrival: 'pátek 13. 11. 2026, od 16:00',
       listUrl: 'https://pratele.zicha.travel?view=beer',
     })
-    expect(email.subject).toBe('Přátelé: objednávka piva do Max pivotéky')
+    expect(email.subject).toBe('Přátelé: objednávka piva do Benecentra')
     expect(email.text).toContain('Na chatu: Chata Oáza, Vavřetice.')
     expect(email.text).toContain('Celkem 2 sudy, 60 l.')
     // 2 taps × 4 days × 250 Kč
     expect(email.text.replace(/\s/g, ' ')).toContain('z toho kohouty 2 000 Kč')
-    expect(email.text).toContain('Kozel 11° 30 l: Martin')
+    expect(email.text).toContain('Velkopopovický Kozel 11° 30 l: Martin')
     expect(email.text).not.toMatch(/[—–]/)
-    expect(email.html).toContain('obchod@maxpivoteka.cz')
+    expect(email.html).toContain('benesov@bene.cz')
   })
 
   it('escapes what participants typed', () => {
@@ -187,7 +196,12 @@ describe('kegOrderEmail', () => {
       chataName: 'X',
       tapDays: 2,
       lines: mergeOrderLines([
-        { ...beerProduct('PIV311KOZ')!, quantity: 1, wantedBy: '<b>Eve</b>', note: null },
+        {
+          ...beerProduct('BENE-VELKOPOPOVICKY-KOZEL-11-30')!,
+          quantity: 1,
+          wantedBy: '<b>Eve</b>',
+          note: null,
+        },
       ]),
       place: null,
       arrival: null,
@@ -205,7 +219,7 @@ describe('kegOrderEmail', () => {
 
 describe('orderSignature', () => {
   const items = [
-    { id: 1, code: 'PIV311KOZ', quantity: 2 },
+    { id: 1, code: 'BENE-VELKOPOPOVICKY-KOZEL-11-30', quantity: 2 },
     { id: 2, code: 'VYCEP-KOHOUT', quantity: 1 },
   ]
 
@@ -216,7 +230,9 @@ describe('orderSignature', () => {
   it('changes on a new quantity, a new row and a deleted row', () => {
     const base = orderSignature(items)
     expect(orderSignature([{ ...items[0], quantity: 3 }, items[1]])).not.toBe(base)
-    expect(orderSignature([...items, { id: 3, code: 'PIV024PLZ', quantity: 1 }])).not.toBe(base)
+    expect(
+      orderSignature([...items, { id: 3, code: 'BENE-PILSNER-URQUELL-12-30', quantity: 1 }]),
+    ).not.toBe(base)
     expect(orderSignature([items[0]])).not.toBe(base)
   })
 })
