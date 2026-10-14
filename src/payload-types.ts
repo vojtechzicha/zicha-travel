@@ -78,6 +78,7 @@ export interface Config {
     'trip-votes': TripVote;
     'pending-votes': PendingVote;
     'shopping-items': ShoppingItem;
+    'keg-items': KegItem;
     'expense-attachments': ExpenseAttachment;
     backgrounds: Background;
     icons: Icon;
@@ -112,6 +113,7 @@ export interface Config {
     'trip-votes': TripVotesSelect<false> | TripVotesSelect<true>;
     'pending-votes': PendingVotesSelect<false> | PendingVotesSelect<true>;
     'shopping-items': ShoppingItemsSelect<false> | ShoppingItemsSelect<true>;
+    'keg-items': KegItemsSelect<false> | KegItemsSelect<true>;
     'expense-attachments': ExpenseAttachmentsSelect<false> | ExpenseAttachmentsSelect<true>;
     backgrounds: BackgroundsSelect<false> | BackgroundsSelect<true>;
     icons: IconsSelect<false> | IconsSelect<true>;
@@ -419,6 +421,10 @@ export interface Chata {
    * Signed-in participants add what the group should have; the banker connects their Rohlík account and sends the list to the Rohlík cart.
    */
   shoppingListEnabled?: boolean | null;
+  /**
+   * Signed-in participants pick kegs and the tap from the Max pivotéka (Benešov) price list; the banker emails themselves the order summary and orders from the shop.
+   */
+  beerListEnabled?: boolean | null;
   /**
    * Parking information
    */
@@ -1198,6 +1204,33 @@ export interface ShoppingItem {
   createdAt: string;
 }
 /**
+ * Kegs and the tap participants want for the trip. The banker orders them from Max pivotéka.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "keg-items".
+ */
+export interface KegItem {
+  id: number;
+  chata: number | Chata;
+  /**
+   * Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for the tap.
+   */
+  code: string;
+  quantity: number;
+  note?: string | null;
+  participant?: (number | null) | Participant;
+  name?: string | null;
+  liters?: number | null;
+  price?: number | null;
+  unit?: ('keg' | 'day') | null;
+  kind?: string | null;
+  authoredBy?: (number | null) | User;
+  summarySentAt?: string | null;
+  summaryQuantity?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Rohlík accounts connected by bankers for the shopping list. Created by the connect flow on the chata page; tokens are encrypted and not shown. Delete a row to disconnect.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1305,6 +1338,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'shopping-items';
         value: number | ShoppingItem;
+      } | null)
+    | ({
+        relationTo: 'keg-items';
+        value: number | KegItem;
       } | null)
     | ({
         relationTo: 'expense-attachments';
@@ -1484,6 +1521,7 @@ export interface ChatasSelect<T extends boolean = true> {
         id?: T;
       };
   shoppingListEnabled?: T;
+  beerListEnabled?: T;
   parking?: T;
   carRoutes?:
     | T
@@ -1761,6 +1799,27 @@ export interface ShoppingItemsSelect<T extends boolean = true> {
   authoredBy?: T;
   sentToCartAt?: T;
   sentQuantity?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "keg-items_select".
+ */
+export interface KegItemsSelect<T extends boolean = true> {
+  chata?: T;
+  code?: T;
+  quantity?: T;
+  note?: T;
+  participant?: T;
+  name?: T;
+  liters?: T;
+  price?: T;
+  unit?: T;
+  kind?: T;
+  authoredBy?: T;
+  summarySentAt?: T;
+  summaryQuantity?: T;
   updatedAt?: T;
   createdAt?: T;
 }

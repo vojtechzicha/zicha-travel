@@ -28,6 +28,7 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import { formatDateRangeShort } from '@/lib/chataSelection'
 import { track } from '@/lib/analytics'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
+import { QuantityStepper, initials } from './ListUi'
 
 interface ShoppingViewProps {
   chata: Chata
@@ -70,15 +71,6 @@ const inputClass =
 const primaryButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:hover:bg-primary text-white text-[14px] font-semibold px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2'
 
-/** Two letters for the "kdo co chce" bubbles: "Martin Procházka" → "MP". */
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
-
 const linkButtonClass =
   'rounded-lg border border-primary text-primary-dark dark:text-primary-light text-xs font-bold px-3.5 py-2 whitespace-nowrap hover:bg-primary/10 transition-colors'
 
@@ -103,48 +95,6 @@ function ProductThumb({ product, size = 44 }: { product: RohlikProduct | null; s
     >
       <Package size={Math.round(size * 0.45)} />
     </span>
-  )
-}
-
-function QuantityStepper({
-  value,
-  onChange,
-  disabled,
-  lessLabel,
-  moreLabel,
-}: {
-  value: number
-  onChange: (next: number) => void
-  disabled?: boolean
-  lessLabel: string
-  moreLabel: string
-}) {
-  const buttonClass =
-    'w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-300 dark:hover:bg-white/[0.08]'
-  return (
-    <div className="inline-flex items-center rounded-xl border border-gray-200 dark:border-white/[0.14]">
-      <button
-        type="button"
-        className={buttonClass}
-        onClick={() => onChange(value - 1)}
-        disabled={disabled || value <= 1}
-        aria-label={lessLabel}
-      >
-        <Minus size={14} />
-      </button>
-      <span className="min-w-7 text-center text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-        {value}
-      </span>
-      <button
-        type="button"
-        className={buttonClass}
-        onClick={() => onChange(value + 1)}
-        disabled={disabled}
-        aria-label={moreLabel}
-      >
-        <Plus size={14} />
-      </button>
-    </div>
   )
 }
 

@@ -12,6 +12,7 @@ import { ParticipantsView } from './ParticipantsView'
 import { PlanningView } from './PlanningView'
 import { CustomTabView } from './CustomTabView'
 import { ShoppingView } from './ShoppingView'
+import { BeerView } from './BeerView'
 import { HeaderSkeleton, ContentSkeleton, ChataSelectorSkeleton } from './Skeleton'
 import { ThemeProvider } from './ThemeProvider'
 import { useAppTheme } from '../utils/useAppTheme'
@@ -29,6 +30,7 @@ import {
 } from '@/lib/customTabs'
 import type { PlanningPayload } from '@/lib/planning'
 import type { ShoppingPayload } from '@/lib/shopping'
+import type { BeerPayload } from '@/lib/beer'
 
 interface ChataData {
   chata: Chata
@@ -44,6 +46,7 @@ interface ChataData {
   planning?: PlanningPayload | null
   /** "Nákup" tab; null while the list is off or the chata is in planning */
   shopping?: ShoppingPayload | null
+  beer?: BeerPayload | null
 }
 
 interface ChataViewProps {
@@ -96,6 +99,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     | 'finance-overview'
     | 'planning'
     | 'shopping'
+    | 'beer'
     | typeof CUSTOM_TAB_VIEW
   const initialView = searchParams.get('view') as ViewName | null
   const [currentView, setCurrentView] = useState<ViewName | null>(
@@ -254,7 +258,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
         ? 'finance'
         : rawSkeletonView === 'planning' ||
             rawSkeletonView === CUSTOM_TAB_VIEW ||
-            rawSkeletonView === 'shopping'
+            rawSkeletonView === 'shopping' ||
+            rawSkeletonView === 'beer'
           ? 'information'
           : rawSkeletonView
     const skeletonColors = getThemeColors(initialThemeColor)
@@ -318,6 +323,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     !isPlanning && (chata.bedroomOrganizationEnabled === true || chata.sharedCarsEnabled === true)
   const hasParticipants = !isPlanning && participants.length > 2
   const hasShopping = !isPlanning && data.shopping != null
+  const hasBeer = !isPlanning && data.beer != null
   const customTabs = isPlanning ? [] : visibleCustomTabs(chata.customTabs)
   // a stale `?tab=` (row deleted, emptied) falls back to the default view
   const activeCustomTab =
@@ -327,7 +333,8 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
     : currentView &&
         currentView !== 'planning' &&
         (currentView !== CUSTOM_TAB_VIEW || activeCustomTab) &&
-        (currentView !== 'shopping' || hasShopping)
+        (currentView !== 'shopping' || hasShopping) &&
+        (currentView !== 'beer' || hasBeer)
       ? currentView
       : hasInformation
         ? 'information'
@@ -366,6 +373,7 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
             showOrganizationTab={hasOrganization}
             showParticipantsTab={hasParticipants}
             showShoppingTab={hasShopping}
+            showBeerTab={hasBeer}
             customTabs={customTabs}
             currentCustomTabId={activeCustomTab?.id ?? null}
             onCustomTabChange={handleCustomTabChange}
@@ -426,6 +434,16 @@ export function ChataView({ slug, allowSwitch, initialThemeColor }: ChataViewPro
               <ShoppingView
                 chata={chata}
                 shopping={data.shopping}
+                viewer={data.viewer}
+                onDataChanged={async () => {
+                  await loadData({ silent: true })
+                }}
+              />
+            ) : activeView === 'beer' && data.beer ? (
+              <BeerView
+                chata={chata}
+                beer={data.beer}
+                participantCount={participants.length}
                 viewer={data.viewer}
                 onDataChanged={async () => {
                   await loadData({ silent: true })

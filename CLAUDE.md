@@ -495,6 +495,30 @@ API payload, no new endpoints).
   `tests/int/shopping.int.spec.ts` (pure) and `shoppingApi.int.spec.ts`
   (access matrix). Strings in the `shopping` i18n namespace. Legal: Rohlík
   is listed in the outbound-calls inventory and the policy's recipients.
+  The people rules (who adds for whom, author edits, banker + chata admins
+  tidy, server-only fields) live in `src/collections/listItemRules.ts`,
+  shared with "Pivo"; the stepper and initials in `ListUi.tsx`.
+- **"Pivo"** (shared keg order from Max pivotéka in Benešov,
+  `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
+  generic. Same tab shape and people rules as "Nákup", but no shop API: the
+  catalog is a STATIC copy of the shop's two keg price-list PDFs
+  (`src/lib/kegCatalog.ts`, 15/20/30/50 l only, shop product codes, printed
+  date in `KEG_CATALOG_PRINTED`; refresh by hand when they print new ones)
+  plus the tap rental (`TAP_RENTAL`, 250 Kč/day, a rough figure the banker
+  set because the shop publishes no rental prices). The collection hook
+  copies name, size, price, unit and kind from the catalog for every
+  writer; an unknown code is refused. The banker (or a chata admin) emails
+  themselves the order summary (`POST /api/keg-items/order-summary`,
+  builder `src/lib/kegOrderEmail.ts`, Czech tykání, recipients like the
+  Rohlík checklist) to forward to the shop or read out on the phone;
+  nothing is ever sent to the shop. The summary stamps
+  `summarySentAt`/`summaryQuantity` so the tab shows what changed since.
+  UI `BeerView.tsx`: filterable price list with the price per litre, the
+  "Nákup" receipt with litres, half-litre glasses and litres per head.
+  Rules in `src/lib/beer.ts`; tests `tests/int/beer.int.spec.ts` (pure) and
+  `kegApi.int.spec.ts` (catalog-only fields, role matrix). Strings in the
+  `beer` namespace. Legal: policy v6 (the beer order as data, the summary
+  email); no new recipient, no new outbound call.
 - Public transport assignment (`publicTransportOptions[].riders`, same
   `{ participant }` array shape as car passengers): Organizace renders a
   "Veřejnou dopravou" block next to the cars (route title, Tam/Zpět badge,

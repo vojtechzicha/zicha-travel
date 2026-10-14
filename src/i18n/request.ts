@@ -16,6 +16,7 @@ const NAMESPACES = [
   'auth',
   'planning',
   'shopping',
+  'beer',
 ] as const
 
 export default getRequestConfig(async () => {

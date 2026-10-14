@@ -1,5 +1,5 @@
 // English content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/privacy-policy.en.md (version 5, effective 2026-10-13; the
+// docs/legal/privacy-policy.en.md (version 6, effective 2026-10-14; the
 // version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale. The one
 // interactive element is the consent button in section 12.
@@ -38,7 +38,7 @@ export default function PrivacyContentEn() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Privacy policy"
-      lead="zicha.travel · Effective from 13 October 2026 (version 5)"
+      lead="zicha.travel · Effective from 14 October 2026 (version 6)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Who the controller is" icon={<UserCog size={20} />}>
@@ -124,6 +124,13 @@ export default function PrivacyContentEn() {
             the access tokens for that connection, encrypted. We never see the Rohlík password.
           </p>
           <p>
+            <strong>Beer order:</strong> when a chata has the draught beer order switched on, we
+            store the kegs (and the tap, if any) signed-in participants pick from the
+            shop&rsquo;s price list: the beer, the keg size, the listed price, the quantity, a
+            note, who it is for and who added it. We send nothing to the shop; the banker passes
+            the order on themselves.
+          </p>
+          <p>
             <strong>About visitors:</strong> technical request records (IP address in the
             hosting provider&rsquo;s operational logs), the cookies described in section 11 and
             the anonymous statistics described in section 12. On public forms (sign-in, claim
@@ -150,8 +157,8 @@ export default function PrivacyContentEn() {
           <p>
             <strong>Trip organization.</strong> Bed, car and transport assignments, the program
             and the packing list rest on the same legitimate interest: making the trip happen.
-            The shopping list rests on it too. The banker switches the Rohlík connection on
-            themselves and can switch it off at any time.
+            The shopping list and the beer order rest on it too. The banker switches the Rohlík
+            connection on themselves and can switch it off at any time.
           </p>
           <p>
             <strong>Running your account.</strong> For signed-in users the basis is performance
@@ -167,7 +174,7 @@ export default function PrivacyContentEn() {
             confirmations of a trip planning vote, notifications to chata admins about new
             planning votes, decisions on claim requests, requests to confirm an expense somebody
             recorded on your behalf, and, for the banker, the list of items to add to the Rohlík
-            cart by hand. No marketing.
+            cart by hand and the beer order summary when they ask for it. No marketing.
           </p>
           <p>
             <strong>Statistics.</strong> Anonymous usage measurement rests on our legitimate
@@ -219,9 +226,9 @@ export default function PrivacyContentEn() {
             balance. Your name stays with the trip either way.
           </p>
           <p>
-            The chata&rsquo;s shopping list is visible the same way as the program or the bed
-            assignments, including who each item is for. Only signed-in participants of that
-            chata can add to it or change it.
+            The chata&rsquo;s shopping list and beer order are visible the same way as the
+            program or the bed assignments, including who each item is for. Only signed-in
+            participants of that chata can add to them or change them.
           </p>
           <p>
             Without signing in, a visitor can never see: anyone&rsquo;s bank details except the
@@ -392,7 +399,7 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5">part of the trip record, for as long as the service runs</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-2.5 pr-4">the chata&rsquo;s shopping list</td>
+                  <td className="py-2.5 pr-4">the chata&rsquo;s shopping list and beer order</td>
                   <td className="py-2.5">part of the trip record, for as long as the service runs</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -741,6 +748,15 @@ export default function PrivacyContentEn() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">6</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">14 October 2026</td>
+                  <td className="py-2.5">
+                    Beer order: the kegs and the tap participants pick from the shop&rsquo;s
+                    price list, and the order summary for the banker; additions to sections 3, 4,
+                    6 and 9.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">5</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">13 October 2026</td>

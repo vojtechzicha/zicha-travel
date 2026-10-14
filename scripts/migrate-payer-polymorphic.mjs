@@ -983,6 +983,50 @@ ALTER TABLE chatas_public_transport_options ADD COLUMN IF NOT EXISTS travel_date
 -- time of the last price check on each Rohlík item
 ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rohlik_in_stock boolean;
 ALTER TABLE shopping_items ADD COLUMN IF NOT EXISTS rohlik_checked_at timestamp(3) with time zone;
+
+-- "Pivo" (shared keg order from Max pivotéka, src/lib/beer.ts): the chata
+-- switch and the keg items. Captured from the local dev push; additive only.
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_list_enabled boolean DEFAULT false;
+DO $$ BEGIN
+  CREATE TYPE enum_keg_items_unit AS ENUM('keg', 'day');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE TABLE IF NOT EXISTS keg_items (
+  id serial PRIMARY KEY,
+  chata_id integer NOT NULL,
+  code character varying NOT NULL,
+  quantity numeric DEFAULT 1 NOT NULL,
+  note character varying,
+  participant_id integer,
+  name character varying,
+  liters numeric,
+  price numeric,
+  unit enum_keg_items_unit,
+  kind character varying,
+  authored_by_id integer,
+  summary_sent_at timestamp(3) with time zone,
+  summary_quantity numeric,
+  updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT keg_items_chata_id_chatas_id_fk
+    FOREIGN KEY (chata_id) REFERENCES chatas(id) ON DELETE SET NULL,
+  CONSTRAINT keg_items_participant_id_participants_id_fk
+    FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL,
+  CONSTRAINT keg_items_authored_by_id_users_id_fk
+    FOREIGN KEY (authored_by_id) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS keg_items_chata_idx ON keg_items USING btree (chata_id);
+CREATE INDEX IF NOT EXISTS keg_items_participant_idx ON keg_items USING btree (participant_id);
+CREATE INDEX IF NOT EXISTS keg_items_authored_by_idx ON keg_items USING btree (authored_by_id);
+CREATE INDEX IF NOT EXISTS keg_items_updated_at_idx ON keg_items USING btree (updated_at);
+CREATE INDEX IF NOT EXISTS keg_items_created_at_idx ON keg_items USING btree (created_at);
+ALTER TABLE payload_locked_documents_rels ADD COLUMN IF NOT EXISTS keg_items_id integer;
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_keg_items_fk
+    FOREIGN KEY (keg_items_id) REFERENCES keg_items(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_keg_items_id_idx
+  ON payload_locked_documents_rels USING btree (keg_items_id);
 `
 
 async function enumLabels(typeName) {

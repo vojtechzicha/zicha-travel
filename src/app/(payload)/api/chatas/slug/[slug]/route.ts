@@ -15,6 +15,7 @@ import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendingVotes'
 import { canEditShoppingItem, type ShoppingPayload } from '@/lib/shopping'
+import type { BeerItemView, BeerPayload } from '@/lib/beer'
 import { isRohlikConnected } from '@/utils/rohlikConnection'
 import {
   calculateStats,
@@ -466,6 +467,60 @@ export async function GET(
       }
     }
 
+    // "Pivo" (src/lib/beer.ts): the shared keg order, same visibility and
+    // flags as "Nákup"; authoredBy is compared, never shipped
+    let beer: BeerPayload | null = null
+    if (chata.beerListEnabled === true && chata.planningEnabled !== true) {
+      const kegsResult = await payload.find({
+        collection: 'keg-items',
+        where: { chata: { equals: chata.id } },
+        sort: 'createdAt',
+        limit: 500,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const nameOf = new Map(participantsResult.docs.map((p: any) => [String(p.id), p.name as string]))
+      const isChataAdmin = canManageChata(user, chata.id)
+      const items: BeerItemView[] = kegsResult.docs.map((item) => {
+        const participantId = item.participant != null ? Number(refId(item.participant)) : null
+        const authoredBy = item.authoredBy != null ? refId(item.authoredBy) : null
+        return {
+          id: item.id,
+          code: item.code,
+          name: item.name ?? item.code,
+          liters: item.liters ?? null,
+          price: item.price ?? 0,
+          unit: item.unit === 'day' ? 'day' : 'keg',
+          kind: (item.kind ?? 'beer') as BeerItemView['kind'],
+          quantity: item.quantity,
+          note: item.note ?? null,
+          participantId,
+          participantName: participantId != null ? (nameOf.get(String(participantId)) ?? null) : null,
+          mine: user != null && authoredBy === String(user.id),
+          canEdit: canEditShoppingItem({
+            viewerId: user?.id ?? null,
+            authoredBy,
+            isChataAdmin,
+            isBanker: viewerIsBanker,
+          }),
+          summaryQuantity: item.summarySentAt ? (item.summaryQuantity ?? null) : null,
+        }
+      })
+      const sentTimes = kegsResult.docs
+        .map((item) => item.summarySentAt)
+        .filter((at): at is string => Boolean(at))
+        .sort()
+      beer = {
+        items,
+        canAdd: user != null && (isChataAdmin || viewer.linkedParticipantIds.length > 0),
+        ownParticipants: participantsResult.docs
+          .filter((p: any) => viewer.linkedParticipantIds.map(String).includes(String(p.id)))
+          .map((p: any) => ({ id: p.id, name: p.name })),
+        orderer: { name: bankerParticipant?.name ?? null, isMe: viewerIsBanker },
+        summarySentAt: sentTimes.at(-1) ?? null,
+      }
+    }
+
     // Return data with populated relationships for frontend
     // (payer/from arrive populated via depth: 1 as { relationTo, value })
     return NextResponse.json({
@@ -481,6 +536,7 @@ export async function GET(
       viewerClaims,
       planning,
       shopping,
+      beer,
     })
   } catch (error) {
     console.error('Error looking up chata by slug:', error)

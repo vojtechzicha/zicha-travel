@@ -1,45 +1,9 @@
-import { APIError, type Access, type CollectionConfig, type Payload, type Where } from 'payload'
-import { canManageChata, isSuperadmin, refId } from '../lib/access'
-import { linkedParticipantIds } from '../lib/expenseAuthoring'
+import type { CollectionConfig } from 'payload'
+import { refId } from '../lib/access'
 import { isRohlikProductImage } from '../lib/rohlik/mcp'
 import { verifiedRohlikProduct } from '../utils/rohlikConnection'
 import { rohlikEndpoints } from './ShoppingItems/rohlikEndpoints'
-
-/** Chatas whose banker participant is linked to this account. */
-export async function bankerChataIds(payload: Payload, userId: number | string): Promise<number[]> {
-  const own = await payload.find({
-    collection: 'participants',
-    where: { account: { equals: userId } },
-    limit: 1000,
-    depth: 0,
-    overrideAccess: true,
-  })
-  if (own.docs.length === 0) return []
-  const chatas = await payload.find({
-    collection: 'chatas',
-    where: { banker: { in: own.docs.map((p) => p.id) } },
-    limit: 1000,
-    depth: 0,
-    overrideAccess: true,
-    context: { triggerAfterRead: false },
-  })
-  return chatas.docs.map((c) => c.id)
-}
-
-// Author, the chata's banker (they place the order) and chata admins; the
-// precise create rules run in the beforeChange hook below
-const editAccess: Access = async ({ req }) => {
-  const user = req.user
-  if (!user) return false
-  if (isSuperadmin(user)) return true
-  const or: Where[] = [{ authoredBy: { equals: user.id } }]
-  if (user.role === 'admin' && (user.assignedChatas ?? []).length > 0) {
-    or.push({ chata: { in: user.assignedChatas } })
-  }
-  const banker = await bankerChataIds(req.payload, user.id)
-  if (banker.length > 0) or.push({ chata: { in: banker } })
-  return { or }
-}
+import { applyListAuthorship, listEditAccess, listItemChataId } from './listItemRules'
 
 const NO_PRODUCT = {
   productId: null,
@@ -76,23 +40,15 @@ export const ShoppingItems: CollectionConfig = {
   access: {
     read: () => true,
     create: ({ req }) => Boolean(req.user),
-    update: editAccess,
-    delete: editAccess,
+    update: listEditAccess,
+    delete: listEditAccess,
   },
   endpoints: rohlikEndpoints,
   hooks: {
     beforeChange: [
       async ({ data, operation, originalDoc, req }) => {
         const user = req.user
-        const chataRef = operation === 'create' ? data.chata : (originalDoc?.chata ?? data.chata)
-        if (chataRef == null) throw new APIError('Chybí chata', 400)
-        const chataId = refId(chataRef)
-
-        // the list never moves between chatas
-        if (operation === 'update' && data.chata != null && refId(data.chata) !== chataId) {
-          throw new APIError('Položku nejde přesunout do jiné chaty', 400)
-        }
-        data.chata = Number(chataId)
+        const chataId = listItemChataId(data, operation, originalDoc)
 
         // Rohlík fields come from the search endpoint; only https links go
         // into the page (they render as <a href>/<img src>)
@@ -106,7 +62,6 @@ export const ShoppingItems: CollectionConfig = {
 
         // Local API scripts and the send endpoint run without a user
         if (!user) return data
-        const managesThisChata = canManageChata(user, chataId)
 
         // The product an item points at decides what lands in the banker's
         // cart, so a REST body never sets it: a new product id is looked up
@@ -143,49 +98,16 @@ export const ShoppingItems: CollectionConfig = {
           data.title = product.name
         }
 
-        if (operation === 'create') data.authoredBy = user.id
-        else if (!managesThisChata) data.authoredBy = originalDoc?.authoredBy
-
-        if (managesThisChata) return data
-
-        // Only the send endpoint marks items as sent to the cart
-        if (operation === 'update') {
-          data.sentToCartAt = originalDoc?.sentToCartAt ?? null
-          data.sentQuantity = originalDoc?.sentQuantity ?? null
-        } else {
-          data.sentToCartAt = null
-          data.sentQuantity = null
-        }
-
-        const participants = await req.payload.find({
-          collection: 'participants',
-          where: { chata: { equals: chataId } },
-          // oldest first: the default "pro koho" is the account's own
-          // participant, not a child added later
-          sort: 'createdAt',
-          limit: 1000,
-          depth: 0,
-          overrideAccess: true,
+        await applyListAuthorship({
+          data,
+          operation,
+          originalDoc,
+          req,
+          chataId,
+          // only the send endpoint marks items as sent to the cart
+          serverFields: ['sentToCartAt', 'sentQuantity'],
+          notParticipantMessage: 'Do nákupu přidávají jen účastníci této chaty',
         })
-        const own = linkedParticipantIds(user.id, participants.docs)
-        if (operation === 'create' && own.length === 0) {
-          throw new APIError('Do nákupu přidávají jen účastníci této chaty', 403)
-        }
-        // "pro koho": one of the author's own participants (a parent adds
-        // for a child); defaults to the first one
-        const wanted = data.participant ?? originalDoc?.participant
-        if (wanted != null && !own.includes(refId(wanted))) {
-          // the banker may tidy items of others without changing whose they are
-          if (
-            operation === 'update' &&
-            originalDoc?.participant != null &&
-            refId(wanted) === refId(originalDoc.participant)
-          ) {
-            return data
-          }
-          throw new APIError('Položku můžeš přidat jen za sebe', 403)
-        }
-        if (operation === 'create' && wanted == null) data.participant = Number(own[0])
         return data
       },
     ],

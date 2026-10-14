@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import {
   ArrowLeft,
   BedDouble,
+  Beer,
   Info,
   Moon,
   ShoppingCart,
@@ -20,9 +21,9 @@ interface HeaderProps {
   chataName: string
   location?: string
   bankerName?: string
-  currentView?: 'finance' | 'information' | 'organization' | 'participants' | 'shopping' | 'planning'
+  currentView?: 'finance' | 'information' | 'organization' | 'participants' | 'shopping' | 'beer' | 'planning'
   onViewChange?: (
-    view: 'finance' | 'information' | 'organization' | 'participants' | 'shopping' | 'planning',
+    view: 'finance' | 'information' | 'organization' | 'participants' | 'shopping' | 'beer' | 'planning',
   ) => void
   showPlanningTab?: boolean
   showInformationTab?: boolean
@@ -30,6 +31,8 @@ interface HeaderProps {
   showParticipantsTab?: boolean
   /** "Nákup" — the shared shopping list */
   showShoppingTab?: boolean
+  /** "Pivo" — the shared keg order */
+  showBeerTab?: boolean
   /** hidden during the planning phase — there are no finances yet */
   showFinanceTab?: boolean
   /** "Vlastní záložky" — admin-authored tabs, shown after the built-in ones */
@@ -57,6 +60,7 @@ export function Header({
   showOrganizationTab = false,
   showParticipantsTab = false,
   showShoppingTab = false,
+  showBeerTab = false,
   showFinanceTab = true,
   customTabs = [],
   currentCustomTabId = null,
@@ -119,6 +123,12 @@ export function Header({
       show: showShoppingTab,
       icon: <ShoppingCart size={15} aria-hidden="true" />,
       label: t('tabShopping'),
+    },
+    {
+      view: 'beer',
+      show: showBeerTab,
+      icon: <Beer size={15} aria-hidden="true" />,
+      label: t('tabBeer'),
     },
   ]
   const visibleTabs = tabs.filter((tab) => tab.show)
