@@ -53,7 +53,10 @@ const orderSummary: Endpoint = {
       overrideAccess: true,
       context: { triggerAfterRead: false },
     })
-    if (chata.beerListEnabled !== true) return Response.json({ error: 'disabled' }, { status: 409 })
+    // a hidden list (switched off, or the trip still in planning) emails nothing
+    if (chata.beerListEnabled !== true || chata.planningEnabled === true) {
+      return Response.json({ error: 'disabled' }, { status: 409 })
+    }
     const [{ docs: items }, { docs: participants }] = await Promise.all([
       req.payload.find({
         collection: 'keg-items',

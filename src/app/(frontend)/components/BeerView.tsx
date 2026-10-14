@@ -589,8 +589,12 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                 {items.map((item) => {
                   const busy = busyId === item.id
                   const isTap = item.unit === 'day'
+                  // "ve shrnutí" only while the emailed summary still matches
+                  // the order (any edit since, notes included, clears it)
                   const summarized =
-                    item.summaryQuantity != null && item.summaryQuantity === item.quantity
+                    !beer.summaryChanged &&
+                    item.summaryQuantity != null &&
+                    item.summaryQuantity === item.quantity
                   const meta = [
                     isTap ? t('days', { count: beer.tapDays }) : kindLabel(item.kind),
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,

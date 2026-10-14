@@ -235,4 +235,14 @@ describe('orderSignature', () => {
     ).not.toBe(base)
     expect(orderSignature([items[0]])).not.toBe(base)
   })
+
+  it('changes on a new note or a new "pro koho", both in the email', () => {
+    const base = orderSignature(items)
+    expect(orderSignature([{ ...items[0], note: 'na sobotu' }, items[1]])).not.toBe(base)
+    expect(orderSignature([{ ...items[0], participant: 7 }, items[1]])).not.toBe(base)
+    // a populated participant reads the same as its id
+    expect(orderSignature([{ ...items[0], participant: { id: 7 } }, items[1]])).toBe(
+      orderSignature([{ ...items[0], participant: 7 }, items[1]]),
+    )
+  })
 })

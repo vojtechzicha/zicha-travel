@@ -233,16 +233,32 @@ export function mergeOrderLines(
 }
 
 /**
- * A fingerprint of the order as it stands: every item with its product and
- * quantity. The summary endpoint stores it on the chata; any later add,
+ * A fingerprint of the order as it stands: every item with everything the
+ * summary email carries (product, quantity, whose it is, the note). The summary endpoint stores it on the chata; any later add,
  * change or delete gives a different one, so the tab can say the emailed
  * summary is out of date (a deleted item leaves no row to compare).
  */
 export function orderSignature(
-  items: { id: number | string; code: string; quantity: number }[],
+  items: {
+    id: number | string
+    code: string
+    quantity: number
+    participant?: number | string | { id: number | string } | null
+    note?: string | null
+  }[],
 ): string {
+  const participantId = (value: unknown) =>
+    value != null && typeof value === 'object' ? (value as { id: unknown }).id : value
   return items
-    .map((item) => `${item.id}:${item.code}:${item.quantity}`)
+    .map((item) =>
+      JSON.stringify([
+        item.id,
+        item.code,
+        item.quantity,
+        participantId(item.participant) ?? null,
+        item.note ?? null,
+      ]),
+    )
     .sort()
     .join(',')
 }
