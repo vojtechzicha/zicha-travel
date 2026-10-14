@@ -1,6 +1,6 @@
 import type { Payload, PayloadRequest } from 'payload'
 import { refId } from '@/lib/access'
-import { lineCost, tapRentalDays } from '@/lib/beer'
+import { beerLineCosts, tapRental, type TapRental } from '@/lib/beer'
 import {
   listShares,
   roundedShares,
@@ -52,7 +52,7 @@ export async function listSplitItems(
   payload: Payload,
   chataId: number | string,
   list: ListKind,
-  tapDays: number,
+  rental: TapRental,
   req?: PayloadRequest,
 ): Promise<SplitItem[]> {
   if (list === 'shopping') {
@@ -80,17 +80,17 @@ export async function listSplitItems(
     depth: 0,
     overrideAccess: true,
   })
-  return docs.map((item) => ({
-    id: item.id,
-    cost: lineCost(
-      {
-        quantity: item.quantity,
-        price: item.price ?? 0,
-        unit: item.unit === 'day' ? 'day' : 'keg',
-      },
-      tapDays,
-    ),
-  }))
+  // the bar is planned for the whole order's taps (barPlan), so the costs
+  // come for all items at once
+  const costs = beerLineCosts(
+    docs.map((item) => ({
+      quantity: item.quantity,
+      price: item.price ?? 0,
+      unit: item.unit === 'day' ? 'day' : 'keg',
+    })),
+    rental,
+  )
+  return docs.map((item, index) => ({ id: item.id, cost: costs[index] }))
 }
 
 export type ListExpenseResult =
@@ -162,7 +162,7 @@ async function syncListExpenseIn(
       overrideAccess: true,
     }),
     loadListOptOuts(payload, chataId, list, req),
-    listSplitItems(payload, chataId, list, tapRentalDays(chata), req),
+    listSplitItems(payload, chataId, list, tapRental(chata), req),
   ])
   const split = listShares(
     participants.map((p) => p.id),
@@ -199,7 +199,7 @@ async function syncListExpenseIn(
   const note =
     (list === 'shopping'
       ? 'Ze společného nákupu, odhad podle cen na Rohlíku. '
-      : 'Ze sudového piva, odhad podle ceníku Benecentra (kohouty orientačně). ') +
+      : 'Ze sudového piva, odhad podle ceníku Benecentra (výčep orientačně). ') +
     'Každá položka se dělí mezi ty, kdo se z ní neodhlásili. ' +
     (split.unpriced > 0 ? `Položky bez ceny (${split.unpriced}) v odhadu nejsou. ` : '') +
     'Až bude známá skutečná částka, oprav ji; podíly se přepočítají poměrně.'

@@ -1038,6 +1038,8 @@ ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_sent_at timestamp(3) wi
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_signature character varying;
 -- the tap rental days a closed beer order was priced with
 ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_closed_tap_days numeric;
+-- ...and whether the bar's weekend price applied (src/lib/beer.ts tapRental)
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_closed_tap_weekend boolean;
 
 -- "Kdo se skládá" (src/lib/listSplit.ts): opt-outs from list items or whole
 -- lists, and the expense a closed list became (src/utils/listExpense.ts).
@@ -1289,6 +1291,24 @@ async function backfillExpenseApproval() {
 }
 
 /**
+ * "Pivo": the bar item ('VYCEP-KOHOUT') still counts taps, but it is now
+ * priced per bar (barPlan in src/lib/beer.ts) and named "Výčep"; its stored
+ * name and price per bar and day (mirrored here, this script can't import
+ * TypeScript) follow, so the admin shows what the page uses. Closed orders
+ * keep what they were priced with. Idempotent: nothing matches once done.
+ */
+async function refreshTapItems() {
+  const res = await client.query(`
+    UPDATE keg_items k SET name = 'Výčep', price = 300, updated_at = now()
+      FROM chatas c
+      WHERE c.id = k.chata_id
+        AND k.code = 'VYCEP-KOHOUT'
+        AND c.beer_closed_at IS NULL
+        AND (k.name IS DISTINCT FROM 'Výčep' OR k.price IS DISTINCT FROM 300)`)
+  if (res.rowCount > 0) console.log(`keg_items: ${res.rowCount} bar row(s) renamed and repriced`)
+}
+
+/**
  * Supabase exposes every table in the public schema through its
  * auto-generated Data API (PostgREST) with the public anon key — a path
  * that bypasses Payload's access control entirely, since the app only ever
@@ -1337,6 +1357,7 @@ async function auto() {
     // Steady state (every normal deploy): the payer refs are already in
     // expenses_rels, so the approval backfill can run right away
     await backfillExpenseApproval()
+    await refreshTapItems()
     await client.query('COMMIT')
     console.log('Schema already migrated — nothing to do.')
     return
@@ -1418,6 +1439,7 @@ async function auto() {
   }
 
   await backfillExpenseApproval()
+  await refreshTapItems()
 
   await client.query('COMMIT')
   console.log(

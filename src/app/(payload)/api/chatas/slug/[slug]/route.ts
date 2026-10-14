@@ -15,7 +15,7 @@ import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendingVotes'
 import { canEditShoppingItem, type ShoppingPayload } from '@/lib/shopping'
-import { tapRentalDays, type BeerItemView, type BeerPayload } from '@/lib/beer'
+import { tapRental, type BeerItemView, type BeerPayload } from '@/lib/beer'
 import { buildKegOrderEmail, kegOrderFingerprint } from '@/lib/kegOrderEmail'
 import { isRohlikConnected } from '@/utils/rohlikConnection'
 import { optOutView } from '@/lib/listSplit'
@@ -543,7 +543,8 @@ export async function GET(
         ownParticipants: participantsResult.docs
           .filter((p: any) => viewer.linkedParticipantIds.map(String).includes(String(p.id)))
           .map((p: any) => ({ id: p.id, name: p.name })),
-        tapDays: tapRentalDays(chata),
+        tapDays: tapRental(chata).days,
+        tapWeekend: tapRental(chata).weekend,
         closedAt: chata.beerClosedAt ?? null,
         optOuts: await optOutsFor('beer', Boolean(chata.beerClosedAt)),
         orderer: {

@@ -7,7 +7,7 @@ import type { PayloadRequest } from 'payload'
 import { closeListEndpoint } from '@/collections/listItemRules'
 import { setOptOut as setOptOutEndpoint } from '@/collections/ListOptOuts'
 import { syncListExpense } from '@/utils/listExpense'
-import { tapRentalDays } from '@/lib/beer'
+import { TAP_CODE, tapRental, tapRentalDays } from '@/lib/beer'
 
 // "Pivo" (src/collections/KegItems.ts) against the real local API with its
 // own fixture chata: product fields always come from the price list, the
@@ -577,7 +577,7 @@ describe('whose an item is', () => {
   })
 })
 
-describe('a closed order keeps its tap rental days', () => {
+describe('a closed order keeps its bar rental period', () => {
   it('prices the receipt with the days it was closed with, until reopened', async () => {
     const setChata = (data: Record<string, unknown>) =>
       payload.update({
@@ -600,11 +600,50 @@ describe('a closed order keeps its tap rental days', () => {
         user: { ...users.banker, collection: 'users' },
         json: async () => ({ chata: chata.id, closed }),
       } as unknown as PayloadRequest)
-    await setChata({ beerTapDays: 4 })
+    // Friday 13 November 2026: four days from a Friday get the weekend price
+    await setChata({
+      beerTapDays: 4,
+      tripDateFrom: '2026-11-13T12:00:00.000Z',
+      tripDateTo: '2026-11-15T12:00:00.000Z',
+    })
     expect((await closeAs(true)).status).toBe(200)
-    await setChata({ beerTapDays: 2 })
-    expect(tapRentalDays(await read())).toBe(4)
+    await setChata({ beerTapDays: 2, tripDateFrom: '2026-11-12T12:00:00.000Z' })
+    expect(tapRental(await read())).toEqual({ days: 4, weekend: true })
     expect((await closeAs(false)).status).toBe(200)
     expect(tapRentalDays(await read())).toBe(2)
+    // a Thursday arrival: no weekend price once reopened
+    expect(tapRental(await read()).weekend).toBe(false)
+  })
+})
+
+describe('the bar', () => {
+  it('is one item per order that counts taps', async () => {
+    const bar = await payload.create({
+      collection: 'keg-items',
+      depth: 0,
+      data: { chata: chata.id, code: TAP_CODE, quantity: 1 },
+      ...asUser(users.author),
+    })
+    expect(bar).toMatchObject({ name: 'Výčep', price: 300, unit: 'day' })
+    // a second bar is refused, the banker's too: more taps go onto this one
+    for (const who of [users.other, users.banker]) {
+      await expect(
+        payload.create({
+          collection: 'keg-items',
+          depth: 0,
+          data: { chata: chata.id, code: TAP_CODE, quantity: 1 },
+          ...asUser(who),
+        }),
+      ).rejects.toThrow(/Výčep už v objednávce je/)
+    }
+    const more = await payload.update({
+      collection: 'keg-items',
+      id: bar.id,
+      depth: 0,
+      data: { quantity: 3 },
+      ...asUser(users.author),
+    })
+    expect(more.quantity).toBe(3)
+    await payload.delete({ collection: 'keg-items', id: bar.id, depth: 0 })
   })
 })

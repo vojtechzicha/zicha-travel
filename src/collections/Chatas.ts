@@ -1011,10 +1011,10 @@ export const Chatas: CollectionConfig = {
       admin: {
         description: {
           en:
-            'Signed-in participants pick kegs and taps from the Benecentrum (Benešov) price ' +
+            'Signed-in participants pick kegs and the bar from the Benecentrum (Benešov) price ' +
             'list; the banker emails themselves the order summary and orders from the shop.',
           cs:
-            'Přihlášení účastníci vybírají sudy a kohouty z ceníku Benecentra v Benešově. ' +
+            'Přihlášení účastníci vybírají sudy a výčep z ceníku Benecentra v Benešově. ' +
             'Pokladník si nechá poslat souhrn objednávky e-mailem a objedná v obchodě.',
         },
       },
@@ -1024,7 +1024,7 @@ export const Chatas: CollectionConfig = {
       type: 'number',
       min: 1,
       max: 30,
-      // whole days: the taps are priced and shown per day
+      // whole days: the bar is priced and shown per day
       validate: (value: number | null | undefined, { req }: { req: PayloadRequest }) =>
         value == null || Number.isInteger(value)
           ? true
@@ -1034,11 +1034,13 @@ export const Chatas: CollectionConfig = {
         condition: (data) => data?.beerListEnabled === true,
         description: {
           en:
-            'How many days every tap is rented, e.g. 4 for Friday to Tuesday. Empty = the nights ' +
-            'of the stay.',
+            'How many calendar days the bar is rented, e.g. 4 for Friday to Monday. Picked up on ' +
+            'a Friday and back by Monday, the weekend price applies. Empty = the days of the ' +
+            'stay, arrival and departure included.',
           cs:
-            'Na kolik dní se půjčuje každý kohout, např. 4 pro pátek až úterý. Prázdné = počet ' +
-            'nocí pobytu.',
+            'Na kolik kalendářních dní se půjčuje výčep, např. 4 pro pátek až pondělí. Při ' +
+            'vyzvednutí v pátek a vrácení do pondělí platí víkendová cena. ' +
+            'Prázdné = dny pobytu včetně dne příjezdu a odjezdu.',
         },
       },
     },
@@ -1059,10 +1061,15 @@ export const Chatas: CollectionConfig = {
       type: 'text',
       admin: { hidden: true },
     },
-    // the tap rental days a closed order was priced with (tapRentalDays)
+    // the bar rental period a closed order was priced with (tapRental)
     {
       name: 'beerClosedTapDays',
       type: 'number',
+      admin: { hidden: true },
+    },
+    {
+      name: 'beerClosedTapWeekend',
+      type: 'checkbox',
       admin: { hidden: true },
     },
     {

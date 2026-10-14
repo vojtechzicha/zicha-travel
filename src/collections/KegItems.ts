@@ -1,6 +1,6 @@
 import { APIError, type CollectionConfig, type Endpoint, type PayloadRequest } from 'payload'
 import { canManageChata, refId } from '../lib/access'
-import { beerProduct } from '../lib/beer'
+import { TAP_CODE, beerProduct } from '../lib/beer'
 import { pickValidationMessage } from '../i18n/adminTranslations'
 import { buildKegOrderEmail, kegOrderFingerprint } from '../lib/kegOrderEmail'
 import { sendAppEmail } from '../lib/email'
@@ -119,7 +119,7 @@ const orderSummary: Endpoint = {
 }
 
 // "Pivo" — the chata's shared keg order (src/lib/beer.ts). Signed-in
-// participants pick kegs from Benecentrum's price list and the taps;
+// participants pick kegs from Benecentrum's price list and the bar;
 // the banker orders it all from the shop. Same people rules as "Nákup"
 // (listItemRules.ts). Public read like the rest of the chata data;
 // `authoredBy` stays an id (maxDepth 0), never a populated user.
@@ -133,8 +133,8 @@ export const KegItems: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'liters', 'quantity', 'chata', 'participant'],
     description: {
-      en: 'Kegs and taps participants want for the trip. The banker orders them from Benecentrum.',
-      cs: 'Sudy a kohouty, které chtějí účastníci na výlet. Pokladník je objedná v Benecentru.',
+      en: 'Kegs and the bar participants want for the trip. The banker orders them from Benecentrum.',
+      cs: 'Sudy a výčep, které chtějí účastníci na výlet. Pokladník je objedná v Benecentru.',
     },
   },
   access: {
@@ -157,13 +157,28 @@ export const KegItems: CollectionConfig = {
         // whoever writes (scripts included)
         const code = data.code ?? originalDoc?.code
         const product = beerProduct(code)
-        if (!product) throw new APIError('Tohle v ceníku Benecentra není', 400)
+        if (!product) throw new APIError('Tohle v ceníku není', 400)
         data.code = product.code
         data.name = product.name
         data.liters = product.liters
         data.price = product.price
         data.unit = product.unit
         data.kind = product.kind
+
+        // the bar is one item counting taps (barPlan picks the bars), so
+        // more taps go onto it rather than into a second one. assertListOpen
+        // holds the list's lock, so two adds can't both get through
+        if (operation === 'create' && product.code === TAP_CODE) {
+          const existing = await req.payload.count({
+            req,
+            collection: 'keg-items',
+            where: { and: [{ chata: { equals: chataId } }, { code: { equals: TAP_CODE } }] },
+            overrideAccess: true,
+          })
+          if (existing.totalDocs > 0) {
+            throw new APIError('Výčep už v objednávce je, kohouty se přidávají u něj', 409)
+          }
+        }
 
         await applyListAuthorship({
           data,
@@ -195,8 +210,8 @@ export const KegItems: CollectionConfig = {
       label: { en: 'Product code', cs: 'Kód produktu' },
       admin: {
         description: {
-          en: 'Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.',
-          cs: 'Kód z katalogu (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro kohout.',
+          en: 'Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for the bar (one per order; the quantity is the number of taps).',
+          cs: 'Kód z katalogu (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro výčep (jeden na objednávku, počet je počet kohoutů).',
         },
       },
     },
@@ -220,7 +235,7 @@ export const KegItems: CollectionConfig = {
                   'The quantity must be a whole number',
                   'Počet musí být celé číslo',
                 ),
-          label: { en: 'Quantity (kegs or taps)', cs: 'Počet (sudů nebo kohoutů)' },
+          label: { en: 'Quantity (kegs, or taps for the bar)', cs: 'Počet (sudů, u výčepu kohoutů)' },
           admin: { width: '30%' },
         },
         {
@@ -266,7 +281,7 @@ export const KegItems: CollectionConfig = {
           type: 'select',
           options: [
             { label: { en: 'keg', cs: 'sud' }, value: 'keg' },
-            { label: { en: 'tap and day', cs: 'kohout a den' }, value: 'day' },
+            { label: { en: 'bar and day', cs: 'výčep a den' }, value: 'day' },
           ],
           label: { en: 'Per', cs: 'Za' },
           admin: { readOnly: true, width: '15%' },

@@ -524,16 +524,31 @@ API payload, no new endpoints).
   `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
   generic. Same tab shape and people rules as "Nákup", but no shop API: the
   catalog is a STATIC copy of the keg rows of Benecentrum's price-list PDF
-  (`src/lib/kegCatalog.ts`, 15/20/30/50 l, with the list's stock flag; the
+  (https://www.benecentrum.cz/cenik.pdf, `BEER_SHOP.priceListUrl`, linked from the tab)
+  in `src/lib/kegCatalog.ts` (15/20/30/50 l, with the list's stock flag; the
   list has no product codes, so `code` is ours from name + size and the
   order summary quotes name + size; printed date in `KEG_CATALOG_PRINTED`;
   refresh by hand when they print a new one). The shop moved from Max
   pivotéka (no Kofola) to Benecentrum before release
-  plus the taps (`TAP_RENTAL`, "Výčepní kohout", 250 Kč per tap and day, a
-  rough figure the banker set because the shop publishes no rental prices).
-  A tap item's quantity is the NUMBER of taps (anyone adds one); the rental
-  days are one per-chata number (`beerTapDays`, else the nights of the stay,
-  `tapRentalDays`), so two tap rows never double the days. The collection hook
+  plus the bar ("výčep", one `VYCEP-KOHOUT` item per order whose quantity
+  is the number of TAPS people want; a second bar item is refused, more taps
+  go onto the first). `barPlan` turns the taps into the cheapest set of
+  chillers from `BAR_OPTIONS` (one or two taps, same price today: 3 taps =
+  a two-tap and a one-tap bar), and `beerLineCosts` shares that cost among
+  bar items by taps; the receipt and the email name the plan ("Výčep se
+  dvěma kohouty a výčep s jedním kohoutem"). The shop publishes no rental
+  prices, so the bar figures are the banker's rough ones, borrowed from a
+  Prague rental's list: 300 Kč per CALENDAR day, capped at 1 000 Kč when
+  the bar is picked up on a Friday (the arrival day) and back by Monday
+  (≤ 4 days, `tapRental().weekend`). The UI and the email name only
+  Benecentrum, never where the figures came from (the banker's call). The
+  box offering the bar hides once it is in the order (the receipt shows
+  it). The rental days are one per-chata number (`beerTapDays`, else the
+  stay's calendar days with arrival and departure included,
+  `tapRentalDays`); a closed order snapshots days AND the weekend flag
+  (`beerClosedTapDays`/`beerClosedTapWeekend`). `refreshTapItems()` in the
+  migrate script renames open orders' old bar rows and stores the new
+  price. The collection hook
   copies name, size, price, unit and kind from the catalog for every
   writer; an unknown code is refused. The banker (or a chata admin) emails
   themselves the order summary (`POST /api/keg-items/order-summary`,

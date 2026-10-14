@@ -428,16 +428,17 @@ export interface Chata {
    */
   shoppingClosedAt?: string | null;
   /**
-   * Signed-in participants pick kegs and taps from the Benecentrum (Benešov) price list; the banker emails themselves the order summary and orders from the shop.
+   * Signed-in participants pick kegs and the bar from the Benecentrum (Benešov) price list; the banker emails themselves the order summary and orders from the shop.
    */
   beerListEnabled?: boolean | null;
   /**
-   * How many days every tap is rented, e.g. 4 for Friday to Tuesday. Empty = the nights of the stay.
+   * How many calendar days the bar is rented, e.g. 4 for Friday to Monday. Picked up on a Friday and back by Monday, the weekend price applies. Empty = the days of the stay, arrival and departure included.
    */
   beerTapDays?: number | null;
   beerSummarySentAt?: string | null;
   beerSummarySignature?: string | null;
   beerClosedTapDays?: number | null;
+  beerClosedTapWeekend?: boolean | null;
   /**
    * Set by the banker's "Uzavřít objednávku" on the tab: the order stays visible but takes no more changes. Clear it to reopen.
    */
@@ -1222,7 +1223,7 @@ export interface ShoppingItem {
   createdAt: string;
 }
 /**
- * Kegs and taps participants want for the trip. The banker orders them from Benecentrum.
+ * Kegs and the bar participants want for the trip. The banker orders them from Benecentrum.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "keg-items".
@@ -1231,7 +1232,7 @@ export interface KegItem {
   id: number;
   chata: number | Chata;
   /**
-   * Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.
+   * Catalog code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for the bar (one per order; the quantity is the number of taps).
    */
   code: string;
   quantity: number;
@@ -1568,6 +1569,7 @@ export interface ChatasSelect<T extends boolean = true> {
   beerSummarySentAt?: T;
   beerSummarySignature?: T;
   beerClosedTapDays?: T;
+  beerClosedTapWeekend?: T;
   beerClosedAt?: T;
   parking?: T;
   carRoutes?:
