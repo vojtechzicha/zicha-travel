@@ -1,5 +1,8 @@
 import {
   APIError,
+  commitTransaction,
+  initTransaction,
+  killTransaction,
   type Access,
   type Endpoint,
   type Payload,
@@ -10,6 +13,7 @@ import { canManageChata, isSuperadmin, refId } from '../lib/access'
 import { linkedParticipantIds } from '../lib/expenseAuthoring'
 import { bankerAccountId } from '../utils/rohlikConnection'
 import { syncListExpense } from '../utils/listExpense'
+import { lockList } from '../utils/listLock'
 
 // The rules the chata's shared lists have in common: "Nákup"
 // (shopping-items) and "Pivo" (keg-items). Anyone reads; signed-in
@@ -148,10 +152,14 @@ export async function assertListOpen(
   chataId: number | string,
   field: ListCloseField,
 ): Promise<void> {
+  // every write to a list waits for a close in progress (and vice versa), so
+  // the closed receipt and its Finance row always see the same items
+  await lockList(req, chataId, field === 'shoppingClosedAt' ? 'shopping' : 'beer')
   const user = req.user
   if (!user || canManageChata(user, chataId)) return
   const chata = await req.payload
     .findByID({
+      req,
       collection: 'chatas',
       id: chataId,
       depth: 0,
@@ -188,7 +196,7 @@ export function guardDeleteWhenClosed(
   return async ({ req, id }: { req: PayloadRequest; id: number | string }) => {
     if (!req.user) return
     const item = await req.payload
-      .findByID({ collection, id, depth: 0, overrideAccess: true })
+      .findByID({ req, collection, id, depth: 0, overrideAccess: true })
       .catch(() => null)
     if (item?.chata != null) await assertListOpen(req, refId(item.chata), field)
   }
@@ -221,23 +229,45 @@ export function closeListEndpoint(field: ListCloseField): Endpoint {
       if (banker !== String(req.user.id) && !canManageChata(req.user, chataId)) {
         return Response.json({ error: 'forbidden' }, { status: 403 })
       }
-      const closedAt = body.closed === true ? new Date().toISOString() : null
-      await req.payload.update({
-        collection: 'chatas',
-        id: chataId,
-        data: { [field]: closedAt },
-        depth: 0,
-        overrideAccess: true,
-        context: { triggerAfterRead: false },
-      })
-      if (!closedAt) return Response.json({ closedAt })
+      const closing = body.closed === true
+
+      // One transaction under the list's lock: the close stamp and the
+      // Finance row land together, against exactly the items that are
+      // there; item writes wait for it (assertListOpen takes the same lock)
+      const shouldCommit = await initTransaction(req)
       try {
-        const expense = await syncListExpense(req.payload, chataId, list)
-        return Response.json({ closedAt, expense })
+        await lockList(req, chataId, list)
+        const chata = await req.payload.findByID({
+          req,
+          collection: 'chatas',
+          id: chataId,
+          depth: 0,
+          overrideAccess: true,
+          context: { triggerAfterRead: false },
+        })
+        const enabled = list === 'shopping' ? chata.shoppingListEnabled : chata.beerListEnabled
+        // a hidden list isn't closed into Finance (stale items would land there)
+        if (closing && (enabled !== true || chata.planningEnabled === true)) {
+          if (shouldCommit) await commitTransaction(req)
+          return Response.json({ error: 'disabled' }, { status: 409 })
+        }
+        const closedAt = closing ? new Date().toISOString() : null
+        await req.payload.update({
+          req,
+          collection: 'chatas',
+          id: chataId,
+          data: { [field]: closedAt },
+          depth: 0,
+          overrideAccess: true,
+          context: { triggerAfterRead: false },
+        })
+        const expense = closing ? await syncListExpense(req.payload, chataId, list, req) : null
+        if (shouldCommit) await commitTransaction(req)
+        return Response.json(expense ? { closedAt, expense } : { closedAt })
       } catch (err) {
-        // the list is closed either way; the banker can close it again
-        req.payload.logger.error({ err }, 'Writing the list expense failed')
-        return Response.json({ closedAt, expense: { status: 'failed' } })
+        await killTransaction(req)
+        req.payload.logger.error({ err }, 'Closing the list failed')
+        return Response.json({ error: 'failed' }, { status: 500 })
       }
     },
   }

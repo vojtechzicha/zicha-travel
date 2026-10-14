@@ -1,4 +1,3 @@
-import { sql } from '@payloadcms/db-postgres/drizzle'
 import type { Payload, PayloadRequest } from 'payload'
 import { refId } from '@/lib/access'
 import { lineCost, tapRentalDays } from '@/lib/beer'
@@ -10,6 +9,7 @@ import {
   type ListOptOuts,
   type SplitItem,
 } from '@/lib/listSplit'
+import { lockList } from './listLock'
 
 // Closing "Nákup" or "Pivo" turns the list into ONE expense paid by the
 // banker (src/lib/listSplit.ts has the split rules). The expense carries
@@ -98,30 +98,35 @@ export type ListExpenseResult =
   | { status: 'removed'; expenseId: number }
   | { status: 'skipped'; reason: 'no-banker' | 'empty' }
 
-type DbSession = { execute?: (query: unknown) => Promise<unknown> } | undefined
-
 /**
- * Closing writes the row inside one transaction holding an advisory lock per
- * chata and list, so two closes at once can't both create it: the second
- * one waits and then finds and updates the first one's row.
+ * Closing writes the row under the list's lock (src/utils/listLock.ts), so
+ * two closes at once can't both create it: the second one waits and then
+ * finds and updates the first one's row. Pass the close endpoint's `req` to
+ * run inside its transaction (it already holds the lock); without one, this
+ * opens its own.
  */
 export async function syncListExpense(
   payload: Payload,
   chataId: number,
   list: ListKind,
+  req?: PayloadRequest,
 ): Promise<ListExpenseResult> {
+  if (req) {
+    // the caller's transaction, but no user: the row is the server's own
+    // (a user here would trip the expense authoring rules and the
+    // sourceList guard, e.g. an admin closing for the banker)
+    const serverReq = {
+      transactionID: await req.transactionID,
+      payload,
+    } as unknown as PayloadRequest
+    return syncListExpenseIn(payload, chataId, list, serverReq)
+  }
   const tid = await payload.db.beginTransaction()
   if (tid == null) return syncListExpenseIn(payload, chataId, list, undefined)
-  const req = { transactionID: tid } as unknown as PayloadRequest
+  const txReq = { transactionID: tid, payload } as unknown as PayloadRequest
   try {
-    const session = (payload.db as unknown as { sessions?: Record<string, { db?: DbSession }> })
-      .sessions?.[String(tid)]?.db
-    if (session?.execute) {
-      await session.execute(
-        sql`SELECT pg_advisory_xact_lock(hashtext(${`list-expense:${chataId}:${list}`}))`,
-      )
-    }
-    const result = await syncListExpenseIn(payload, chataId, list, req)
+    await lockList(txReq, chataId, list)
+    const result = await syncListExpenseIn(payload, chataId, list, txReq)
     await payload.db.commitTransaction(tid)
     return result
   } catch (err) {

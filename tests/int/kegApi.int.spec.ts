@@ -509,3 +509,49 @@ describe('closing at the same time and switched-off lists', () => {
     expect((await attempt()).code).toBe('BENE-VELKOPOPOVICKY-KOZEL-11-30')
   })
 })
+
+describe('closing rules, round 4', () => {
+  const close = () =>
+    closeListEndpoint('beerClosedAt').handler({
+      payload,
+      user: { ...users.banker, collection: 'users' },
+      json: async () => ({ chata: chata.id, closed: true }),
+    } as unknown as PayloadRequest)
+
+  it('refuses to close a list that is switched off, writing nothing', async () => {
+    await payload.update({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: { beerListEnabled: false },
+    })
+    expect((await close()).status).toBe(409)
+    const reread = await payload.findByID({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+    })
+    expect(reread.beerClosedAt ?? null).toBeNull()
+    await payload.update({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: { beerListEnabled: true },
+    })
+  })
+
+  it('takes whole tap rental days only', async () => {
+    await expect(
+      payload.update({
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        context: { triggerAfterRead: false },
+        data: { beerTapDays: 1.5 },
+      }),
+    ).rejects.toThrow()
+  })
+})

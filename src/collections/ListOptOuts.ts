@@ -1,4 +1,13 @@
-import { APIError, type Access, type CollectionConfig, type Endpoint, type Where } from 'payload'
+import {
+  APIError,
+  commitTransaction,
+  initTransaction,
+  killTransaction,
+  type Access,
+  type CollectionConfig,
+  type Endpoint,
+  type Where,
+} from 'payload'
 import { canManageChata, isSuperadmin, refId } from '../lib/access'
 import { linkedParticipantIds } from '../lib/expenseAuthoring'
 import { canSetOptOut, type ListKind } from '../lib/listSplit'
@@ -69,49 +78,69 @@ export const setOptOut: Endpoint = {
       isChataAdmin: canManageChata(user, chataId),
     })
     if (!allowed) return Response.json({ error: 'forbidden' }, { status: 403 })
+    // under the list's lock (assertListOpen), so it can't slip past a close
+    const shouldCommit = await initTransaction(req)
     try {
-      await assertListOpen(req, chataId, CLOSE_FIELD[list])
-    } catch (err) {
-      if (err instanceof APIError) return Response.json({ error: 'closed' }, { status: 409 })
-      throw err
-    }
-    if (itemId !== null) {
-      const item = await req.payload
-        .findByID({ collection: ITEM_COLLECTION[list], id: itemId, depth: 0, overrideAccess: true })
-        .catch(() => null)
-      if (!item || String(refId(item.chata)) !== String(chataId)) {
-        return Response.json({ error: 'invalid-item' }, { status: 400 })
+      try {
+        await assertListOpen(req, chataId, CLOSE_FIELD[list])
+      } catch (err) {
+        if (err instanceof APIError) {
+          if (shouldCommit) await commitTransaction(req)
+          return Response.json({ error: 'closed' }, { status: 409 })
+        }
+        throw err
       }
-    }
+      if (itemId !== null) {
+        const item = await req.payload
+          .findByID({
+            req,
+            collection: ITEM_COLLECTION[list],
+            id: itemId,
+            depth: 0,
+            overrideAccess: true,
+          })
+          .catch(() => null)
+        if (!item || String(refId(item.chata)) !== String(chataId)) {
+          if (shouldCommit) await commitTransaction(req)
+          return Response.json({ error: 'invalid-item' }, { status: 400 })
+        }
+      }
 
-    const where: Where = {
-      and: [
-        { chata: { equals: chataId } },
-        { list: { equals: list } },
-        { participant: { equals: participantId } },
-        itemId === null ? { itemId: { exists: false } } : { itemId: { equals: itemId } },
-      ],
-    }
-    if (body.out === true) {
-      const existing = await req.payload.find({
-        collection: 'list-opt-outs',
-        where,
-        limit: 1,
-        depth: 0,
-        overrideAccess: true,
-      })
-      if (existing.docs.length === 0) {
-        await req.payload.create({
+      const where: Where = {
+        and: [
+          { chata: { equals: chataId } },
+          { list: { equals: list } },
+          { participant: { equals: participantId } },
+          itemId === null ? { itemId: { exists: false } } : { itemId: { equals: itemId } },
+        ],
+      }
+      if (body.out === true) {
+        const existing = await req.payload.find({
+          req,
           collection: 'list-opt-outs',
-          data: { chata: chataId, list, itemId, participant: participantId, setBy: user.id },
+          where,
+          limit: 1,
           depth: 0,
           overrideAccess: true,
         })
+        if (existing.docs.length === 0) {
+          await req.payload.create({
+            req,
+            collection: 'list-opt-outs',
+            data: { chata: chataId, list, itemId, participant: participantId, setBy: user.id },
+            depth: 0,
+            overrideAccess: true,
+          })
+        }
+      } else {
+        await req.payload.delete({ req, collection: 'list-opt-outs', where, overrideAccess: true })
       }
-    } else {
-      await req.payload.delete({ collection: 'list-opt-outs', where, overrideAccess: true })
+      if (shouldCommit) await commitTransaction(req)
+      return Response.json({ ok: true })
+    } catch (err) {
+      await killTransaction(req)
+      throw err
     }
-    return Response.json({ ok: true })
   },
 }
 

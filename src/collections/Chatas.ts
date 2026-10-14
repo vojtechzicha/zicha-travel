@@ -1024,6 +1024,11 @@ export const Chatas: CollectionConfig = {
       type: 'number',
       min: 1,
       max: 30,
+      // whole days: the taps are priced and shown per day
+      validate: (value: number | null | undefined, { req }: { req: PayloadRequest }) =>
+        value == null || Number.isInteger(value)
+          ? true
+          : pickValidationMessage(req, 'Use a whole number of days', 'Zadejte celý počet dní'),
       label: { en: 'Tap rental days', cs: 'Dní půjčení výčepu' },
       admin: {
         condition: (data) => data?.beerListEnabled === true,
