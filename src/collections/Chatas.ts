@@ -982,6 +982,23 @@ export const Chatas: CollectionConfig = {
         },
       },
     },
+    {
+      name: 'shoppingClosedAt',
+      type: 'date',
+      label: { en: 'Shopping list closed', cs: 'Nákup uzavřen' },
+      admin: {
+        condition: (data) => data?.shoppingListEnabled === true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: {
+          en:
+            'Set by the banker\'s "Uzavřít objednávku" on the tab: the list stays visible but ' +
+            'takes no more changes. Clear it to reopen.',
+          cs:
+            'Nastaví pokladník tlačítkem „Uzavřít objednávku“ v záložce: seznam zůstane vidět, ' +
+            'ale už nejde měnit. Vymazáním ho znovu otevřete.',
+        },
+      },
+    },
 
     // "Pivo" (src/lib/beer.ts): the shared keg order from Max pivotéka in
     // Benešov. Items live in the keg-items collection; the banker emails
@@ -999,6 +1016,58 @@ export const Chatas: CollectionConfig = {
           cs:
             'Přihlášení účastníci vybírají sudy a výčep z ceníku Max pivotéky v Benešově. ' +
             'Pokladník si nechá poslat souhrn objednávky e-mailem a objedná v obchodě.',
+        },
+      },
+    },
+    {
+      name: 'beerTapDays',
+      type: 'number',
+      min: 1,
+      max: 30,
+      label: { en: 'Tap rental days', cs: 'Dní půjčení výčepu' },
+      admin: {
+        condition: (data) => data?.beerListEnabled === true,
+        description: {
+          en:
+            'How many days every tap is rented, e.g. 4 for Friday to Tuesday. Empty = the nights ' +
+            'of the stay.',
+          cs:
+            'Na kolik dní se půjčuje každý kohout, např. 4 pro pátek až úterý. Prázdné = počet ' +
+            'nocí pobytu.',
+        },
+      },
+    },
+    // written by POST /api/keg-items/order-summary: when it went out and
+    // what it carried (orderSignature), so the tab can flag later changes
+    {
+      name: 'beerSummarySentAt',
+      type: 'date',
+      label: { en: 'Beer order summary sent', cs: 'Souhrn objednávky piva odeslán' },
+      admin: {
+        condition: (data) => data?.beerListEnabled === true,
+        readOnly: true,
+        date: { pickerAppearance: 'dayAndTime' },
+      },
+    },
+    {
+      name: 'beerSummarySignature',
+      type: 'text',
+      admin: { hidden: true },
+    },
+    {
+      name: 'beerClosedAt',
+      type: 'date',
+      label: { en: 'Beer order closed', cs: 'Objednávka piva uzavřena' },
+      admin: {
+        condition: (data) => data?.beerListEnabled === true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: {
+          en:
+            'Set by the banker\'s "Uzavřít objednávku" on the tab: the order stays visible but ' +
+            'takes no more changes. Clear it to reopen.',
+          cs:
+            'Nastaví pokladník tlačítkem „Uzavřít objednávku“ v záložce: objednávka zůstane ' +
+            'vidět, ale už nejde měnit. Vymazáním ji znovu otevřete.',
         },
       },
     },

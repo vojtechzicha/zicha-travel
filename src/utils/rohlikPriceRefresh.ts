@@ -76,9 +76,11 @@ export async function refreshAllPrices(
   const summary = { chatas: 0, skipped: 0, checked: 0, changed: 0 }
   const dayAgo = now.getTime() - 24 * 60 * 60 * 1000
   for (const chata of chatas) {
-    // a finished trip's list is history; leave its prices as they were
+    // a finished trip's list is history, and a closed one is ordered: leave
+    // their prices as they were
     const end = chata.tripDateTo ?? chata.tripDateFrom
     if (end && new Date(end).getTime() < dayAgo) continue
+    if (chata.shoppingClosedAt) continue
     const bankerAccount = await bankerAccountId(payload, chata.id)
     const token = bankerAccount ? await getAccessToken(payload, bankerAccount) : null
     if (!token) {

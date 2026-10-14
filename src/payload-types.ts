@@ -422,9 +422,23 @@ export interface Chata {
    */
   shoppingListEnabled?: boolean | null;
   /**
+   * Set by the banker's "Uzavřít objednávku" on the tab: the list stays visible but takes no more changes. Clear it to reopen.
+   */
+  shoppingClosedAt?: string | null;
+  /**
    * Signed-in participants pick kegs and the tap from the Max pivotéka (Benešov) price list; the banker emails themselves the order summary and orders from the shop.
    */
   beerListEnabled?: boolean | null;
+  /**
+   * How many days every tap is rented, e.g. 4 for Friday to Tuesday. Empty = the nights of the stay.
+   */
+  beerTapDays?: number | null;
+  beerSummarySentAt?: string | null;
+  beerSummarySignature?: string | null;
+  /**
+   * Set by the banker's "Uzavřít objednávku" on the tab: the order stays visible but takes no more changes. Clear it to reopen.
+   */
+  beerClosedAt?: string | null;
   /**
    * Parking information
    */
@@ -1213,7 +1227,7 @@ export interface KegItem {
   id: number;
   chata: number | Chata;
   /**
-   * Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for the tap.
+   * Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.
    */
   code: string;
   quantity: number;
@@ -1521,7 +1535,12 @@ export interface ChatasSelect<T extends boolean = true> {
         id?: T;
       };
   shoppingListEnabled?: T;
+  shoppingClosedAt?: T;
   beerListEnabled?: T;
+  beerTapDays?: T;
+  beerSummarySentAt?: T;
+  beerSummarySignature?: T;
+  beerClosedAt?: T;
   parking?: T;
   carRoutes?:
     | T

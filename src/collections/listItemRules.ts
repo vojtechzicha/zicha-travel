@@ -1,6 +1,14 @@
-import { APIError, type Access, type Payload, type PayloadRequest, type Where } from 'payload'
+import {
+  APIError,
+  type Access,
+  type Endpoint,
+  type Payload,
+  type PayloadRequest,
+  type Where,
+} from 'payload'
 import { canManageChata, isSuperadmin, refId } from '../lib/access'
 import { linkedParticipantIds } from '../lib/expenseAuthoring'
+import { bankerAccountId } from '../utils/rohlikConnection'
 
 // The rules the chata's shared lists have in common: "Nákup"
 // (shopping-items) and "Pivo" (keg-items). Anyone reads; signed-in
@@ -122,4 +130,85 @@ export async function applyListAuthorship(args: {
     throw new APIError('Položku můžeš přidat jen za sebe', 403)
   }
   if (operation === 'create' && wanted == null) data.participant = Number(own[0])
+}
+
+/** The chata field that closes each list ("Uzavřít objednávku"). */
+export type ListCloseField = 'shoppingClosedAt' | 'beerClosedAt'
+
+/**
+ * A closed list stays readable but takes no changes from the page: once the
+ * banker has ordered, nobody may add, change or remove items until they
+ * reopen it. Scripts and the lists' own endpoints (no user) and chata admins
+ * (fixing things in the admin panel) pass.
+ */
+export async function assertListOpen(
+  req: PayloadRequest,
+  chataId: number | string,
+  field: ListCloseField,
+): Promise<void> {
+  const user = req.user
+  if (!user || canManageChata(user, chataId)) return
+  const chata = await req.payload
+    .findByID({
+      collection: 'chatas',
+      id: chataId,
+      depth: 0,
+      overrideAccess: true,
+      context: { triggerAfterRead: false },
+    })
+    .catch(() => null)
+  if (chata?.[field]) throw new APIError('Objednávka je uzavřená, změny už nejdou', 409)
+}
+
+/** beforeDelete: the same guard, looked up from the item being deleted. */
+export function guardDeleteWhenClosed(
+  collection: 'shopping-items' | 'keg-items',
+  field: ListCloseField,
+) {
+  return async ({ req, id }: { req: PayloadRequest; id: number | string }) => {
+    if (!req.user) return
+    const item = await req.payload
+      .findByID({ collection, id, depth: 0, overrideAccess: true })
+      .catch(() => null)
+    if (item?.chata != null) await assertListOpen(req, refId(item.chata), field)
+  }
+}
+
+/**
+ * POST <collection>/close { chata, closed }: the banker (or a chata admin)
+ * closes the list after ordering, or opens it again. Stamps or clears the
+ * chata's close field and returns it.
+ */
+export function closeListEndpoint(field: ListCloseField): Endpoint {
+  return {
+    path: '/close',
+    method: 'post',
+    handler: async (req) => {
+      let body: Record<string, unknown> = {}
+      try {
+        body = ((await req.json?.()) ?? {}) as Record<string, unknown>
+      } catch {
+        body = {}
+      }
+      const chataId = Number(body.chata)
+      if (!Number.isInteger(chataId) || chataId <= 0) {
+        return Response.json({ error: 'invalid-chata' }, { status: 400 })
+      }
+      if (!req.user) return Response.json({ error: 'forbidden' }, { status: 403 })
+      const banker = await bankerAccountId(req.payload, chataId)
+      if (banker !== String(req.user.id) && !canManageChata(req.user, chataId)) {
+        return Response.json({ error: 'forbidden' }, { status: 403 })
+      }
+      const closedAt = body.closed === true ? new Date().toISOString() : null
+      await req.payload.update({
+        collection: 'chatas',
+        id: chataId,
+        data: { [field]: closedAt },
+        depth: 0,
+        overrideAccess: true,
+        context: { triggerAfterRead: false },
+      })
+      return Response.json({ closedAt })
+    },
+  }
 }

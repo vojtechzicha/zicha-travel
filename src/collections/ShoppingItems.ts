@@ -3,7 +3,14 @@ import { refId } from '../lib/access'
 import { isRohlikProductImage } from '../lib/rohlik/mcp'
 import { verifiedRohlikProduct } from '../utils/rohlikConnection'
 import { rohlikEndpoints } from './ShoppingItems/rohlikEndpoints'
-import { applyListAuthorship, listEditAccess, listItemChataId } from './listItemRules'
+import {
+  applyListAuthorship,
+  assertListOpen,
+  closeListEndpoint,
+  guardDeleteWhenClosed,
+  listEditAccess,
+  listItemChataId,
+} from './listItemRules'
 
 const NO_PRODUCT = {
   productId: null,
@@ -43,12 +50,14 @@ export const ShoppingItems: CollectionConfig = {
     update: listEditAccess,
     delete: listEditAccess,
   },
-  endpoints: rohlikEndpoints,
+  endpoints: [...rohlikEndpoints, closeListEndpoint('shoppingClosedAt')],
   hooks: {
+    beforeDelete: [guardDeleteWhenClosed('shopping-items', 'shoppingClosedAt')],
     beforeChange: [
       async ({ data, operation, originalDoc, req }) => {
         const user = req.user
         const chataId = listItemChataId(data, operation, originalDoc)
+        await assertListOpen(req, chataId, 'shoppingClosedAt')
 
         // Rohlík fields come from the search endpoint; only https links go
         // into the page (they render as <a href>/<img src>)

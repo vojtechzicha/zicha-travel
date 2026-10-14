@@ -1,12 +1,20 @@
 import { APIError, type CollectionConfig, type Endpoint, type PayloadRequest } from 'payload'
 import { canManageChata, refId } from '../lib/access'
-import { beerProduct, mergeOrderLines } from '../lib/beer'
+import { beerProduct, mergeOrderLines, orderSignature, tapRentalDays } from '../lib/beer'
+import { pickValidationMessage } from '../i18n/adminTranslations'
 import { arrivalDayCs, kegOrderEmail } from '../lib/kegOrderEmail'
 import { chataViewUrl } from '../lib/shoppingEmail'
 import { sendAppEmail } from '../lib/email'
 import { bankerAccountId } from '../utils/rohlikConnection'
 import { manualItemsRecipients } from '../utils/shoppingEmail'
-import { applyListAuthorship, listEditAccess, listItemChataId } from './listItemRules'
+import {
+  applyListAuthorship,
+  assertListOpen,
+  closeListEndpoint,
+  guardDeleteWhenClosed,
+  listEditAccess,
+  listItemChataId,
+} from './listItemRules'
 
 const chataIdOf = (value: unknown): number | null => {
   const id = Number(value)
@@ -86,6 +94,7 @@ const orderSummary: Endpoint = {
     const email = kegOrderEmail({
       chataName: chata.shortName || chata.name,
       lines,
+      tapDays: tapRentalDays(chata),
       place: place || null,
       arrival,
       listUrl: chataViewUrl(chata, 'beer'),
@@ -110,6 +119,15 @@ const orderSummary: Endpoint = {
     if (!emailed) return Response.json({ error: 'email-failed' }, { status: 502 })
 
     const sentAt = new Date().toISOString()
+    // the chata keeps what this summary carried, so a later delete shows too
+    await req.payload.update({
+      collection: 'chatas',
+      id: chataId,
+      data: { beerSummarySentAt: sentAt, beerSummarySignature: orderSignature(items) },
+      depth: 0,
+      overrideAccess: true,
+      context: { triggerAfterRead: false },
+    })
     for (const item of items) {
       await req.payload.update({
         collection: 'keg-items',
@@ -148,11 +166,13 @@ export const KegItems: CollectionConfig = {
     update: listEditAccess,
     delete: listEditAccess,
   },
-  endpoints: [orderSummary],
+  endpoints: [orderSummary, closeListEndpoint('beerClosedAt')],
   hooks: {
+    beforeDelete: [guardDeleteWhenClosed('keg-items', 'beerClosedAt')],
     beforeChange: [
       async ({ data, operation, originalDoc, req }) => {
         const chataId = listItemChataId(data, operation, originalDoc)
+        await assertListOpen(req, chataId, 'beerClosedAt')
 
         // The product decides what the shop is asked for, so a body only
         // names a code: name, size and price always come from the catalog,
@@ -197,8 +217,8 @@ export const KegItems: CollectionConfig = {
       label: { en: 'Product code', cs: 'Kód produktu' },
       admin: {
         description: {
-          en: 'Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for the tap.',
-          cs: 'Kód produktu Max pivotéky (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro výčep.',
+          en: 'Max pivotéka product code (src/lib/kegCatalog.ts), or VYCEP-KOHOUT for a tap.',
+          cs: 'Kód produktu Max pivotéky (src/lib/kegCatalog.ts), nebo VYCEP-KOHOUT pro kohout.',
         },
       },
     },
@@ -212,7 +232,17 @@ export const KegItems: CollectionConfig = {
           min: 1,
           max: 99,
           defaultValue: 1,
-          label: { en: 'Quantity (kegs, or days for the tap)', cs: 'Počet (sudů, u výčepu dní)' },
+          // whole kegs and taps: a fraction would price differently on the
+          // receipt than in the merged order
+          validate: (value: number | null | undefined, { req }: { req: PayloadRequest }) =>
+            value == null || Number.isInteger(value)
+              ? true
+              : pickValidationMessage(
+                  req,
+                  'The quantity must be a whole number',
+                  'Počet musí být celé číslo',
+                ),
+          label: { en: 'Quantity (kegs or taps)', cs: 'Počet (sudů nebo kohoutů)' },
           admin: { width: '30%' },
         },
         {
@@ -258,7 +288,7 @@ export const KegItems: CollectionConfig = {
           type: 'select',
           options: [
             { label: { en: 'keg', cs: 'sud' }, value: 'keg' },
-            { label: { en: 'day', cs: 'den' }, value: 'day' },
+            { label: { en: 'tap and day', cs: 'kohout a den' }, value: 'day' },
           ],
           label: { en: 'Per', cs: 'Za' },
           admin: { readOnly: true, width: '15%' },

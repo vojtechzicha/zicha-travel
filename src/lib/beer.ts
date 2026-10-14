@@ -18,13 +18,15 @@ export const BEER_SHOP = {
 } as const
 
 /**
- * The tap ("výčepní zařízení s kohoutem"). The shop publishes no rental
- * prices; 250 Kč a day is the banker's working figure until they agree the
- * real one with the shop, so the UI calls it a rough price.
+ * A tap ("výčepní kohout") from the shop's rental. An item's quantity is the
+ * number of taps; the rental days are the same for every tap and come from
+ * the chata (tapRentalDays). The shop publishes no rental prices; 250 Kč per
+ * tap and day is the banker's working figure until they agree the real one
+ * with the shop, so the UI calls it a rough price.
  */
 export const TAP_RENTAL = {
   code: 'VYCEP-KOHOUT',
-  name: 'Výčepní zařízení s kohoutem',
+  name: 'Výčepní kohout',
   pricePerDay: 250,
 } as const
 
@@ -34,7 +36,7 @@ export interface BeerProduct {
   name: string
   /** keg size; null for the tap */
   liters: number | null
-  /** CZK per keg, or per day for the tap */
+  /** CZK per keg, or per tap and day for the tap */
   price: number
   unit: 'keg' | 'day'
   kind: KegKind | 'equipment'
@@ -69,7 +71,11 @@ export function beerProduct(code: unknown): BeerProduct | null {
 
 export type KegGroup = 'all' | 'draught' | 'special' | 'nonalcoholic'
 
-const fold = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const fold = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 
 /**
  * The picker's filter: every word of the query must appear in the name
@@ -99,15 +105,43 @@ export function pricePerLiter(keg: { price: number; liters: number | null }): nu
   return keg.liters ? Math.round(keg.price / keg.liters) : null
 }
 
-/** Rental days to suggest for the tap: every calendar day of the stay. */
-export function defaultRentalDays(nights: number | null | undefined): number {
-  return Math.max(1, Math.round(nights ?? 0) + 1)
+/**
+ * How many days the taps are rented: the chata's own `beerTapDays` when the
+ * banker set it (e.g. Friday to Tuesday although the trip ends on Sunday),
+ * else the nights of the stay (picked up on arrival, returned on departure).
+ * At least one.
+ */
+export function tapRentalDays(chata: {
+  beerTapDays?: number | null
+  tripDateFrom?: string | null
+  tripDateTo?: string | null
+  tripDatesTentative?: boolean | null
+  tripPlannedNights?: number | null
+}): number {
+  if (chata.beerTapDays && chata.beerTapDays > 0) return Math.round(chata.beerTapDays)
+  let nights = 0
+  if (chata.tripDatesTentative) nights = chata.tripPlannedNights ?? 0
+  else if (chata.tripDateFrom && chata.tripDateTo) {
+    const ms = new Date(chata.tripDateTo).getTime() - new Date(chata.tripDateFrom).getTime()
+    nights = Math.round(ms / (24 * 60 * 60 * 1000))
+  }
+  return Math.max(1, nights)
+}
+
+/** What a line costs: kegs by the piece, taps by the piece and day. */
+export function lineCost(
+  item: { quantity: number; price: number; unit: 'keg' | 'day' },
+  tapDays: number,
+): number {
+  const quantity = Math.max(1, Math.round(item.quantity || 1))
+  return item.price * quantity * (item.unit === 'day' ? Math.max(1, tapDays) : 1)
 }
 
 export interface BeerTotals {
-  /** CZK by the price list (the tap at its rough price) */
+  /** CZK by the price list (the taps at their rough price) */
   total: number
   kegs: number
+  taps: number
   liters: number
   /** half-litre glasses the kegs pour, rounded down */
   pints: number
@@ -115,19 +149,29 @@ export interface BeerTotals {
 
 export function beerTotals(
   items: { quantity: number; price: number; liters: number | null; unit: 'keg' | 'day' }[],
+  tapDays: number,
 ): BeerTotals {
   let total = 0
   let kegs = 0
+  let taps = 0
   let liters = 0
   for (const item of items) {
     const quantity = Math.max(1, Math.round(item.quantity || 1))
-    total += item.price * quantity
+    total += lineCost(item, tapDays)
     if (item.unit === 'keg') {
       kegs += quantity
       liters += (item.liters ?? 0) * quantity
+    } else {
+      taps += quantity
     }
   }
-  return { total: Math.round(total * 100) / 100, kegs, liters, pints: Math.floor(liters * 2) }
+  return {
+    total: Math.round(total * 100) / 100,
+    kegs,
+    taps,
+    liters,
+    pints: Math.floor(liters * 2),
+  }
 }
 
 export interface OrderLine {
@@ -186,6 +230,21 @@ export function mergeOrderLines(
   })
 }
 
+/**
+ * A fingerprint of the order as it stands: every item with its product and
+ * quantity. The summary endpoint stores it on the chata; any later add,
+ * change or delete gives a different one, so the tab can say the emailed
+ * summary is out of date (a deleted item leaves no row to compare).
+ */
+export function orderSignature(
+  items: { id: number | string; code: string; quantity: number }[],
+): string {
+  return items
+    .map((item) => `${item.id}:${item.code}:${item.quantity}`)
+    .sort()
+    .join(',')
+}
+
 export interface BeerItemView {
   id: number
   code: string
@@ -215,4 +274,10 @@ export interface BeerPayload {
   orderer: { name: string | null; isMe: boolean }
   /** when the last order summary went out */
   summarySentAt: string | null
+  /** the order changed since that summary (adds, edits and deletes) */
+  summaryChanged: boolean
+  /** rental days for every tap (tapRentalDays) */
+  tapDays: number
+  /** the banker closed the order: everything stays readable, nothing changes */
+  closedAt: string | null
 }

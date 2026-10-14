@@ -1027,6 +1027,15 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_keg_items_id_idx
   ON payload_locked_documents_rels USING btree (keg_items_id);
+
+-- "Uzavřít objednávku" on Nákup and Pivo (listItemRules.ts) and the taps'
+-- rental days (src/lib/beer.ts tapRentalDays)
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS shopping_closed_at timestamp(3) with time zone;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_closed_at timestamp(3) with time zone;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_tap_days numeric;
+-- what the last beer order summary carried (src/lib/beer.ts orderSignature)
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_sent_at timestamp(3) with time zone;
+ALTER TABLE chatas ADD COLUMN IF NOT EXISTS beer_summary_signature character varying;
 `
 
 async function enumLabels(typeName) {

@@ -233,6 +233,18 @@ export const rohlikEndpoints: Endpoint[] = [
       if (!req.user || !(await isBanker(req, chataId))) {
         return Response.json({ error: 'forbidden' }, { status: 403 })
       }
+      // a closed list is already ordered: nothing more goes into the cart
+      const closed = await req.payload
+        .findByID({
+          collection: 'chatas',
+          id: chataId,
+          depth: 0,
+          overrideAccess: true,
+          context: { triggerAfterRead: false },
+        })
+        .then((chata) => Boolean(chata.shoppingClosedAt))
+        .catch(() => false)
+      if (closed) return Response.json({ error: 'closed' }, { status: 409 })
       const token = await getAccessToken(req.payload, req.user.id)
       if (!token) return Response.json({ error: 'not-connected' }, { status: 409 })
 

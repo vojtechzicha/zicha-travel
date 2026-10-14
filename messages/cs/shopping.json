@@ -114,5 +114,13 @@
   "sendSoldOut": "{count, plural, one {# položka je na Rohlíku teď vyprodaná a do košíku nešla.} few {# položky jsou na Rohlíku teď vyprodané a do košíku nešly.} other {# položek je na Rohlíku teď vyprodaných a do košíku nešlo.}}",
   "allSent": "Všechno je odeslané. Tlačítko se zase zapne, až někdo něco přidá.",
   "handedOver": "pokladník přidá ručně",
-  "stampSent": "Odesláno"
+  "stampSent": "Odesláno",
+  "closedText": "Nákup je uzavřený od {date}. Co je na účtence, je objednané, a změny už nejdou.",
+  "reopen": "Znovu otevřít",
+  "close": "Uzavřít nákup",
+  "closeConfirm": "Uzavřít? Pak už nikdo nic nepřidá ani nezmění.",
+  "closeYes": "Uzavřít",
+  "closeNo": "Nechat otevřený",
+  "closeFailed": "Nepovedlo se to. Zkus to znovu.",
+  "stampOrdered": "Objednáno"
 }

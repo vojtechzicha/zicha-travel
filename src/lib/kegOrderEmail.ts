@@ -5,7 +5,7 @@
 // emails to the trip's organizers. Nothing here goes to the shop itself.
 
 import { formatCurrency } from './formatCurrency'
-import { BEER_SHOP, beerTotals, type OrderLine } from './beer'
+import { BEER_SHOP, beerTotals, lineCost, type OrderLine } from './beer'
 import { KEG_CATALOG_PRINTED } from './kegCatalog'
 
 export interface KegOrderEmail {
@@ -37,8 +37,10 @@ export function arrivalDayCs(date: string): string {
 }
 
 /** One order line as the shop should read it. */
-export function orderLineText(line: OrderLine): string {
-  if (line.unit === 'day') return `${line.name} na ${daysCs(line.quantity)}`
+export function orderLineText(line: OrderLine, tapDays: number): string {
+  if (line.unit === 'day') {
+    return `${line.quantity}× ${line.name} na ${daysCs(tapDays)}`
+  }
   return (
     `${line.quantity}× ${line.name}, sud ${line.liters} l (kód ${line.code}), ` +
     `${formatCurrency(line.price)} za sud`
@@ -48,14 +50,16 @@ export function orderLineText(line: OrderLine): string {
 export function kegOrderEmail(args: {
   chataName: string
   lines: OrderLine[]
+  /** rental days of every tap (tapRentalDays) */
+  tapDays: number
   /** where the beer should go: the cottage's name and address */
   place: string | null
   /** arrival day and check-in time, as the chata states them */
   arrival: string | null
   listUrl: string
 }): KegOrderEmail {
-  const { chataName, lines, place, arrival, listUrl } = args
-  const totals = beerTotals(lines)
+  const { chataName, lines, tapDays, place, arrival, listUrl } = args
+  const totals = beerTotals(lines, tapDays)
   const tap = lines.find((line) => line.unit === 'day')
   const printed = new Intl.DateTimeFormat('cs-CZ', {
     day: 'numeric',
@@ -66,17 +70,17 @@ export function kegOrderEmail(args: {
   const intro =
     `Tady je objednávka piva, kterou parta poskládala na stránce ${chataName}. ` +
     `Přepošli ji na ${BEER_SHOP.email}, nebo ji nadiktuj na ${BEER_SHOP.phone}.`
-  const order = lines.map(orderLineText)
+  const order = lines.map((line) => orderLineText(line, tapDays))
   const where = [place ? `Na chatu: ${place}.` : null, arrival ? `Příjezd: ${arrival}.` : null]
   const sum =
     `Celkem ${kegsCs(totals.kegs)}, ${totals.liters} l. Podle ceníku z ${printed} ` +
     `to vychází asi na ${formatCurrency(totals.total)}` +
     (tap
-      ? `, z toho výčep ${formatCurrency(tap.price * tap.quantity)} podle orientační ceny ` +
-        `${formatCurrency(tap.price)} za den.`
+      ? `, z toho kohouty ${formatCurrency(lineCost(tap, tapDays))} podle orientační ceny ` +
+        `${formatCurrency(tap.price)} za kohout a den.`
       : '.')
   const caveat =
-    'Zálohu na sudy, skutečnou cenu výčepu a dopravu ceník neuvádí, domluv je s obchodem.'
+    'Zálohu na sudy, skutečnou cenu kohoutů a dopravu ceník neuvádí, domluv je s obchodem.'
   const who = lines
     .filter((line) => line.wantedBy.length > 0 || line.notes.length > 0)
     .map((line) => {

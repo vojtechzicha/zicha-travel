@@ -314,3 +314,33 @@ describe('shopping-items update and delete', () => {
     expect(gone.docs).toHaveLength(0)
   })
 })
+
+describe('a closed shopping list', () => {
+  it('takes no changes from participants until it reopens', async () => {
+    const setClosed = (closedAt: string | null) =>
+      payload.update({
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        context: { triggerAfterRead: false },
+        data: { shoppingClosedAt: closedAt },
+      })
+    await setClosed(new Date().toISOString())
+    await expect(
+      payload.create({
+        collection: 'shopping-items',
+        depth: 0,
+        data: { chata: chata.id, title: 'Pozdě', quantity: 1 },
+        ...asUser(users.author),
+      }),
+    ).rejects.toThrow()
+    await setClosed(null)
+    const item = await payload.create({
+      collection: 'shopping-items',
+      depth: 0,
+      data: { chata: chata.id, title: 'Včas', quantity: 1 },
+      ...asUser(users.author),
+    })
+    expect(item.title).toBe('Včas')
+  })
+})

@@ -380,6 +380,8 @@ const buildData = (m: MediaIds) => ({
   banker: P.vojta,
   shoppingListEnabled: true,
   beerListEnabled: true,
+  // the taps stay from Friday to Tuesday, extension or not
+  beerTapDays: 4,
   // cars come from the participants themselves ("Nabídnout auto"); none at the start
   sharedCarsEnabled: true,
 

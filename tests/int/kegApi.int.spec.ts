@@ -3,6 +3,8 @@ import config from '@/payload.config'
 
 import { describe, it, beforeAll, afterAll, expect } from 'vitest'
 import type { Chata, KegItem, Participant, User } from '@/payload-types'
+import type { PayloadRequest } from 'payload'
+import { closeListEndpoint } from '@/collections/listItemRules'
 
 // "Pivo" (src/collections/KegItems.ts) against the real local API with its
 // own fixture chata: product fields always come from the price list, the
@@ -129,6 +131,17 @@ describe('keg-items create', () => {
     expect(item.summaryQuantity ?? null).toBeNull()
   })
 
+  it('refuses a fractional quantity', async () => {
+    await expect(
+      payload.create({
+        collection: 'keg-items',
+        depth: 0,
+        data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1.5 },
+        ...asUser(users.author),
+      }),
+    ).rejects.toThrow()
+  })
+
   it('refuses a code the shop does not list', async () => {
     await expect(
       payload.create({
@@ -204,5 +217,65 @@ describe('keg-items update and delete', () => {
       ...asUser(undefined),
     })
     expect(found.docs.length).toBeGreaterThan(0)
+  })
+})
+
+describe('closing the order', () => {
+  const close = (user: User | undefined, closed: boolean) =>
+    closeListEndpoint('beerClosedAt').handler({
+      payload,
+      user: user ? { ...user, collection: 'users' } : null,
+      json: async () => ({ chata: chata.id, closed }),
+    } as unknown as PayloadRequest)
+
+  it('lets only the banker close it', async () => {
+    expect((await close(users.other, true)).status).toBe(403)
+    expect((await close(undefined, true)).status).toBe(403)
+    const res = await close(users.banker, true)
+    expect(res.status).toBe(200)
+    const reread = await payload.findByID({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+    })
+    expect(reread.beerClosedAt).toBeTruthy()
+  })
+
+  it('refuses every change from the page while closed, the banker included', async () => {
+    await expect(
+      payload.create({
+        collection: 'keg-items',
+        depth: 0,
+        data: { chata: chata.id, code: 'PIV311KOZ', quantity: 1 },
+        ...asUser(users.author),
+      }),
+    ).rejects.toThrow()
+    for (const user of [users.author, users.banker]) {
+      await expect(
+        payload.update({
+          collection: 'keg-items',
+          id: authorItem.id,
+          depth: 0,
+          data: { quantity: 7 },
+          ...asUser(user),
+        }),
+      ).rejects.toThrow()
+      await expect(
+        payload.delete({ collection: 'keg-items', id: authorItem.id, ...asUser(user) }),
+      ).rejects.toThrow()
+    }
+  })
+
+  it('takes changes again once the banker reopens it', async () => {
+    expect((await close(users.banker, false)).status).toBe(200)
+    const updated = await payload.update({
+      collection: 'keg-items',
+      id: authorItem.id,
+      depth: 0,
+      data: { quantity: 4 },
+      ...asUser(users.author),
+    })
+    expect(updated.quantity).toBe(4)
   })
 })

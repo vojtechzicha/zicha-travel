@@ -24,11 +24,17 @@ import {
   type ShoppingItemView,
   type ShoppingPayload,
 } from '@/lib/shopping'
-import { formatCurrency } from '@/lib/formatCurrency'
+import { formatCurrency, formatDate } from '@/lib/formatCurrency'
 import { formatDateRangeShort } from '@/lib/chataSelection'
 import { track } from '@/lib/analytics'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
-import { QuantityStepper, initials } from './ListUi'
+import {
+  CloseListButton,
+  ListClosedNotice,
+  QuantityStepper,
+  initials,
+  useListClosing,
+} from './ListUi'
 
 interface ShoppingViewProps {
   chata: Chata
@@ -322,6 +328,7 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
 
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, shopper } = shopping
+  const closing = useListClosing('/api/shopping-items/close', chata.id, onDataChanged)
   const { total, unpriced } = estimatedTotal(items)
   // sent = in the banker's Rohlík cart, or (free text) on the checklist
   // email they got, in the current amounts
@@ -401,7 +408,17 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-10">
         {/* ─── the counter: add, staples, who wants what ─── */}
         <div className="flex min-w-0 flex-col gap-6">
-          {shopping.canAdd ? (
+          {shopping.closedAt ? (
+            <ListClosedNotice
+              text={t('closedText', { date: formatDate(shopping.closedAt, locale) })}
+              reopenLabel={t('reopen')}
+              failedLabel={t('closeFailed')}
+              canReopen={shopper.isMe}
+              busy={closing.busy}
+              failed={closing.failed}
+              onReopen={() => void closing.setClosed(false)}
+            />
+          ) : shopping.canAdd ? (
             <form onSubmit={submit} className="flex flex-col gap-3">
               <div className="relative">
                 {selected ? (
@@ -629,14 +646,18 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
         {/* ─── the receipt ─── */}
         <div className="flex flex-col items-center gap-6 rounded-[22px] bg-[#eef1f4] px-4 py-10 dark:bg-white/[0.04] sm:px-8">
           <div className="receipt-paper w-full max-w-[440px] px-5 pb-6 pt-7 sm:px-7">
-            {allSent && (
+            {(allSent || shopping.closedAt) && (
               <div
                 aria-hidden="true"
                 className={`receipt-stamp pointer-events-none absolute right-3 top-16 rounded-md border-[3px] border-primary px-2.5 py-1 text-[15px] font-extrabold uppercase tracking-[0.06em] text-primary ${
                   justSent ? 'receipt-stamp-land' : ''
                 }`}
               >
-                {allFromRohlik ? t('stamp') : t('stampSent')}
+                {shopping.closedAt
+                  ? t('stampOrdered')
+                  : allFromRohlik
+                    ? t('stamp')
+                    : t('stampSent')}
               </div>
             )}
 
@@ -781,8 +802,20 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
             </div>
           </div>
 
-          {/* ─── the banker's till ─── */}
-          {shopper.isMe && (
+          {/* ─── the banker's till (gone once the list is closed: it's ordered) ─── */}
+          {shopper.isMe && !shopping.closedAt && items.length > 0 && (
+            <CloseListButton
+              label={t('close')}
+              confirmText={t('closeConfirm')}
+              yesLabel={t('closeYes')}
+              noLabel={t('closeNo')}
+              failedLabel={t('closeFailed')}
+              busy={closing.busy}
+              failed={closing.failed}
+              onClose={() => void closing.setClosed(true)}
+            />
+          )}
+          {shopper.isMe && !shopping.closedAt && (
             <div className="flex w-full max-w-[440px] flex-col gap-3">
               {!shopper.connected ? (
                 <>

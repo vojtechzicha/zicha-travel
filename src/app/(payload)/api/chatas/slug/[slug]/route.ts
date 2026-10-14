@@ -15,7 +15,12 @@ import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendingVotes'
 import { canEditShoppingItem, type ShoppingPayload } from '@/lib/shopping'
-import type { BeerItemView, BeerPayload } from '@/lib/beer'
+import {
+  orderSignature,
+  tapRentalDays,
+  type BeerItemView,
+  type BeerPayload,
+} from '@/lib/beer'
 import { isRohlikConnected } from '@/utils/rohlikConnection'
 import {
   calculateStats,
@@ -444,21 +449,27 @@ export async function GET(
             participantId,
             participantName: participantId != null ? (nameOf.get(String(participantId)) ?? null) : null,
             mine: user != null && authoredBy === String(user.id),
-            canEdit: canEditShoppingItem({
-              viewerId: user?.id ?? null,
-              authoredBy,
-              isChataAdmin,
-              isBanker: viewerIsBanker,
-            }),
+            canEdit:
+              !chata.shoppingClosedAt &&
+              canEditShoppingItem({
+                viewerId: user?.id ?? null,
+                authoredBy,
+                isChataAdmin,
+                isBanker: viewerIsBanker,
+              }),
             rohlik: product,
             sentToCartAt: item.sentToCartAt ?? null,
             sentQuantity: item.sentQuantity ?? null,
           }
         }),
-        canAdd: user != null && (isChataAdmin || viewer.linkedParticipantIds.length > 0),
+        canAdd:
+          !chata.shoppingClosedAt &&
+          user != null &&
+          (isChataAdmin || viewer.linkedParticipantIds.length > 0),
         ownParticipants: participantsResult.docs
           .filter((p: any) => viewer.linkedParticipantIds.map(String).includes(String(p.id)))
           .map((p: any) => ({ id: p.id, name: p.name })),
+        closedAt: chata.shoppingClosedAt ?? null,
         shopper: {
           name: bankerParticipant?.name ?? null,
           connected: bankerAccountId != null && (await isRohlikConnected(payload, bankerAccountId)),
@@ -497,27 +508,34 @@ export async function GET(
           participantId,
           participantName: participantId != null ? (nameOf.get(String(participantId)) ?? null) : null,
           mine: user != null && authoredBy === String(user.id),
-          canEdit: canEditShoppingItem({
-            viewerId: user?.id ?? null,
-            authoredBy,
-            isChataAdmin,
-            isBanker: viewerIsBanker,
-          }),
+          canEdit:
+            !chata.beerClosedAt &&
+            canEditShoppingItem({
+              viewerId: user?.id ?? null,
+              authoredBy,
+              isChataAdmin,
+              isBanker: viewerIsBanker,
+            }),
           summaryQuantity: item.summarySentAt ? (item.summaryQuantity ?? null) : null,
         }
       })
-      const sentTimes = kegsResult.docs
-        .map((item) => item.summarySentAt)
-        .filter((at): at is string => Boolean(at))
-        .sort()
+      const summarySentAt = chata.beerSummarySentAt ?? null
       beer = {
         items,
-        canAdd: user != null && (isChataAdmin || viewer.linkedParticipantIds.length > 0),
+        canAdd:
+          !chata.beerClosedAt &&
+          user != null &&
+          (isChataAdmin || viewer.linkedParticipantIds.length > 0),
         ownParticipants: participantsResult.docs
           .filter((p: any) => viewer.linkedParticipantIds.map(String).includes(String(p.id)))
           .map((p: any) => ({ id: p.id, name: p.name })),
+        tapDays: tapRentalDays(chata),
+        closedAt: chata.beerClosedAt ?? null,
         orderer: { name: bankerParticipant?.name ?? null, isMe: viewerIsBanker },
-        summarySentAt: sentTimes.at(-1) ?? null,
+        summarySentAt,
+        summaryChanged:
+          summarySentAt != null &&
+          chata.beerSummarySignature !== orderSignature(kegsResult.docs),
       }
     }
 

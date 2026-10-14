@@ -21,8 +21,8 @@ import {
   BEER_SHOP,
   TAP_RENTAL,
   beerTotals,
-  defaultRentalDays,
   filterKegs,
+  lineCost,
   pricePerLiter,
   type BeerItemView,
   type BeerPayload,
@@ -32,9 +32,14 @@ import { KEG_CATALOG, KEG_CATALOG_PRINTED, type KegEntry } from '@/lib/kegCatalo
 import { formatCurrency, formatDate } from '@/lib/formatCurrency'
 import { formatDateRangeShort } from '@/lib/chataSelection'
 import { track } from '@/lib/analytics'
-import { getTripNights } from '../utils/participantHelpers'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
-import { QuantityStepper, initials } from './ListUi'
+import {
+  CloseListButton,
+  ListClosedNotice,
+  QuantityStepper,
+  initials,
+  useListClosing,
+} from './ListUi'
 
 interface BeerViewProps {
   chata: Chata
@@ -217,12 +222,9 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
 
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, orderer } = beer
-  const totals = beerTotals(items)
-  const tapItem = items.find((item) => item.unit === 'day')
-  const rentalDays = defaultRentalDays(getTripNights(chata))
-  const changedSinceSummary =
-    beer.summarySentAt != null &&
-    items.some((item) => item.summaryQuantity == null || item.summaryQuantity !== item.quantity)
+  const totals = beerTotals(items, beer.tapDays)
+  const closing = useListClosing('/api/keg-items/close', chata.id, onDataChanged)
+  const changedSinceSummary = beer.summaryChanged
   const loginHref = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'
 
   // "Kdo co chce": kegs per participant (the tap is everybody's)
@@ -269,7 +271,17 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-10">
         {/* ─── the counter: price list, tap, who wants what ─── */}
         <div className="flex min-w-0 flex-col gap-6">
-          {beer.canAdd ? (
+          {beer.closedAt ? (
+            <ListClosedNotice
+              text={t('closedText', { date: formatDate(beer.closedAt, locale) })}
+              reopenLabel={t('reopen')}
+              failedLabel={t('closeFailed')}
+              canReopen={orderer.isMe}
+              busy={closing.busy}
+              failed={closing.failed}
+              onReopen={() => void closing.setClosed(false)}
+            />
+          ) : beer.canAdd ? (
             <>
               {selected ? (
                 <form onSubmit={submit} className="flex flex-col gap-3">
@@ -448,30 +460,30 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                 <p className="text-[13px] text-red-600 dark:text-red-400">{t('saveFailed')}</p>
               )}
 
-              {/* the tap: one per order, rented by the day */}
+              {/* the taps: anyone adds one; every tap is rented for the same days */}
               <section className="rounded-2xl bg-gray-50 px-4 py-4 dark:bg-white/[0.04]">
                 <h4 className="text-[14px] font-semibold text-gray-900 dark:text-gray-100">
                   {t('tapTitle')}
                 </h4>
                 <p className="mt-1 text-[13px] leading-relaxed text-gray-600 dark:text-slate-400">
-                  {orderer.name
-                    ? t('tapText', { price: money(TAP_RENTAL.pricePerDay), name: orderer.name })
-                    : t('tapTextNoName', { price: money(TAP_RENTAL.pricePerDay) })}
+                  {t('tapText', { price: money(TAP_RENTAL.pricePerDay), days: beer.tapDays })}{' '}
+                  {orderer.name ? t('tapPriceBy', { name: orderer.name }) : t('tapPriceByShop')}
                 </p>
-                {tapItem ? (
-                  <p className="mt-2 text-[13px] font-medium text-gray-700 dark:text-slate-300">
-                    {t('tapAdded')}
-                  </p>
-                ) : (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     disabled={saving}
-                    onClick={() => void create(TAP_RENTAL.code, rentalDays, '')}
-                    className={`mt-3 ${linkButtonClass}`}
+                    onClick={() => void create(TAP_RENTAL.code, 1, '')}
+                    className={linkButtonClass}
                   >
-                    {t('tapAdd', { count: rentalDays })}
+                    {t('tapAdd')}
                   </button>
-                )}
+                  {totals.taps > 0 && (
+                    <span className="text-[13px] text-gray-600 dark:text-slate-400">
+                      {t('tapCount', { count: totals.taps })}
+                    </span>
+                  )}
+                </div>
               </section>
             </>
           ) : (
@@ -525,6 +537,14 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
         {/* ─── the receipt ─── */}
         <div className="flex flex-col items-center gap-6 rounded-[22px] bg-[#eef1f4] px-4 py-10 dark:bg-white/[0.04] sm:px-8">
           <div className="receipt-paper w-full max-w-[440px] px-5 pb-6 pt-7 sm:px-7">
+            {beer.closedAt && (
+              <div
+                aria-hidden="true"
+                className="receipt-stamp pointer-events-none absolute right-3 top-16 rounded-md border-[3px] border-primary px-2.5 py-1 text-[15px] font-extrabold uppercase tracking-[0.06em] text-primary"
+              >
+                {t('stamp')}
+              </div>
+            )}
             <header className="text-center">
               <div className="text-[15px] font-bold tracking-[0.08em]">
                 {BEER_SHOP.name.toUpperCase()}
@@ -548,7 +568,7 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                   const summarized =
                     item.summaryQuantity != null && item.summaryQuantity === item.quantity
                   const meta = [
-                    isTap ? t('days', { count: item.quantity }) : kindLabel(item.kind),
+                    isTap ? t('days', { count: beer.tapDays }) : kindLabel(item.kind),
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     summarized ? t('summarized') : null,
                   ].filter(Boolean)
@@ -560,7 +580,7 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                       }`}
                     >
                       <div className="grid grid-cols-[2.4em_minmax(0,1fr)] text-[13px] leading-snug">
-                        <span className="shrink-0 tabular-nums">{isTap ? 1 : item.quantity}×</span>
+                        <span className="shrink-0 tabular-nums">{item.quantity}×</span>
                         <div className="min-w-0">
                           <div className="flex items-end">
                             <span className="min-w-0 break-words">
@@ -569,7 +589,7 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                             </span>
                             <span className="receipt-leader" aria-hidden="true" />
                             <span className="shrink-0 tabular-nums">
-                              {plain(item.price * Math.max(1, item.quantity))}
+                              {plain(lineCost(item, beer.tapDays))}
                             </span>
                           </div>
                           {meta.length > 0 && (
@@ -665,7 +685,7 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                       date: formatDate(`${KEG_CATALOG_PRINTED}T12:00:00.000Z`, locale),
                     })}
                   </div>
-                  {tapItem && <div>{t('tapEstimate')}</div>}
+                  {totals.taps > 0 && <div>{t('tapEstimate')}</div>}
                 </div>
               </>
             )}
@@ -706,6 +726,18 @@ export function BeerView({ chata, beer, participantCount, viewer, onDataChanged 
                   </p>
                 ) : null}
               </div>
+              {!beer.closedAt && items.length > 0 && (
+                <CloseListButton
+                  label={t('close')}
+                  confirmText={t('closeConfirm')}
+                  yesLabel={t('closeYes')}
+                  noLabel={t('closeNo')}
+                  failedLabel={t('closeFailed')}
+                  busy={closing.busy}
+                  failed={closing.failed}
+                  onClose={() => void closing.setClosed(true)}
+                />
+              )}
               <div className="rounded-xl bg-white px-4 py-3 text-[13px] leading-relaxed text-gray-700 dark:bg-white/[0.06] dark:text-slate-200">
                 <div className="font-semibold">{t('shopTitle')}</div>
                 <div className="text-gray-500 dark:text-slate-400">{BEER_SHOP.address}</div>

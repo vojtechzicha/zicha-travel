@@ -498,21 +498,35 @@ API payload, no new endpoints).
   The people rules (who adds for whom, author edits, banker + chata admins
   tidy, server-only fields) live in `src/collections/listItemRules.ts`,
   shared with "Pivo"; the stepper and initials in `ListUi.tsx`.
+  **Closing a list** ("Uzavřít nákup/objednávku", `Chata.shoppingClosedAt` /
+  `beerClosedAt`): after ordering, the banker (or a chata admin) closes the
+  tab via `POST /api/{shopping,keg}-items/close { chata, closed }`. A closed
+  list stays readable with an "Objednáno" stamp, but the collections'
+  hooks refuse every create/update/delete from the page (the banker too;
+  chata admins and server-side writes pass), the Rohlík send answers 409
+  and the daily price check skips it, so ordered prices stay put. "Znovu
+  otevřít" (or clearing the date in the admin) reopens it.
 - **"Pivo"** (shared keg order from Max pivotéka in Benešov,
   `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
   generic. Same tab shape and people rules as "Nákup", but no shop API: the
   catalog is a STATIC copy of the shop's two keg price-list PDFs
   (`src/lib/kegCatalog.ts`, 15/20/30/50 l kegs plus the 25 l prosecco, shop product codes, printed
   date in `KEG_CATALOG_PRINTED`; refresh by hand when they print new ones)
-  plus the tap rental (`TAP_RENTAL`, 250 Kč/day, a rough figure the banker
-  set because the shop publishes no rental prices). The collection hook
+  plus the taps (`TAP_RENTAL`, "Výčepní kohout", 250 Kč per tap and day, a
+  rough figure the banker set because the shop publishes no rental prices).
+  A tap item's quantity is the NUMBER of taps (anyone adds one); the rental
+  days are one per-chata number (`beerTapDays`, else the nights of the stay,
+  `tapRentalDays`), so two tap rows never double the days. The collection hook
   copies name, size, price, unit and kind from the catalog for every
   writer; an unknown code is refused. The banker (or a chata admin) emails
   themselves the order summary (`POST /api/keg-items/order-summary`,
   builder `src/lib/kegOrderEmail.ts`, Czech tykání, recipients like the
   Rohlík checklist) to forward to the shop or read out on the phone;
   nothing is ever sent to the shop. The summary stamps
-  `summarySentAt`/`summaryQuantity` so the tab shows what changed since.
+  `summarySentAt`/`summaryQuantity` on the items (the "ve shrnutí" marks) and
+  `beerSummarySentAt` + `beerSummarySignature` (`orderSignature`) on the
+  chata, so a later add, edit OR delete shows "changed since". Quantities
+  are whole numbers (validated).
   UI `BeerView.tsx`: filterable price list with the price per litre, the
   "Nákup" receipt with litres, half-litre glasses and litres per head.
   Rules in `src/lib/beer.ts`; tests `tests/int/beer.int.spec.ts` (pure) and

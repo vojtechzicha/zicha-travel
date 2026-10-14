@@ -40,6 +40,8 @@ export interface ShoppingPayload {
   ownParticipants: { id: number; name: string }[]
   /** the banker orders: whether their Rohlík account is connected */
   shopper: { name: string | null; connected: boolean; isMe: boolean }
+  /** the banker closed the list: everything stays readable, nothing changes */
+  closedAt: string | null
 }
 
 /**
