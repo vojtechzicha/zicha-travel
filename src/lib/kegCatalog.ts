@@ -2,9 +2,9 @@
 // from Max pivotéka's price lists (maxpivoteka.cz, "Ceník": "Sudové pivo"
 // printed 18. 8. 2026 → list 'draught', "Sudové pivo speciál" printed
 // 19. 8. 2026 → list 'special'). Prices in CZK including VAT, per keg.
-// Only 15, 20, 30 and 50 l kegs; left out on purpose: the 5 and 10 l
-// kegs, the 25 l prosecco, bottles and cans, and "Svijany Šlik 50l" listed
-// at 1 Kč (a placeholder, not a price). `code` is the shop's own product
+// Only 15, 20, 30 and 50 l kegs, plus the 25 l prosecco; left out on
+// purpose: the 5 and 10 l kegs, bottles and cans, and "Svijany Šlik 50l"
+// listed at 1 Kč (a placeholder, not a price). `code` is the shop's own product
 // code, which is what the order summary quotes. Names are tidied from the
 // PDF ("Kozel 11° 30l Keg" → "Kozel 11°"); the size lives in `liters`.
 //
@@ -16,7 +16,7 @@ export type KegKind = 'beer' | 'nonalcoholic' | 'soft' | 'cider' | 'wine'
 export interface KegEntry {
   code: string
   name: string
-  liters: 15 | 20 | 30 | 50
+  liters: 15 | 20 | 25 | 30 | 50
   /** CZK per keg, VAT included */
   price: number
   list: 'draught' | 'special'
@@ -900,6 +900,14 @@ export const KEG_CATALOG: readonly KegEntry[] = [
     price: 889,
     list: 'special',
     kind: 'beer',
+  },
+  {
+    code: 'KEG279VIN',
+    name: 'Serena Glera Prosecco',
+    liters: 25,
+    price: 2519,
+    list: 'special',
+    kind: 'wine',
   },
   {
     code: 'KEG212PIV',

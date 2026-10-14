@@ -502,7 +502,7 @@ API payload, no new endpoints).
   `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
   generic. Same tab shape and people rules as "Nákup", but no shop API: the
   catalog is a STATIC copy of the shop's two keg price-list PDFs
-  (`src/lib/kegCatalog.ts`, 15/20/30/50 l only, shop product codes, printed
+  (`src/lib/kegCatalog.ts`, 15/20/30/50 l kegs plus the 25 l prosecco, shop product codes, printed
   date in `KEG_CATALOG_PRINTED`; refresh by hand when they print new ones)
   plus the tap rental (`TAP_RENTAL`, 250 Kč/day, a rough figure the banker
   set because the shop publishes no rental prices). The collection hook

@@ -16,7 +16,8 @@ describe('KEG_CATALOG', () => {
     const codes = KEG_CATALOG.map((keg) => keg.code)
     expect(new Set(codes).size).toBe(codes.length)
     for (const keg of KEG_CATALOG) {
-      expect([15, 20, 30, 50]).toContain(keg.liters)
+      // the four beer sizes, and the 25 l prosecco
+      expect([15, 20, 25, 30, 50]).toContain(keg.liters)
       // the 1 Kč placeholder row stays out
       expect(keg.price).toBeGreaterThan(100)
       expect(keg.name).not.toMatch(/\bkeg\b|\d+\s*l\b/i)

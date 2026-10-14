@@ -45,7 +45,8 @@ interface BeerViewProps {
   onDataChanged: () => Promise<void> | void
 }
 
-const SIZES = [15, 20, 30, 50] as const
+// the size chips: every keg size the price list has
+const SIZES = [...new Set(KEG_CATALOG.map((keg) => keg.liters))].sort((a, b) => a - b)
 const GROUPS: KegGroup[] = ['all', 'draught', 'special', 'nonalcoholic']
 
 const primaryButtonClass =
