@@ -8,6 +8,9 @@ import { closeListEndpoint } from '@/collections/listItemRules'
 import { setOptOut as setOptOutEndpoint } from '@/collections/ListOptOuts'
 import { syncListExpense } from '@/utils/listExpense'
 import { TAP_CODE, tapRental, tapRentalDays } from '@/lib/beer'
+import { KegItems } from '@/collections/KegItems'
+
+const changeTapsEndpoint = (KegItems.endpoints || []).find((e) => e.path === '/taps')!
 
 // "Pivo" (src/collections/KegItems.ts) against the real local API with its
 // own fixture chata: product fields always come from the price list, the
@@ -696,6 +699,25 @@ describe('the bar', () => {
         ...asUser(users.other),
       }),
     ).rejects.toThrow()
+    // two "+" at once make two taps
+    const tapsAs = (u: User, delta: number) =>
+      changeTapsEndpoint.handler({
+        payload,
+        user: { ...u, collection: 'users' },
+        json: async () => ({ item: bar.id, delta }),
+      } as unknown as PayloadRequest)
+    const results = await Promise.all([tapsAs(users.other, 1), tapsAs(users.author, 1)])
+    expect(results.map((r) => r.status)).toEqual([200, 200])
+    const after = await payload.findByID({ collection: 'keg-items', id: bar.id, depth: 0 })
+    expect(after.quantity).toBe(6)
+    // an outsider is refused; a keg isn't counted in taps
+    expect((await tapsAs(users.outsider, 1)).status).toBe(403)
+    const onKeg = await changeTapsEndpoint.handler({
+      payload,
+      user: { ...users.author, collection: 'users' },
+      json: async () => ({ item: authorItem.id, delta: 1 }),
+    } as unknown as PayloadRequest)
+    expect(onKeg.status).toBe(404)
     await payload.delete({ collection: 'keg-items', id: bar.id, depth: 0 })
   })
 })

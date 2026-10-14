@@ -534,7 +534,9 @@ API payload, no new endpoints).
   is the number of TAPS people want; a second bar item is refused, more taps
   go onto the first, and ANY participant of the chata may change its taps:
   `kegUpdateAccess` + the hook keep its other fields, only its author, the
-  banker and chata admins remove it). `barPlan` turns the taps into the cheapest set of
+  banker and chata admins remove it; the page changes taps one at a time
+  through `POST /api/keg-items/taps { item, delta }`, read and written under
+  the list lock, so two people's "+" never collapse into one). `barPlan` turns the taps into the cheapest set of
   chillers from `BAR_OPTIONS` (one or two taps, same price today: 3 taps =
   a two-tap and a one-tap bar), and `beerLineCosts` shares that cost among
   bar items by taps; the receipt and the email name the plan ("Výčep se

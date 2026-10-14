@@ -175,12 +175,22 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
     if (next < 1) return
     setBusyId(item.id)
     try {
-      const res = await fetch(`/api/keg-items/${item.id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity: next }),
-      })
+      // the bar is shared: one tap more or less, counted on the server, so
+      // two people's "+" never collapse into one
+      const res =
+        item.code === TAP_CODE
+          ? await fetch('/api/keg-items/taps', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ item: item.id, delta: next > item.quantity ? 1 : -1 }),
+            })
+          : await fetch(`/api/keg-items/${item.id}`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quantity: next }),
+            })
       if (!res.ok) track('save_failed', { operation: 'keg_item_update', status: res.status })
       await onDataChanged()
     } finally {

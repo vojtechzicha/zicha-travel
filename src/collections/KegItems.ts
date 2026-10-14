@@ -1,5 +1,8 @@
 import {
   APIError,
+  commitTransaction,
+  initTransaction,
+  killTransaction,
   type Access,
   type CollectionConfig,
   type Endpoint,
@@ -13,6 +16,7 @@ import { buildKegOrderEmail, kegOrderFingerprint } from '../lib/kegOrderEmail'
 import { sendAppEmail } from '../lib/email'
 import { bankerAccountId } from '../utils/rohlikConnection'
 import { manualItemsRecipients } from '../utils/shoppingEmail'
+import { lockList } from '../utils/listLock'
 import {
   applyListAuthorship,
   assertListOpen,
@@ -126,6 +130,58 @@ const orderSummary: Endpoint = {
   },
 }
 
+// POST /api/keg-items/taps { item, delta }: one tap more (+1) or less (-1)
+// on the bar. Several people change the same row, so the new count is read
+// under the list's lock and written in the same transaction: two "+" at once
+// make two taps, never one (a PATCH carries an absolute count from a page
+// that may be out of date). The update runs as the caller, so the access
+// rules and hooks are the usual ones.
+const changeTaps: Endpoint = {
+  path: '/taps',
+  method: 'post',
+  handler: async (req) => {
+    const body = await readBody(req)
+    const itemId = chataIdOf(body.item)
+    const delta = body.delta === 1 || body.delta === -1 ? body.delta : null
+    if (itemId == null || delta == null) return Response.json({ error: 'invalid' }, { status: 400 })
+    if (!req.user) return Response.json({ error: 'forbidden' }, { status: 403 })
+    const shouldCommit = await initTransaction(req)
+    try {
+      const item = await req.payload
+        .findByID({ req, collection: 'keg-items', id: itemId, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      if (!item || item.code !== TAP_CODE) {
+        if (shouldCommit) await commitTransaction(req)
+        return Response.json({ error: 'not-found' }, { status: 404 })
+      }
+      await lockList(req, refId(item.chata), 'beer')
+      const current = await req.payload.findByID({
+        req,
+        collection: 'keg-items',
+        id: itemId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const quantity = Math.min(99, Math.max(1, Math.round(current.quantity || 1) + delta))
+      await req.payload.update({
+        req,
+        collection: 'keg-items',
+        id: itemId,
+        data: { quantity },
+        depth: 0,
+        overrideAccess: false,
+        user: req.user,
+      })
+      if (shouldCommit) await commitTransaction(req)
+      return Response.json({ quantity })
+    } catch (err) {
+      await killTransaction(req)
+      const status = err instanceof APIError ? err.status : 403
+      return Response.json({ error: 'refused' }, { status })
+    }
+  },
+}
+
 // The bar is everybody's: besides the usual editors (listEditAccess), any
 // participant of the chata changes its taps; the hook keeps the rest of the
 // row as it was for them.
@@ -185,7 +241,7 @@ export const KegItems: CollectionConfig = {
     update: kegUpdateAccess,
     delete: listEditAccess,
   },
-  endpoints: [orderSummary, closeListEndpoint('beerClosedAt')],
+  endpoints: [orderSummary, changeTaps, closeListEndpoint('beerClosedAt')],
   hooks: {
     beforeDelete: [guardDeleteWhenClosed('keg-items', 'beerClosedAt')],
     afterDelete: [dropItemOptOuts('beer')],
