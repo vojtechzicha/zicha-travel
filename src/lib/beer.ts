@@ -211,6 +211,20 @@ export function barRentalCost(bar: BarOption, rental: TapRental): number {
   return rental.weekend ? Math.min(byDay, bar.weekendPrice) : byDay
 }
 
+/**
+ * The weekend price is what the bars actually cost: a weekend rental whose
+ * days come cheaper (Friday to Sunday, 900 Kč) isn't labelled as one.
+ */
+export function weekendPriced(rental: TapRental): boolean {
+  return (
+    rental.weekend &&
+    !rental.perTap &&
+    BAR_OPTIONS.some(
+      (bar) => barRentalCost(bar, rental) < bar.pricePerDay * Math.max(1, rental.days),
+    )
+  )
+}
+
 export interface BarPlan {
   /** two-tap bars first; empty for no taps */
   bars: { taps: 1 | 2; count: number }[]

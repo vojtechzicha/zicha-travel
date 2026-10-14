@@ -551,7 +551,7 @@ API payload, no new endpoints).
   (`beerClosedTapDays`/`beerClosedTapWeekend`); an order closed before bars
   had a weekend flag keeps the old price per tap and day (`perTap`), so its
   receipt still matches its Finance row. `refreshTapItems()` in the
-  migrate script merges an open order's old per-person tap rows into one
+  migrate script merges every order's old per-person tap rows into one
   (taps summed, the merged rows' opt-outs dropped), renames it and stores
   the new price. The collection hook
   copies name, size, price, unit and kind from the catalog for every

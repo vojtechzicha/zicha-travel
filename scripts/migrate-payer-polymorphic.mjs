@@ -1293,19 +1293,21 @@ async function backfillExpenseApproval() {
 /**
  * "Pivo": the bar item ('VYCEP-KOHOUT') still counts taps, but it is now
  * ONE item per order priced per bar (barPlan in src/lib/beer.ts) and named
- * "Výčep"; before, anyone could add their own tap row. An open order's tap
+ * "Výčep"; before, anyone could add their own tap row. Every order's tap
  * rows merge into its oldest one (the taps summed; the merged rows'
- * "nechci" opt-outs go with them), and its stored name and price per bar
- * and day (mirrored here, this script can't import TypeScript) follow, so
- * the admin shows what the page uses. Closed orders keep what they were
- * priced with. Idempotent: nothing matches once done.
+ * "nechci" opt-outs go with them), closed ones too, so reopening one never
+ * brings back a second bar (their old price per tap and day is the same on
+ * every row, so the closed total doesn't move). An open order's stored name
+ * and price per bar and day (mirrored here, this script can't import
+ * TypeScript) follow, so the admin shows what the page uses; closed orders
+ * keep what they were priced with. Idempotent: nothing matches once done.
  */
 async function refreshTapItems() {
   const { rows } = await client.query(`
     SELECT k.id, k.quantity,
            first_value(k.id) OVER (PARTITION BY k.chata_id ORDER BY k.created_at, k.id) AS keep_id
-      FROM keg_items k JOIN chatas c ON c.id = k.chata_id
-      WHERE k.code = 'VYCEP-KOHOUT' AND c.beer_closed_at IS NULL`)
+      FROM keg_items k
+      WHERE k.code = 'VYCEP-KOHOUT'`)
   const merged = rows.filter((row) => row.id !== row.keep_id)
   if (merged.length > 0) {
     const taps = new Map()

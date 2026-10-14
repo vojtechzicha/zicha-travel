@@ -11,6 +11,7 @@ import {
   BEER_SHOP,
   barPlan,
   beerLineCosts,
+  weekendPriced,
   beerTotals,
   mergeOrderLines,
   type BarPlan,
@@ -67,7 +68,7 @@ export function orderLineText(line: OrderLine, rental: TapRental): string {
   if (line.unit === 'day') {
     // the line's quantity is the taps everybody asked for
     return `${barPlanCs(barPlan(line.quantity, rental))} na ${daysCs(rental.days)}${
-      rental.weekend ? ' (víkendová cena)' : ''
+      weekendPriced(rental) ? ' (víkendová cena)' : ''
     }`
   }
   // our codes mean nothing to the shop: name and size are what it needs
@@ -108,7 +109,7 @@ export function kegOrderEmail(args: {
     (totals.bars > 0
       ? `, z toho výčep ${formatCurrency(barCost)} podle orientační ceny ` +
         `${formatCurrency(bar.pricePerDay)} na den za výčep` +
-        (rental.weekend ? ` (víkend ${formatCurrency(bar.weekendPrice)}).` : '.')
+        (weekendPriced(rental) ? ` (víkend ${formatCurrency(bar.weekendPrice)}).` : '.')
       : '.')
   const caveat = 'Zálohu na sudy, výčep a dopravu ceník neuvádí, domluv je s obchodem.'
   const who = lines

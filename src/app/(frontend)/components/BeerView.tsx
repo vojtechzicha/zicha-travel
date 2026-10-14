@@ -25,6 +25,7 @@ import {
   beerTotals,
   filterKegs,
   pricePerLiter,
+  weekendPriced,
   type BarPlan,
   type BeerItemView,
   type BeerPayload,
@@ -622,7 +623,7 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                   const meta = [
                     isTap ? t('tapCount', { count: item.quantity }) : kindLabel(item.kind),
                     isTap ? t('days', { count: rental.days }) : null,
-                    isTap && rental.weekend ? t('weekendPrice') : null,
+                    isTap && weekendPriced(rental) ? t('weekendPrice') : null,
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     summarized ? t('summarized') : null,
                     itemOptOutText(item.id),

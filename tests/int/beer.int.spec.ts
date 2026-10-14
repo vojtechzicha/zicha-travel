@@ -8,6 +8,7 @@ import {
   beerTotals,
   barRentalCost,
   tapRental,
+  weekendPriced,
   tapRentalDays,
   filterKegs,
   mergeOrderLines,
@@ -161,6 +162,13 @@ describe('pricePerLiter, tapRental and the bar plan', () => {
     expect(barRentalCost(bar, { days: 2, weekend: true })).toBe(600)
   })
 
+  it('labels the weekend price only where the cap made it cheaper', () => {
+    expect(weekendPriced({ days: 4, weekend: true })).toBe(true)
+    // Friday to Sunday: 3 × 300 Kč is below the cap
+    expect(weekendPriced({ days: 3, weekend: true })).toBe(false)
+    expect(weekendPriced({ days: 4, weekend: false })).toBe(false)
+  })
+
   it('plans the fewest bars for the taps asked for', () => {
     const rental = { days: 5, weekend: false }
     expect(barPlan(0, rental)).toEqual({ bars: [], cost: 0, barCount: 0 })
@@ -293,6 +301,10 @@ describe('kegOrderEmail', () => {
     )
     expect(orderLineText({ ...lines[1], quantity: 3 }, { days: 5, weekend: false })).toBe(
       'Výčep se dvěma kohouty a výčep s jedním kohoutem na 5 dní',
+    )
+    // a Friday to Sunday weekend costs less by the day: no weekend label
+    expect(orderLineText(lines[1], { days: 3, weekend: true })).toBe(
+      'Výčep se dvěma kohouty na 3 dny',
     )
   })
 
