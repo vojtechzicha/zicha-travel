@@ -982,6 +982,106 @@ export const Chatas: CollectionConfig = {
         },
       },
     },
+    {
+      name: 'shoppingClosedAt',
+      type: 'date',
+      label: { en: 'Shopping list closed', cs: 'Nákup uzavřen' },
+      admin: {
+        condition: (data) => data?.shoppingListEnabled === true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: {
+          en:
+            'Set by the banker\'s "Uzavřít objednávku" on the tab: the list stays visible but ' +
+            'takes no more changes. Clear it to reopen.',
+          cs:
+            'Nastaví pokladník tlačítkem „Uzavřít objednávku“ v záložce: seznam zůstane vidět, ' +
+            'ale už nejde měnit. Vymazáním ho znovu otevřete.',
+        },
+      },
+    },
+
+    // "Pivo" (src/lib/beer.ts): the shared keg order from Benecentrum in
+    // Benešov. Items live in the keg-items collection; the banker emails
+    // themselves the order summary and orders by phone or email.
+    {
+      name: 'beerListEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: { en: 'Beer kegs ("Pivo" tab)', cs: 'Sudové pivo (záložka „Pivo“)' },
+      admin: {
+        description: {
+          en:
+            'Signed-in participants pick kegs and taps from the Benecentrum (Benešov) price ' +
+            'list; the banker emails themselves the order summary and orders from the shop.',
+          cs:
+            'Přihlášení účastníci vybírají sudy a kohouty z ceníku Benecentra v Benešově. ' +
+            'Pokladník si nechá poslat souhrn objednávky e-mailem a objedná v obchodě.',
+        },
+      },
+    },
+    {
+      name: 'beerTapDays',
+      type: 'number',
+      min: 1,
+      max: 30,
+      // whole days: the taps are priced and shown per day
+      validate: (value: number | null | undefined, { req }: { req: PayloadRequest }) =>
+        value == null || Number.isInteger(value)
+          ? true
+          : pickValidationMessage(req, 'Use a whole number of days', 'Zadejte celý počet dní'),
+      label: { en: 'Tap rental days', cs: 'Dní půjčení výčepu' },
+      admin: {
+        condition: (data) => data?.beerListEnabled === true,
+        description: {
+          en:
+            'How many days every tap is rented, e.g. 4 for Friday to Tuesday. Empty = the nights ' +
+            'of the stay.',
+          cs:
+            'Na kolik dní se půjčuje každý kohout, např. 4 pro pátek až úterý. Prázdné = počet ' +
+            'nocí pobytu.',
+        },
+      },
+    },
+    // written by POST /api/keg-items/order-summary: when it went out and
+    // what it carried (orderSignature), so the tab can flag later changes
+    {
+      name: 'beerSummarySentAt',
+      type: 'date',
+      label: { en: 'Beer order summary sent', cs: 'Souhrn objednávky piva odeslán' },
+      admin: {
+        condition: (data) => data?.beerListEnabled === true,
+        readOnly: true,
+        date: { pickerAppearance: 'dayAndTime' },
+      },
+    },
+    {
+      name: 'beerSummarySignature',
+      type: 'text',
+      admin: { hidden: true },
+    },
+    // the tap rental days a closed order was priced with (tapRentalDays)
+    {
+      name: 'beerClosedTapDays',
+      type: 'number',
+      admin: { hidden: true },
+    },
+    {
+      name: 'beerClosedAt',
+      type: 'date',
+      label: { en: 'Beer order closed', cs: 'Objednávka piva uzavřena' },
+      admin: {
+        condition: (data) => data?.beerListEnabled === true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: {
+          en:
+            'Set by the banker\'s "Uzavřít objednávku" on the tab: the order stays visible but ' +
+            'takes no more changes. Clear it to reopen.',
+          cs:
+            'Nastaví pokladník tlačítkem „Uzavřít objednávku“ v záložce: objednávka zůstane ' +
+            'vidět, ale už nejde měnit. Vymazáním ji znovu otevřete.',
+        },
+      },
+    },
 
     // Transportation
     {

@@ -51,6 +51,11 @@ const PHOTOS = {
   },
   room2: { file: 'oaza-loznice-2.jpg', src: 'pokoj-c-2-aafb-2d2a-1211831.jpg', alt: 'Ložnice 2' },
   room3: { file: 'oaza-loznice-3.jpg', src: 'pokoj-c-3-6acb-2d2d-1211833.jpg', alt: 'Ložnice 3' },
+  apartment: {
+    file: 'oaza-apartman.jpg',
+    src: 'novy-plne-zarizeny-apartman-pro-dve-osoby-c865-2d3a-1211839.jpg',
+    alt: 'Apartmán pro dva nad wellness domkem',
+  },
   living: {
     file: 'oaza-obyvak.jpg',
     src: 'prostorna-jidelna-s-kuchyni-a-obyvacim-pokojem-4710-2d1f-1211825.jpg',
@@ -312,6 +317,22 @@ const EXPENSES = [
     note: 'Druhá polovina ceny za prodloužení, splatná týden před příjezdem.',
   },
   {
+    title: 'Apartmán na víkend',
+    amount: 2000,
+    split: 'apartment',
+    date: '2026-11-06T10:00:00.000Z',
+    note:
+      'Apartmán pro dva nad wellness domkem na pátek a sobotu, 1 000 Kč za noc podle ceníku ' +
+      'majitele. Platí ho ty, kdo v něm o víkendu spí.',
+  },
+  {
+    title: 'Apartmán na prodloužení',
+    amount: 2000,
+    split: 'extension',
+    date: '2026-11-06T10:00:00.000Z',
+    note: 'Apartmán zůstává náš i na neděli a pondělí, 1 000 Kč za noc. Dělí se mezi ty, kdo zůstanou do úterý.',
+  },
+  {
     title: 'Poplatek obci za víkend',
     amount: 270,
     split: 'all',
@@ -358,6 +379,9 @@ const buildData = (m: MediaIds) => ({
   location: 'Vavřetice, Benešovsko',
   banker: P.vojta,
   shoppingListEnabled: true,
+  beerListEnabled: true,
+  // the taps stay from Friday to Tuesday, extension or not
+  beerTapDays: 4,
   // cars come from the participants themselves ("Nabídnout auto"); none at the start
   sharedCarsEnabled: true,
 
@@ -396,6 +420,7 @@ const buildData = (m: MediaIds) => ({
         'terrace',
         'living',
         'wellness',
+        'apartment',
         'sauna',
         'infrasauna',
         'fire',
@@ -407,7 +432,9 @@ const buildData = (m: MediaIds) => ({
 
   basicInfo: [
     {
-      info: 'Spíme v chatě se třemi ložnicemi a obývákem. Místa je pro 11 lidí (8 postelí a 3 přistýlky).',
+      info:
+        'Spíme v chatě se třemi ložnicemi a obývákem. Místa je pro 11 lidí (8 postelí a 3 přistýlky). ' +
+        'K tomu máme apartmán pro dva nad wellness domkem.',
     },
     {
       info: 'Příjezd v pátek od 16:00, odjezd v neděli do 10:00. Pozdější odjezd jde domluvit s majitelem.',
@@ -529,7 +556,8 @@ const buildData = (m: MediaIds) => ({
   bedroomOrganizationEnabled: true,
   advancedBedroomMode: false,
   // Participant ids are the same on prod and in a migrate-from-prod copy.
-  // Vojta, David and Martin share a room; the women (and Daniela's dog) get
+  // Vojta, David and Martin share a room; Daniela and Denisa (and Daniela's
+  // dog) have the apartment above the wellness house, extra 1 000 Kč a night;
   // their own; the living-room sofa stays free.
   rooms: [
     {
@@ -560,18 +588,24 @@ const buildData = (m: MediaIds) => ({
       name: 'Ložnice 3',
       image: m.room3,
       maxSleepingSpaces: 2,
-      beds: [
-        {
-          name: 'Manželská postel',
-          occupants: [{ participant: P.daniela }, { participant: P.denisa }],
-        },
-      ],
+      beds: [{ name: 'Manželská postel' }],
     },
     {
       name: 'Obývací pokoj',
       image: m.living,
       maxSleepingSpaces: 2,
       beds: [{ name: 'Rozkládací gauč' }],
+    },
+    {
+      name: 'Apartmán',
+      image: m.apartment,
+      maxSleepingSpaces: 2,
+      beds: [
+        {
+          name: 'Velká sklápěcí manželská postel',
+          occupants: [{ participant: P.daniela }, { participant: P.denisa }],
+        },
+      ],
     },
   ],
 
@@ -783,6 +817,32 @@ async function main() {
   const vojtaAccount = typeof vojta.account === 'object' ? vojta.account?.id : vojta.account
   if (!vojtaAccount) throw new Error('Vojta has no linked account')
 
+  // whoever stays longer: people who joined the extension were added to its
+  // deposit by hand, and a NEW extension expense starts with the same split
+  const extensionDeposit = await payload.find({
+    collection: 'expenses',
+    where: {
+      and: [
+        { chata: { equals: chata.id } },
+        { title: { equals: 'Chata Oáza: záloha za prodloužení' } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+  })
+  const extensionWeights = (extensionDeposit.docs[0]?.weights ?? []).map((w) => ({
+    participant: typeof w.participant === 'object' ? w.participant.id : w.participant,
+    weight: w.weight,
+  }))
+  const SPLITS = {
+    extension:
+      extensionWeights.length > 0 ? extensionWeights : [{ participant: P.vojta, weight: 1 }],
+    apartment: [
+      { participant: P.daniela, weight: 1 },
+      { participant: P.denisa, weight: 1 },
+    ],
+  }
+
   for (const expense of EXPENSES) {
     const existing = await payload.find({
       collection: 'expenses',
@@ -797,7 +857,7 @@ async function main() {
       payer: { relationTo: 'participants' as const, value: P.vojta },
       ...(expense.split === 'all'
         ? { splitType: 'equal' as const, weights: [] }
-        : { splitType: 'weighted' as const, weights: [{ participant: P.vojta, weight: 1 }] }),
+        : { splitType: 'weighted' as const, weights: SPLITS[expense.split] }),
       createdAt: expense.date,
       note: expense.note,
       approvalStatus: 'approved' as const,

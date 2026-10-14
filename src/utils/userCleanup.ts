@@ -18,6 +18,7 @@ export interface UserCleanupSummary {
   pendingVotesDeleted: number
   rohlikConnectionsDeleted: number
   shoppingItemsCleaned: number
+  kegItemsCleaned: number
 }
 
 export async function cleanupDeletedUserReferences(
@@ -32,6 +33,7 @@ export async function cleanupDeletedUserReferences(
     pendingVotesDeleted: 0,
     rohlikConnectionsDeleted: 0,
     shoppingItemsCleaned: 0,
+    kegItemsCleaned: 0,
   }
 
   // participants.account → null (the participant stays with the trip)
@@ -157,6 +159,27 @@ export async function cleanupDeletedUserReferences(
     req,
   })
   summary.shoppingItemsCleaned = shopping.docs.length
+
+  // keg-items.authoredBy → null, same reasoning as the shopping list
+  const kegs = await payload.update({
+    collection: 'keg-items',
+    where: { authoredBy: { equals: userId } },
+    data: { authoredBy: null },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  summary.kegItemsCleaned = kegs.docs.length
+
+  // list-opt-outs.setBy → null: the opt-out belongs to the participant
+  await payload.update({
+    collection: 'list-opt-outs',
+    where: { setBy: { equals: userId } },
+    data: { setBy: null },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
 
   const decidedClaims = await payload.find({
     collection: 'claim-requests',

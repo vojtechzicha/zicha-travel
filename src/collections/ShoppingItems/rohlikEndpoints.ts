@@ -21,6 +21,7 @@ import { mergeCartLines, sendRoute } from '@/lib/shopping'
 import type { ManualItem } from '@/lib/shoppingEmail'
 import { notifyManualItems } from '@/utils/shoppingEmail'
 import { refreshChataPrices } from '@/utils/rohlikPriceRefresh'
+import { lockList } from '@/utils/listLock'
 import {
   bankerAccountId,
   deleteConnection,
@@ -236,146 +237,187 @@ export const rohlikEndpoints: Endpoint[] = [
       const token = await getAccessToken(req.payload, req.user.id)
       if (!token) return Response.json({ error: 'not-connected' }, { status: 409 })
 
-      // prices first, so the receipt shows what the cart will actually cost;
-      // a failed check doesn't stop the send (Rohlík prices the cart itself)
-      let stockChecked = true
-      try {
-        await refreshChataPrices(req.payload, chataId, token)
-      } catch (err) {
-        stockChecked = false
-        req.payload.logger.warn({ err }, 'Rohlík price refresh before send failed')
+      // The whole send runs under the list's lock (src/utils/listLock.ts), in
+      // one transaction, as the server (no user: the send writes the "sent"
+      // marks the item hooks keep from users). A close waits for it, and a
+      // send that starts after a close sees the list closed and stops before
+      // anything reaches Rohlík.
+      const payload = req.payload
+      const tid = await payload.db.beginTransaction()
+      const serverReq = { transactionID: tid ?? undefined, payload } as unknown as PayloadRequest
+      const finish = async (response: Response) => {
+        if (tid != null) await payload.db.commitTransaction(tid)
+        return response
       }
-
-      const { docs: items } = await req.payload.find({
-        collection: 'shopping-items',
-        where: { chata: { equals: chataId } },
-        limit: 1000,
-        depth: 0,
-        overrideAccess: true,
-      })
-      // What still has to go in: whole items never sent, and only the
-      // increase for items whose quantity grew after the last send — a
-      // second click must not double the cart
-      const pending = items
-        .map((item) => {
-          const quantity = Math.max(1, Math.round(item.quantity || 1))
-          const already = item.sentToCartAt ? (item.sentQuantity ?? quantity) : 0
-          return { item, quantity, delta: quantity - already }
+      try {
+        await lockList(serverReq, chataId, 'shopping')
+        // a closed list is already ordered: nothing more goes into the cart
+        const current = await payload.findByID({
+          req: serverReq,
+          collection: 'chatas',
+          id: chataId,
+          depth: 0,
+          overrideAccess: true,
+          context: { triggerAfterRead: false },
         })
-        .filter(({ delta }) => delta > 0)
-      const routed = pending.map((entry) => ({ ...entry, route: sendRoute(entry.item.rohlik, stockChecked) }))
-      const skipped = routed.filter(({ route }) => route === 'text').length
-      // sold out at the check above (only a check that worked counts): not
-      // in the cart, not marked sent, so a later send picks them up once
-      // Rohlík has them again
-      const soldOut = routed.filter(({ route }) => route === 'soldOut').length
-      const lines = mergeCartLines(
-        routed
-          .filter(({ route }) => route === 'cart')
-          .map(({ item, delta }) => ({
-            title: item.title,
-            quantity: delta,
-            rohlik: item.rohlik,
-          })),
-      )
+        if (current.shoppingClosedAt) {
+          return finish(Response.json({ error: 'closed' }, { status: 409 }))
+        }
 
-      let report: Awaited<ReturnType<typeof addToCart>>
-      try {
-        report = await addToCart(token, lines)
-      } catch (err) {
-        req.payload.logger.error({ err }, 'Rohlík add-to-cart failed')
-        return Response.json({ error: 'unavailable' }, { status: 502 })
-      }
+        // prices first, so the receipt shows what the cart will actually cost;
+        // a failed check doesn't stop the send (Rohlík prices the cart itself)
+        let stockChecked = true
+        try {
+          await refreshChataPrices(payload, chataId, token, new Date(), serverReq)
+        } catch (err) {
+          stockChecked = false
+          req.payload.logger.warn({ err }, 'Rohlík price refresh before send failed')
+        }
 
-      const added = new Set(report.added)
-      const sentAt = new Date().toISOString()
-      for (const { item, quantity, route } of routed) {
-        const productId = item.rohlik?.productId
-        if (route !== 'cart' || !productId || !added.has(productId)) continue
-        await req.payload.update({
+        const { docs: items } = await payload.find({
+          req: serverReq,
           collection: 'shopping-items',
-          id: item.id,
-          data: { sentToCartAt: sentAt, sentQuantity: quantity },
+          where: { chata: { equals: chataId } },
+          limit: 1000,
           depth: 0,
           overrideAccess: true,
         })
-      }
-
-      const titlesOf = new Map(lines.map((line) => [line.productId, line.titles.join(', ')]))
-
-      // What the banker still adds by hand: free-text items, sold-out
-      // products and lines Rohlík refused. They get the checklist by email
-      // (src/utils/shoppingEmail.ts)
-      const failedIds = new Set(report.failed.map((failure) => failure.productId))
-      const manualPending = routed.filter(
-        ({ item, route }) =>
-          route !== 'cart' || failedIds.has(item.rohlik?.productId ?? ''),
-      )
-      let manualEmailed = false
-      if (manualPending.length > 0) {
-        const [chata, participants] = await Promise.all([
-          req.payload.findByID({
-            collection: 'chatas',
-            id: chataId,
-            depth: 0,
-            overrideAccess: true,
-            context: { triggerAfterRead: false },
-          }),
-          req.payload.find({
-            collection: 'participants',
-            where: { chata: { equals: chataId } },
-            limit: 1000,
-            depth: 0,
-            overrideAccess: true,
-          }),
-        ])
-        const nameOf = new Map(participants.docs.map((p) => [String(p.id), p.name]))
-        const manualItems: ManualItem[] = manualPending.map(({ item, delta, route }) => ({
-          title: item.title,
-          quantity: delta,
-          wantedBy: item.participant != null ? (nameOf.get(refId(item.participant)) ?? null) : null,
-          note: item.note ?? null,
-          reason: route === 'cart' ? 'rejected' : route,
+        // What still has to go in: whole items never sent, and only the
+        // increase for items whose quantity grew after the last send — a
+        // second click must not double the cart
+        const pending = items
+          .map((item) => {
+            const quantity = Math.max(1, Math.round(item.quantity || 1))
+            const already = item.sentToCartAt ? (item.sentQuantity ?? quantity) : 0
+            return { item, quantity, delta: quantity - already }
+          })
+          .filter(({ delta }) => delta > 0)
+        const routed = pending.map((entry) => ({
+          ...entry,
+          route: sendRoute(entry.item.rohlik, stockChecked),
         }))
-        manualEmailed = await notifyManualItems(req.payload, {
-          chata,
-          banker: req.user,
-          items: manualItems,
-          addedCount: report.added.length,
-          checkoutUrl: report.checkoutUrl,
-        })
-        // free-text items on the emailed checklist are handed over: the
-        // banker has them, so the next send skips them (and the page stops
-        // offering a send for them). Refused and sold-out Rohlík lines stay
-        // pending and go in again next time.
-        if (manualEmailed) {
-          for (const { item, quantity, route } of manualPending) {
-            if (route !== 'text') continue
-            await req.payload.update({
-              collection: 'shopping-items',
-              id: item.id,
-              data: { sentToCartAt: sentAt, sentQuantity: quantity },
+        const skipped = routed.filter(({ route }) => route === 'text').length
+        // sold out at the check above (only a check that worked counts): not
+        // in the cart, not marked sent, so a later send picks them up once
+        // Rohlík has them again
+        const soldOut = routed.filter(({ route }) => route === 'soldOut').length
+        const lines = mergeCartLines(
+          routed
+            .filter(({ route }) => route === 'cart')
+            .map(({ item, delta }) => ({
+              title: item.title,
+              quantity: delta,
+              rohlik: item.rohlik,
+            })),
+        )
+
+        let report: Awaited<ReturnType<typeof addToCart>>
+        try {
+          report = await addToCart(token, lines)
+        } catch (err) {
+          req.payload.logger.error({ err }, 'Rohlík add-to-cart failed')
+          return finish(Response.json({ error: 'unavailable' }, { status: 502 }))
+        }
+
+        const added = new Set(report.added)
+        const sentAt = new Date().toISOString()
+        for (const { item, quantity, route } of routed) {
+          const productId = item.rohlik?.productId
+          if (route !== 'cart' || !productId || !added.has(productId)) continue
+          await payload.update({
+            req: serverReq,
+            collection: 'shopping-items',
+            id: item.id,
+            data: { sentToCartAt: sentAt, sentQuantity: quantity },
+            depth: 0,
+            overrideAccess: true,
+          })
+        }
+
+        const titlesOf = new Map(lines.map((line) => [line.productId, line.titles.join(', ')]))
+
+        // What the banker still adds by hand: free-text items, sold-out
+        // products and lines Rohlík refused. They get the checklist by email
+        // (src/utils/shoppingEmail.ts)
+        const failedIds = new Set(report.failed.map((failure) => failure.productId))
+        const manualPending = routed.filter(
+          ({ item, route }) => route !== 'cart' || failedIds.has(item.rohlik?.productId ?? ''),
+        )
+        let manualEmailed = false
+        if (manualPending.length > 0) {
+          const [chata, participants] = await Promise.all([
+            payload.findByID({
+              req: serverReq,
+              collection: 'chatas',
+              id: chataId,
               depth: 0,
               overrideAccess: true,
-            })
+              context: { triggerAfterRead: false },
+            }),
+            payload.find({
+              req: serverReq,
+              collection: 'participants',
+              where: { chata: { equals: chataId } },
+              limit: 1000,
+              depth: 0,
+              overrideAccess: true,
+            }),
+          ])
+          const nameOf = new Map(participants.docs.map((p) => [String(p.id), p.name]))
+          const manualItems: ManualItem[] = manualPending.map(({ item, delta, route }) => ({
+            title: item.title,
+            quantity: delta,
+            wantedBy:
+              item.participant != null ? (nameOf.get(refId(item.participant)) ?? null) : null,
+            note: item.note ?? null,
+            reason: route === 'cart' ? 'rejected' : route,
+          }))
+          manualEmailed = await notifyManualItems(req.payload, {
+            chata,
+            banker: req.user,
+            items: manualItems,
+            addedCount: report.added.length,
+            checkoutUrl: report.checkoutUrl,
+          })
+          // free-text items on the emailed checklist are handed over: the
+          // banker has them, so the next send skips them (and the page stops
+          // offering a send for them). Refused and sold-out Rohlík lines stay
+          // pending and go in again next time.
+          if (manualEmailed) {
+            for (const { item, quantity, route } of manualPending) {
+              if (route !== 'text') continue
+              await payload.update({
+                req: serverReq,
+                collection: 'shopping-items',
+                id: item.id,
+                data: { sentToCartAt: sentAt, sentQuantity: quantity },
+                depth: 0,
+                overrideAccess: true,
+              })
+            }
           }
         }
-      }
 
-      return Response.json({
-        lines: lines.length,
-        added: report.added.length,
-        failed: report.failed.map((failure) => ({
-          title: titlesOf.get(failure.productId) ?? failure.productId,
-          reason: failure.reason,
-        })),
-        skipped,
-        soldOut,
-        // where the banker finishes the order (Rohlík's own checkout link)
-        checkoutUrl: report.checkoutUrl,
-        // the "přidej ručně" checklist went out by email
-        manualEmailed,
-      })
+        return finish(
+          Response.json({
+            lines: lines.length,
+            added: report.added.length,
+            failed: report.failed.map((failure) => ({
+              title: titlesOf.get(failure.productId) ?? failure.productId,
+              reason: failure.reason,
+            })),
+            skipped,
+            soldOut,
+            // where the banker finishes the order (Rohlík's own checkout link)
+            checkoutUrl: report.checkoutUrl,
+            // the "přidej ručně" checklist went out by email
+            manualEmailed,
+          }),
+        )
+      } catch (err) {
+        if (tid != null) await payload.db.rollbackTransaction(tid).catch(() => undefined)
+        throw err
+      }
     },
   },
 ]

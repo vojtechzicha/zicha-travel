@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 13. 10. 2026 (verze 5)
+Účinnost od: 14. 10. 2026 (verze 6)
 
 ## 1. Kdo je správce
 
@@ -63,6 +63,17 @@ z Rohlíku s cenou a obrázkem. Když pokladník propojí svůj účet na Rohlí
 ukládáme šifrovaně přístupové tokeny k tomuto propojení. Heslo k Rohlíku
 nevidíme.
 
+**Objednávka piva:** pokud má chata zapnutou objednávku sudového piva,
+ukládáme sudy (případně i výčep), které do ní přihlášení účastníci vyberou
+z ceníku obchodu: pivo, velikost sudu, cenu podle ceníku, počet, poznámku,
+pro koho sud je a kdo ho zapsal. Obchodu nic neposíláme, objednávku mu
+předá pokladník sám.
+
+**Kdo se skládá:** u nákupního seznamu i objednávky piva ukládáme, kdo se
+na kterou položku (nebo na celý seznam) neskládá a kdo to nastavil. Po
+uzavření seznamu z něj vznikne výdaj ve vyúčtování, rozdělený podle toho,
+kdo se na co skládá.
+
 **O návštěvnících:** technické záznamy o požadavcích (IP adresa v provozních
 lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
 popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o
@@ -83,7 +94,7 @@ vznést námitku (kapitola 10).
 
 **Organizace výletu.** Rozdělení postelí, aut a spojů, program a seznam věcí
 zpracováváme ze stejného oprávněného zájmu: aby výlet proběhl. Ze stejného
-důvodu vedeme i nákupní seznam. Propojení s Rohlíkem zapíná pokladník sám a
+důvodu vedeme i nákupní seznam a objednávku piva. Propojení s Rohlíkem zapíná pokladník sám a
 může ho kdykoli zrušit.
 
 **Vedení účtu.** U přihlášených uživatelů je základem plnění smlouvy, tedy
@@ -95,7 +106,8 @@ je můžete sami upravit.
 hlasu při plánování výletu, upozornění správcům chaty na nové hlasy při
 plánování, rozhodnutí o žádostech o propojení, žádosti o potvrzení výdaje,
 který za vás zapsal někdo jiný, a pokladníkovi seznam věcí, které musí do
-košíku na Rohlíku přidat ručně. Žádný marketing.
+košíku na Rohlíku přidat ručně, a shrnutí objednávky piva, když si o něj
+řekne. Žádný marketing.
 
 **Statistiky.** Anonymní měření návštěvnosti stojí na oprávněném zájmu vědět,
 jestli web funguje. Statistické cookies ukládáme jen s vaším souhlasem
@@ -134,9 +146,10 @@ jehož účet už byl použit k přihlášení, se nepřihlášeným nezobrazuje
 jedno přihlášení je tedy způsob, jak svůj rozpis a zůstatek schovat.
 Jméno u výletu zůstává v obou případech.
 
-Nákupní seznam chaty je vidět stejně jako program nebo rozdělení postelí,
-včetně toho, pro koho položka je. Přidávat do něj a upravovat ho mohou jen
-přihlášení účastníci dané chaty.
+Nákupní seznam a objednávka piva jsou vidět stejně jako program nebo
+rozdělení postelí, včetně toho, pro koho položka je. Přidávat do nich a
+upravovat je mohou jen přihlášení účastníci dané chaty. Kdo se na co
+neskládá, vidí jen přihlášení; nepřihlášení vidí jen počet.
 
 Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě
 pokladníka, účtenky, e-mailové adresy, sekce „Klíče a Wi-Fi", výdaje
@@ -205,7 +218,7 @@ ke konkrétnímu poskytovateli vám na vyžádání pošleme.
 | účet, který se 2 roky nepřihlásil | smažeme včetně vazeb |
 | žádosti o propojení včetně důvodu zamítnutí | smažeme do 12 měsíců od rozhodnutí |
 | hlasy z plánování výletu | součást záznamu výletu, po dobu provozu služby |
-| nákupní seznam chaty | součást záznamu výletu, po dobu provozu služby |
+| nákupní seznam a objednávka piva chaty | součást záznamu výletu, po dobu provozu služby |
 | propojení pokladníka s Rohlíkem (šifrované tokeny) | do zrušení propojení, nejpozději se smazáním účtu |
 | nepotvrzené hlasy z plánování (jméno, výběr, účet, který je má potvrdit) | smažeme do 12 měsíců od potvrzení, nejpozději do 12 měsíců od vyúčtování výletu |
 | přihlašovací odkazy (tokeny) | platí 15 minut, poté jsou neplatné |
@@ -350,6 +363,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
+| 6 | 14. 10. 2026 | Objednávka sudového piva: sudy a výčep, které účastníci vyberou z ceníku obchodu, a shrnutí objednávky pro pokladníka; kdo se na co skládá a výdaj z uzavřeného seznamu; doplnění kapitol 3, 4, 6 a 9. |
 | 5 | 13. 10. 2026 | Společný nákup: nákupní seznam chaty a jeho propojení s Rohlíkem přes účet pokladníka; Rohlík jako nový příjemce, cookie `rohlik-oauth-state` a doplnění kapitol 3, 4, 6, 7, 9 a 11. |
 | 4 | 30. 8. 2026 | Nepotvrzené hlasy z plánování: hlas zadaný bez přihlášení čeká na potvrzení jako samostatný záznam a uloží se při jakémkoli přihlášení; potvrzovací e-mail, cookie `oauth-vote-intent` a doplnění kapitol 4, 9 a 12. |
 | 3 | 27. 8. 2026 | Soukromé výdaje: nový typ výdaje viditelný jen jeho členům, doplnění kapitoly 6 včetně zobrazení bankovního spojení plátce členům jeho rozdělení. |

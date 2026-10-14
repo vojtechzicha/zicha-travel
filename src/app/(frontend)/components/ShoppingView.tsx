@@ -24,15 +24,30 @@ import {
   type ShoppingItemView,
   type ShoppingPayload,
 } from '@/lib/shopping'
-import { formatCurrency } from '@/lib/formatCurrency'
+import { formatCurrency, formatDate } from '@/lib/formatCurrency'
 import { formatDateRangeShort } from '@/lib/chataSelection'
 import { track } from '@/lib/analytics'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
+import {
+  CloseListButton,
+  ItemOptOutControls,
+  ListClosedNotice,
+  ListExpenseNote,
+  ListOptOutPanel,
+  QuantityStepper,
+  initials,
+  useItemOptOutText,
+  useListClosing,
+  useOptOut,
+} from './ListUi'
+import { listShares } from '@/lib/listSplit'
 
 interface ShoppingViewProps {
   chata: Chata
   shopping: ShoppingPayload
   viewer?: FinanceViewer
+  /** every participant of the chata, for "kdo se skládá" */
+  participants: { id: number; name: string }[]
   onDataChanged: () => Promise<void> | void
 }
 
@@ -70,15 +85,6 @@ const inputClass =
 const primaryButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:hover:bg-primary text-white text-[14px] font-semibold px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2'
 
-/** Two letters for the "kdo co chce" bubbles: "Martin Procházka" → "MP". */
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
-
 const linkButtonClass =
   'rounded-lg border border-primary text-primary-dark dark:text-primary-light text-xs font-bold px-3.5 py-2 whitespace-nowrap hover:bg-primary/10 transition-colors'
 
@@ -106,50 +112,15 @@ function ProductThumb({ product, size = 44 }: { product: RohlikProduct | null; s
   )
 }
 
-function QuantityStepper({
-  value,
-  onChange,
-  disabled,
-  lessLabel,
-  moreLabel,
-}: {
-  value: number
-  onChange: (next: number) => void
-  disabled?: boolean
-  lessLabel: string
-  moreLabel: string
-}) {
-  const buttonClass =
-    'w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-300 dark:hover:bg-white/[0.08]'
-  return (
-    <div className="inline-flex items-center rounded-xl border border-gray-200 dark:border-white/[0.14]">
-      <button
-        type="button"
-        className={buttonClass}
-        onClick={() => onChange(value - 1)}
-        disabled={disabled || value <= 1}
-        aria-label={lessLabel}
-      >
-        <Minus size={14} />
-      </button>
-      <span className="min-w-7 text-center text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-        {value}
-      </span>
-      <button
-        type="button"
-        className={buttonClass}
-        onClick={() => onChange(value + 1)}
-        disabled={disabled}
-        aria-label={moreLabel}
-      >
-        <Plus size={14} />
-      </button>
-    </div>
-  )
-}
-
-export function ShoppingView({ chata, shopping, viewer, onDataChanged }: ShoppingViewProps) {
+export function ShoppingView({
+  chata,
+  shopping,
+  viewer,
+  participants,
+  onDataChanged,
+}: ShoppingViewProps) {
   const t = useTranslations('shopping')
+  const tl = useTranslations('lists')
   const locale = useLocale() as AppLocale
   const money = (amount: number) => formatCurrency(amount, locale)
 
@@ -372,6 +343,25 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
 
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, shopper } = shopping
+  const closing = useListClosing('/api/shopping-items/close', chata.id, onDataChanged)
+  const optOut = useOptOut(chata.id, 'shopping', onDataChanged)
+  const itemOptOutText = useItemOptOutText(shopping.optOuts, participants)
+  const ownIds = useMemo(
+    () => shopping.ownParticipants.map((p) => p.id),
+    [shopping.ownParticipants],
+  )
+  // what the viewer's own participants pay from this list so far
+  const myShare = useMemo(() => {
+    const split = listShares(
+      participants.map((p) => p.id),
+      items.map((item) => ({
+        id: item.id,
+        cost: item.rohlik?.price != null ? item.rohlik.price * Math.max(1, item.quantity) : null,
+      })),
+      { list: shopping.optOuts.list ?? [], items: shopping.optOuts.items ?? {} },
+    )
+    return ownIds.reduce((sum, id) => sum + (split.shares.get(String(id)) ?? 0), 0)
+  }, [participants, items, shopping.optOuts, ownIds])
   const { total, unpriced } = estimatedTotal(items)
   // sent = in the banker's Rohlík cart, or (free text) on the checklist
   // email they got, in the current amounts
@@ -451,7 +441,17 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-10">
         {/* ─── the counter: add, staples, who wants what ─── */}
         <div className="flex min-w-0 flex-col gap-6">
-          {shopping.canAdd ? (
+          {shopping.closedAt ? (
+            <ListClosedNotice
+              text={t('closedText', { date: formatDate(shopping.closedAt, locale) })}
+              reopenLabel={t('reopen')}
+              failedLabel={t('closeFailed')}
+              canReopen={shopper.canManage}
+              busy={closing.busy}
+              failed={closing.failed}
+              onReopen={() => void closing.setClosed(false)}
+            />
+          ) : shopping.canAdd ? (
             <form onSubmit={submit} className="flex flex-col gap-3">
               <div className="relative">
                 {selected ? (
@@ -640,6 +640,9 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
             </HintCard>
           )}
 
+          {closing.expense && <ListExpenseNote outcome={closing.expense} />}
+          <ListOptOutPanel optOuts={shopping.optOuts} participants={participants} optOut={optOut} />
+
           {people.length > 0 && (
             <section aria-label={t('peopleTitle')}>
               <h4 className="mb-2.5 text-[13px] font-semibold text-gray-700 dark:text-slate-300">
@@ -679,14 +682,18 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
         {/* ─── the receipt ─── */}
         <div className="flex flex-col items-center gap-6 rounded-[22px] bg-[#eef1f4] px-4 py-10 dark:bg-white/[0.04] sm:px-8">
           <div className="receipt-paper w-full max-w-[440px] px-5 pb-6 pt-7 sm:px-7">
-            {allSent && (
+            {(allSent || shopping.closedAt) && (
               <div
                 aria-hidden="true"
                 className={`receipt-stamp pointer-events-none absolute right-3 top-16 rounded-md border-[3px] border-primary px-2.5 py-1 text-[15px] font-extrabold uppercase tracking-[0.06em] text-primary ${
                   justSent ? 'receipt-stamp-land' : ''
                 }`}
               >
-                {allFromRohlik ? t('stamp') : t('stampSent')}
+                {shopping.closedAt
+                  ? t('stampOrdered')
+                  : allFromRohlik
+                    ? t('stamp')
+                    : t('stampSent')}
               </div>
             )}
 
@@ -718,6 +725,7 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                     item.rohlik?.inStock === false ? t('soldOut') : null,
                     item.participantName ? t('wantedBy', { name: item.participantName }) : null,
                     sent ? (item.rohlik ? t('inCart') : t('handedOver')) : null,
+                    itemOptOutText(item.id),
                   ].filter(Boolean)
                   return (
                     <li
@@ -747,57 +755,69 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                               {item.note}
                             </div>
                           )}
-                          {item.canEdit &&
-                            (confirmDeleteId === item.id ? (
-                              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px]">
-                                {t('deleteConfirm')}
-                                <button
-                                  type="button"
-                                  onClick={() => deleteItem(item)}
-                                  disabled={busy}
-                                  className="font-bold text-red-600 hover:underline"
-                                >
-                                  {t('deleteYes')}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  className="font-bold hover:underline"
-                                >
-                                  {t('deleteNo')}
-                                </button>
+                          {confirmDeleteId === item.id ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px]">
+                              {t('deleteConfirm')}
+                              <button
+                                type="button"
+                                onClick={() => deleteItem(item)}
+                                disabled={busy}
+                                className="font-bold text-red-600 hover:underline"
+                              >
+                                {t('deleteYes')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="font-bold hover:underline"
+                              >
+                                {t('deleteNo')}
+                              </button>
+                            </div>
+                          ) : (
+                            (item.canEdit || shopping.optOuts.canSetFor.length > 0) && (
+                              <div className="mt-1 flex flex-wrap items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
+                                {item.canEdit && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => changeQuantity(item, item.quantity - 1)}
+                                      disabled={busy || item.quantity <= 1}
+                                      aria-label={t('less')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
+                                    >
+                                      <Minus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => changeQuantity(item, item.quantity + 1)}
+                                      disabled={busy}
+                                      aria-label={t('more')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
+                                    >
+                                      <Plus size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteId(item.id)}
+                                      disabled={busy}
+                                      aria-label={t('delete')}
+                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </>
+                                )}
+                                <ItemOptOutControls
+                                  itemId={item.id}
+                                  optOuts={shopping.optOuts}
+                                  participants={participants}
+                                  ownIds={ownIds}
+                                  optOut={optOut}
+                                />
                               </div>
-                            ) : (
-                              <div className="mt-1 flex items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-                                <button
-                                  type="button"
-                                  onClick={() => changeQuantity(item, item.quantity - 1)}
-                                  disabled={busy || item.quantity <= 1}
-                                  aria-label={t('less')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4] disabled:opacity-30"
-                                >
-                                  <Minus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => changeQuantity(item, item.quantity + 1)}
-                                  disabled={busy}
-                                  aria-label={t('more')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-[#eef1f4]"
-                                >
-                                  <Plus size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(item.id)}
-                                  disabled={busy}
-                                  aria-label={t('delete')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            ))}
+                            )
+                          )}
                         </div>
                       </div>
                     </li>
@@ -815,6 +835,13 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
                     {locale === 'en' ? `CZK ${plain(total)}` : `${plain(total)} Kč`}
                   </span>
                 </div>
+                {ownIds.length > 0 && (
+                  <div className="mt-1 text-[13px]">
+                    {myShare > 0
+                      ? tl('yourShare', { amount: money(myShare) })
+                      : tl('yourShareNone')}
+                  </div>
+                )}
                 <div className="mt-2 text-[11px] leading-relaxed text-[#8b9099]">
                   <div>{t('itemsCount', { count: items.length })}</div>
                   <div>{t('estimateNote')}</div>
@@ -831,8 +858,20 @@ export function ShoppingView({ chata, shopping, viewer, onDataChanged }: Shoppin
             </div>
           </div>
 
-          {/* ─── the banker's till ─── */}
-          {shopper.isMe && (
+          {/* ─── the banker's till (gone once the list is closed: it's ordered) ─── */}
+          {shopper.canManage && !shopping.closedAt && (
+            <CloseListButton
+              label={t('close')}
+              confirmText={t('closeConfirm')}
+              yesLabel={t('closeYes')}
+              noLabel={t('closeNo')}
+              failedLabel={t('closeFailed')}
+              busy={closing.busy}
+              failed={closing.failed}
+              onClose={() => void closing.setClosed(true)}
+            />
+          )}
+          {shopper.isMe && !shopping.closedAt && (
             <div className="flex w-full max-w-[440px] flex-col gap-3">
               {!shopper.connected ? (
                 <>

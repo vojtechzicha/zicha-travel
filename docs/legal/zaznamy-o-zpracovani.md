@@ -4,7 +4,7 @@ Správce: Vojtěch Zicha, mail@vojtechzicha.com (jediný správce, rozhodnutí 1
 v `compliance-gaps.md`). Výjimka pro malé organizace se nepoužije:
 zpracování není příležitostné a zahrnuje finanční údaje.
 
-Poslední revize: 2026-10-13 (nákupní seznam a propojení s Rohlíkem). Pravidlo údržby:
+Poslední revize: 2026-10-14 (objednávka sudového piva). Pravidlo údržby:
 každá nová kategorie údajů,
 nový příjemce nebo nový účel se propíše sem, do zásad (`/soukromi`) a do
 inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
@@ -20,8 +20,13 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
   hlas z plánování (vyhovující termíny a ubytování) — není veřejný, vidí ho
   jen přihlášení účastníci chaty a její správci; nákupní seznam (položka,
   množství, poznámka, pro koho, kdo ji zapsal, případně produkt z Rohlíku s
-  cenou a obrázkem) — čitelný jako ostatní záznam výletu, zapisují jen
-  přihlášení účastníci chaty.
+  cenou a obrázkem) a objednávka piva (sud nebo výčep z ceníku obchodu,
+  počet, poznámka, pro koho, kdo ho zapsal) — obojí čitelné jako ostatní
+  záznam výletu, zapisují jen přihlášení účastníci chaty. Objednávka piva
+  nikam neodchází: shrnutí dostane e-mailem pokladník a obchodu ho předá sám.
+  U obou seznamů i to, kdo se na kterou položku nebo na celý seznam
+  neskládá a kdo to nastavil (jména vidí jen přihlášení); uzavřený seznam se
+  stane jedním výdajem, rozděleným podle toho, kdo se na co skládá.
 - **Účel:** férové rozdělení nákladů a organizace výletu.
 - **Základ:** oprávněný zájem (čl. 6 odst. 1 písm. f) — balanční test v
   `balancni-test.md`.
@@ -31,7 +36,7 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
   `zpracovatele-a-predavani.md`.
 - **Výmaz:** bankovní spojení a účtenky 12 měsíců po „Vyúčtováno dne"
   (retenční cron `/api/retention`); záznam výletu včetně hlasů z plánování
-  i nákupního seznamu po dobu provozu služby jako archiv party; anonymizace na žádost (tlačítko
+  i nákupního seznamu a objednávky piva po dobu provozu služby jako archiv party; anonymizace na žádost (tlačítko
   v administraci).
 
 ## 2. Uživatelské účty a přihlašování

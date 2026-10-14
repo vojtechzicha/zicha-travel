@@ -2,7 +2,7 @@
 
 zicha.travel
 
-Effective from: 13 October 2026 (version 5)
+Effective from: 14 October 2026 (version 6)
 
 ## 1. Who the controller is
 
@@ -63,6 +63,17 @@ its price and image where there is one. When the banker connects their
 Rohlík account, we store the access tokens for that connection, encrypted.
 We never see the Rohlík password.
 
+**Beer order:** when a chata has the draught beer order switched on, we
+store the kegs (and the tap, if any) signed-in participants pick from the
+shop's price list: the beer, the keg size, the listed price, the quantity, a
+note, who it is for and who added it. We send nothing to the shop; the
+banker passes the order on themselves.
+
+**Who chips in:** for the shopping list and the beer order we store who
+doesn't chip in for which item (or for a whole list) and who set it. When
+the list is closed, it becomes an expense in the trip's accounts, split by
+who chips in for what.
+
 **About visitors:** technical request records (IP address in the hosting
 provider's operational logs), the cookies described in section 11 and the
 anonymous statistics described in section 12. On public forms (sign-in,
@@ -82,7 +93,7 @@ legitimate interest, and the whole group's, in a working shared settlement
 
 **Trip organization.** Bed, car and transport assignments, the program and
 the packing list rest on the same legitimate interest: making the trip
-happen. The shopping list rests on it too. The banker switches the Rohlík
+happen. The shopping list and the beer order rest on it too. The banker switches the Rohlík
 connection on themselves and can switch it off at any time.
 
 **Running your account.** For signed-in users the basis is performance of a
@@ -94,7 +105,7 @@ that you can edit your own does not work.
 a trip planning vote, notifications to chata admins about new planning votes,
 decisions on claim requests, requests to confirm an expense somebody recorded
 on your behalf, and, for the banker, the list of items to add to the Rohlík
-cart by hand. No marketing.
+cart by hand and the beer order summary when they ask for it. No marketing.
 
 **Statistics.** Anonymous usage measurement rests on our legitimate interest
 in knowing whether the site works. Statistics cookies are stored only with
@@ -137,9 +148,11 @@ to sign in is not shown to anonymous visitors: signing in once is
 therefore how you hide your own breakdown and balance. Your name stays
 with the trip either way.
 
-The chata's shopping list is visible the same way as the program or the
-bed assignments, including who each item is for. Only signed-in
-participants of that chata can add to it or change it.
+The chata's shopping list and beer order are visible the same way as the
+program or the bed assignments, including who each item is for. Only
+signed-in participants of that chata can add to them or change them. Who
+doesn't chip in for what is shown to signed-in visitors only; anonymous
+visitors see just the count.
 
 Without signing in, a visitor can never see: anyone's bank details except
 the banker's, receipts, email addresses, the "Keys and Wi-Fi" section,
@@ -210,7 +223,7 @@ you the details for a specific provider on request.
 | an account with no login for 2 years | deleted, including its links |
 | claim requests, including rejection reasons | deleted within 12 months of the decision |
 | planning votes | part of the trip record, for as long as the service runs |
-| the chata's shopping list | part of the trip record, for as long as the service runs |
+| the chata's shopping list and beer order | part of the trip record, for as long as the service runs |
 | the banker's Rohlík connection (encrypted tokens) | until the connection is removed, and when the account is deleted at the latest |
 | pending planning votes (name, selection, the account meant to confirm it) | deleted within 12 months of confirmation, and within 12 months of the trip being settled at the latest |
 | login links (tokens) | valid for 15 minutes, then void |
@@ -359,6 +372,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
+| 6 | 14 October 2026 | Beer order: the kegs and the tap participants pick from the shop's price list, and the order summary for the banker; who chips in for what, and the expense a closed list becomes; additions to sections 3, 4, 6 and 9. |
 | 5 | 13 October 2026 | Shared shopping: the chata's shopping list and its connection to Rohlík through the banker's account; Rohlík as a new recipient, the `rohlik-oauth-state` cookie and additions to sections 3, 4, 6, 7, 9 and 11. |
 | 4 | 30 August 2026 | Pending planning votes: a vote cast without signing in waits for confirmation as its own record and is saved on any sign-in; the confirmation email, the `oauth-vote-intent` cookie and additions to sections 4, 9 and 12. |
 | 3 | 27 August 2026 | Private expenses: a new expense type visible only to its members, additions to section 6 including showing the payer's bank details to the members of its split. |

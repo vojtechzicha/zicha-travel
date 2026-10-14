@@ -1,6 +1,6 @@
 // Czech content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 5, effective
-// 2026-10-13; the version history section tracks the changes).
+// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 6, effective
+// 2026-10-14; the version history section tracks the changes).
 // Edit wording there first, then mirror it here; page.tsx only picks a
 // locale. The one interactive element is the consent button in section 12.
 
@@ -38,7 +38,7 @@ export default function PrivacyContentCs() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Zásady zpracování osobních údajů"
-      lead="Služba zicha.travel · Účinnost od 13. 10. 2026 (verze 5)"
+      lead="Služba zicha.travel · Účinnost od 14. 10. 2026 (verze 6)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Kdo je správce" icon={<UserCog size={20} />}>
@@ -123,6 +123,17 @@ export default function PrivacyContentCs() {
             tokeny k tomuto propojení. Heslo k Rohlíku nevidíme.
           </p>
           <p>
+            <strong>Objednávka piva:</strong> pokud má chata zapnutou objednávku sudového piva,
+            ukládáme sudy (případně i výčep), které do ní přihlášení účastníci vyberou z ceníku
+            obchodu: pivo, velikost sudu, cenu podle ceníku, počet, poznámku, pro koho sud je a
+            kdo ho zapsal. Obchodu nic neposíláme, objednávku mu předá pokladník sám.
+          </p>
+          <p>
+            <strong>Kdo se skládá:</strong> u nákupního seznamu i objednávky piva ukládáme, kdo se
+            na kterou položku (nebo na celý seznam) neskládá a kdo to nastavil. Po uzavření seznamu
+            z něj vznikne výdaj ve vyúčtování, rozdělený podle toho, kdo se na co skládá.
+          </p>
+          <p>
             <strong>O návštěvnících:</strong> technické záznamy o požadavcích (IP adresa v
             provozních lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
             popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o propojení)
@@ -149,8 +160,8 @@ export default function PrivacyContentCs() {
           <p>
             <strong>Organizace výletu.</strong> Rozdělení postelí, aut a spojů, program a seznam
             věcí zpracováváme ze stejného oprávněného zájmu: aby výlet proběhl. Ze stejného
-            důvodu vedeme i nákupní seznam. Propojení s Rohlíkem zapíná pokladník sám a může ho
-            kdykoli zrušit.
+            důvodu vedeme i nákupní seznam a objednávku piva. Propojení s Rohlíkem zapíná
+            pokladník sám a může ho kdykoli zrušit.
           </p>
           <p>
             <strong>Vedení účtu.</strong> U přihlášených uživatelů je základem plnění smlouvy,
@@ -166,7 +177,7 @@ export default function PrivacyContentCs() {
             potvrzení hlasu při plánování výletu, upozornění správcům chaty na nové hlasy při
             plánování, rozhodnutí o žádostech o propojení, žádosti o potvrzení výdaje, který za
             vás zapsal někdo jiný, a pokladníkovi seznam věcí, které musí do košíku na Rohlíku
-            přidat ručně. Žádný marketing.
+            přidat ručně, a shrnutí objednávky piva, když si o něj řekne. Žádný marketing.
           </p>
           <p>
             <strong>Statistiky.</strong> Anonymní měření návštěvnosti stojí na oprávněném zájmu
@@ -215,9 +226,10 @@ export default function PrivacyContentCs() {
             Jméno u výletu zůstává v obou případech.
           </p>
           <p>
-            Nákupní seznam chaty je vidět stejně jako program nebo rozdělení postelí, včetně
-            toho, pro koho položka je. Přidávat do něj a upravovat ho mohou jen přihlášení
-            účastníci dané chaty.
+            Nákupní seznam a objednávka piva jsou vidět stejně jako program nebo rozdělení
+            postelí, včetně toho, pro koho položka je. Přidávat do nich a upravovat je mohou jen
+            přihlášení účastníci dané chaty. Kdo se na co neskládá, vidí jen přihlášení;
+            nepřihlášení vidí jen počet.
           </p>
           <p>
             Bez přihlášení naopak nikdy není vidět: bankovní spojení kohokoli kromě pokladníka,
@@ -387,7 +399,7 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5">součást záznamu výletu, po dobu provozu služby</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-2.5 pr-4">nákupní seznam chaty</td>
+                  <td className="py-2.5 pr-4">nákupní seznam a objednávka piva chaty</td>
                   <td className="py-2.5">součást záznamu výletu, po dobu provozu služby</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -729,6 +741,15 @@ export default function PrivacyContentCs() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">6</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">14. 10. 2026</td>
+                  <td className="py-2.5">
+                    Objednávka sudového piva: sudy a výčep, které účastníci vyberou z ceníku
+                    obchodu, a shrnutí objednávky pro pokladníka; kdo se na co skládá a výdaj z
+                    uzavřeného seznamu; doplnění kapitol 3, 4, 6 a 9.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">5</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">13. 10. 2026</td>

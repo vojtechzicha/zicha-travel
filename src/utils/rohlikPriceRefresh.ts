@@ -1,8 +1,9 @@
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { refId } from '@/lib/access'
 import { productDetailsBatch } from '@/lib/rohlik/mcp'
 import { refreshedRohlik, type StoredRohlik } from '@/lib/shopping'
 import { bankerAccountId, getAccessToken } from './rohlikConnection'
+import { lockList } from './listLock'
 
 // Keeps the "Nákup" prices current: an item stores the price from the
 // moment it was added, so the receipt's estimate drifts as Rohlík changes
@@ -21,8 +22,11 @@ export async function refreshChataPrices(
   chataId: number | string,
   token: string,
   now: Date = new Date(),
+  /** the send's transaction (it holds the list's lock); none = own writes */
+  req?: PayloadRequest,
 ): Promise<PriceRefreshSummary> {
   const { docs } = await payload.find({
+    req,
     collection: 'shopping-items',
     where: { and: [{ chata: { equals: chataId } }, { 'rohlik.productId': { exists: true } }] },
     limit: 1000,
@@ -48,6 +52,7 @@ export async function refreshChataPrices(
     // product details alone (only REST bodies are re-verified) and skips
     // its title sync, so the title rides along here
     await payload.update({
+      req,
       collection: 'shopping-items',
       id: item.id,
       data: next.title ? { rohlik: next.rohlik, title: next.title } : { rohlik: next.rohlik },
@@ -76,21 +81,42 @@ export async function refreshAllPrices(
   const summary = { chatas: 0, skipped: 0, checked: 0, changed: 0 }
   const dayAgo = now.getTime() - 24 * 60 * 60 * 1000
   for (const chata of chatas) {
-    // a finished trip's list is history; leave its prices as they were
+    // a finished trip's list is history, and a closed one is ordered: leave
+    // their prices as they were
     const end = chata.tripDateTo ?? chata.tripDateFrom
     if (end && new Date(end).getTime() < dayAgo) continue
+    if (chata.shoppingClosedAt) continue
     const bankerAccount = await bankerAccountId(payload, chata.id)
     const token = bankerAccount ? await getAccessToken(payload, bankerAccount) : null
     if (!token) {
       summary.skipped += 1
       continue
     }
+    // under the list's lock, re-checking the close stamp there: a close
+    // that lands while Rohlík answers must not get its receipt changed later
+    const tid = await payload.db.beginTransaction()
+    const req = { transactionID: tid ?? undefined, payload } as unknown as PayloadRequest
     try {
-      const result = await refreshChataPrices(payload, chata.id, token, now)
+      await lockList(req, chata.id, 'shopping')
+      const current = await payload.findByID({
+        req,
+        collection: 'chatas',
+        id: chata.id,
+        depth: 0,
+        overrideAccess: true,
+        context: { triggerAfterRead: false },
+      })
+      if (current.shoppingClosedAt) {
+        if (tid != null) await payload.db.commitTransaction(tid)
+        continue
+      }
+      const result = await refreshChataPrices(payload, chata.id, token, now, req)
+      if (tid != null) await payload.db.commitTransaction(tid)
       summary.chatas += 1
       summary.checked += result.checked
       summary.changed += result.changed
     } catch (err) {
+      if (tid != null) await payload.db.rollbackTransaction(tid).catch(() => undefined)
       summary.skipped += 1
       payload.logger.error({ err, chata: refId(chata.id) }, 'Rohlík price refresh failed')
     }

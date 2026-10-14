@@ -495,6 +495,61 @@ API payload, no new endpoints).
   `tests/int/shopping.int.spec.ts` (pure) and `shoppingApi.int.spec.ts`
   (access matrix). Strings in the `shopping` i18n namespace. Legal: Rohlík
   is listed in the outbound-calls inventory and the policy's recipients.
+  The people rules (who adds for whom, author edits, banker + chata admins
+  tidy, server-only fields) live in `src/collections/listItemRules.ts`,
+  shared with "Pivo"; the stepper and initials in `ListUi.tsx`.
+  **Closing a list** ("Uzavřít nákup/objednávku", `Chata.shoppingClosedAt` /
+  `beerClosedAt`): after ordering, the banker (or a chata admin) closes the
+  tab via `POST /api/{shopping,keg}-items/close { chata, closed }`. A closed
+  list stays readable with an "Objednáno" stamp, but the collections'
+  hooks refuse every create/update/delete from the page (the banker too;
+  chata admins and server-side writes pass), the Rohlík send answers 409
+  and the daily price check skips it, so ordered prices stay put. "Znovu
+  otevřít" (or clearing the date in the admin) reopens it.
+  **"Kdo se skládá"** (opt-outs, `src/lib/listSplit.ts`, collection
+  `list-opt-outs`): every item of both lists is split equally among ALL
+  participants of the chata; a participant opts out of one item ("Nechci")
+  or a whole list (covers later items too). Set only through
+  `POST /api/list-opt-outs/set` (own participants, or anyone as banker /
+  chata admin; never on a closed list); the slug API ships names to
+  signed-in viewers only (anonymous get counts). An item nobody wants falls
+  back to everyone. CLOSING a list writes ONE expense (`syncListExpense`,
+  `src/utils/listExpense.ts`): payer = banker, planned, weights = each
+  person's share in whole crowns (sum = amount, so the composer reads them
+  as exact amounts), `Expense.sourceList` marks it. Closing again updates
+  that row: a still-planned one gets the new estimate, a paid one keeps its
+  real amount and only the shares are rescaled. Unpriced Rohlík items stay
+  out of the estimate. Item and participant deletes drop their opt-outs.
+- **"Pivo"** (shared keg order from Benecentrum in Benešov,
+  `Chata.beerListEnabled`, collection `keg-items`): built for /pratele but
+  generic. Same tab shape and people rules as "Nákup", but no shop API: the
+  catalog is a STATIC copy of the keg rows of Benecentrum's price-list PDF
+  (`src/lib/kegCatalog.ts`, 15/20/30/50 l, with the list's stock flag; the
+  list has no product codes, so `code` is ours from name + size and the
+  order summary quotes name + size; printed date in `KEG_CATALOG_PRINTED`;
+  refresh by hand when they print a new one). The shop moved from Max
+  pivotéka (no Kofola) to Benecentrum before release
+  plus the taps (`TAP_RENTAL`, "Výčepní kohout", 250 Kč per tap and day, a
+  rough figure the banker set because the shop publishes no rental prices).
+  A tap item's quantity is the NUMBER of taps (anyone adds one); the rental
+  days are one per-chata number (`beerTapDays`, else the nights of the stay,
+  `tapRentalDays`), so two tap rows never double the days. The collection hook
+  copies name, size, price, unit and kind from the catalog for every
+  writer; an unknown code is refused. The banker (or a chata admin) emails
+  themselves the order summary (`POST /api/keg-items/order-summary`,
+  builder `src/lib/kegOrderEmail.ts`, Czech tykání, recipients like the
+  Rohlík checklist) to forward to the shop or read out on the phone;
+  nothing is ever sent to the shop. The summary stamps
+  `summarySentAt`/`summaryQuantity` on the items (the "ve shrnutí" marks) and
+  `beerSummarySentAt` + `beerSummarySignature` (`orderSignature`) on the
+  chata, so a later add, edit OR delete shows "changed since". Quantities
+  are whole numbers (validated).
+  UI `BeerView.tsx`: filterable price list with the price per litre, the
+  "Nákup" receipt with litres, half-litre glasses and litres per head.
+  Rules in `src/lib/beer.ts`; tests `tests/int/beer.int.spec.ts` (pure) and
+  `kegApi.int.spec.ts` (catalog-only fields, role matrix). Strings in the
+  `beer` namespace. Legal: policy v6 (the beer order as data, the summary
+  email); no new recipient, no new outbound call.
 - Public transport assignment (`publicTransportOptions[].riders`, same
   `{ participant }` array shape as car passengers): Organizace renders a
   "Veřejnou dopravou" block next to the cars (route title, Tam/Zpět badge,
