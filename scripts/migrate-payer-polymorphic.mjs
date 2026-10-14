@@ -1292,12 +1292,41 @@ async function backfillExpenseApproval() {
 
 /**
  * "Pivo": the bar item ('VYCEP-KOHOUT') still counts taps, but it is now
- * priced per bar (barPlan in src/lib/beer.ts) and named "Výčep"; its stored
- * name and price per bar and day (mirrored here, this script can't import
- * TypeScript) follow, so the admin shows what the page uses. Closed orders
- * keep what they were priced with. Idempotent: nothing matches once done.
+ * ONE item per order priced per bar (barPlan in src/lib/beer.ts) and named
+ * "Výčep"; before, anyone could add their own tap row. An open order's tap
+ * rows merge into its oldest one (the taps summed; the merged rows'
+ * "nechci" opt-outs go with them), and its stored name and price per bar
+ * and day (mirrored here, this script can't import TypeScript) follow, so
+ * the admin shows what the page uses. Closed orders keep what they were
+ * priced with. Idempotent: nothing matches once done.
  */
 async function refreshTapItems() {
+  const { rows } = await client.query(`
+    SELECT k.id, k.quantity,
+           first_value(k.id) OVER (PARTITION BY k.chata_id ORDER BY k.created_at, k.id) AS keep_id
+      FROM keg_items k JOIN chatas c ON c.id = k.chata_id
+      WHERE k.code = 'VYCEP-KOHOUT' AND c.beer_closed_at IS NULL`)
+  const merged = rows.filter((row) => row.id !== row.keep_id)
+  if (merged.length > 0) {
+    const taps = new Map()
+    for (const row of rows) {
+      const quantity = Math.max(1, Math.round(Number(row.quantity) || 1))
+      taps.set(row.keep_id, (taps.get(row.keep_id) ?? 0) + quantity)
+    }
+    for (const [keepId, quantity] of taps) {
+      await client.query('UPDATE keg_items SET quantity = $2, updated_at = now() WHERE id = $1', [
+        keepId,
+        quantity,
+      ])
+    }
+    const ids = merged.map((row) => row.id)
+    await client.query(
+      `DELETE FROM list_opt_outs WHERE list = 'beer' AND item_id = ANY($1::numeric[])`,
+      [ids],
+    )
+    await client.query('DELETE FROM keg_items WHERE id = ANY($1::int[])', [ids])
+    console.log(`keg_items: merged ${merged.length} extra bar row(s) into one per order`)
+  }
   const res = await client.query(`
     UPDATE keg_items k SET name = 'Výčep', price = 300, updated_at = now()
       FROM chatas c
