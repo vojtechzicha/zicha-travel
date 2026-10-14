@@ -15,7 +15,7 @@ import type { ViewerClaim } from '@/lib/claimRequests'
 import { canSeePlanningResults, type PlanningPayload } from '@/lib/planning'
 import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendingVotes'
 import { canEditShoppingItem, type ShoppingPayload } from '@/lib/shopping'
-import { tapRental, type BeerItemView, type BeerPayload } from '@/lib/beer'
+import { TAP_CODE, tapRental, type BeerItemView, type BeerPayload } from '@/lib/beer'
 import { buildKegOrderEmail, kegOrderFingerprint } from '@/lib/kegOrderEmail'
 import { isRohlikConnected } from '@/utils/rohlikConnection'
 import { optOutView } from '@/lib/listSplit'
@@ -509,6 +509,14 @@ export async function GET(
       const items: BeerItemView[] = kegsResult.docs.map((item) => {
         const participantId = item.participant != null ? Number(refId(item.participant)) : null
         const authoredBy = item.authoredBy != null ? refId(item.authoredBy) : null
+        const canEdit =
+          !chata.beerClosedAt &&
+          canEditShoppingItem({
+            viewerId: user?.id ?? null,
+            authoredBy,
+            isChataAdmin,
+            isBanker: viewerIsBanker,
+          })
         return {
           id: item.id,
           code: item.code,
@@ -522,14 +530,14 @@ export async function GET(
           participantId,
           participantName: participantId != null ? (nameOf.get(String(participantId)) ?? null) : null,
           mine: user != null && authoredBy === String(user.id),
-          canEdit:
-            !chata.beerClosedAt &&
-            canEditShoppingItem({
-              viewerId: user?.id ?? null,
-              authoredBy,
-              isChataAdmin,
-              isBanker: viewerIsBanker,
-            }),
+          canEdit,
+          // the bar is everybody's (KegItems' update access)
+          canChangeTaps:
+            canEdit ||
+            (!chata.beerClosedAt &&
+              item.code === TAP_CODE &&
+              user != null &&
+              viewer.linkedParticipantIds.length > 0),
           summaryQuantity: item.summarySentAt ? (item.summaryQuantity ?? null) : null,
         }
       })
@@ -545,6 +553,7 @@ export async function GET(
           .map((p: any) => ({ id: p.id, name: p.name })),
         tapDays: tapRental(chata).days,
         tapWeekend: tapRental(chata).weekend,
+        tapPerTap: tapRental(chata).perTap === true,
         closedAt: chata.beerClosedAt ?? null,
         optOuts: await optOutsFor('beer', Boolean(chata.beerClosedAt)),
         orderer: {

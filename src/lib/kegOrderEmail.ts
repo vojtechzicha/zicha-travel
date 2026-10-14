@@ -10,6 +10,7 @@ import {
   BAR_OPTIONS,
   BEER_SHOP,
   barPlan,
+  beerLineCosts,
   beerTotals,
   mergeOrderLines,
   type BarPlan,
@@ -86,7 +87,9 @@ export function kegOrderEmail(args: {
 }): KegOrderEmail {
   const { chataName, lines, rental, place, arrival, listUrl } = args
   const totals = beerTotals(lines, rental)
-  const barCost = barPlan(totals.taps, rental).cost
+  const barCost = beerLineCosts(lines, rental)
+    .filter((_, index) => lines[index].unit === 'day')
+    .reduce((sum, cost) => sum + cost, 0)
   const bar = BAR_OPTIONS[0]
   const printed = new Intl.DateTimeFormat('cs-CZ', {
     day: 'numeric',

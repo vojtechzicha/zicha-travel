@@ -532,7 +532,9 @@ API payload, no new endpoints).
   pivotéka (no Kofola) to Benecentrum before release
   plus the bar ("výčep", one `VYCEP-KOHOUT` item per order whose quantity
   is the number of TAPS people want; a second bar item is refused, more taps
-  go onto the first). `barPlan` turns the taps into the cheapest set of
+  go onto the first, and ANY participant of the chata may change its taps:
+  `kegUpdateAccess` + the hook keep its other fields, only its author, the
+  banker and chata admins remove it). `barPlan` turns the taps into the cheapest set of
   chillers from `BAR_OPTIONS` (one or two taps, same price today: 3 taps =
   a two-tap and a one-tap bar), and `beerLineCosts` shares that cost among
   bar items by taps; the receipt and the email name the plan ("Výčep se
@@ -546,7 +548,9 @@ API payload, no new endpoints).
   it). The rental days are one per-chata number (`beerTapDays`, else the
   stay's calendar days with arrival and departure included,
   `tapRentalDays`); a closed order snapshots days AND the weekend flag
-  (`beerClosedTapDays`/`beerClosedTapWeekend`). `refreshTapItems()` in the
+  (`beerClosedTapDays`/`beerClosedTapWeekend`); an order closed before bars
+  had a weekend flag keeps the old price per tap and day (`perTap`), so its
+  receipt still matches its Finance row. `refreshTapItems()` in the
   migrate script renames open orders' old bar rows and stores the new
   price. The collection hook
   copies name, size, price, unit and kind from the catalog for every

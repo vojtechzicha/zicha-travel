@@ -636,6 +636,23 @@ describe('the bar', () => {
         }),
       ).rejects.toThrow(/Výčep už v objednávce je/)
     }
+    // nor by turning a keg into a second bar
+    const keg = await payload.create({
+      collection: 'keg-items',
+      depth: 0,
+      data: { chata: chata.id, code: 'BENE-BIRELL-15', quantity: 1 },
+      ...asUser(users.other),
+    })
+    await expect(
+      payload.update({
+        collection: 'keg-items',
+        id: keg.id,
+        depth: 0,
+        data: { code: TAP_CODE },
+        ...asUser(users.other),
+      }),
+    ).rejects.toThrow(/Výčep už v objednávce je/)
+    await payload.delete({ collection: 'keg-items', id: keg.id, depth: 0 })
     const more = await payload.update({
       collection: 'keg-items',
       id: bar.id,
@@ -644,6 +661,41 @@ describe('the bar', () => {
       ...asUser(users.author),
     })
     expect(more.quantity).toBe(3)
+
+    // the bar is everybody's: another participant changes its taps, only that
+    const theirs = await payload.update({
+      collection: 'keg-items',
+      id: bar.id,
+      depth: 0,
+      data: { quantity: 4, note: 'moje', participant: people.other.id, code: 'BENE-BIRELL-15' },
+      ...asUser(users.other),
+    })
+    expect(theirs).toMatchObject({ quantity: 4, code: TAP_CODE, note: null })
+    expect(String(theirs.participant)).toBe(String(people.author.id))
+    expect(String(theirs.authoredBy)).toBe(String(users.author.id))
+    // ...but can't remove it, and an outsider can't touch it
+    await expect(
+      payload.delete({ collection: 'keg-items', id: bar.id, depth: 0, ...asUser(users.other) }),
+    ).rejects.toThrow()
+    await expect(
+      payload.update({
+        collection: 'keg-items',
+        id: bar.id,
+        depth: 0,
+        data: { quantity: 9 },
+        ...asUser(users.outsider),
+      }),
+    ).rejects.toThrow()
+    // and a keg stays its author's
+    await expect(
+      payload.update({
+        collection: 'keg-items',
+        id: authorItem.id,
+        depth: 0,
+        data: { quantity: 5 },
+        ...asUser(users.other),
+      }),
+    ).rejects.toThrow()
     await payload.delete({ collection: 'keg-items', id: bar.id, depth: 0 })
   })
 })

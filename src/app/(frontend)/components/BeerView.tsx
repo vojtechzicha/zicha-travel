@@ -233,8 +233,12 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
   // ─── derived ────────────────────────────────────────────────────────────
   const { items, orderer } = beer
   const rental = useMemo<TapRental>(
-    () => ({ days: beer.tapDays, weekend: beer.tapWeekend === true }),
-    [beer.tapDays, beer.tapWeekend],
+    () => ({
+      days: beer.tapDays,
+      weekend: beer.tapWeekend === true,
+      perTap: beer.tapPerTap === true,
+    }),
+    [beer.tapDays, beer.tapWeekend, beer.tapPerTap],
   )
   const totals = beerTotals(items, rental)
   // the bar's cost is planned for the whole order (barPlan), so per item
@@ -632,7 +636,9 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                     >
                       <div className="grid grid-cols-[2.4em_minmax(0,1fr)] text-[13px] leading-snug">
                         {/* the bar's quantity is taps: its name says what that makes */}
-                        <span className="shrink-0 tabular-nums">{isTap ? '' : `${item.quantity}×`}</span>
+                        <span className="shrink-0 tabular-nums">
+                          {isTap ? '' : `${item.quantity}×`}
+                        </span>
                         <div className="min-w-0">
                           <div className="flex items-end">
                             <span className="min-w-0 break-words">
@@ -675,9 +681,11 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                               </button>
                             </div>
                           ) : (
-                            (item.canEdit || beer.optOuts.canSetFor.length > 0) && (
+                            (item.canEdit ||
+                              item.canChangeTaps ||
+                              beer.optOuts.canSetFor.length > 0) && (
                               <div className="mt-1 flex flex-wrap items-center gap-1 transition-opacity lg:opacity-40 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-                                {item.canEdit && (
+                                {(item.canEdit || item.canChangeTaps) && (
                                   <>
                                     <button
                                       type="button"
@@ -697,15 +705,17 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
                                     >
                                       <Plus size={13} />
                                     </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setConfirmDeleteId(item.id)}
-                                      disabled={busy}
-                                      aria-label={t('delete')}
-                                      className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
+                                    {item.canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteId(item.id)}
+                                        disabled={busy}
+                                        aria-label={t('delete')}
+                                        className="flex h-7 w-7 items-center justify-center rounded-md text-[#5d626b] hover:bg-red-50 hover:text-red-600"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
                                   </>
                                 )}
                                 <ItemOptOutControls

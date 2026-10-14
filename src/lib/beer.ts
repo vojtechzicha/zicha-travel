@@ -171,6 +171,12 @@ export interface TapRental {
   days: number
   /** picked up on a Friday and back by Monday: the weekend price applies */
   weekend: boolean
+  /**
+   * closed before the bar was priced per bar (no weekend snapshot): its bar
+   * rows keep the old price per tap and day, so the receipt still matches
+   * the Finance row written when it closed
+   */
+  perTap?: boolean
 }
 
 const isFridayInPrague = (date: string): boolean =>
@@ -187,7 +193,9 @@ const isFridayInPrague = (date: string): boolean =>
 export function tapRental(chata: TapRentalChata): TapRental {
   const days = tapRentalDays(chata)
   if (chata.beerClosedAt && chata.beerClosedTapDays && chata.beerClosedTapDays > 0) {
-    return { days, weekend: chata.beerClosedTapWeekend === true }
+    return chata.beerClosedTapWeekend == null
+      ? { days, weekend: false, perTap: true }
+      : { days, weekend: chata.beerClosedTapWeekend }
   }
   const weekend =
     days <= WEEKEND_RENTAL_DAYS &&
@@ -248,7 +256,9 @@ const wholeQuantity = (item: { quantity: number }) => Math.max(1, Math.round(ite
 
 /** All taps the order asks for (the bar items' quantities). */
 export function orderTaps(items: readonly { quantity: number; unit: 'keg' | 'day' }[]): number {
-  return items.filter((item) => item.unit === 'day').reduce((sum, item) => sum + wholeQuantity(item), 0)
+  return items
+    .filter((item) => item.unit === 'day')
+    .reduce((sum, item) => sum + wholeQuantity(item), 0)
 }
 
 /**
@@ -257,6 +267,12 @@ export function orderTaps(items: readonly { quantity: number; unit: 'keg' | 'day
  * by the bar items in proportion to their taps.
  */
 export function beerLineCosts(items: readonly CostedItem[], rental: TapRental): number[] {
+  if (rental.perTap) {
+    return items.map(
+      (item) =>
+        item.price * wholeQuantity(item) * (item.unit === 'day' ? Math.max(1, rental.days) : 1),
+    )
+  }
   const taps = orderTaps(items)
   const barCost = taps > 0 ? barPlan(taps, rental).cost : 0
   return items.map((item) =>
@@ -371,6 +387,8 @@ export interface BeerItemView {
   mine: boolean
   /** the viewer may change or remove it */
   canEdit: boolean
+  /** the bar is everybody's: any participant changes its taps (not remove it) */
+  canChangeTaps: boolean
   /** the quantity the last order summary carried; null = not in one yet */
   summaryQuantity: number | null
 }
@@ -395,6 +413,8 @@ export interface BeerPayload {
   tapDays: number
   /** the weekend price applies to the bars (tapRental) */
   tapWeekend: boolean
+  /** an order closed before bars: the old price per tap and day (tapRental) */
+  tapPerTap: boolean
   /** the banker closed the order: everything stays readable, nothing changes */
   closedAt: string | null
   /** who doesn't chip in for what ("tohle nechci", src/lib/listSplit.ts) */

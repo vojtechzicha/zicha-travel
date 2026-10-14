@@ -1,4 +1,11 @@
-import { APIError, type CollectionConfig, type Endpoint, type PayloadRequest } from 'payload'
+import {
+  APIError,
+  type Access,
+  type CollectionConfig,
+  type Endpoint,
+  type PayloadRequest,
+  type Where,
+} from 'payload'
 import { canManageChata, refId } from '../lib/access'
 import { TAP_CODE, beerProduct } from '../lib/beer'
 import { pickValidationMessage } from '../i18n/adminTranslations'
@@ -9,6 +16,7 @@ import { manualItemsRecipients } from '../utils/shoppingEmail'
 import {
   applyListAuthorship,
   assertListOpen,
+  bankerChataIds,
   closeListEndpoint,
   dropItemOptOuts,
   guardDeleteWhenClosed,
@@ -118,6 +126,40 @@ const orderSummary: Endpoint = {
   },
 }
 
+// The bar is everybody's: besides the usual editors (listEditAccess), any
+// participant of the chata changes its taps; the hook keeps the rest of the
+// row as it was for them.
+const kegUpdateAccess: Access = async (args) => {
+  const base = await listEditAccess(args)
+  const user = args.req.user
+  if (base === true || !user) return base
+  const own = await args.req.payload.find({
+    collection: 'participants',
+    where: { account: { equals: user.id } },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const chataIds = [...new Set(own.docs.map((p) => Number(refId(p.chata))))]
+  if (chataIds.length === 0) return base
+  const bar: Where = { and: [{ code: { equals: TAP_CODE } }, { chata: { in: chataIds } }] }
+  return base ? { or: [base as Where, bar] } : bar
+}
+
+/** Changing taps on somebody else's bar: not its author, banker or chata admin. */
+async function changesTapsOnly(
+  req: PayloadRequest,
+  chataId: string,
+  originalDoc: Record<string, unknown> | undefined,
+): Promise<boolean> {
+  const user = req.user
+  if (!user || originalDoc?.code !== TAP_CODE || canManageChata(user, chataId)) return false
+  if (originalDoc.authoredBy != null && refId(originalDoc.authoredBy) === String(user.id)) {
+    return false
+  }
+  return !(await bankerChataIds(req.payload, user.id)).map(String).includes(chataId)
+}
+
 // "Pivo" — the chata's shared keg order (src/lib/beer.ts). Signed-in
 // participants pick kegs from Benecentrum's price list and the bar;
 // the banker orders it all from the shop. Same people rules as "Nákup"
@@ -140,7 +182,7 @@ export const KegItems: CollectionConfig = {
   access: {
     read: () => true,
     create: ({ req }) => Boolean(req.user),
-    update: listEditAccess,
+    update: kegUpdateAccess,
     delete: listEditAccess,
   },
   endpoints: [orderSummary, closeListEndpoint('beerClosedAt')],
@@ -151,6 +193,12 @@ export const KegItems: CollectionConfig = {
       async ({ data, operation, originalDoc, req }) => {
         const chataId = listItemChataId(data, operation, originalDoc)
         await assertListOpen(req, chataId, 'beerClosedAt')
+        if (operation === 'update' && (await changesTapsOnly(req, chataId, originalDoc))) {
+          // only the number of taps changes; the bar stays whose it is
+          data.code = originalDoc?.code
+          data.note = originalDoc?.note ?? null
+          data.participant = originalDoc?.participant ?? null
+        }
 
         // The product decides what the shop is asked for, so a body only
         // names a code: name, size and price always come from the catalog,
@@ -166,13 +214,20 @@ export const KegItems: CollectionConfig = {
         data.kind = product.kind
 
         // the bar is one item counting taps (barPlan picks the bars), so
-        // more taps go onto it rather than into a second one. assertListOpen
+        // more taps go onto it rather than into a second one, whether added
+        // or made by changing another item's code. assertListOpen
         // holds the list's lock, so two adds can't both get through
-        if (operation === 'create' && product.code === TAP_CODE) {
+        if (product.code === TAP_CODE && originalDoc?.code !== TAP_CODE) {
           const existing = await req.payload.count({
             req,
             collection: 'keg-items',
-            where: { and: [{ chata: { equals: chataId } }, { code: { equals: TAP_CODE } }] },
+            where: {
+              and: [
+                { chata: { equals: chataId } },
+                { code: { equals: TAP_CODE } },
+                ...(originalDoc?.id != null ? [{ id: { not_equals: originalDoc.id } }] : []),
+              ],
+            },
             overrideAccess: true,
           })
           if (existing.totalDocs > 0) {
