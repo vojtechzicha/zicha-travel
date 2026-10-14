@@ -1293,40 +1293,72 @@ async function backfillExpenseApproval() {
 /**
  * "Pivo": the bar item ('VYCEP-KOHOUT') still counts taps, but it is now
  * ONE item per order priced per bar (barPlan in src/lib/beer.ts) and named
- * "Výčep"; before, anyone could add their own tap row. Every order's tap
- * rows merge into its oldest one (the taps summed; the merged rows'
- * "nechci" opt-outs go with them), closed ones too, so reopening one never
- * brings back a second bar (their old price per tap and day is the same on
- * every row, so the closed total doesn't move). An open order's stored name
- * and price per bar and day (mirrored here, this script can't import
- * TypeScript) follow, so the admin shows what the page uses; closed orders
- * keep what they were priced with. Idempotent: nothing matches once done.
+ * "Výčep"; before, anyone could add their own tap row. An open order's tap
+ * rows merge into its oldest one, the taps summed. An item opt-out
+ * ("nechci") survives the merge only for somebody who opted out of every
+ * merged row: one bar can't keep a per-row split, and nobody gets left out
+ * of taps they didn't refuse. The stored name and price per bar and day
+ * (mirrored here, this script can't import TypeScript) follow, so the admin
+ * shows what the page uses.
+ *
+ * A CLOSED order with old tap rows (closed before the weekend flag existed)
+ * would show a receipt the bar plan reprices, out of step with its Finance
+ * row, so the deploy stops instead: none existed when this shipped. Reopen
+ * such an order (then the next deploy merges it) or fix it by hand.
+ * Idempotent: nothing matches once done.
  */
 async function refreshTapItems() {
+  const legacyClosed = await client.query(`
+    SELECT DISTINCT c.id, c.slug FROM chatas c JOIN keg_items k ON k.chata_id = c.id
+      WHERE k.code = 'VYCEP-KOHOUT'
+        AND c.beer_closed_at IS NOT NULL
+        AND c.beer_closed_tap_weekend IS NULL`)
+  if (legacyClosed.rowCount > 0) {
+    throw new Error(
+      'Closed beer orders still priced per tap: ' +
+        legacyClosed.rows.map((row) => row.slug ?? row.id).join(', ') +
+        '. Reopen them (Pivo, "Znovu otevřít") and deploy again.',
+    )
+  }
   const { rows } = await client.query(`
     SELECT k.id, k.quantity,
            first_value(k.id) OVER (PARTITION BY k.chata_id ORDER BY k.created_at, k.id) AS keep_id
-      FROM keg_items k
-      WHERE k.code = 'VYCEP-KOHOUT'`)
+      FROM keg_items k JOIN chatas c ON c.id = k.chata_id
+      WHERE k.code = 'VYCEP-KOHOUT' AND c.beer_closed_at IS NULL`)
   const merged = rows.filter((row) => row.id !== row.keep_id)
   if (merged.length > 0) {
-    const taps = new Map()
+    const groups = new Map()
     for (const row of rows) {
-      const quantity = Math.max(1, Math.round(Number(row.quantity) || 1))
-      taps.set(row.keep_id, (taps.get(row.keep_id) ?? 0) + quantity)
+      const group = groups.get(row.keep_id) ?? { taps: 0, ids: [] }
+      group.taps += Math.max(1, Math.round(Number(row.quantity) || 1))
+      group.ids.push(row.id)
+      groups.set(row.keep_id, group)
     }
-    for (const [keepId, quantity] of taps) {
+    for (const [keepId, group] of groups) {
+      if (group.ids.length < 2) continue
       await client.query('UPDATE keg_items SET quantity = $2, updated_at = now() WHERE id = $1', [
         keepId,
-        quantity,
+        group.taps,
       ])
+      // who opted out of every merged row keeps it on the one bar
+      const { rows: refusers } = await client.query(
+        `SELECT participant_id FROM list_opt_outs
+          WHERE list = 'beer' AND item_id = ANY($1::numeric[])
+          GROUP BY participant_id
+          HAVING count(DISTINCT item_id) = $2`,
+        [group.ids, group.ids.length],
+      )
+      const keep = refusers.map((row) => row.participant_id)
+      await client.query(
+        `DELETE FROM list_opt_outs
+          WHERE list = 'beer' AND item_id = ANY($1::numeric[])
+            AND NOT (item_id = $2 AND participant_id = ANY($3::int[]))`,
+        [group.ids, keepId, keep],
+      )
     }
-    const ids = merged.map((row) => row.id)
-    await client.query(
-      `DELETE FROM list_opt_outs WHERE list = 'beer' AND item_id = ANY($1::numeric[])`,
-      [ids],
-    )
-    await client.query('DELETE FROM keg_items WHERE id = ANY($1::int[])', [ids])
+    await client.query('DELETE FROM keg_items WHERE id = ANY($1::int[])', [
+      merged.map((row) => row.id),
+    ])
     console.log(`keg_items: merged ${merged.length} extra bar row(s) into one per order`)
   }
   const res = await client.query(`

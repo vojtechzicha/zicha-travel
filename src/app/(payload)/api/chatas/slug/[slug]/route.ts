@@ -553,7 +553,6 @@ export async function GET(
           .map((p: any) => ({ id: p.id, name: p.name })),
         tapDays: tapRental(chata).days,
         tapWeekend: tapRental(chata).weekend,
-        tapPerTap: tapRental(chata).perTap === true,
         closedAt: chata.beerClosedAt ?? null,
         optOuts: await optOutsFor('beer', Boolean(chata.beerClosedAt)),
         orderer: {

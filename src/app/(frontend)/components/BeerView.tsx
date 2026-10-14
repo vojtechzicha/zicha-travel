@@ -237,9 +237,8 @@ export function BeerView({ chata, beer, participants, viewer, onDataChanged }: B
     () => ({
       days: beer.tapDays,
       weekend: beer.tapWeekend === true,
-      perTap: beer.tapPerTap === true,
     }),
-    [beer.tapDays, beer.tapWeekend, beer.tapPerTap],
+    [beer.tapDays, beer.tapWeekend],
   )
   const totals = beerTotals(items, rental)
   // the bar's cost is planned for the whole order (barPlan), so per item

@@ -201,24 +201,6 @@ describe('pricePerLiter, tapRental and the bar plan', () => {
     // the stored price of an old row doesn't matter, the plan does
     expect(beerLineCosts([{ quantity: 3, price: 250, unit: 'day' }], rental)).toEqual([2000])
   })
-
-  it('keeps the old price per tap and day for an order closed before bars', () => {
-    const legacy = tapRental({
-      beerClosedAt: '2026-10-01',
-      beerClosedTapDays: 4,
-      beerClosedTapWeekend: null,
-    })
-    expect(legacy).toEqual({ days: 4, weekend: false, perTap: true })
-    expect(
-      beerLineCosts(
-        [
-          { quantity: 2, price: 250, unit: 'day' },
-          { quantity: 1, price: 1230, unit: 'keg' },
-        ],
-        legacy,
-      ),
-    ).toEqual([2000, 1230])
-  })
 })
 
 describe('beerTotals', () => {

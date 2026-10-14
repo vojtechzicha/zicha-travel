@@ -171,12 +171,6 @@ export interface TapRental {
   days: number
   /** picked up on a Friday and back by Monday: the weekend price applies */
   weekend: boolean
-  /**
-   * closed before the bar was priced per bar (no weekend snapshot): its bar
-   * rows keep the old price per tap and day, so the receipt still matches
-   * the Finance row written when it closed
-   */
-  perTap?: boolean
 }
 
 const isFridayInPrague = (date: string): boolean =>
@@ -193,9 +187,7 @@ const isFridayInPrague = (date: string): boolean =>
 export function tapRental(chata: TapRentalChata): TapRental {
   const days = tapRentalDays(chata)
   if (chata.beerClosedAt && chata.beerClosedTapDays && chata.beerClosedTapDays > 0) {
-    return chata.beerClosedTapWeekend == null
-      ? { days, weekend: false, perTap: true }
-      : { days, weekend: chata.beerClosedTapWeekend }
+    return { days, weekend: chata.beerClosedTapWeekend === true }
   }
   const weekend =
     days <= WEEKEND_RENTAL_DAYS &&
@@ -218,7 +210,6 @@ export function barRentalCost(bar: BarOption, rental: TapRental): number {
 export function weekendPriced(rental: TapRental): boolean {
   return (
     rental.weekend &&
-    !rental.perTap &&
     BAR_OPTIONS.some(
       (bar) => barRentalCost(bar, rental) < bar.pricePerDay * Math.max(1, rental.days),
     )
@@ -281,12 +272,6 @@ export function orderTaps(items: readonly { quantity: number; unit: 'keg' | 'day
  * by the bar items in proportion to their taps.
  */
 export function beerLineCosts(items: readonly CostedItem[], rental: TapRental): number[] {
-  if (rental.perTap) {
-    return items.map(
-      (item) =>
-        item.price * wholeQuantity(item) * (item.unit === 'day' ? Math.max(1, rental.days) : 1),
-    )
-  }
   const taps = orderTaps(items)
   const barCost = taps > 0 ? barPlan(taps, rental).cost : 0
   return items.map((item) =>
@@ -427,8 +412,6 @@ export interface BeerPayload {
   tapDays: number
   /** the weekend price applies to the bars (tapRental) */
   tapWeekend: boolean
-  /** an order closed before bars: the old price per tap and day (tapRental) */
-  tapPerTap: boolean
   /** the banker closed the order: everything stays readable, nothing changes */
   closedAt: string | null
   /** who doesn't chip in for what ("tohle nechci", src/lib/listSplit.ts) */

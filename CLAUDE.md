@@ -548,12 +548,13 @@ API payload, no new endpoints).
   it). The rental days are one per-chata number (`beerTapDays`, else the
   stay's calendar days with arrival and departure included,
   `tapRentalDays`); a closed order snapshots days AND the weekend flag
-  (`beerClosedTapDays`/`beerClosedTapWeekend`); an order closed before bars
-  had a weekend flag keeps the old price per tap and day (`perTap`), so its
-  receipt still matches its Finance row. `refreshTapItems()` in the
-  migrate script merges every order's old per-person tap rows into one
-  (taps summed, the merged rows' opt-outs dropped), renames it and stores
-  the new price. The collection hook
+  (`beerClosedTapDays`/`beerClosedTapWeekend`). `refreshTapItems()` in the
+  migrate script merges an open order's old per-person tap rows into one
+  (taps summed; an item opt-out survives only for who opted out of every
+  merged row), renames it and stores the new price. A CLOSED order holding
+  old tap rows would be repriced by the bar plan, so the script stops the
+  deploy instead (none existed when this shipped: reopen it or fix it by
+  hand). The collection hook
   copies name, size, price, unit and kind from the catalog for every
   writer; an unknown code is refused. The banker (or a chata admin) emails
   themselves the order summary (`POST /api/keg-items/order-summary`,
