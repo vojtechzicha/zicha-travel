@@ -245,8 +245,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Pure rules (`accommodationAvailableFor`, `validateVoteSelection`,
      `canSeePlanningResults`, `tallyVotes`, `planningMonthsLabel`) in
      `src/lib/planning.ts`, unit-tested in `tests/int/planning.int.spec.ts`;
-     strings in the `planning` i18n namespace; one-off seed for /pratele in
-     `scripts/seed-planning-pratele.mjs` (`pnpm planning:seed:pratele`)
+     strings in the `planning` i18n namespace
    - **Nepotvrzené hlasy** (`PendingVotes.ts`, slug `pending-votes`): an
      anonymous vote is filed as a ROW (name, selection, the account created
      or reused for the email, `status`, `issue`, `source`), never as URL
@@ -1247,8 +1246,6 @@ previews per PR). The Fly.io era is over — the migration history lives in
   when a newer build is live (`UpdateHint.tsx` in the frontend layout,
   strings in `common.updateHint`). Dismiss is per server build; builds
   without a commit fall back to `'unversioned'`, which disables the hint.
-- One-off backfill scripts: `pnpm migrate:media` (filled the Storage bucket
-  from the then-live site over public HTTP; idempotent, kept for reference).
 
 ## Development Commands
 

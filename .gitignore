@@ -63,3 +63,6 @@ node_modules/
 # demo data manifest for the help screenshots
 scripts/.help-demo.json
 
+
+# Supabase CLI cache (written when the CLI runs inside the repo)
+supabase/.temp/
