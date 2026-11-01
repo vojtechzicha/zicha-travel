@@ -4,6 +4,18 @@
 
 A Payload CMS-based expense tracking system for managing group trips and shared expenses. Allows participants to track expenses, prepayments, and automatically calculate who owes what.
 
+> **Schema changes — binding rule.** Every database schema change is a
+> **Payload migration** in `src/migrations`, generated with
+> `pnpm migrate:create <name>` and applied by the Vercel build
+> (`pnpm migrate`). Never write schema DDL anywhere else: not in a script,
+> not in `scripts/db-post-migrate.mjs` (per-deploy data upkeep only), not as
+> SQL run by hand against production or preview. The old scheme — the
+> hand-maintained `NEW_SCHEMA_DDL` in `scripts/migrate-payer-polymorphic.mjs`
+> and `pnpm migrate:payer` — was retired on 2026-11-01 and must not be
+> brought back; `tests/int/migrations.int.spec.ts` fails if it is. Older docs
+> (`docs/PRD-*.md`, `docs/VERCEL_MIGRATION.md`) still say "DDL appended to
+> `NEW_SCHEMA_DDL`" — that is history, follow "Schema migrations" below.
+
 ## Architecture
 
 ### Collections
@@ -1168,9 +1180,9 @@ running.
   database as before → before the PR, `pnpm migrate:create <name>` writes
   `src/migrations/<timestamp>_<name>.ts` (+ a `.json` snapshot) by diffing
   the collections against the last snapshot, NOT against a database. Review
-  the SQL (it asks about renames; enum changes may need hand edits), trim
-  the template's unused `payload, req` arguments to `{ db }` (lint fails on
-  them otherwise), and commit it with the collection change. The PR's preview build applies it to the
+  the SQL (it asks about renames; enum changes may need hand edits) and
+  commit it with the collection change. `src/migrations` is excluded from
+  ESLint as generated code, so the template stays as generated. The PR's preview build applies it to the
   preview project; merging applies it to production.
 - **Always generate through `pnpm migrate:create`**: it forces the S3
   variables on, because the storage plugin adds `prefix` columns and
