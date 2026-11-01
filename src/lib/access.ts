@@ -7,8 +7,9 @@ import type { Access, PayloadRequest } from 'payload'
 //   admin-panel access or write access to any collection
 //
 // NOTE for the database: the legacy values were 'admin' (= today's
-// superadmin) and 'user' (= today's admin). scripts/migrate-payer-polymorphic.mjs
-// renames the enum values in place, so old rows keep their meaning.
+// superadmin) and 'user' (= today's admin). the retired
+// scripts/migrate-payer-polymorphic.mjs renamed the enum values in place (see
+// git history), so old rows keep their meaning.
 
 type AnyUser = PayloadRequest['user']
 

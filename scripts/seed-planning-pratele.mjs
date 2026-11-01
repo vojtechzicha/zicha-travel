@@ -5,7 +5,7 @@
 // copy, and the tentative window on the chata. Idempotent — a chata that
 // already has date options is left alone.
 //
-// Run AFTER the schema exists (a deploy ran `migrate:payer auto`, or
+// Run AFTER the schema exists (a deploy ran the Payload migrations, or
 // locally after `pnpm dev` pushed the schema):
 //   pnpm planning:seed:pratele            # local .env DATABASE_URI
 //   node scripts/seed-planning-pratele.mjs --db=<uri>   # explicit target
@@ -106,7 +106,7 @@ async function main() {
   )
   if (tables.rows[0].n < 2) {
     console.error(
-      'ERROR: planning tables missing — deploy first (vercel-build runs migrate:payer auto), or run `pnpm migrate:payer auto`.',
+      'ERROR: planning tables missing — deploy first (vercel-build runs the migrations), or start `pnpm dev` once so the dev push creates them.',
     )
     process.exit(1)
   }
