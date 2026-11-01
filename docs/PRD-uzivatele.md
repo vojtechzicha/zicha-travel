@@ -34,27 +34,6 @@
   `chataScopedAccess`, `ownChataAccess`, `canManageChata`) and are used by
   every collection and custom endpoint.
 
-### Database migration (legacy → new)
-
-Legacy values meant: `admin` = all chatas, `user` = assigned chatas.
-`scripts/migrate-payer-polymorphic.mjs auto` (run by every Vercel build)
-migrates in place, idempotently:
-
-- `ALTER TYPE ... RENAME VALUE`: `admin` → `superadmin`, `user` → `admin`
-  (rows keep their meaning; guarded by "does `superadmin` exist yet")
-- adds the new `user` enum value and resets the column default to it
-  (autocommit statements — PostgreSQL refuses to *use* an enum value added in
-  the same transaction, which is also why this step runs outside the main
-  migration transaction)
-- copies legacy `chatas.assignedUsers` rows into `users.assignedChatas`
-  (`users_rels`) and drops `chatas_assigned_users` — access checks read only
-  `users.assignedChatas` now
-- additive DDL: `users.login_token`, `users.login_token_expires`,
-  `participants.account_id` (FK → users, `ON DELETE SET NULL`)
-
-Local dev: run `pnpm migrate:payer auto` once **before** starting `pnpm dev`
-with this code, so the dev schema push finds the enum already migrated.
-
 ## Linking users to participants
 
 - `participants.account` — relationship to `users`. Cardinality: a

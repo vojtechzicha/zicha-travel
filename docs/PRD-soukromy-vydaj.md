@@ -216,6 +216,6 @@ titles. `save_failed` fires with `operation: 'private_settle'`.
 `expenses.is_private boolean DEFAULT false` + btree index, and the
 `expenses_private_settlements` array table (participant FK SET NULL, parent
 FK CASCADE, the standard order/parent/participant indexes and the unique
-`(_parent_id, participant_id)` index). DDL appended to `NEW_SCHEMA_DDL` in
-`scripts/migrate-payer-polymorphic.mjs`, additive only; RLS is covered by the
-existing pass.
+`(_parent_id, participant_id)` index, kept by the production-alignment
+migration in `src/migrations`). RLS is covered by the per-deploy pass in
+`scripts/db-post-migrate.mjs`.

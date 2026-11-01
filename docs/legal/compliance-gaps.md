@@ -11,8 +11,9 @@ checkboxes, one-off `pnpm backgrounds:selfhost` run) are collected as
 the checklist at the top of `runbook.md`. This file stays as the record
 of what was decided and why.
 **Date:** 2026-08-16
-**Relates to:** `docs/PRD-gdpr.md` (findings and open decisions), the privacy
-policy and terms of use in `docs/legal/`
+**Relates to:** the privacy policy and terms of use in `docs/legal/` (the
+original GDPR findings draft was retired once its decisions were recorded
+here)
 
 The privacy policy and terms of use in this directory are written for the
 product as it should be, not as it is. Several statements in them are false
@@ -29,8 +30,8 @@ build.
 
 ## Decisions recorded
 
-These were the open decisions in `docs/PRD-gdpr.md` §13. The controller has
-decided:
+These were the open decisions of the original GDPR findings. The controller
+has decided:
 
 1. Vojtěch Zicha is the sole controller. Chata admins act under his
    instructions; the terms of use (section 6) bind them to that. No joint
@@ -45,8 +46,7 @@ decided:
    decision; raw analytics events already expire at 12 months.
 5. Anonymous per-chata readability stays, as the product's deliberate
    character, with compensating controls (blockers 1 and 3 below, plus the
-   existing locked-participants rule). This is the recorded outcome of PRD
-   §13.2.
+   existing locked-participants rule).
 
 The controller reviewed the product-impact analysis on 2026-08-16 and
 decided further:

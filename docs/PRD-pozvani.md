@@ -132,7 +132,4 @@ and it reuses invitations as the underlying mechanism:
 New table `expenses_invitations` (standard Payload array-field shape:
 `_order`, `_parent_id` → `expenses` ON DELETE CASCADE, varchar `id` PK,
 `host_id`/`guest_id` → `participants` ON DELETE SET NULL). Purely
-additive — no data migration needed. The exact DDL (captured verbatim from
-Payload's dev schema push, PostgreSQL 16) is appended to
-`scripts/migrate-payer-polymorphic.mjs`, which both production platforms
-already run idempotently on every deploy.
+additive — no data migration needed.

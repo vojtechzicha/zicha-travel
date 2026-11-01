@@ -12,9 +12,8 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
 > SQL run by hand against production or preview. The old scheme — the
 > hand-maintained `NEW_SCHEMA_DDL` in `scripts/migrate-payer-polymorphic.mjs`
 > and `pnpm migrate:payer` — was retired on 2026-11-01 and must not be
-> brought back; `tests/int/migrations.int.spec.ts` fails if it is. Older docs
-> (`docs/PRD-*.md`, `docs/VERCEL_MIGRATION.md`) still say "DDL appended to
-> `NEW_SCHEMA_DDL`" — that is history, follow "Schema migrations" below.
+> brought back; `tests/int/migrations.int.spec.ts` fails if it is. Follow
+> "Schema migrations" below.
 
 ## Architecture
 
@@ -184,7 +183,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      `clientUploads: true` (plugin-wide) uploads straight from the browser
      to the bucket — Vercel serverless caps request bodies at ~4.5 MB,
      which phone photos exceed. No effect where the plugin is disabled
-     (Fly / local dev)
+     (local dev)
    - The table includes the plugin's `prefix` column (S3-enabled shape),
      which is why `pnpm migrate:create` always generates with S3 switched on
 
@@ -1219,8 +1218,7 @@ running.
 ## Deployment
 
 Production runs on **Vercel** (GitHub integration, deploys `main`;
-previews per PR). The Fly.io era is over — the migration history lives in
-`docs/VERCEL_MIGRATION.md`.
+previews per PR).
 
 - Domains: `zicha.travel` plus a **wildcard** `*.zicha.travel` on the
   Vercel project, so a new chata subdomain needs **no** DNS or Vercel
@@ -1297,9 +1295,6 @@ pnpm generate:types   # Generate TypeScript types from collections
    `/api/chatas/:id/full` read `banker.accountNumber` / `banker.iban`.
    `BankerAccountSummary` (afterInput on the banker field) echoes the
    resolved account read-only and links to the participant when it's missing.
-   The one-off migration that moved the values (`migrateBankerBanking()`)
-   lived in the retired `scripts/migrate-payer-polymorphic.mjs`; see git
-   history.
 
 4. **Partial banking info**: `resolveBankAccount` in
    `src/utils/czechBankAccount.ts` derives the missing half of an
@@ -1314,7 +1309,3 @@ pnpm generate:types   # Generate TypeScript types from collections
 - Add expense splitting script
 - QR code generation for payment requests
 - Email notifications for payment reminders
-
-## Migration Notes
-
-See `MIGRATION.md` for details on migrating from the previous PoC implementation.

@@ -36,9 +36,8 @@ requests can coexist naturally.
 - **Claimable** = participant not locked in the Finance-view sense (no
   account, or an account that NEVER logged in). A pending claim does NOT
   lock the participant — more requests may arrive and the admin picks.
-- Production schema ships via `NEW_SCHEMA_DDL` in
-  `scripts/migrate-payer-polymorphic.mjs` (idempotent, runs in every
-  Vercel build); local dev gets it from the dev-mode schema push.
+- Schema changes ship as Payload migrations (`src/migrations`); local dev
+  gets them from the dev-mode schema push.
 
 ## Flow
 
