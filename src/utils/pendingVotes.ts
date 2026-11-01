@@ -404,7 +404,7 @@ export type PendingVoteSource = 'email' | 'microsoft' | 'google' | 'apple'
  * File (or refresh) the account's pending vote for a chata. One pending
  * row per account and chata: voting again before confirming replaces the
  * selection rather than queueing a second row. The partial unique index
- * `pending_votes_user_chata_pending_uq` (NEW_SCHEMA_DDL) is what makes
+ * `pending_votes_user_chata_pending_uq` (production-alignment migration) is what makes
  * that hold under concurrent submissions — a create that loses the race
  * fails on it and falls back to updating the winner. Every (re)submission
  * gets a fresh `submissionKey` and an unspent link: the emailed token

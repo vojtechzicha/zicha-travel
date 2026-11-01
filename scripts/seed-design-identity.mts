@@ -13,8 +13,8 @@
 // Idempotent: media is looked up by filename, backgrounds by name, and the
 // chata/user updates just re-apply the same values. NODE_ENV is forced to
 // "production" so Payload never dev-pushes schema at the target database —
-// the two additive users columns are created explicitly below (the same DDL
-// ships in scripts/migrate-payer-polymorphic.mjs for the Vercel build).
+// the two additive users columns are created explicitly below (deployed
+// databases get them from the Payload migrations in src/migrations).
 
 import { config as loadEnv } from 'dotenv'
 

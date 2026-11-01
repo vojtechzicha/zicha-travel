@@ -19,3 +19,10 @@ onlyBuiltDependencies:
   - sharp
   - esbuild
   - unrs-resolver
+
+# Payload's CLI pins tsx 4.22.4, whose require hook turns `node:crypto` into a
+# file path when `payload migrate:create` loads drizzle-kit (ENOENT
+# 'node:crypto?tsx-namespace=…'). 4.23 fixes it. Drop this once Payload's own
+# pin is >= 4.23.
+overrides:
+  tsx: 4.23.15

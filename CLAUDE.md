@@ -173,9 +173,8 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      to the bucket — Vercel serverless caps request bodies at ~4.5 MB,
      which phone photos exceed. No effect where the plugin is disabled
      (Fly / local dev)
-   - Schema DDL appended to `scripts/migrate-payer-polymorphic.mjs`
-     (`NEW_SCHEMA_DDL`) so both platforms create the table on deploy;
-     includes the plugin's `prefix` column (S3-enabled shape)
+   - The table includes the plugin's `prefix` column (S3-enabled shape),
+     which is why `pnpm migrate:create` always generates with S3 switched on
 
 7. **ClaimRequests** (`src/collections/ClaimRequests.ts`)
    - "Žádosti o propojení" — a signed-in account claiming a participant as
@@ -234,8 +233,7 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Pure rules (`accommodationAvailableFor`, `validateVoteSelection`,
      `canSeePlanningResults`, `tallyVotes`, `planningMonthsLabel`) in
      `src/lib/planning.ts`, unit-tested in `tests/int/planning.int.spec.ts`;
-     strings in the `planning` i18n namespace; DDL appended to
-     `NEW_SCHEMA_DDL`; one-off seed for /pratele in
+     strings in the `planning` i18n namespace; one-off seed for /pratele in
      `scripts/seed-planning-pratele.mjs` (`pnpm planning:seed:pratele`)
    - **Nepotvrzené hlasy** (`PendingVotes.ts`, slug `pending-votes`): an
      anonymous vote is filed as a ROW (name, selection, the account created
@@ -256,7 +254,8 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      with one `UPDATE … RETURNING`, stale keys refused) landing on
      `/votes/confirm` (summary + one POST button,
      scanner-safe); the subject carries the vote. One pending row per
-     account and chata is a partial unique index in the DDL. The dialog offers Google/Apple/Microsoft
+     account and chata is a partial unique index (`pending_votes_user_chata_pending_uq`,
+     kept by the production-alignment migration). The dialog offers Google/Apple/Microsoft
      BEFORE email: the selection rides the signed 10-minute
      `oauth-vote-intent` cookie and the OAuth callback may create the account
      for it, the ONE case OAuth creates users. `recordVote` is the single
@@ -364,9 +363,7 @@ API payload, no new endpoints).
   checkOutTime, destinationLat/Lng, packingItems, amenities (✓/✗ chips),
   program (day-only date + text), surroundings (place|trip), contactRules,
   sharedAlbumUrl, privateInfo, sharedCars[].seats,
-  publicTransportOptions[].riders. Prod DDL for these is appended to
-  `NEW_SCHEMA_DDL` in `scripts/migrate-payer-polymorphic.mjs` (captured
-  from the local dev push, additive only).
+  publicTransportOptions[].riders.
 - **Tentative dates** ("orientační termín", `tripDatesTentative` +
   `tripPlannedNights`): for far-away trips booked long ahead,
   tripDateFrom/To only bound the WINDOW the trip will fall into and the
@@ -443,8 +440,7 @@ API payload, no new endpoints).
   (lazy, shared `PhotoLightbox`) converters; the slug API's depth 2
   populates the image nodes. Pure helpers (`visibleCustomTabs`,
   `hasRichTextContent`, `resolveCustomTab`, `safeLinkHref`) in
-  `src/lib/customTabs.ts`, tested in `tests/int/customTabs.int.spec.ts`;
-  DDL appended to `NEW_SCHEMA_DDL`.
+  `src/lib/customTabs.ts`, tested in `tests/int/customTabs.int.spec.ts`.
 - **"Nákup"** (shared shopping list + Rohlík, `Chata.shoppingListEnabled`,
   collection `shopping-items`): a tab where signed-in participants add what
   the group should have (for themselves or their own other participants,
@@ -1128,9 +1124,9 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
   with the anon key read/write all tables, bypassing Payload's access
   control entirely — the app only ever talks to Postgres over
   `DATABASE_URI`, never through that API. Enforced idempotently on every
-  deploy by `enableRowLevelSecurity()` in
-  `scripts/migrate-payer-polymorphic.mjs` (runs after the DDL, so tables a
-  deploy creates are covered by that same deploy). Payload is unaffected
+  deploy by `enableRowLevelSecurity()` in `scripts/db-post-migrate.mjs`
+  (runs right after `payload migrate`, so tables a deploy creates are
+  covered by that same deploy). Payload is unaffected
   because it connects as the table owner and owners bypass RLS (never add
   FORCE ROW LEVEL SECURITY). Belt and braces: the Data API can also be
   disabled outright in the Supabase dashboard (Settings → API) — nothing
@@ -1159,6 +1155,47 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
   `public` schema of both projects and copies their storage buckets every
   night, keeping 30 days (`docs/legal/bezpecnost-a-incidenty.md`)
 
+### Schema migrations
+
+Schema changes are **Payload migrations** in `src/migrations`
+(`@payloadcms/db-postgres`, drizzle under the hood). Until 2026-11 the schema
+lived in a hand-maintained DDL block in `scripts/migrate-payer-polymorphic.mjs`;
+`20261101_114140_baseline` reproduces that schema exactly (verified against
+production) and was marked as applied on production and preview without
+running.
+
+- **Workflow**: change a collection → `pnpm dev` pushes it to the LOCAL
+  database as before → before the PR, `pnpm migrate:create <name>` writes
+  `src/migrations/<timestamp>_<name>.ts` (+ a `.json` snapshot) by diffing
+  the collections against the last snapshot, NOT against a database. Review
+  the SQL (it asks about renames; enum changes may need hand edits), trim
+  the template's unused `payload, req` arguments to `{ db }` (lint fails on
+  them otherwise), and commit it with the collection change. The PR's preview build applies it to the
+  preview project; merging applies it to production.
+- **Always generate through `pnpm migrate:create`**: it forces the S3
+  variables on, because the storage plugin adds `prefix` columns and
+  production runs with S3. A bare `payload migrate:create` with your local
+  `.env` (S3 off) would generate a migration that drops them.
+- **Never run `pnpm migrate` against your local dev database**: it is
+  managed by the dev push, and Payload refuses to mix the two. Production
+  and preview get migrations only from the Vercel build.
+- **`20261101_114141_production_alignment`** (hand-written, idempotent)
+  keeps what Payload's config can't express: ON DELETE CASCADE on the
+  NOT NULL references `claim_requests.user_id`/`participant_id` and
+  `trip_votes.participant_id` (Payload's SET NULL would make those deletes
+  fail), and the unique indexes `trip_votes_participant_uq`,
+  `pending_votes_user_chata_pending_uq` and
+  `expenses_private_settlements_parent_participant_uq`. The snapshot
+  doesn't know them, so generated migrations leave them alone; if one ever
+  recreates those foreign keys or drops those indexes, re-assert them in
+  that migration.
+- **Every-deploy upkeep** that is not a schema change lives in
+  `scripts/db-post-migrate.mjs` (RLS on every table, the expense
+  approval/payer-account repair, the bar-row refresh) and runs after
+  `pnpm migrate` in `vercel-build`.
+- The Payload CLI needs tsx ≥ 4.23 for `migrate:create` (4.22 breaks on
+  `node:crypto` when it loads drizzle-kit); `pnpm-workspace.yaml` overrides it.
+
 ### Local Development
 - **Docker Compose PostgreSQL 16** on port 5433
 - `DATABASE_URI` in `.env` is a LITERAL pointing at that container — the
@@ -1186,9 +1223,10 @@ previews per PR). The Fly.io era is over — the migration history lives in
 - Media: **Supabase Storage** (S3-compatible) through `@payloadcms/storage-s3`,
   gated on `S3_ENDPOINT`; local dev without it falls back to disk.
 - The `vercel-build` script runs `check-env.mjs` first (fails the build on a
-  missing or half-configured variable), then `migrate:payer auto`
-  (idempotent), then `next build`, against that deployment's own
-  `DATABASE_URI` (prod or preview).
+  missing or half-configured variable), then lint, then `pnpm migrate`
+  (pending Payload migrations) and `scripts/db-post-migrate.mjs`, then
+  `next build`, against that deployment's own `DATABASE_URI` (prod or
+  preview). A PR's migration therefore runs on the preview project first.
 - **Post-deploy refresh hint**: every build bakes a deterministic build id
   (git commit via `VERCEL_GIT_COMMIT_SHA`, `computeBuildId()` in
   next.config.mjs) into the client bundle AND the server; long-lived tabs
@@ -1216,14 +1254,9 @@ pnpm db:stop          # Stop PostgreSQL
 # Sync data from production
 pnpm migrate-from-prod  # Copy database from production Supabase
 
-# One-time migrations (polymorphic payer + user-roles rename). Production
-# runs them automatically: the Vercel build (`vercel-build` script) runs
-# `migrate:payer auto` (idempotent) before `next build`. The user-roles part
-# renames enum values (admin→superadmin, user→admin, adds new 'user') and
-# runs OUTSIDE the main transaction (PostgreSQL enum rules). Locally: run
-# `pnpm migrate:payer auto` once BEFORE the first `pnpm dev` on this code,
-# so the dev schema push finds the enum already migrated.
-pnpm migrate:payer auto|backup|restore|status|cleanup
+# Schema migrations (see "Schema migrations"). Needs the local DB running.
+pnpm migrate:create <name>  # Generate a migration from collection changes
+pnpm migrate:status         # Which migrations a database has applied
 
 # Other commands
 pnpm build            # Build for production
@@ -1255,12 +1288,9 @@ pnpm generate:types   # Generate TypeScript types from collections
    `/api/chatas/:id/full` read `banker.accountNumber` / `banker.iban`.
    `BankerAccountSummary` (afterInput on the banker field) echoes the
    resolved account read-only and links to the participant when it's missing.
-   Migration: `migrateBankerBanking()` in
-   `scripts/migrate-payer-polymorphic.mjs` copies the old chata values onto
-   the banker participant wherever that participant's own field was empty,
-   keeps a full copy in `_migration.chata_banker_banking`, then drops the
-   columns. Run `pnpm migrate:payer auto` BEFORE the first `pnpm dev` on this
-   code so the backfill happens before Payload's dev push drops the columns.
+   The one-off migration that moved the values (`migrateBankerBanking()`)
+   lived in the retired `scripts/migrate-payer-polymorphic.mjs`; see git
+   history.
 
 4. **Partial banking info**: `resolveBankAccount` in
    `src/utils/czechBankAccount.ts` derives the missing half of an
