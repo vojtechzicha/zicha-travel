@@ -18,8 +18,6 @@
     "migrate": "pnpm payload migrate",
     "migrate:create": "cross-env S3_ENDPOINT=https://schema-shape.invalid/s3 S3_BUCKET=schema-shape S3_REGION=eu-west-3 S3_ACCESS_KEY_ID=schema-shape S3_SECRET_ACCESS_KEY=schema-shape pnpm payload migrate:create",
     "migrate:status": "pnpm payload migrate:status",
-    "migrate:media": "node scripts/migrate-media-to-s3.mjs",
-    "planning:seed:pratele": "node scripts/seed-planning-pratele.mjs",
     "backgrounds:selfhost": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/migrate-backgrounds-selfhost.mts",
     "help:seed": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/seed-help-demo.mts",
     "help:shots": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/shoot-help-screenshots.mts",
