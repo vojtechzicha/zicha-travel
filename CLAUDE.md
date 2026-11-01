@@ -1147,7 +1147,7 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
   connections. Supabase signs its certificates with its own root CA, so
   every pg client goes through `pgSslFor()` in `src/lib/db-ssl.mjs`, which
   pins that CA (`rejectUnauthorized`, hostname checked). Never put
-  `sslmode`/`uselibpqcompat` in `DATABASE_URI`: pg lets them override the
+  `ssl`/`sslmode`/`uselibpqcompat` in `DATABASE_URI`: pg lets them override the
   pinned CA, and `env-spec.mjs` + `pgSslFor` refuse them
 - **Previews have their own Supabase project** (`zicha-travel-preview`,
   same org and region), with its own database, private bucket, S3 keys and

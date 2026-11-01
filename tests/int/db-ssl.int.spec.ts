@@ -20,8 +20,11 @@ describe('pgSslFor', () => {
   })
 
   it('refuses URI TLS parameters that would override the pinned CA', () => {
-    expect(() => pgSslFor(`${POOLER}?sslmode=require`)).toThrow(/must not set sslmode/)
+    expect(() => pgSslFor(`${POOLER}?sslmode=require`)).toThrow(/must not set ssl\/sslmode/)
     expect(() => pgSslFor(`${POOLER}?uselibpqcompat=true&sslmode=require`)).toThrow()
+    // pg turns ssl=no-verify into rejectUnauthorized: false
+    expect(() => pgSslFor(`${POOLER}?ssl=no-verify`)).toThrow()
+    expect(() => pgSslFor(`${POOLER}?ssl=true`)).toThrow()
   })
 
   it('embeds the published Supabase Root 2021 CA', () => {
@@ -38,6 +41,7 @@ describe('DATABASE_URI env check', () => {
 
   it('accepts a plain pooler URI and rejects TLS parameters', () => {
     expect(check(POOLER)).toBeNull()
-    expect(check(`${POOLER}?sslmode=require`)).toMatch(/must not set sslmode/)
+    expect(check(`${POOLER}?sslmode=require`)).toMatch(/must not set ssl\/sslmode/)
+    expect(check(`${POOLER}?ssl=no-verify`)).toMatch(/must not set ssl\/sslmode/)
   })
 })

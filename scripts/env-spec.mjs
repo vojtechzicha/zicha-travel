@@ -45,8 +45,8 @@ const mustBeHttpsUrl = (value) => {
 const mustBePostgres = (value) => {
   if (!/^postgres(ql)?:\/\/.+@.+\/.+/.test(value)) return 'must look like postgresql://user:password@host:port/database'
   // pg lets these override the pinned Supabase CA (src/lib/db-ssl.mjs)
-  if (/[?&](sslmode|sslrootcert|sslcert|sslkey|uselibpqcompat)=/i.test(value)) {
-    return 'must not set sslmode/sslrootcert/uselibpqcompat: TLS comes from src/lib/db-ssl.mjs'
+  if (/[?&](ssl|sslmode|sslrootcert|sslcert|sslkey|uselibpqcompat)=/i.test(value)) {
+    return 'must not set ssl/sslmode/sslrootcert/uselibpqcompat: TLS comes from src/lib/db-ssl.mjs'
   }
   return null
 }

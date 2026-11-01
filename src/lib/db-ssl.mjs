@@ -39,8 +39,9 @@ o/bKiIz+Fq8=
 
 const SUPABASE_HOST = /\.supabase\.(co|com)$/
 // pg merges connection-string parameters OVER the `ssl` option, so any of
-// these in DATABASE_URI would silently replace the pinned CA.
-const SSL_URI_PARAMS = /[?&](sslmode|sslrootcert|sslcert|sslkey|uselibpqcompat)=/i
+// these in DATABASE_URI would silently replace the pinned CA (`ssl=no-verify`
+// even turns verification off).
+const SSL_URI_PARAMS = /[?&](ssl|sslmode|sslrootcert|sslcert|sslkey|uselibpqcompat)=/i
 
 /**
  * The pg `ssl` option for a connection string: verified TLS for Supabase
@@ -61,7 +62,7 @@ export function pgSslFor(connectionString) {
   if (!SUPABASE_HOST.test(host)) return undefined
   if (SSL_URI_PARAMS.test(connectionString)) {
     throw new Error(
-      'DATABASE_URI must not set sslmode/sslrootcert/uselibpqcompat: they override the verified TLS settings in src/lib/db-ssl.mjs',
+      'DATABASE_URI must not set ssl/sslmode/sslrootcert/uselibpqcompat: they override the verified TLS settings in src/lib/db-ssl.mjs',
     )
   }
   return { ca: SUPABASE_ROOT_CA, rejectUnauthorized: true }
