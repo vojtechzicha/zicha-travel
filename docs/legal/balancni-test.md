@@ -13,8 +13,8 @@ odkazem i bez přihlášení.
 
 ## 2. Nezbytnost
 
-Mírnější cesta byla zvážena a zamítnuta s důvody (PRD-gdpr §13.2,
-rozhodnutí 6): stránky jen pro přihlášené by vyloučily právě ty, pro
+Mírnější cesta byla zvážena a zamítnuta s důvody (`compliance-gaps.md`,
+rozhodnutí 5 a 6): stránky jen pro přihlášené by vyloučily právě ty, pro
 které se vyrovnání dělá; tajný token v URL se v partě stejně rozešle a
 ztratí. Minimalizace je řešena rozsahem: bez přihlášení jsou vidět jen
 jména, podíly, vyrovnání a platební údaje pokladníka — nikdy bankovní

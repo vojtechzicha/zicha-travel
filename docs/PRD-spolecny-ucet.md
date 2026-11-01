@@ -238,20 +238,8 @@ for "the math must remain correct":
 
 ## 9. Rollout
 
-1. Schema + collection + `pnpm generate:types`.
-2. Data migration for polymorphic payer/from — **automatic on deploy**: the
-   Vercel build (`vercel-build` script in package.json) runs
-   `node scripts/migrate-payer-polymorphic.mjs auto` before `next build`,
-   against that deployment's own `DATABASE_URI` (production or preview DB).
-   It migrates in one transaction (schema DDL identical to Payload's push,
-   verified by drizzle diff), keeps a `_migration.payer_backup` safety copy,
-   and no-ops on every subsequent deploy. Production was migrated on
-   2026-08-01. For local dev, the manual `backup`/`restore` flow applies
-   (see the script header).
-3. Calculation layer + tests.
-4. Admin + frontend UI.
-5. Deploy (Vercel auto-deploys `main`; migration runs itself); define joint
-   accounts for affected chatas.
+Shipped 2026-08-01, including the one-time migration of every existing
+expense payer and prepayment sender to the polymorphic shape.
 
 ## 10. Open questions — all resolved 2026-08-01
 

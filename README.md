@@ -43,6 +43,8 @@ pnpm db               # Start only PostgreSQL in background
 pnpm db:stop          # Stop PostgreSQL
 pnpm env:pull         # Regenerate .env from .env.tpl via 1Password
 pnpm env:check        # Validate the environment against scripts/env-spec.mjs
+pnpm migrate:create   # Generate a schema migration after changing a collection
+pnpm migrate:status   # Show which migrations a database has applied
 pnpm build            # Build for production
 pnpm generate:types   # Generate TypeScript types from collections
 pnpm test             # Run integration and e2e tests
@@ -73,64 +75,23 @@ Help screenshots show the Czech interface; the English help pages say so.
 
 ## Authentication
 
-The admin panel supports two authentication modes:
+- **Frontend accounts** sign in with a magic link or with Microsoft, Google
+  or Apple (each provider is switched on by its own environment variables).
+- **Admins** use the same providers; superadmins sign in with OAuth only.
+- **First setup:** while no OAuth provider is configured, the admin panel
+  falls back to Payload's email and password login, so you can create the
+  first superadmin. Configuring any provider switches that login off, so
+  create a superadmin whose email matches your OAuth account first.
 
-### Bootstrap Mode (email/password)
-
-On first deploy without Microsoft OAuth configured, the admin panel uses Payload's built-in email/password authentication. Use this to create your initial admin user and add other users with their email addresses.
-
-### Microsoft OAuth Mode
-
-Once configured, Microsoft OAuth becomes the **only** login method. Only users whose email already exists in the Users collection can sign in.
-
-#### Azure App Registration
-
-1. Go to [Azure Portal](https://portal.azure.com/) > **App registrations** > **New registration**
-2. Name: e.g. "Chata Admin"
-3. Supported account types: **Personal Microsoft accounts only** (consumers tenant)
-4. Redirect URI: `Web` > `http://localhost:3000/api/auth/callback` (for local dev)
-5. After creation, go to **Certificates & secrets** > **New client secret** and copy the value
-
-#### Environment Variables
-
-| Variable                             | Description                             |
-| ------------------------------------ | --------------------------------------- |
-| `AZURE_CLIENT_ID`                    | Application (client) ID from Azure      |
-| `AZURE_CLIENT_SECRET`                | Client secret value                     |
-| `AZURE_REDIRECT_URI`                 | `https://your-domain/api/auth/callback` |
-| `NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED` | Set to `true` to show Microsoft button  |
-
-#### Production Deployment (Vercel)
-
-Add a production redirect URI in Azure Portal > your app > **Authentication** > **Add a redirect URI**:
-
-```
-https://your-domain/api/auth/callback
-```
-
-Set the environment variables in the Vercel project (Settings → Environment
-Variables → Production), and mirror them into the `zicha-travel-prod` item in
-1Password (vault `Development`) so
-`pnpm env:pull:prod` can reproduce them:
-
-```
-AZURE_CLIENT_ID=your-client-id
-AZURE_CLIENT_SECRET=your-client-secret
-AZURE_REDIRECT_URI=https://your-domain/api/auth/callback
-NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED=true
-```
-
-All three of `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` and `AZURE_REDIRECT_URI`
-must be set together — `getAuthConfig()` throws on the first sign-in attempt
-otherwise, and `pnpm env:check` fails the build before that can happen.
-
-> **Note:** After setting these secrets, the email/password login is disabled. Make sure you have at least one user in the Users collection with a matching Microsoft account email before enabling OAuth.
+Provider setup (Azure, Google Cloud, Apple Developer) and every variable it
+needs are in **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)**; the sign-in flows
+are described in `CLAUDE.md` under "Auth flows".
 
 ## Tech Stack
 
 - **Framework**: [Next.js](https://nextjs.org/) 15
 - **CMS**: [Payload CMS](https://payloadcms.com/) 3
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL on Supabase (Payload migrations in `src/migrations`)
 - **Styling**: Tailwind CSS v4
 - **Deployment**: Vercel (media on Supabase Storage)
 
