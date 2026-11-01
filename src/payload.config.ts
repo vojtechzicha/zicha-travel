@@ -31,6 +31,7 @@ import { ListOptOuts } from './collections/ListOptOuts'
 import { DataRequests } from './collections/DataRequests'
 import { Backgrounds } from './collections/Backgrounds'
 import { Icons } from './collections/Icons'
+import { pgSslFor } from './lib/db-ssl.mjs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -116,6 +117,8 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
+      // Verified TLS to Supabase (which enforces SSL); plain TCP to local Docker.
+      ssl: pgSslFor(process.env.DATABASE_URI),
     },
     // Never let a vitest run mutate schema: the test env lacks the S3 vars,
     // so a push would try to drop plugin-added columns (and hang on the

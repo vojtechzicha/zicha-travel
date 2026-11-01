@@ -12,6 +12,7 @@
 //   node scripts/seed-planning-pratele.mjs --slug=jina-chata
 
 import pg from 'pg'
+import { pgSslFor } from '../src/lib/db-ssl.mjs'
 
 try {
   const { config: loadEnv } = await import('dotenv')
@@ -93,7 +94,7 @@ const WINDOW_FROM = '2026-10-16T12:00:00.000Z'
 const WINDOW_TO = '2026-11-15T12:00:00.000Z'
 const PLANNED_NIGHTS = 2
 
-const client = new pg.Client({ connectionString: databaseUri })
+const client = new pg.Client({ connectionString: databaseUri, ssl: pgSslFor(databaseUri) })
 
 async function main() {
   await client.connect()

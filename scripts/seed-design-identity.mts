@@ -84,7 +84,11 @@ async function main() {
 
   // 1. Additive users columns (same statements as the deploy migration)
   const { default: pg } = await import('pg')
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URI })
+  const { pgSslFor } = await import('../src/lib/db-ssl.mjs')
+  const client = new pg.Client({
+    connectionString: process.env.DATABASE_URI,
+    ssl: pgSslFor(process.env.DATABASE_URI),
+  })
   await client.connect()
   await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS name character varying')
   await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS vokativ character varying')

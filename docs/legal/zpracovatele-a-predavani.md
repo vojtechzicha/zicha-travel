@@ -5,7 +5,7 @@ každého je co ověřit — zaškrtnout po kontrole.
 
 | Poskytovatel | Role | Co zpracovává | DPA | Předání mimo EU |
 | --- | --- | --- | --- | --- |
-| Supabase | zpracovatel | databáze, soubory (účtenky, média) | [ ] DPA přijato (součást podmínek, supabase.com/legal/dpa) | region projektu EU — **[ ] ověřit v dashboardu, že projekt sedí v EU regionu**; jinak přepsat zásady kap. 7/8 |
+| Supabase | zpracovatel | databáze, soubory (účtenky, média) | [ ] DPA přijato (součást podmínek, supabase.com/legal/dpa) | region projektu EU — **[x] ověřeno 2026-11-01: `eu-west-3` (Paříž)**, produkce i preview |
 | Vercel | zpracovatel | hosting, provozní logy s IP | [ ] DPA (vercel.com/legal/dpa) | USA možné — DPF člen, jinak SCC |
 | Resend | zpracovatel | odchozí e-maily (adresy, obsah) | [ ] DPA (resend.com/legal/dpa) | USA — DPF/SCC |
 | PostHog | zpracovatel | anonymní statistiky | [ ] DPA (posthog.com/handbook/growth/sales/dpa) | EU hosting (Frankfurt) — data neopouštějí EU |

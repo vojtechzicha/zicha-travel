@@ -4,11 +4,13 @@ Datum: 2026-08-16.
 
 ## Jednorázově po nasazení této práce (checklist správce)
 
-- [ ] Supabase: ověřit **region projektu v EU** (Settings → General);
+- [x] Supabase: ověřit **region projektu v EU** (Settings → General);
       pokud ne, opravit zásady kap. 7/8 a `zpracovatele-a-predavani.md`.
-- [ ] Supabase: zapsat do `bezpecnost-a-incidenty.md` typ a dobu záloh
+      Ověřeno 2026-11-01: `eu-west-3` (Paříž), produkce i preview.
+- [x] Supabase: zapsat do `bezpecnost-a-incidenty.md` typ a dobu záloh
       (Settings → Database → Backups) a srovnat se zásadami kap. 10.
-- [ ] Supabase Storage: přepnout bucket na **private** — soubory se od
+      Hotovo 2026-11-01 (vlastní noční zálohy na NAS, 30 dní).
+- [x] Supabase Storage: přepnout bucket na **private** (2026-11-01) — soubory se od
       teď servírují přes `/api/*/file/...` s přístupovou kontrolou; u
       účtenek je to podmínka, aby „nejsou veřejně čitelné" platilo i pro
       přímé URL bucketu. (Média/pozadí mohou zůstat veřejná, pokud je
@@ -18,8 +20,10 @@ Datum: 2026-08-16.
 - [ ] Spustit `pnpm backgrounds:selfhost` proti produkci (převod starých
       externích pozadí, viz `inventar-odchozich-volani.md`).
 - [ ] Projít `zpracovatele-a-predavani.md` a odškrtat DPA.
-- [ ] Supabase: zvážit vypnutí Data API (Settings → API) — RLS už ho
-      blokuje, vypnutí je belt-and-braces (viz CLAUDE.md).
+- [x] Supabase: zvážit vypnutí Data API (Settings → API) — RLS už ho
+      blokuje, vypnutí je belt-and-braces (viz CLAUDE.md). Vypnuto
+      2026-11-01 na obou projektech, role `anon`/`authenticated` nemají v
+      `public` žádná práva.
 
 ## Průběžné povinnosti
 
