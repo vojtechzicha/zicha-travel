@@ -54,8 +54,11 @@ const eslintConfig = [
     },
   },
   {
-    // Tracked generated files (.gitignore covers the untracked rest)
-    ignores: ['src/payload-types.ts', 'src/app/(payload)/admin/importMap.js'],
+    // Tracked generated files (.gitignore covers the untracked rest).
+    // src/migrations is written by `pnpm migrate:create`, whose template
+    // destructures unused `payload, req` args; hand-trimming every generated
+    // file would be busywork, and reviewers read the SQL anyway.
+    ignores: ['src/payload-types.ts', 'src/app/(payload)/admin/importMap.js', 'src/migrations/**'],
   },
 ]
 
