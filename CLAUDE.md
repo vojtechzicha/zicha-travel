@@ -158,8 +158,10 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
 6. **ExpenseAttachments** (`src/collections/ExpenseAttachments.ts`)
    - Admin group: System (infrastructure, not day-to-day expense tracking)
    - Upload collection for receipts ("účtenky") attached to expenses —
-     images + PDF only, no required alt text, public read (files are
-     publicly readable by URL, like all data here)
+     images + PDF only, no required alt text. Reading needs a signed-in
+     account (see Compliance) and the Supabase bucket is PRIVATE, so a
+     file is reachable only through Payload's
+     `/api/expense-attachments/file/...` route, never by bucket URL
    - Separate from `media` (icons/backgrounds) so field uploads stay quick;
      `mimeTypes: ['image/*', ...]` keeps the mobile file picker offering
      "Take Photo" — that's the camera path, no custom admin component
@@ -1132,7 +1134,30 @@ Using PostgreSQL with `@payloadcms/db-postgres` adapter.
   because it connects as the table owner and owners bypass RLS (never add
   FORCE ROW LEVEL SECURITY). Belt and braces: the Data API can also be
   disabled outright in the Supabase dashboard (Settings → API) — nothing
-  in this project uses it
+  in this project uses it. It IS disabled (no exposed schemas) on both
+  projects, and `anon`/`authenticated` hold no grants in `public`
+- **The app connects as `zicha_travel_app`**, not `postgres`: it owns every
+  table, sequence, enum and function in `public` (so Payload and the
+  build-time migration can run DDL, and owner-bypass keeps RLS out of the
+  way) but has no CREATEROLE/BYPASSRLS and no access to the `auth`,
+  `storage` or `vault` schemas. `postgres` stays for the dashboard and
+  admin work (1Password `POSTGRES_ADMIN_PASSWORD`). Tables the app creates
+  get no default grants to the Data API roles
+- **TLS is enforced and verified.** Both projects refuse non-SSL
+  connections. Supabase signs its certificates with its own root CA, so
+  every pg client goes through `pgSslFor()` in `src/lib/db-ssl.mjs`, which
+  pins that CA (`rejectUnauthorized`, hostname checked). Never put
+  `ssl`/`sslmode`/`uselibpqcompat` in `DATABASE_URI`: pg lets them override the
+  pinned CA, and `env-spec.mjs` + `pgSslFor` refuse them
+- **Previews have their own Supabase project** (`zicha-travel-preview`,
+  same org and region), with its own database, private bucket, S3 keys and
+  `PAYLOAD_SECRET`. A PR's build migration runs against it, never against
+  production. It was seeded from production and anonymized with the same
+  SQL as `pnpm migrate-from-prod`; receipts and Rohlík tokens were not
+  copied
+- **Backups**: the free plan has none, so a Synology NAS task dumps the
+  `public` schema of both projects and copies their storage buckets every
+  night, keeping 30 days (`docs/legal/bezpecnost-a-incidenty.md`)
 
 ### Local Development
 - **Docker Compose PostgreSQL 16** on port 5433
@@ -1154,7 +1179,10 @@ previews per PR). The Fly.io era is over — the migration history lives in
   work — add it to the chata's `domains[]` and the Host-header middleware
   routes it.
 - Database: Supabase PostgreSQL via the **pooled** connection
-  (`...pooler.supabase.com:6543`) — required for serverless.
+  (`...pooler.supabase.com:6543`) — required for serverless. Production
+  and previews use different Supabase projects (see Database).
+- Functions run in `cdg1` (Paris), next to the Supabase projects in
+  `eu-west-3`.
 - Media: **Supabase Storage** (S3-compatible) through `@payloadcms/storage-s3`,
   gated on `S3_ENDPOINT`; local dev without it falls back to disk.
 - The `vercel-build` script runs `check-env.mjs` first (fails the build on a

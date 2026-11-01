@@ -32,6 +32,7 @@
 // environment / .env.local / .env (in that order — same precedence as Next).
 
 import pg from 'pg'
+import { pgSslFor } from '../src/lib/db-ssl.mjs'
 
 // dotenv is a convenience for local runs; CI/Vercel builds provide
 // DATABASE_URI via the environment instead
@@ -54,7 +55,7 @@ if (!databaseUri) {
 const url = new URL(databaseUri)
 console.log(`Database: ${url.hostname}:${url.port || 5432}${url.pathname}\n`)
 
-const client = new pg.Client({ connectionString: databaseUri })
+const client = new pg.Client({ connectionString: databaseUri, ssl: pgSslFor(databaseUri) })
 
 async function tableExists(name) {
   const qualified = name.includes('.') ? name : `public.${name}`

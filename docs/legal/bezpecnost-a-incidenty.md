@@ -10,7 +10,15 @@ Datum: 2026-08-16. Pokrývá položky 11 a 13–15 z `compliance-gaps.md`.
 - Přístupová kontrola na API: bankovní údaje jen vlastník/pokladník/
   správci (field access), účtenky jen přihlášení, e-maily nikdy anonymně,
   GraphQL playground v produkci zavřený.
-- RLS na všech tabulkách v `public` (Supabase Data API nic nevydá).
+- RLS na všech tabulkách v `public`; Supabase Data API je navíc vypnuté
+  a role `anon`/`authenticated` nemají v `public` žádná práva.
+- Aplikace se k databázi připojuje jako role `zicha_travel_app` (vlastník
+  tabulek v `public`, bez přístupu ke schématům `auth`, `storage`,
+  `vault`), ne jako `postgres`. Spojení jen přes TLS (vynucené na straně
+  Supabase, certifikát ověřený proti kořenové CA Supabase).
+- Preview nasazení má vlastní Supabase projekt s anonymizovanou kopií dat
+  (stejné úpravy jako `pnpm migrate-from-prod`, bez účtenek a bez tokenů
+  Rohlíku), vlastním úložištěm a vlastním `PAYLOAD_SECRET`.
 - Administrace jen pro role správců, session 2 h; superadmin jen přes
   OAuth (Microsoft, Google nebo Apple).
 - Rate limiting + Turnstile na veřejných POST formulářích; cooldown na
@@ -19,13 +27,27 @@ Datum: 2026-08-16. Pokrývá položky 11 a 13–15 z `compliance-gaps.md`.
   middleware jen s `DEBUG_MIDDLEWARE`.
 - Retenční cron denně (`/api/retention`).
 
-## Zálohy (k ověření správcem)
+## Zálohy
 
-Zálohy databáze dělá Supabase. **Ověřit v dashboardu a doplnit sem:**
-- [ ] typ záloh (denní / PITR) a doba uchování,
-- [ ] šifrování at rest (Supabase standardně ano),
-- [ ] soulad se zásadami kap. 10 („zálohy se samy přepisují") — pokud by
-      zálohy žily déle než retenční lhůty, upravit zásady nebo nastavení.
+Ověřeno 2026-11-01. Projekt je na plánu Free, který žádné použitelné
+zálohy nenabízí (žádné denní zálohy ke stažení, PITR vypnuté). Zálohy
+proto dělá správce sám:
+- [x] **typ a doba uchování:** každou noc (02:30) úloha na vlastním NAS
+      správce (Synology v ČR) uloží `pg_dump` schématu `public` produkce i
+      preview a kopii jejich úložiště souborů; uchovává se 30 dní, starší
+      noci úloha maže. Sdílená složka se zálohami má navíc vlastní
+      snapshoty NAS, jejichž dobu uchování je třeba držet v souladu
+      s tímto limitem.
+- [x] **šifrování at rest:** u Supabase standardně ano; zálohy na NAS
+      leží na disku správce, přístup jen správce.
+- [x] **soulad se zásadami kap. 10:** zálohy se po 30 dnech samy
+      přepisují, takže smazaná data v nich přežijí jen omezenou dobu, jak
+      zásady slibují. Jednorázová úplná záloha před úpravami
+      (2026-11-01, včetně účtenek) leží v OneDrive správce a smaže se,
+      až noční zálohy běží spolehlivě.
+
+NAS ani OneDrive správce nejsou zpracovatelé třetí strany: jde
+o vlastní úložiště správce, proto nejsou v tabulce příjemců.
 
 ## Ukradené přihlášení (přijaté riziko, položka 15)
 

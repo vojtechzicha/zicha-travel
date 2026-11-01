@@ -164,7 +164,8 @@ so that each item stays a self-contained snapshot of one environment.
 
 | Field label | Where the value comes from |
 | --- | --- |
-| `DATABASE_URI` | Supabase pooler, port 6543. The direct 5432 connection exhausts its limit under serverless. |
+| `DATABASE_URI` | Supabase pooler, port 6543, as the `zicha_travel_app` role (`postgresql://zicha_travel_app.<project ref>:…@aws-1-eu-west-3.pooler.supabase.com:6543/postgres`). The direct 5432 connection exhausts its limit under serverless. No `sslmode` parameter: TLS comes from `src/lib/db-ssl.mjs`. |
+| `POSTGRES_ADMIN_PASSWORD` | The project's `postgres` password, for the dashboard and admin SQL only. The app never uses it. Not in any template. |
 | `PAYLOAD_SECRET` | Rotating this invalidates every session and every outstanding magic link, claim link and expense-approval link. |
 | `AZURE_CLIENT_ID` | Azure portal, app registration overview. Public: it appears in every OAuth redirect. |
 | `AZURE_CLIENT_SECRET` | Azure portal. Existing secrets cannot be read again; add a second one and update Vercel. |
@@ -198,10 +199,12 @@ both at the moment you create it.
 
 ### Item zicha-travel-preview
 
-Most of preview is production. One Vercel row covers both environments for the
-database, `PAYLOAD_SECRET`, the Azure pair, the Google pair, the Apple
-credentials, the S3 credentials and the PostHog key, so those values are
-identical by definition. Preview owns the rest separately:
+Preview has its own Supabase project (`zicha-travel-preview`), so the
+database, the S3 values and `PAYLOAD_SECRET` are preview's own and live only in
+this item and in the preview rows on Vercel. One Vercel row still covers both
+environments for the Azure pair, the Google pair, the Apple credentials and the
+PostHog key, so those values are identical by definition. Preview owns the rest
+separately:
 
 | Field | How preview differs |
 | --- | --- |
@@ -213,6 +216,10 @@ identical by definition. Preview owns the rest separately:
 | `APPLE_REDIRECT_URI` | `https://preview.zicha.travel/api/auth/callback/apple`, same reasoning. |
 | Turnstile pair | Cloudflare's always-passes test widget (`1x00000000000000000000AA` with secret `1x0000000000000000000000000000000AA`), not the production widget. Documented public values rather than secrets. |
 | `CRON_SECRET` | Its own value, so a leaked preview secret cannot drive the production cron. |
+| `DATABASE_URI` | The preview project's pooler, as `zicha_travel_app`. A PR's build migration runs here, never against production. |
+| `POSTGRES_ADMIN_PASSWORD`, `SUPABASE_PROJECT_REF` | Admin password and ref of the preview project. |
+| `S3_*` | The preview project's endpoint, its private `media` bucket and its own S3 key pair, so preview code cannot touch production files. |
+| `PAYLOAD_SECRET` | Its own value, so nothing a preview signs (sessions, magic links, approval links) is valid on production. |
 
 Preview shares the production database and storage credentials. That is a
 deliberate convenience rather than an oversight, but it means a preview
