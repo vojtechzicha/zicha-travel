@@ -358,6 +358,14 @@ API payload, no new endpoints).
   winner. Pure rules in `src/lib/organizationEditing.ts`; tests
   `tests/int/organizationEditing.int.spec.ts` (rules) and
   `organizationApi.int.spec.ts` (role matrix + race, real DB).
+  **Deleted participants**: the rozpis rows (bed occupants, car driver and
+  passengers, transport riders) require a participant, but deleting one
+  only nulls the reference in the database, and Payload then refuses EVERY
+  save of that chata, other people's frontend edits included (a production
+  outage on /pratele, 2026-11-10). So a Participants beforeDelete hook
+  (`src/utils/organizationCleanup.ts`) takes them out first, their car
+  with them, and the organization endpoint sweeps rows orphaned earlier
+  (`withoutParticipant`) and saves the repair with the action.
 - **ParticipantsView**: cards with account-link status; for anonymous
   visitors this is the claim-flow entry ("To jsem já" on unlinked names,
   reusing ClaimFlow; same eligibility rules as the Finance banner).

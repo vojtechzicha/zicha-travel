@@ -7,6 +7,7 @@ import { adminRoleOnly, canManageChata, chataScopedAccess, isSuperadmin } from '
 import { pickValidationMessage } from '../i18n/adminTranslations'
 import { isOAuthConfigured } from '../lib/auth/config'
 import { payerParticipantId } from '../lib/privateExpenses'
+import { removeFromOrganizationOnDelete } from '../utils/organizationCleanup'
 
 const isOAuthEnabled = isOAuthConfigured()
 
@@ -300,6 +301,9 @@ export const Participants: CollectionConfig = {
       },
     ],
     beforeDelete: [
+      // beds, car seats and public transport rides go with the participant
+      // (src/utils/organizationCleanup.ts)
+      removeFromOrganizationOnDelete,
       // "Kdo se skládá" (src/lib/listSplit.ts): a deleted participant's
       // opt-outs go with them (the rows can't outlive the participant)
       async ({ id, req }) => {

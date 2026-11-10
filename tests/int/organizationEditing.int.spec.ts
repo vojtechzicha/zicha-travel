@@ -14,8 +14,10 @@ import {
   sanitizeCarInput,
   takeSeat,
   updateCar,
+  withoutParticipant,
   type CarRow,
   type RoomRow,
+  type TransportRow,
 } from '@/lib/organizationEditing'
 
 const rooms = (): RoomRow[] => [
@@ -338,5 +340,64 @@ describe('space checks for the UI', () => {
     expect(carHasSeatFor(car, 3)).toBe(false)
     expect(carHasSeatFor(car, 2)).toBe(true)
     expect(carHasSeatFor({ ...car, seats: null }, 3)).toBe(true)
+  })
+})
+
+describe('deleted participants', () => {
+  const rozpis = () => ({
+    rooms: [
+      {
+        id: 'r',
+        name: 'Ložnice',
+        maxSleepingSpaces: 3,
+        beds: [
+          {
+            id: 'b',
+            name: 'Palanda',
+            occupants: [
+              { id: 'o1', participant: 1 },
+              { id: 'o2', participant: null },
+              { id: 'o3', participant: { id: 2 } },
+            ],
+          },
+        ],
+      },
+    ] as unknown as RoomRow[],
+    sharedCars: [
+      { id: 'c1', name: 'Fabia', driver: 1, frontPassenger: 2, passengers: [{ participant: 3 }] },
+      { id: 'c2', name: 'Bez řidiče', driver: null, passengers: [{ participant: 1 }] },
+    ] as unknown as CarRow[],
+    publicTransportOptions: [
+      { id: 't', title: 'Vlak', riders: [{ participant: null }] },
+    ] as unknown as TransportRow[],
+  })
+
+  it('sweeps rows whose participant no longer exists', () => {
+    const { rows, changed } = withoutParticipant(rozpis())
+    expect(rows.rooms[0].beds![0].occupants!.map((o) => o.id)).toEqual(['o1', 'o3'])
+    expect(rows.sharedCars.map((c) => c.id)).toEqual(['c1'])
+    expect(rows.sharedCars[0].frontPassenger).toBe(2)
+    expect(rows.publicTransportOptions[0].riders).toEqual([])
+    expect(changed).toEqual({ rooms: true, sharedCars: true, publicTransportOptions: true })
+  })
+
+  it('takes a participant out of beds and seats, and their car with them', () => {
+    const passenger = withoutParticipant(rozpis(), 2).rows
+    expect(passenger.rooms[0].beds![0].occupants!.map((o) => o.id)).toEqual(['o1'])
+    expect(passenger.sharedCars[0].frontPassenger).toBeNull()
+
+    const driver = withoutParticipant(rozpis(), 1).rows
+    expect(driver.sharedCars).toEqual([])
+    expect(driver.rooms[0].beds![0].occupants!.map((o) => o.id)).toEqual(['o3'])
+  })
+
+  it('reports nothing changed for a tidy rozpis', () => {
+    const tidy = withoutParticipant(rozpis()).rows
+    expect(withoutParticipant(tidy).changed).toEqual({
+      rooms: false,
+      sharedCars: false,
+      publicTransportOptions: false,
+    })
+    expect(withoutParticipant(tidy, 99).changed.sharedCars).toBe(false)
   })
 })

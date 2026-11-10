@@ -399,3 +399,73 @@ export function takeSeat(
 export function leaveCar(cars: CarRow[], participantId: Id): Result<CarRow[]> {
   return ok(removeFromSeats(cars, participantId))
 }
+
+// ─── deleted participants ────────────────────────────────────────────────
+
+export interface TransportRow {
+  id?: string | null
+  riders?: PassengerRow[] | null
+  [key: string]: unknown
+}
+
+export interface OrganizationRows {
+  rooms: RoomRow[]
+  sharedCars: CarRow[]
+  publicTransportOptions: TransportRow[]
+}
+
+/**
+ * The rozpis without `participantId` and without rows whose participant no
+ * longer exists (the database nulls the reference when a participant is
+ * deleted, and Payload then refuses every later save of the chata because
+ * the row's participant is required). Bed occupants, passengers and riders
+ * are dropped, a front seat is freed, and a car goes with its driver.
+ * `changed` names the arrays that differ, so callers write only those.
+ */
+export function withoutParticipant(
+  rows: OrganizationRows,
+  participantId: Id | null = null,
+): { rows: OrganizationRows; changed: Record<keyof OrganizationRows, boolean> } {
+  const target = participantId == null ? null : String(participantId)
+  const changed = { rooms: false, sharedCars: false, publicTransportOptions: false }
+  const gone = (value: unknown): boolean => {
+    const ref = refOf(value)
+    return ref == null || ref === target
+  }
+  const keep = <T extends { participant?: unknown }>(
+    list: T[] | null | undefined,
+    key: keyof OrganizationRows,
+  ): T[] => {
+    const kept = (list ?? []).filter((row) => !gone(row.participant))
+    if (kept.length !== (list ?? []).length) changed[key] = true
+    return kept
+  }
+
+  const rooms = rows.rooms.map((room) => ({
+    ...room,
+    beds: (room.beds ?? []).map((bed) => ({ ...bed, occupants: keep(bed.occupants, 'rooms') })),
+  }))
+
+  const sharedCars = rows.sharedCars
+    .filter((car) => {
+      if (!gone(car.driver)) return true
+      changed.sharedCars = true
+      return false
+    })
+    .map((car) => {
+      const frontLeft = target != null && refOf(car.frontPassenger) === target
+      if (frontLeft) changed.sharedCars = true
+      return {
+        ...car,
+        frontPassenger: frontLeft ? null : (car.frontPassenger ?? null),
+        passengers: keep(car.passengers, 'sharedCars'),
+      }
+    })
+
+  const publicTransportOptions = rows.publicTransportOptions.map((option) => ({
+    ...option,
+    riders: keep(option.riders, 'publicTransportOptions'),
+  }))
+
+  return { rows: { rooms, sharedCars, publicTransportOptions }, changed }
+}

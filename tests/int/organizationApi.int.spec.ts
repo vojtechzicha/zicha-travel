@@ -1,5 +1,6 @@
 import { getPayload, Payload, type PayloadRequest } from 'payload'
 import config from '@/payload.config'
+import { sql } from '@payloadcms/db-postgres/drizzle'
 
 import { describe, it, beforeAll, afterAll, expect } from 'vitest'
 import type { Chata, Participant, User } from '@/payload-types'
@@ -64,7 +65,7 @@ async function removeFixture() {
     await payload.update({
       collection: 'chatas',
       id: found.id,
-      data: { rooms: [], sharedCars: [], banker: null },
+      data: { rooms: [], sharedCars: [], publicTransportOptions: [], banker: null },
       depth: 0,
       context: { triggerAfterRead: false },
     })
@@ -311,6 +312,77 @@ describe('cars', () => {
     ).toEqual({
       error: 'invalid',
     })
+  })
+})
+
+describe('a deleted participant', () => {
+  const mkGuest = async (name: string) =>
+    payload.create({ collection: 'participants', depth: 0, data: { name, chata: chata.id } })
+  const seatGuest = async (guestId: number) => {
+    const now = await reload()
+    await payload.update({
+      collection: 'chatas',
+      id: chata.id,
+      depth: 0,
+      context: { triggerAfterRead: false },
+      data: {
+        rooms: [
+          ...(now.rooms ?? []).filter((r) => r.name !== 'Půda'),
+          {
+            name: 'Půda',
+            maxSleepingSpaces: 2,
+            beds: [{ name: 'Matrace', occupants: [{ participant: guestId }] }],
+          },
+        ],
+        sharedCars: [
+          ...(now.sharedCars ?? []).filter((c) => c.name !== 'Auto hosta'),
+          { name: 'Auto hosta', seats: 4, driver: guestId },
+        ],
+        publicTransportOptions: [{ title: 'Vlak', riders: [{ participant: guestId }] }],
+      },
+    })
+  }
+  const guestRows = (c: Chata) => ({
+    bed: roomPeople(c, 'Půda'),
+    cars: (c.sharedCars ?? []).filter((car) => car.name === 'Auto hosta').length,
+    riders: (c.publicTransportOptions ?? []).flatMap((o) => o.riders ?? []).length,
+  })
+
+  it('leaves the rozpis with them', async () => {
+    const guest = await mkGuest('Org host')
+    await seatGuest(guest.id)
+    expect(guestRows(await reload())).toEqual({ bed: [String(guest.id)], cars: 1, riders: 1 })
+
+    await payload.delete({ collection: 'participants', id: guest.id, depth: 0 })
+    expect(guestRows(await reload())).toEqual({ bed: [], cars: 0, riders: 0 })
+  })
+
+  it('does not block other people when old rows were left behind', async () => {
+    // rows orphaned before the delete hook existed: the database nulled the
+    // reference and Payload then refused every save of the chata
+    const guest = await mkGuest('Org duch')
+    await seatGuest(guest.id)
+    const db = (payload.db as unknown as { drizzle: { execute: (q: unknown) => Promise<unknown> } })
+      .drizzle
+    for (const [table, column] of [
+      ['chatas_rooms_beds_occupants', 'participant_id'],
+      ['chatas_shared_cars', 'driver_id'],
+    ]) {
+      await db.execute(
+        sql`UPDATE ${sql.identifier(table)} SET ${sql.identifier(column)} = NULL WHERE ${sql.identifier(column)} = ${guest.id}`,
+      )
+    }
+    // riders can't be orphaned (NOT NULL column): before the hook, such a
+    // delete simply failed
+    await db.execute(
+      sql`DELETE FROM chatas_public_transport_options_riders WHERE participant_id = ${guest.id}`,
+    )
+    await db.execute(sql`DELETE FROM participants WHERE id = ${guest.id}`)
+
+    expect(
+      await call(users.parent, { action: 'car.leave', participantId: people.parent.id }),
+    ).toEqual({ status: 200, body: { ok: true } })
+    expect(guestRows(await reload())).toEqual({ bed: [], cars: 0, riders: 0 })
   })
 })
 
