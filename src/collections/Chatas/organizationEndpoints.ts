@@ -1,5 +1,4 @@
-import type { Endpoint, Payload, PayloadRequest } from 'payload'
-import { sql } from '@payloadcms/db-postgres/drizzle'
+import type { Endpoint, PayloadRequest } from 'payload'
 import type { Chata } from '@/payload-types'
 import { canManageChata, refId } from '@/lib/access'
 import {
@@ -12,11 +11,13 @@ import {
   removeFromBeds,
   takeSeat,
   updateCar,
+  withoutParticipant,
   type CarRow,
   type OrganizationError,
   type Result,
   type RoomRow,
 } from '@/lib/organizationEditing'
+import { changedRows, lockOrganization, organizationRows } from '@/utils/organizationCleanup'
 import { getTripNights } from '@/app/(frontend)/utils/participantHelpers'
 import { getTripPhase } from '@/app/(frontend)/utils/tripData'
 
@@ -25,14 +26,6 @@ import { getTripPhase } from '@/app/(frontend)/utils/tripData'
 // action re-reads the chata inside a transaction that holds an advisory
 // lock on it, so two people grabbing the last free place can't both win and
 // nobody's edit overwrites another's arrays.
-
-type DbSession = { execute?: (q: unknown) => Promise<unknown> } | undefined
-
-function transactionSession(payload: Payload, tid: number | string): DbSession {
-  return (payload.db as unknown as { sessions?: Record<string, { db?: DbSession }> }).sessions?.[
-    String(tid)
-  ]?.db
-}
 
 class ActionError extends Error {
   constructor(
@@ -90,12 +83,7 @@ export const organizationEndpoints: Endpoint[] = [
       if (tid == null) return Response.json({ error: 'unavailable' }, { status: 503 })
       const txReq = { transactionID: tid } as unknown as PayloadRequest
       try {
-        const session = transactionSession(payload, tid)
-        if (session?.execute) {
-          await session.execute(
-            sql`SELECT pg_advisory_xact_lock(hashtext(${`organization:${chataId}`}))`,
-          )
-        }
+        await lockOrganization(payload, tid, chataId)
 
         const chata = (await payload.findByID({
           collection: 'chatas',
@@ -138,8 +126,14 @@ export const organizationEndpoints: Endpoint[] = [
           return id
         }
 
-        const rooms = (chata.rooms ?? []) as unknown as RoomRow[]
-        const cars = (chata.sharedCars ?? []) as unknown as CarRow[]
+        // Rows left behind by a deleted participant (reference nulled by the
+        // database) would fail Payload's validation of the whole chata and
+        // block this edit, whoever makes it. Drop them and save the repair
+        // along with the action.
+        const swept = withoutParticipant(organizationRows(chata))
+        const repairs = changedRows(swept)
+        const rooms = swept.rows.rooms
+        const cars = swept.rows.sharedCars
         const carById = (value: unknown): CarRow => {
           const car = cars.find((c) => c.id === value)
           if (!car) throw new ActionError('not-found', 404)
@@ -225,7 +219,7 @@ export const organizationEndpoints: Endpoint[] = [
         await payload.update({
           collection: 'chatas',
           id: chataId,
-          data: data as Partial<Chata>,
+          data: { ...repairs, ...data } as Partial<Chata>,
           depth: 0,
           overrideAccess: true,
           req: txReq,
