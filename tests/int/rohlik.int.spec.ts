@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken'
 import { decryptToken, encryptToken } from '@/lib/rohlik/crypto'
 import {
   ROHLIK_MCP_URL,
+  ROHLIK_REDIRECT_URI,
   buildAuthorizeUrl,
-  callbackUrl,
   createPkce,
+  parsePastedRedirect,
   parseTokenResponse,
   oauthErrorReason,
   pkceChallenge,
@@ -74,10 +75,9 @@ describe('connect state', () => {
     userId: '7',
     chataId: '10',
     clientId: 'client-abc',
-    redirectUri: 'http://localhost:3000/api/shopping-items/rohlik/callback',
+    redirectUri: ROHLIK_REDIRECT_URI,
     verifier: 'verifier',
     nonce: 'nonce-1',
-    returnTo: '/pratele?view=shopping',
   }
 
   it('verifies for the same user and nonce', () => {
@@ -132,7 +132,7 @@ describe('authorize URL', () => {
     const url = new URL(
       buildAuthorizeUrl({
         clientId: 'client-abc',
-        redirectUri: callbackUrl('https://pratele.zicha.travel'),
+        redirectUri: ROHLIK_REDIRECT_URI,
         challenge: 'challenge-xyz',
         nonce: 'nonce-1',
       }),
@@ -141,13 +141,51 @@ describe('authorize URL', () => {
     expect(Object.fromEntries(url.searchParams)).toEqual({
       response_type: 'code',
       client_id: 'client-abc',
-      redirect_uri: 'https://pratele.zicha.travel/api/shopping-items/rohlik/callback',
+      redirect_uri: 'http://localhost/zicha-travel-rohlik',
       scope: 'openid email roles',
       state: 'nonce-1',
       code_challenge: 'challenge-xyz',
       code_challenge_method: 'S256',
       resource: ROHLIK_MCP_URL,
     })
+  })
+})
+
+describe('pasted redirect', () => {
+  it('reads the code and state from the copied address', () => {
+    expect(
+      parsePastedRedirect(
+        'http://localhost/zicha-travel-rohlik?code=abc-123&state=nonce-1&iss=https%3A%2F%2Fidentity.rohlik.cz',
+      ),
+    ).toEqual({ ok: true, code: 'abc-123', state: 'nonce-1' })
+  })
+
+  it('takes the address however it was copied', () => {
+    const expected = { ok: true, code: 'abc', state: 'n1' }
+    // iPhone Safari copies without the scheme; people paste with spaces
+    expect(parsePastedRedirect('  localhost/zicha-travel-rohlik?code=abc&state=n1 \n')).toEqual(
+      expected,
+    )
+    expect(parsePastedRedirect('?code=abc&state=n1')).toEqual(expected)
+    expect(parsePastedRedirect('code=abc&state=n1')).toEqual(expected)
+    expect(parsePastedRedirect('http://localhost/x?code=abc&state=n1#frag')).toEqual(expected)
+  })
+
+  it('tells a refusal on Rohlík from a wrong paste', () => {
+    expect(
+      parsePastedRedirect('http://localhost/zicha-travel-rohlik?error=access_denied&state=n1'),
+    ).toEqual({ ok: false, code: 'denied' })
+    expect(parsePastedRedirect('http://localhost/zicha-travel-rohlik')).toEqual({
+      ok: false,
+      code: 'invalid-url',
+    })
+    expect(parsePastedRedirect('https://www.rohlik.cz/')).toEqual({
+      ok: false,
+      code: 'invalid-url',
+    })
+    expect(parsePastedRedirect('?code=abc')).toEqual({ ok: false, code: 'invalid-url' })
+    expect(parsePastedRedirect('')).toEqual({ ok: false, code: 'invalid-url' })
+    expect(parsePastedRedirect(42)).toEqual({ ok: false, code: 'invalid-url' })
   })
 })
 

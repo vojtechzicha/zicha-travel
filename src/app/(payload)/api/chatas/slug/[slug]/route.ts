@@ -17,7 +17,7 @@ import { confirmPendingVotesForUser, pendingVoteIntentFor } from '@/utils/pendin
 import { canEditShoppingItem, type ShoppingPayload } from '@/lib/shopping'
 import { TAP_CODE, tapRental, type BeerItemView, type BeerPayload } from '@/lib/beer'
 import { buildKegOrderEmail, kegOrderFingerprint } from '@/lib/kegOrderEmail'
-import { isRohlikConnected } from '@/utils/rohlikConnection'
+import { rohlikConnectionStatus } from '@/utils/rohlikConnection'
 import { optOutView } from '@/lib/listSplit'
 import { loadListOptOuts } from '@/utils/listExpense'
 import {
@@ -438,6 +438,10 @@ export async function GET(
       const isChataAdmin = canManageChata(user, chata.id)
       const bankerAccountId =
         bankerParticipant?.account != null ? refId(bankerParticipant.account) : null
+      const rohlik =
+        bankerAccountId != null
+          ? await rohlikConnectionStatus(payload, bankerAccountId)
+          : { connected: false, connectedAt: null }
       shopping = {
         items: itemsResult.docs.map((item) => {
           const participantId = item.participant != null ? Number(refId(item.participant)) : null
@@ -485,7 +489,9 @@ export async function GET(
         optOuts: await optOutsFor('shopping', Boolean(chata.shoppingClosedAt)),
         shopper: {
           name: bankerParticipant?.name ?? null,
-          connected: bankerAccountId != null && (await isRohlikConnected(payload, bankerAccountId)),
+          connected: rohlik.connected,
+          // only the banker sees when their own connection runs out
+          connectedAt: viewerIsBanker ? rohlik.connectedAt : null,
           isMe: viewerIsBanker,
           canManage: viewerIsBanker || canManageChata(user, chata.id),
         },

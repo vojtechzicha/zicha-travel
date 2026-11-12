@@ -1,7 +1,16 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 
-import { describe, it, beforeAll, afterAll, expect } from 'vitest'
+import { describe, it, beforeAll, afterAll, afterEach, expect, vi } from 'vitest'
+import type { PayloadRequest } from 'payload'
+import { rohlikEndpoints } from '@/collections/ShoppingItems/rohlikEndpoints'
+import { encryptToken } from '@/lib/rohlik/crypto'
+import {
+  ROHLIK_REDIRECT_URI,
+  ROHLIK_STATE_COOKIE,
+  signConnectState,
+} from '@/lib/rohlik/oauth'
+import { getAccessToken, rohlikConnectionStatus } from '@/utils/rohlikConnection'
 import type { Chata, Participant, ShoppingItem, User } from '@/payload-types'
 
 // The "Nákup" access matrix (src/collections/ShoppingItems.ts) against the
@@ -342,5 +351,138 @@ describe('a closed shopping list', () => {
       ...asUser(users.author),
     })
     expect(item.title).toBe('Včas')
+  })
+})
+
+describe('connecting Rohlík by pasting the redirect', () => {
+  const endpoint = (path: string) => rohlikEndpoints.find((e) => e.path === path)!
+  const complete = (user: User | undefined, url: unknown, cookie?: string) =>
+    endpoint('/rohlik/complete').handler({
+      payload,
+      user: user ? { ...user, collection: 'users' } : null,
+      headers: new Headers(cookie ? { cookie: `${ROHLIK_STATE_COOKIE}=${cookie}` } : {}),
+      json: async () => ({ chata: chata.id, url }),
+    } as unknown as PayloadRequest)
+  const stateFor = (overrides: { chataId?: string; nonce?: string } = {}) =>
+    signConnectState(
+      {
+        userId: String(users.banker.id),
+        chataId: overrides.chataId ?? String(chata.id),
+        clientId: 'client-test',
+        redirectUri: ROHLIK_REDIRECT_URI,
+        verifier: 'verifier',
+        nonce: overrides.nonce ?? 'nonce-1',
+      },
+      process.env.PAYLOAD_SECRET!,
+    )
+  const pastedUrl = `${ROHLIK_REDIRECT_URI}?code=abc&state=nonce-1`
+  const errorOf = async (res: Response) => ((await res.json()) as { error?: string }).error
+
+  it('lets only the banker start or finish', async () => {
+    for (const user of [users.author, users.chataAdmin, undefined]) {
+      const started = await endpoint('/rohlik/connect').handler({
+        payload,
+        user: user ? { ...user, collection: 'users' } : null,
+        json: async () => ({ chata: chata.id }),
+      } as unknown as PayloadRequest)
+      expect(started.status).toBe(403)
+      expect((await complete(user, pastedUrl, stateFor())).status).toBe(403)
+    }
+  })
+
+  it('refuses a paste that is not the redirect, and says so', async () => {
+    const res = await complete(users.banker, 'https://www.rohlik.cz/', stateFor())
+    expect(res.status).toBe(400)
+    expect(await errorOf(res)).toBe('invalid-url')
+    const denied = await complete(
+      users.banker,
+      `${ROHLIK_REDIRECT_URI}?error=access_denied&state=nonce-1`,
+      stateFor(),
+    )
+    expect(await errorOf(denied)).toBe('denied')
+  })
+
+  it('needs the state cookie of this very attempt, for this chata', async () => {
+    for (const cookie of [
+      undefined,
+      stateFor({ nonce: 'an-older-attempt' }),
+      stateFor({ chataId: String(chata.id + 100_000) }),
+    ]) {
+      const res = await complete(users.banker, pastedUrl, cookie)
+      expect(res.status).toBe(400)
+      expect(await errorOf(res)).toBe('expired')
+    }
+  })
+})
+
+describe('refreshing the banker\'s Rohlík token', () => {
+  const secret = () => process.env.PAYLOAD_SECRET!
+  const seal = (value: string) => encryptToken(value, secret())
+
+  afterEach(async () => {
+    vi.unstubAllGlobals()
+    await payload.delete({
+      collection: 'rohlik-connections',
+      where: { user: { equals: users.banker.id } },
+      overrideAccess: true,
+    })
+  })
+
+  const expiredConnection = () =>
+    payload.create({
+      collection: 'rohlik-connections',
+      overrideAccess: true,
+      data: {
+        user: users.banker.id,
+        clientId: 'client-test',
+        redirectUri: ROHLIK_REDIRECT_URI,
+        accessToken: seal('old-access'),
+        refreshToken: seal('old-refresh'),
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+        connectedAt: new Date().toISOString(),
+      },
+    })
+
+  const refusal = () =>
+    new Response(JSON.stringify({ error: 'invalid_grant' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    })
+
+  it('keeps the connection when a parallel request refreshed first', async () => {
+    const row = await expiredConnection()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        // the other request wins the race and rotates the pair
+        await payload.update({
+          collection: 'rohlik-connections',
+          id: row.id,
+          overrideAccess: true,
+          data: {
+            accessToken: seal('fresh-access'),
+            refreshToken: seal('fresh-refresh'),
+            expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+          },
+        })
+        return refusal()
+      }),
+    )
+    expect(await getAccessToken(payload, users.banker.id)).toBe('fresh-access')
+    expect((await rohlikConnectionStatus(payload, users.banker.id)).connected).toBe(true)
+  })
+
+  it('drops the connection when Rohlík refuses it for good', async () => {
+    await expiredConnection()
+    vi.stubGlobal('fetch', vi.fn(async () => refusal()))
+    expect(await getAccessToken(payload, users.banker.id)).toBeNull()
+    expect((await rohlikConnectionStatus(payload, users.banker.id)).connected).toBe(false)
+  })
+
+  it('keeps the connection through a Rohlík outage', async () => {
+    await expiredConnection()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 503 })))
+    expect(await getAccessToken(payload, users.banker.id)).toBeNull()
+    expect((await rohlikConnectionStatus(payload, users.banker.id)).connected).toBe(true)
   })
 })

@@ -474,12 +474,26 @@ API payload, no new endpoints).
   our server talks to Rohlík's OFFICIAL MCP server (`mcp.rohlik.cz/mcp`,
   experimental per Rohlík) to search products for everyone and to fill the
   banker's own Rohlík cart (`mergeCartLines` sums the same product).
-  **Rohlík's dynamic client registration only accepts `localhost` redirect
+  **Rohlík's dynamic client registration only accepts loopback redirect
   URIs** ("Redirect URI is not allowed for dynamic client registration" for
-  `https://*.zicha.travel`), so "Propojit s Rohlíkem" fails on prod until
-  Rohlík allowlists our callback; the prod banker's connection was made
-  locally and moved into prod `rohlik-connections` re-encrypted with the
-  prod key (refresh works from prod: public client, no redirect involved).
+  `https://*.zicha.travel`), so connecting is a paste flow
+  (`RohlikConnect.tsx`): `POST /rohlik/connect` registers a client for the
+  fixed `ROHLIK_REDIRECT_URI` (`http://localhost/zicha-travel-rohlik`),
+  sets the signed `rohlik-oauth-state` cookie and returns the authorize
+  URL; the banker signs in on Rohlík in another tab, lands on that
+  localhost address (it doesn't load), copies it and pastes it back;
+  `POST /rohlik/complete` checks the state nonce against the cookie of the
+  SAME page (so an installed app works too) and exchanges the code
+  (`parsePastedRedirect` is lenient about how it was copied). A
+  connection lasts ~30 days whatever its use (the refresh token's absolute
+  lifetime, inferred: the first prod connection was gone after 30 days), so
+  the banker sees "Propojit znovu" 5 days ahead (`rohlikReconnectBy`,
+  `ROHLIK_CONNECTION_DAYS`; `connectedAt` is shipped to the banker only).
+  A refused refresh is logged before the row goes, and is NOT fatal when a
+  parallel request already rotated the pair (`getAccessToken` re-reads the
+  row). Never keep a copied connection in two databases: if Rohlík rotates
+  refresh tokens (`parseTokenResponse` handles both), whichever refreshes
+  first kills the other.
   OAuth failures log Rohlík's own `error: error_description`. Prices stay
   current: `refreshChataPrices` (`src/utils/rohlikPriceRefresh.ts`)
   re-checks every Rohlík item via `get_product_details` (batched, ids only)
