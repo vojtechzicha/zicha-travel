@@ -44,6 +44,8 @@ export interface ShoppingPayload {
   shopper: {
     name: string | null
     connected: boolean
+    /** when the banker connected; shipped to the banker only (rohlikReconnectBy) */
+    connectedAt: string | null
     isMe: boolean
     /** may close or reopen the list: the banker or a chata admin */
     canManage: boolean
@@ -174,4 +176,33 @@ export function estimatedTotal(
     }
   }
   return { total: Math.round(total * 100) / 100, unpriced }
+}
+
+/**
+ * How long a Rohlík connection lasts. Rohlík's identity server ends the
+ * refresh token a fixed time after the login, however often it is used:
+ * the first production connection (2026-10-13) was gone 30 days later.
+ * Inferred, not documented by Rohlík (that refusal wasn't logged; the token
+ * refresh logs it now); if it turns out longer, the banker is just
+ * reminded early.
+ */
+export const ROHLIK_CONNECTION_DAYS = 30
+/** Remind the banker this many days before the connection ends. */
+export const ROHLIK_RECONNECT_WARN_DAYS = 5
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * When the banker's connection ends, if that is close enough to ask them to
+ * connect again ahead of time; null otherwise (or without a date).
+ */
+export function rohlikReconnectBy(
+  connectedAt: string | null | undefined,
+  now: number = Date.now(),
+): Date | null {
+  if (!connectedAt) return null
+  const connected = new Date(connectedAt).getTime()
+  if (!Number.isFinite(connected)) return null
+  const endsAt = connected + ROHLIK_CONNECTION_DAYS * DAY_MS
+  return endsAt - now <= ROHLIK_RECONNECT_WARN_DAYS * DAY_MS ? new Date(endsAt) : null
 }

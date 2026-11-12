@@ -20,6 +20,7 @@ import type { AppLocale } from '@/i18n/config'
 import type { FinanceViewer } from '@/lib/financeAccess'
 import {
   estimatedTotal,
+  rohlikReconnectBy,
   type RohlikProduct,
   type ShoppingItemView,
   type ShoppingPayload,
@@ -28,6 +29,7 @@ import { formatCurrency, formatDate } from '@/lib/formatCurrency'
 import { formatDateRangeShort } from '@/lib/chataSelection'
 import { track } from '@/lib/analytics'
 import { HintCard, Sheet, SheetHeading } from './SheetUi'
+import { RohlikConnect } from './RohlikConnect'
 import {
   CloseListButton,
   ItemOptOutControls,
@@ -85,6 +87,9 @@ const inputClass =
 const primaryButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:hover:bg-primary text-white text-[14px] font-semibold px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2'
 
+const secondaryButtonClass =
+  'inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-white hover:bg-primary/[0.06] disabled:opacity-50 text-primary-dark text-[14px] font-semibold px-4 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 dark:bg-white/[0.04] dark:text-primary-light'
+
 const linkButtonClass =
   'rounded-lg border border-primary text-primary-dark dark:text-primary-light text-xs font-bold px-3.5 py-2 whitespace-nowrap hover:bg-primary/10 transition-colors'
 
@@ -124,17 +129,11 @@ export function ShoppingView({
   const locale = useLocale() as AppLocale
   const money = (amount: number) => formatCurrency(amount, locale)
 
-  // ─── banner from the Rohlík OAuth round trip (?rohlik=connected|error) ──
-  const [banner, setBanner] = useState<'connected' | 'error' | null>(null)
+  // ─── "Rohlík je propojený" after the banker finishes connecting ──────────
+  const [connectedBanner, setConnectedBanner] = useState(false)
   const [returnTo, setReturnTo] = useState<string>('')
   useEffect(() => {
     const url = new URL(window.location.href)
-    const flag = url.searchParams.get('rohlik')
-    if (flag === 'connected' || flag === 'error') {
-      setBanner(flag)
-      url.searchParams.delete('rohlik')
-      window.history.replaceState({}, '', url)
-    }
     url.searchParams.set('view', 'shopping')
     setReturnTo(url.pathname + url.search)
   }, [])
@@ -373,7 +372,12 @@ export function ShoppingView({
   const showDropdown =
     dropdownOpen && !selected && query.trim().length >= SEARCH_MIN_CHARS && search.kind !== 'idle'
   const loginHref = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'
-  const connectHref = `/api/shopping-items/rohlik/connect?chata=${chata.id}&returnTo=${encodeURIComponent(returnTo || '/')}`
+  const reconnectBy = shopper.connected ? rohlikReconnectBy(shopper.connectedAt) : null
+  const onRohlikConnected = async () => {
+    setConnectedBanner(true)
+    setSendResult(null)
+    await onDataChanged()
+  }
   const staples = t.raw('staples') as Staple[]
 
   // "Kdo co chce": how many lines each participant has on the receipt
@@ -417,19 +421,15 @@ export function ShoppingView({
         {shopper.name ? t('intro', { name: shopper.name }) : t('introNoShopper')}
       </p>
 
-      {banner && (
+      {connectedBanner && (
         <div
           role="status"
-          className={`mb-6 flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-[13px] ${
-            banner === 'connected'
-              ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-300'
-              : 'bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-300'
-          }`}
+          className="mb-6 flex items-start justify-between gap-3 rounded-xl bg-green-50 px-4 py-3 text-[13px] text-green-800 dark:bg-green-500/10 dark:text-green-300"
         >
-          <span>{banner === 'connected' ? t('connectedToast') : t('connectErrorToast')}</span>
+          <span>{t('connectedToast')}</span>
           <button
             type="button"
-            onClick={() => setBanner(null)}
+            onClick={() => setConnectedBanner(false)}
             aria-label={t('dismiss')}
             className="shrink-0 opacity-70 hover:opacity-100"
           >
@@ -878,13 +878,26 @@ export function ShoppingView({
                   <p className="text-[13px] leading-relaxed text-gray-600 dark:text-slate-300">
                     {t('shopperConnectIntro')}
                   </p>
-                  <a href={connectHref} className={primaryButtonClass}>
-                    <ShoppingCart size={16} aria-hidden="true" />
-                    {t('connect')}
-                  </a>
+                  <RohlikConnect
+                    chataId={chata.id}
+                    label={t('connect')}
+                    buttonClass={primaryButtonClass}
+                    onConnected={onRohlikConnected}
+                  />
                 </>
               ) : (
                 <>
+                  {reconnectBy && (
+                    <div className="flex flex-col gap-3 rounded-xl bg-amber-50 px-4 py-3 text-[13px] leading-relaxed text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                      <p>{t('reconnectSoon', { date: formatDate(reconnectBy, locale) })}</p>
+                      <RohlikConnect
+                        chataId={chata.id}
+                        label={t('reconnect')}
+                        buttonClass={secondaryButtonClass}
+                        onConnected={onRohlikConnected}
+                      />
+                    </div>
+                  )}
                   <p className="text-center text-[12px] text-gray-500 dark:text-slate-400">
                     {t('sendAddressHint')}
                   </p>

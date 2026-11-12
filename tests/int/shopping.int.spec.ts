@@ -5,6 +5,7 @@ import {
   mergeCartLines,
   refreshedRohlik,
   sendRoute,
+  rohlikReconnectBy,
 } from '@/lib/shopping'
 
 describe('canEditShoppingItem', () => {
@@ -158,5 +159,29 @@ describe('sendRoute', () => {
   it('routes free-text items to the checklist', () => {
     expect(sendRoute(null, true)).toBe('text')
     expect(sendRoute({ productId: null, inStock: false }, false)).toBe('text')
+  })
+})
+
+describe('rohlikReconnectBy', () => {
+  const connectedAt = '2026-11-12T22:40:00.000Z'
+  const at = (iso: string) => new Date(iso).getTime()
+
+  it('stays quiet while the connection has more than 5 days left', () => {
+    expect(rohlikReconnectBy(connectedAt, at('2026-11-13T10:00:00.000Z'))).toBeNull()
+    expect(rohlikReconnectBy(connectedAt, at('2026-12-07T22:39:00.000Z'))).toBeNull()
+  })
+
+  it('names the end 30 days after connecting once it is 5 days away', () => {
+    expect(rohlikReconnectBy(connectedAt, at('2026-12-07T22:40:00.000Z'))?.toISOString()).toBe(
+      '2026-12-12T22:40:00.000Z',
+    )
+    // still shown after the date: a refresh may not have run since
+    expect(rohlikReconnectBy(connectedAt, at('2026-12-20T00:00:00.000Z'))).not.toBeNull()
+  })
+
+  it('needs a date', () => {
+    expect(rohlikReconnectBy(null)).toBeNull()
+    expect(rohlikReconnectBy(undefined)).toBeNull()
+    expect(rohlikReconnectBy('not a date')).toBeNull()
   })
 })

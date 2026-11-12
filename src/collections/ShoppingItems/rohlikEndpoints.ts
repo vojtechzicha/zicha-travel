@@ -2,17 +2,17 @@ import { randomBytes } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { parseCookies, type Endpoint, type PayloadRequest } from 'payload'
 import { canManageChata, refId } from '@/lib/access'
-import { requestOrigin, safeReturnTo } from '@/lib/auth/session'
 import { RATE_LIMITS, checkRateLimit, rateLimitResponse } from '@/lib/rateLimit'
 import { addToCart, searchProducts } from '@/lib/rohlik/mcp'
 import {
   ROHLIK_ENDPOINT_PATH,
   ROHLIK_STATE_COOKIE,
   ROHLIK_STATE_TTL_SECONDS,
+  ROHLIK_REDIRECT_URI,
   buildAuthorizeUrl,
-  callbackUrl,
   createPkce,
   exchangeCode,
+  parsePastedRedirect,
   registerClient,
   signConnectState,
   verifyConnectState,
@@ -32,10 +32,12 @@ import {
 
 // Rohlík for the shopping list ("Nákup", src/lib/shopping.ts), mounted on
 // shopping-items as /api/shopping-items/rohlik/…:
-// - connect/callback: the banker links their Rohlík account (OAuth with
-//   dynamic client registration + PKCE, src/lib/rohlik/oauth.ts); the
-//   redirect URI is built from the request host, so the round trip stays on
-//   the chata subdomain it started on and the state cookie is host-only
+// - connect/complete: the banker links their Rohlík account (OAuth with
+//   dynamic client registration + PKCE, src/lib/rohlik/oauth.ts). Rohlík
+//   only registers loopback redirect URIs, so the browser ends on a
+//   localhost address that doesn't load and the banker pastes it back:
+//   connect returns the authorize URL and sets the signed state cookie,
+//   complete takes the pasted address and exchanges the code
 // - search: any signed-in participant of the chata (or its admin) finds
 //   Rohlík products, through the BANKER's connection
 // - send: the banker puts the list into their Rohlík cart; ordering and
@@ -65,60 +67,39 @@ async function isBanker(req: PayloadRequest, chataId: number): Promise<boolean> 
   return banker != null && banker === String(req.user.id)
 }
 
-/**
- * Back to the page the connect started on, with `rohlik=<result>`. The path
- * passed safeReturnTo when it was stored; resolving it must still land on
- * this origin (CLAUDE.md open-redirect rule) or it falls back to `/`.
- */
-function backTo(
-  req: PayloadRequest,
-  returnTo: string,
-  result: 'connected' | 'error',
-): NextResponse {
-  const origin = requestOrigin(req.headers)
-  let target = new URL(safeReturnTo(returnTo), origin)
-  if (target.origin !== origin) target = new URL('/', origin)
-  target.searchParams.set('rohlik', result)
-  const response = NextResponse.redirect(target, 302)
-  response.cookies.set(ROHLIK_STATE_COOKIE, '', { path: ROHLIK_ENDPOINT_PATH, maxAge: 0 })
-  return response
-}
-
 export const rohlikEndpoints: Endpoint[] = [
   {
     path: '/rohlik/connect',
-    method: 'get',
+    method: 'post',
     handler: async (req) => {
-      const returnTo = safeReturnTo(req.searchParams.get('returnTo'))
-      const origin = requestOrigin(req.headers)
-      if (!req.user) {
-        return NextResponse.redirect(
-          new URL(`/login?returnTo=${encodeURIComponent(returnTo)}`, origin),
-          302,
-        )
-      }
-      const chataId = chataIdOf(req.searchParams.get('chata'))
+      const chataId = chataIdOf((await readBody(req)).chata)
       if (chataId == null) return Response.json({ error: 'invalid-chata' }, { status: 400 })
-      if (!(await isBanker(req, chataId))) {
+      if (!req.user || !(await isBanker(req, chataId))) {
         return Response.json({ error: 'forbidden' }, { status: 403 })
       }
       const key = secret()
       if (!key) return Response.json({ error: 'Server misconfigured' }, { status: 500 })
 
-      const redirectUri = callbackUrl(origin)
       let clientId: string
       try {
-        clientId = await registerClient(redirectUri)
+        clientId = await registerClient(ROHLIK_REDIRECT_URI)
       } catch (err) {
         req.payload.logger.error({ err }, 'Rohlík client registration failed')
-        return backTo(req, returnTo, 'error')
+        return Response.json({ error: 'rohlik-unavailable' }, { status: 502 })
       }
       const { verifier, challenge } = createPkce()
       const nonce = randomBytes(16).toString('base64url')
-      const response = NextResponse.redirect(
-        buildAuthorizeUrl({ clientId, redirectUri, challenge, nonce }),
-        302,
-      )
+      const response = NextResponse.json({
+        authorizeUrl: buildAuthorizeUrl({
+          clientId,
+          redirectUri: ROHLIK_REDIRECT_URI,
+          challenge,
+          nonce,
+        }),
+      })
+      // the state rides an httpOnly cookie of THIS page's cookie jar, so the
+      // Rohlík login may happen in another tab or browser (an installed app
+      // opens links outside itself): only the paste comes back here
       response.cookies.set(
         ROHLIK_STATE_COOKIE,
         signConnectState(
@@ -126,10 +107,9 @@ export const rohlikEndpoints: Endpoint[] = [
             userId: String(req.user.id),
             chataId: String(chataId),
             clientId,
-            redirectUri,
+            redirectUri: ROHLIK_REDIRECT_URI,
             verifier,
             nonce,
-            returnTo,
           },
           key,
         ),
@@ -145,28 +125,36 @@ export const rohlikEndpoints: Endpoint[] = [
     },
   },
   {
-    path: '/rohlik/callback',
-    method: 'get',
+    path: '/rohlik/complete',
+    method: 'post',
     handler: async (req) => {
+      const body = await readBody(req)
+      const chataId = chataIdOf(body.chata)
+      if (chataId == null) return Response.json({ error: 'invalid-chata' }, { status: 400 })
+      if (!req.user || !(await isBanker(req, chataId))) {
+        return Response.json({ error: 'forbidden' }, { status: 403 })
+      }
       const key = secret()
-      const cookie = parseCookies(req.headers).get(ROHLIK_STATE_COOKIE)
-      const verified = key
-        ? verifyConnectState(cookie, key, {
-            userId: req.user?.id,
-            nonce: req.searchParams.get('state'),
-          })
-        : null
-      if (!verified?.ok) return backTo(req, '/', 'error')
+      if (!key) return Response.json({ error: 'Server misconfigured' }, { status: 500 })
+
+      const pasted = parsePastedRedirect(body.url)
+      if (!pasted.ok) return Response.json({ error: pasted.code }, { status: 400 })
+      const verified = verifyConnectState(
+        parseCookies(req.headers).get(ROHLIK_STATE_COOKIE),
+        key,
+        { userId: req.user.id, nonce: pasted.state },
+      )
+      // expired, missing (another browser, or connect clicked again) or
+      // an address from an older attempt: start over
+      if (!verified.ok || verified.state.chataId !== String(chataId)) {
+        return Response.json({ error: 'expired' }, { status: 400 })
+      }
       const { state } = verified
-      const code = req.searchParams.get('code')
-      if (!code || req.searchParams.get('error')) return backTo(req, state.returnTo, 'error')
-      // the banker may have changed between connect and callback
-      if (!(await isBanker(req, Number(state.chataId)))) return backTo(req, state.returnTo, 'error')
       try {
         const tokens = await exchangeCode({
           clientId: state.clientId,
           redirectUri: state.redirectUri,
-          code,
+          code: pasted.code,
           verifier: state.verifier,
         })
         await saveConnection(req.payload, {
@@ -177,9 +165,16 @@ export const rohlikEndpoints: Endpoint[] = [
         })
       } catch (err) {
         req.payload.logger.error({ err }, 'Rohlík token exchange failed')
-        return backTo(req, state.returnTo, 'error')
+        // a used or stale code is a 4xx from Rohlík: the banker starts over
+        const status = (err as { status?: unknown }).status
+        return Response.json(
+          { error: typeof status === 'number' && status < 500 ? 'expired' : 'rohlik-unavailable' },
+          { status: 502 },
+        )
       }
-      return backTo(req, state.returnTo, 'connected')
+      const response = NextResponse.json({ ok: true })
+      response.cookies.set(ROHLIK_STATE_COOKIE, '', { path: ROHLIK_ENDPOINT_PATH, maxAge: 0 })
+      return response
     },
   },
   {

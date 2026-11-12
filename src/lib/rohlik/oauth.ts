@@ -24,9 +24,18 @@ export const ROHLIK_STATE_TTL_SECONDS = 10 * 60
 
 type FetchLike = typeof fetch
 
-export function callbackUrl(origin: string): string {
-  return `${origin}${ROHLIK_ENDPOINT_PATH}/callback`
-}
+/**
+ * Where Rohlík sends the browser after the banker agrees. Rohlík's dynamic
+ * client registration refuses every redirect URI but loopback ones
+ * ("Redirect URI is not allowed for dynamic client registration" for
+ * https://*.zicha.travel), so the browser lands on this localhost address,
+ * which doesn't load, and the banker pastes it back into the Nákup tab
+ * (POST /rohlik/complete). The loopback pattern of RFC 8252 with a human
+ * carrying the code; PKCE and the state nonce keep it bound to the session
+ * that started it. Port-less on purpose: nothing listens on port 80 on a
+ * phone, and the address bar still shows the whole URL to copy.
+ */
+export const ROHLIK_REDIRECT_URI = 'http://localhost/zicha-travel-rohlik'
 
 // ─── PKCE (RFC 7636) ────────────────────────────────────────────────────
 
@@ -51,7 +60,6 @@ export interface RohlikConnectState {
   verifier: string
   /** random value echoed as the OAuth `state` parameter */
   nonce: string
-  returnTo: string
 }
 
 export function signConnectState(state: RohlikConnectState, secret: string): string {
@@ -79,7 +87,7 @@ export function verifyConnectState(
     return { ok: false, code: 'invalid' }
   }
   if (decoded.purpose !== 'rohlik-connect') return { ok: false, code: 'invalid' }
-  const fields = ['userId', 'chataId', 'clientId', 'redirectUri', 'verifier', 'nonce', 'returnTo']
+  const fields = ['userId', 'chataId', 'clientId', 'redirectUri', 'verifier', 'nonce']
   if (fields.some((field) => typeof decoded[field] !== 'string')) {
     return { ok: false, code: 'invalid' }
   }
@@ -99,9 +107,32 @@ export function verifyConnectState(
       redirectUri: state.redirectUri,
       verifier: state.verifier,
       nonce: state.nonce,
-      returnTo: state.returnTo,
     },
   }
+}
+
+// ─── the pasted redirect ─────────────────────────────────────────────────
+
+export type PastedRedirect =
+  | { ok: true; code: string; state: string }
+  | { ok: false; code: 'invalid-url' | 'denied' }
+
+/**
+ * The code and state from the address the banker copied after Rohlík's
+ * redirect. Lenient about how it was copied (surrounding text, a missing
+ * scheme, the bare query); what binds it to this connect is the state
+ * nonce, checked by the caller against the signed cookie, not the host.
+ */
+export function parsePastedRedirect(text: unknown): PastedRedirect {
+  if (typeof text !== 'string') return { ok: false, code: 'invalid-url' }
+  const trimmed = text.trim()
+  const query = trimmed.includes('?') ? trimmed.slice(trimmed.indexOf('?') + 1) : trimmed
+  const params = new URLSearchParams(query.split('#')[0].split(/\s/)[0])
+  if (params.get('error')) return { ok: false, code: 'denied' }
+  const code = params.get('code')
+  const state = params.get('state')
+  if (!code || !state) return { ok: false, code: 'invalid-url' }
+  return { ok: true, code, state }
 }
 
 // ─── authorize URL ───────────────────────────────────────────────────────

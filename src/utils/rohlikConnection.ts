@@ -34,16 +34,20 @@ async function findConnection(payload: Payload, userId: number | string) {
   return result.docs[0] ?? null
 }
 
-export async function isRohlikConnected(
+/**
+ * Whether the user's Rohlík account is connected, and since when (Rohlík
+ * ends a connection a fixed time after it was made, ROHLIK_CONNECTION_DAYS).
+ */
+export async function rohlikConnectionStatus(
   payload: Payload,
   userId: number | string,
-): Promise<boolean> {
+): Promise<{ connected: boolean; connectedAt: string | null }> {
   const connection = await findConnection(payload, userId)
-  return (
+  const connected =
     connection != null &&
     typeof connection.accessToken === 'string' &&
     connection.accessToken !== ''
-  )
+  return { connected, connectedAt: connected ? (connection.connectedAt ?? null) : null }
 }
 
 export async function saveConnection(
@@ -119,12 +123,26 @@ export async function getAccessToken(
     })
     return tokens.accessToken
   } catch (err) {
-    // a refused refresh (revoked, expired) means the banker connects again;
-    // a transport failure keeps the row for the next attempt
     const status = (err as { status?: unknown }).status
-    if (typeof status === 'number' && status >= 400 && status < 500) {
-      await deleteConnection(payload, userId)
+    if (typeof status !== 'number' || status < 400 || status >= 500) {
+      // a transport failure keeps the row for the next attempt
+      payload.logger.warn({ err }, 'Rohlík token refresh failed, keeping the connection')
+      return null
     }
+    // A parallel request (two searches, the price cron) may have refreshed
+    // first: if Rohlík rotates refresh tokens, ours was spent and refused.
+    // Its fresh token is in the row now, and dropping the row would end a
+    // working connection.
+    const current = await findConnection(payload, userId)
+    if (current && current.refreshToken !== connection.refreshToken) {
+      return decryptToken(current.accessToken, secret())
+    }
+    // refused for good (expired, revoked): the banker connects again
+    payload.logger.warn(
+      { err, userId, connectedAt: connection.connectedAt },
+      'Rohlík refused the token refresh, dropping the connection',
+    )
+    await deleteConnection(payload, userId)
     return null
   }
 }

@@ -17,7 +17,7 @@ ve stejném PR.
 | Apple `appleid.apple.com` | server + redirect (callback přichází jako POST od Applu) | OAuth výměna |
 | PostHog EU | server-side jen přes rewrites `/ingest` | statistické události |
 | Google Fotky (`photos.app.goo.gl`, `photos.google.com`, `goo.gl`) | server (`api/chatas/[id]/album-photos`, cache ~6 h) | URL veřejné stránky sdíleného alba — bez osobních údajů |
-| Rohlík `identity.rohlik.cz` (OAuth, dynamická registrace klienta) | server + redirect (`api/shopping-items/rohlik/connect` a `/callback`) | OAuth výměna pokladníkova účtu (PKCE); tokeny ukládáme šifrovaně |
+| Rohlík `identity.rohlik.cz` (OAuth, dynamická registrace klienta) | server + prohlížeč pokladníka (`api/shopping-items/rohlik/connect` a `/complete`; Rohlík vrací na `http://localhost/zicha-travel-rohlik`, adresu pokladník vloží zpět) | OAuth výměna pokladníkova účtu (PKCE); tokeny ukládáme šifrovaně |
 | Rohlík MCP `mcp.rohlik.cz/mcp` | server (`api/shopping-items/rohlik/search` a `/send`, denní kontrola cen `api/rohlik-prices`; vždy s tokenem pokladníka) | hledaný text a seznam produktů s množstvím do pokladníkova košíku; při kontrole cen jen čísla produktů ze seznamu; žádná jména ani e-maily účastníků |
 
 ## Odchozí volání (prohlížeč návštěvníka)
