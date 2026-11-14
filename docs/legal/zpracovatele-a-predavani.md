@@ -18,6 +18,12 @@ každého je co ověřit — zaškrtnout po kontrole.
 | Rohlík.cz (Velká Pecka s.r.o.) | příjemce; pro účet pokladníka samostatný správce | jen po propojení pokladníkova účtu: hledaný text, produkty s množstvím do jeho košíku; IP prohlížeče při načtení obrázků produktů (`cdn.rohlik.cz`). Objednávka a platba probíhají u Rohlíku podle jeho podmínek | — (oficiální MCP server s OAuth souhlasem pokladníka; bez smluvního vztahu s námi; uvedeno v zásadách kap. 7) | ČR/EU — **[ ] umístění hostingu MCP serveru neověřeno** |
 | Google (Fotky) | příjemce | IP prohlížeče přihlášeného návštěvníka při načtení náhledů ze sdíleného alba (`lh3.googleusercontent.com`); server načítá jen veřejnou stránku alba, bez osobních údajů | — (klientské volání, bez našich dat) | dle Googlu (DPF) |
 
+Anthropic (Claude) v tabulce není schválně (rozhodnutí 15 v
+`compliance-gaps.md`): asistenta si k účtu připojuje uživatel sám, Anthropic
+jedná pro něj podle jeho podmínek a data mu předává on, ne my. Náš server
+Anthropicu nic neposílá; jen odpovídá na požadavky, které Claude pošle s
+tokenem uživatele. Zásady to popisují v kap. 6, 7, 8 a 15.
+
 Pravidla:
 
 - Nový poskytovatel = nový řádek zde + v zásadách kap. 7 + v CSP + v

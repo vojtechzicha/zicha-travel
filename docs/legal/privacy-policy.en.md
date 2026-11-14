@@ -2,7 +2,7 @@
 
 zicha.travel
 
-Effective from: 14 October 2026 (version 6)
+Effective from: 14 November 2026 (version 7)
 
 ## 1. Who the controller is
 
@@ -74,6 +74,13 @@ doesn't chip in for which item (or for a whole list) and who set it. When
 the list is closed, it becomes an expense in the trip's accounts, split by
 who chips in for what.
 
+**Claude connection:** if you connect the Claude assistant to your account
+(section 15), we store which app is connected, the access you gave it (read
+only, or read and edit), when you connected it and when it was last used.
+We store its access keys only as a fingerprint (hash), never readable. Every
+change Claude makes for you goes into a change log: what changed and how
+the record looked before and after.
+
 **About visitors:** technical request records (IP address in the hosting
 provider's operational logs), the cookies described in section 11 and the
 anonymous statistics described in section 12. On public forms (sign-in,
@@ -100,6 +107,12 @@ connection on themselves and can switch it off at any time.
 contract, namely the terms of use (Art. 6(1)(b) GDPR): without your email we
 cannot send you a login link, and without a record of your expenses the rule
 that you can edit your own does not work.
+
+**Claude connection.** You switch the connection on yourself and can end it
+at any time. We process the connection and its keys to perform the contract,
+like your account. We keep the change log on the basis of legitimate
+interest: so that you and the chata's admins can find out afterwards what
+Claude changed, and fix it.
 
 **Emails.** We send operational messages only: login links, confirmations of
 a trip planning vote, notifications to chata admins about new planning votes,
@@ -172,6 +185,13 @@ split themselves. Because such an expense is paid straight to the payer,
 the members of its split are shown the payer's bank details; by creating a
 private expense the payer accepts that.
 
+A signed-in user can connect the Claude assistant to their account
+(section 15). Claude then sees what that user sees on the web and nothing
+more: private expenses, other people's bank details or locked participants'
+finances only if the user can see them too. What Claude reads goes to
+Anthropic, a company the user chose. If you travel with them, that can
+include your name and the amounts they can see.
+
 A chata's admins see all of that chata's data. As the operator we have
 access to everything, but we use it only to run the service, provide
 support and honour this policy.
@@ -202,6 +222,10 @@ shopping list are loaded by your browser directly from Rohlík
 (`cdn.rohlik.cz`), which learns your IP address the same way. Links to Google
 Calendar and Google Maps are opened by you.
 
+Anthropic, which runs the Claude assistant, is left out of the table on
+purpose: it does not work for us. When you connect Claude, you are the one
+passing data to it, under your own terms with Anthropic (section 15).
+
 We do not sell data to anyone and pass it to no one for advertising.
 
 ## 8. Transfers outside the EU
@@ -211,7 +235,9 @@ providers (Vercel, Resend, Cloudflare, Microsoft, Google, Apple) are US
 companies; the
 transfer is covered by the European Commission's adequacy decision (the
 Data Privacy Framework) or by standard contractual clauses. We will send
-you the details for a specific provider on request.
+you the details for a specific provider on request. The Claude assistant
+runs at Anthropic, a US company; the data reaches it from the user who
+connected it, not from us (section 15).
 
 ## 9. How long we keep data
 
@@ -220,13 +246,16 @@ you the details for a specific provider on request.
 | the trip record (names, program, expenses, advances, settlement) | for as long as the service runs, as the group's shared archive |
 | participants' bank details | deleted within 12 months of the trip being settled |
 | receipts | deleted within 12 months of the trip being settled |
-| an account with no login for 2 years | deleted, including its links |
+| an account with no login for 2 years (using it through Claude counts as a login) | deleted, including its links |
 | claim requests, including rejection reasons | deleted within 12 months of the decision |
 | planning votes | part of the trip record, for as long as the service runs |
 | the chata's shopping list and beer order | part of the trip record, for as long as the service runs |
 | the banker's Rohlík connection (encrypted tokens) | until the connection is removed, and when the account is deleted at the latest |
 | pending planning votes (name, selection, the account meant to confirm it) | deleted within 12 months of confirmation, and within 12 months of the trip being settled at the latest |
 | login links (tokens) | valid for 15 minutes, then void |
+| Claude connections (app, access, when connected and used) | until disconnected; disconnected ones deleted after 30 days, all of them with the account |
+| Claude access keys | the access key is valid for an hour, the refresh key for 60 days and replaced on every use |
+| change log of edits through Claude | 12 months, at the latest until the account is deleted |
 | planning vote confirmation link | valid for 7 days; the vote itself does not lapse, it is saved on any sign-in |
 | raw statistics events | 12 months, then only aggregate numbers |
 | hosting operational logs | short-term, per the provider's settings |
@@ -339,7 +368,9 @@ their own sign-in and a short session (2 hours), bank details and receipts
 are not publicly readable, and public forms are protected against bots and
 by rate limiting. We do not write personal data into application logs. The
 database and files sit with the providers listed in section 7 and are
-protected by access keys.
+protected by access keys. Connecting the Claude assistant uses the OAuth
+standard: we store keys only as fingerprints, a connection can be limited to
+reading, and one button on the Connect Claude page ends it.
 
 If, despite all this, a data breach occurred that poses a risk to you, we
 would report it to the Office for Personal Data Protection within 72 hours
@@ -347,13 +378,33 @@ and inform you directly if the risk is high.
 
 ## 15. Automated decision-making and artificial intelligence
 
-The service uses no artificial intelligence system within the meaning of
-Regulation (EU) 2024/1689 (the AI Act). There is no automated
+The service itself uses no artificial intelligence system within the
+meaning of Regulation (EU) 2024/1689 (the AI Act). There is no automated
 decision-making or profiling within the meaning of Art. 22 GDPR: the
 settlement is plain arithmetic over the entered shares, and the same rules
-apply to everyone. If we ever add an AI feature (say, reading receipts), we
-will update this policy first, so you will know before the feature turns
-on.
+apply to everyone. If we ever add an AI feature ourselves (say, reading
+receipts), we will update this policy first, so you will know before the
+feature turns on.
+
+### Claude connection
+
+A signed-in user can connect the Claude assistant made by Anthropic to their
+account (the Connect Claude link in the footer). Claude then works with the
+account on their behalf: it reads only what the user sees on the web and,
+if the user allows it, makes changes the user could make themselves (adding
+an expense, say, or taking a car seat). No rule is bypassed and nothing is
+decided automatically; the user asks for every step.
+
+What Claude reads through the connection goes to Anthropic. Anthropic is not
+our processor here. It is a service the user picked, and it handles the data
+under the terms the user agreed with it. Anthropic is a US company. When you
+ask Claude about a trip, you also send it the names and amounts of others
+that you can see, so ask only what you need. If you only want answers,
+read-only access is enough.
+
+You can disconnect at any time on the Connect Claude page; deleting your
+account ends every connection. A connection left unused for 60 days expires
+on its own.
 
 ## 16. Changes to this policy
 
@@ -372,6 +423,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
+| 7 | 14 November 2026 | Claude connection: connecting the Claude assistant to your own account, the connection records and the change log; Anthropic as a service the user chooses; additions to sections 3, 4, 6, 7, 8, 9, 14 and 15. |
 | 6 | 14 October 2026 | Beer order: the kegs and the tap participants pick from the shop's price list, and the order summary for the banker; who chips in for what, and the expense a closed list becomes; additions to sections 3, 4, 6 and 9. |
 | 5 | 13 October 2026 | Shared shopping: the chata's shopping list and its connection to Rohlík through the banker's account; Rohlík as a new recipient, the `rohlik-oauth-state` cookie and additions to sections 3, 4, 6, 7, 9 and 11. |
 | 4 | 30 August 2026 | Pending planning votes: a vote cast without signing in waits for confirmation as its own record and is saved on any sign-in; the confirmation email, the `oauth-vote-intent` cookie and additions to sections 4, 9 and 12. |

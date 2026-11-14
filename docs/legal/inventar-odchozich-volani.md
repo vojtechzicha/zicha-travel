@@ -20,6 +20,13 @@ ve stejném PR.
 | Rohlík `identity.rohlik.cz` (OAuth, dynamická registrace klienta) | server + prohlížeč pokladníka (`api/shopping-items/rohlik/connect` a `/complete`; Rohlík vrací na `http://localhost/zicha-travel-rohlik`, adresu pokladník vloží zpět) | OAuth výměna pokladníkova účtu (PKCE); tokeny ukládáme šifrovaně |
 | Rohlík MCP `mcp.rohlik.cz/mcp` | server (`api/shopping-items/rohlik/search` a `/send`, denní kontrola cen `api/rohlik-prices`; vždy s tokenem pokladníka) | hledaný text a seznam produktů s množstvím do pokladníkova košíku; při kontrole cen jen čísla produktů ze seznamu; žádná jména ani e-maily účastníků |
 
+Konektor Claude (`/api/mcp`, docs/MCP.md) žádné nové odchozí volání
+nepřidává: Claude volá nás (příchozí požadavky s tokenem uživatele) a
+nástroje volají vlastní API aplikace uvnitř procesu. Jediný nástroj, který
+sahá ven, je hledání a plnění košíku na Rohlíku, a to přes tutéž cestu
+jako web (řádek Rohlík výše). Nová cookie ani klíč v prohlížeči nevznikají;
+souhlasová stránka `/oauth/authorize` používá běžnou `payload-token`.
+
 ## Odchozí volání (prohlížeč návštěvníka)
 
 | Cíl | Odkud | Co odchází |

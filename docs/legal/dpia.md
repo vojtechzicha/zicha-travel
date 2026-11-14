@@ -24,6 +24,14 @@ Kritéria se nemění: k Rohlíku jde jen hledaný text a seznam produktů do
 košíku pokladníka, který propojení sám zapne; žádné monitorování ani AI na
 naší straně (MCP server Rohlíku voláme jako obyčejné API).
 
+2026-11-14: přezkoumáno s konektorem Claude. Kritéria se nemění: služba
+sama žádnou AI nespouští ani neprovozuje; uživatel si k vlastnímu účtu
+připojí svého asistenta, který vidí a smí jen to, co uživatel na webu
+(stejné API, stejné kontroly), a nic nerozhoduje automaticky. Nejde o
+monitorování ani o nový okruh subjektů. Riziko, že uživatel pošle
+Anthropicu údaje ostatních, které vidí, je stejné jako u kopírování z
+webu; zásady na něj upozorňují (kap. 6 a 15) a souhlasová stránka také.
+
 Revize: při přidání AI funkce (čtení účtenek — viz zásady kap. 15, „add
 AI = reopen the legal documents first"), při otevření služby veřejnosti
 nebo při opakovaném výskytu citlivých dat na účtenkách.

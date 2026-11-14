@@ -26,6 +26,13 @@ Datum: 2026-08-16. Pokrývá položky 11 a 13–15 z `compliance-gaps.md`.
 - Žádné osobní údaje v aplikačních lozích (blocker 4); ladicí logy
   middleware jen s `DEBUG_MIDDLEWARE`.
 - Retenční cron denně (`/api/retention`).
+- Konektor Claude (`/api/mcp`, docs/MCP.md): OAuth 2.1 s PKCE, přesměrování
+  jen na adresy Claude a loopback, tokeny jen jako SHA-256 otisky,
+  přístupový token 1 h, obnovovací 60 dní s rotací a odhalením znovupoužití
+  (celé připojení se zruší), vázání tokenu na origin (produkční nefunguje
+  na preview). Nástroje volají stejné API jako web, přihlášené jako daný
+  účet, takže platí tytéž kontroly přístupu; každý zápis jde do
+  `mcp-audit`.
 
 ## Zálohy
 
@@ -59,13 +66,24 @@ Secure, žádná hesla (převzetí schránky je řešeno u poskytovatele
 schránky). Riziko přijato; kdyby se objevil zneužitý token, okamžitá
 rotace `PAYLOAD_SECRET` zneplatní všechny sessiony najednou.
 
+Tokeny konektoru Claude nejsou JWT, ale náhodné řetězce uložené jako
+otisky, takže **rotace `PAYLOAD_SECRET` je neruší**. Odvolat jde každé
+připojení zvlášť (stránka `/claude`, nebo smazáním řádku v kolekci
+„Propojení s Claude" v administraci). Přijaté riziko: připojení správce
+nebo superadministrátora platí až 60 dní od posledního použití, ačkoli
+jeho session v administraci jen 2 hodiny. Konektor ale nabízí jen
+operace webu (žádnou práci administrace) a obnovovací token se při
+každém použití mění.
+
 ## Postup při porušení zabezpečení (čl. 33–34)
 
 1. **Kdo:** posuzuje a rozhoduje Vojtěch Zicha (správce). Nikdo jiný
    rozhodovací roli nemá.
 2. **Hned:** zastavit únik (rotace `PAYLOAD_SECRET`, klíčů S3/DB v
-   Supabase a Vercel, případně vypnout deployment), zapsat čas zjištění a
-   co je známo.
+   Supabase a Vercel, případně vypnout deployment; při podezření na únik
+   tokenů konektoru Claude odvolat všechna připojení:
+   `UPDATE mcp_grants SET revoked_at = now(); DELETE FROM mcp_tokens;`),
+   zapsat čas zjištění a co je známo.
 3. **Do 72 hodin od zjištění:** posoudit riziko pro subjekty. Pokud
    porušení znamená riziko, ohlásit ÚOOÚ (https://uoou.gov.cz, datová
    schránka qkbaa2n) — obsah dle čl. 33 odst. 3: povaha, kategorie a

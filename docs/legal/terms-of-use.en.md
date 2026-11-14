@@ -2,7 +2,7 @@
 
 zicha.travel
 
-Effective from: 25 August 2026 (version 2)
+Effective from: 14 November 2026 (version 3)
 
 ## 1. What zicha.travel is and who runs it
 
@@ -74,6 +74,11 @@ their behalf. The rules:
   sensitive items (medication, health services) or files you have no rights
   to,
 - by confirming an expense you affirm it matches what happened.
+
+If you connect the Claude assistant to your account, you answer for what you
+do through it, exactly as if you had done it yourself on the web. Use the
+data of others that you read through it only to organise the trip and settle
+up. You can disconnect at any time on the Connect Claude page.
 
 Content you upload remains yours. You give us a licence to store it and
 show it to the chata's members, because the service cannot work otherwise;
@@ -166,6 +171,7 @@ Vojtěch Zicha,
 
 | Version | Effective | What changed |
 | --- | --- | --- |
+| 3 | 14 November 2026 | Claude connection: users answer for what they do through a connected assistant (section 5). |
 | 2 | 25 August 2026 | Voting during trip planning added as another way an account comes to exist (section 4). |
 | 1 | 16 August 2026 | First published version. |
 

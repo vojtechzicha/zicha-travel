@@ -19,6 +19,7 @@ export interface UserCleanupSummary {
   rohlikConnectionsDeleted: number
   shoppingItemsCleaned: number
   kegItemsCleaned: number
+  claudeConnectionsDeleted: number
 }
 
 export async function cleanupDeletedUserReferences(
@@ -34,6 +35,7 @@ export async function cleanupDeletedUserReferences(
     rohlikConnectionsDeleted: 0,
     shoppingItemsCleaned: 0,
     kegItemsCleaned: 0,
+    claudeConnectionsDeleted: 0,
   }
 
   // participants.account → null (the participant stays with the trip)
@@ -180,6 +182,47 @@ export async function cleanupDeletedUserReferences(
     overrideAccess: true,
     req,
   })
+
+  // "Propojení s Claude" (docs/MCP.md): the account's connector tokens,
+  // grants and audit rows go with it. grants.user and audit.user are NOT
+  // NULL with ON DELETE SET NULL (Payload's default), so they must be gone
+  // before the row is — the same reason this hook runs beforeDelete. Tokens
+  // first: they reference the grants.
+  await payload.delete({
+    collection: 'mcp-tokens',
+    where: { user: { equals: userId } },
+    overrideAccess: true,
+    req,
+  })
+  const grants = await payload.find({
+    collection: 'mcp-grants',
+    where: { user: { equals: userId } },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  if (grants.docs.length > 0) {
+    await payload.delete({
+      collection: 'mcp-tokens',
+      where: { grant: { in: grants.docs.map((g) => g.id) } },
+      overrideAccess: true,
+      req,
+    })
+  }
+  await payload.delete({
+    collection: 'mcp-audit',
+    where: { user: { equals: userId } },
+    overrideAccess: true,
+    req,
+  })
+  const deletedGrants = await payload.delete({
+    collection: 'mcp-grants',
+    where: { user: { equals: userId } },
+    overrideAccess: true,
+    req,
+  })
+  summary.claudeConnectionsDeleted = deletedGrants.docs.length
 
   const decidedClaims = await payload.find({
     collection: 'claim-requests',

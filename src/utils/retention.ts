@@ -14,6 +14,8 @@
 //   after the decision.
 // - pending planning votes ("Nepotvrzené hlasy"): confirmed rows 12 months
 //   after confirmation; every row of a chata in its settled pass.
+// - Claude connector (docs/MCP.md): expired tokens, grants revoked 30+
+//   days ago, connector changes after 12 months, unused OAuth clients.
 // - housekeeping: stale payload-locked-documents rows.
 //
 // Everything is idempotent and logs counts only — no names, no emails.
@@ -32,6 +34,7 @@ export interface RetentionSummary {
   decidedClaimsDeleted: number
   pendingVotesDeleted: number
   staleLocksDeleted: number
+  claudeConnectorRowsDeleted: number
 }
 
 async function deletePendingVotes(payload: Payload, where: Where): Promise<number> {
@@ -67,6 +70,7 @@ export async function runRetention(
     decidedClaimsDeleted: 0,
     pendingVotesDeleted: 0,
     staleLocksDeleted: 0,
+    claudeConnectorRowsDeleted: 0,
   }
 
   // ── 1. Settled chatas: bank fields + receipts, 12 months after settledAt
@@ -251,6 +255,59 @@ export async function runRetention(
     payload.logger.error({ err }, 'Retention: locked-documents housekeeping failed')
   }
 
+  // ── 5. "Propojení s Claude" (docs/MCP.md, policy ch. 9): expired codes
+  //      and tokens; grants revoked 30+ days ago; connector changes after 12
+  //      months; OAuth clients nobody connected within 30 days of
+  //      registering (dynamic registration is open, so these pile up)
+  try {
+    summary.claudeConnectorRowsDeleted += await pruneConnector(payload, now)
+  } catch (err) {
+    payload.logger.error({ err }, 'Retention: Claude connector housekeeping failed')
+  }
+
   payload.logger.info(summary, 'Retention run finished')
   return summary
+}
+
+async function pruneConnector(payload: Payload, now: number): Promise<number> {
+  const iso = (ms: number) => new Date(ms).toISOString()
+  const day = 24 * 60 * 60 * 1000
+  let deleted = 0
+  const remove = async (collection: 'mcp-tokens' | 'mcp-grants' | 'mcp-audit' | 'mcp-clients', where: Where) => {
+    const result = await payload.delete({ collection, where, overrideAccess: true, depth: 0 })
+    deleted += result.docs.length
+  }
+  await remove('mcp-tokens', { expiresAt: { less_than: iso(now) } })
+  const revoked = await payload.find({
+    collection: 'mcp-grants',
+    where: { revokedAt: { less_than: iso(now - 30 * day) } },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const revokedIds = revoked.docs.map((g) => g.id)
+  if (revokedIds.length > 0) {
+    await remove('mcp-tokens', { grant: { in: revokedIds } })
+    await remove('mcp-grants', { id: { in: revokedIds } })
+  }
+  await remove('mcp-audit', { createdAt: { less_than: iso(now - 12 * MONTH_MS) } })
+
+  const idleClients = await payload.find({
+    collection: 'mcp-clients',
+    where: { createdAt: { less_than: iso(now - 30 * day) } },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  for (const client of idleClients.docs) {
+    const inUse = await payload.count({
+      collection: 'mcp-grants',
+      where: { client: { equals: client.id } },
+      overrideAccess: true,
+    })
+    if (inUse.totalDocs > 0) continue
+    await remove('mcp-tokens', { client: { equals: client.id } })
+    await remove('mcp-clients', { id: { equals: client.id } })
+  }
+  return deleted
 }

@@ -1,6 +1,6 @@
 // Czech content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 6, effective
-// 2026-10-14; the version history section tracks the changes).
+// docs/legal/zasady-ochrany-osobnich-udaju.cs.md (version 7, effective
+// 2026-11-14; the version history section tracks the changes).
 // Edit wording there first, then mirror it here; page.tsx only picks a
 // locale. The one interactive element is the consent button in section 12.
 
@@ -38,7 +38,7 @@ export default function PrivacyContentCs() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Zásady zpracování osobních údajů"
-      lead="Služba zicha.travel · Účinnost od 14. 10. 2026 (verze 6)"
+      lead="Služba zicha.travel · Účinnost od 14. 11. 2026 (verze 7)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Kdo je správce" icon={<UserCog size={20} />}>
@@ -134,6 +134,14 @@ export default function PrivacyContentCs() {
             z něj vznikne výdaj ve vyúčtování, rozdělený podle toho, kdo se na co skládá.
           </p>
           <p>
+            <strong>Propojení s Claude:</strong> pokud si ke svému účtu připojíte asistenta
+            Claude (<a href="#ai" className={link}>kapitola 15</a>), ukládáme, která aplikace je
+            připojená, jaký přístup jste jí dali (jen čtení, nebo i úpravy), kdy jste ji připojili
+            a kdy ji naposledy použila. Přístupové klíče ukládáme jen jako otisk (hash), ne v
+            čitelné podobě. Každou změnu, kterou Claude za vás udělá, zapisujeme do záznamu změn:
+            co se změnilo a jak záznam vypadal před změnou a po ní.
+          </p>
+          <p>
             <strong>O návštěvnících:</strong> technické záznamy o požadavcích (IP adresa v
             provozních lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
             popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o propojení)
@@ -171,6 +179,12 @@ export default function PrivacyContentCs() {
             </a>{' '}
             (čl. 6 odst. 1 písm. b GDPR): bez e-mailu vám nepošleme přihlašovací odkaz a bez
             záznamu o vašich výdajích nefunguje pravidlo, že si je můžete sami upravit.
+          </p>
+          <p>
+            <strong>Propojení s Claude.</strong> Připojení si zapínáte sami a kdykoli ho zrušíte.
+            Připojení a jeho klíče zpracováváme k plnění smlouvy, stejně jako váš účet. Záznam
+            změn vedeme z oprávněného zájmu: abyste vy i správce chaty mohli zpětně zjistit, co
+            Claude změnil, a opravit to.
           </p>
           <p>
             <strong>E-maily.</strong> Posíláme jen provozní zprávy: přihlašovací odkazy,
@@ -247,6 +261,14 @@ export default function PrivacyContentCs() {
             pokladník, pokud v rozdělení sami nejsou. Protože se takový výdaj platí přímo plátci,
             zobrazuje se členům jeho rozdělení bankovní spojení plátce; založením soukromého
             výdaje s tím plátce počítá.
+          </p>
+          <p>
+            Přihlášený uživatel si může ke svému účtu připojit asistenta Claude (
+            <a href="#ai" className={link}>kapitola 15</a>). Claude pak vidí totéž co on na webu,
+            nic navíc: soukromé výdaje, cizí bankovní spojení nebo finance zamčených účastníků jen
+            tehdy, když je vidí i ten uživatel. Co si Claude přečte, odchází k firmě Anthropic,
+            kterou si uživatel sám vybral. Pokud s ním jedete na výlet, může se tam dostat i vaše
+            jméno a částky, které vidí.
           </p>
           <p>
             Správci chaty vidí všechny údaje své chaty. My jako provozovatel máme přístup ke
@@ -348,6 +370,11 @@ export default function PrivacyContentCs() {
             <span className="font-mono text-[13px]">cdn.rohlik.cz</span>), který se tak také dozví
             vaši IP adresu. Odkazy na Google Kalendář a Google Mapy otevíráte sami.
           </p>
+          <p>
+            Anthropic, provozovatel asistenta Claude, v tabulce schválně není: nepracuje pro nás.
+            Když si Claude připojíte, předáváte mu údaje vy, podle svých podmínek u Anthropicu (
+            <a href="#ai" className={link}>kapitola 15</a>).
+          </p>
           <p>Údaje nikomu neprodáváme a nikomu je nepředáváme k reklamě.</p>
         </Section>
 
@@ -358,7 +385,9 @@ export default function PrivacyContentCs() {
             předání je kryto
             rozhodnutím Evropské komise o odpovídající ochraně (Data Privacy Framework),
             případně standardními smluvními doložkami. Podrobnosti ke konkrétnímu poskytovateli
-            vám na vyžádání pošleme.
+            vám na vyžádání pošleme. Asistent Claude běží u americké firmy Anthropic; údaje mu
+            ale předává uživatel, který si ho připojil, ne my (
+            <a href="#ai" className={link}>kapitola 15</a>).
           </p>
         </Section>
 
@@ -387,7 +416,10 @@ export default function PrivacyContentCs() {
                   <td className="py-2.5">smažeme do 12 měsíců od vyrovnání výletu</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-2.5 pr-4">účet, který se 2 roky nepřihlásil</td>
+                  <td className="py-2.5 pr-4">
+                    účet, který se 2 roky nepřihlásil (používání přes Claude se počítá jako
+                    přihlášení)
+                  </td>
                   <td className="py-2.5">smažeme včetně vazeb</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -420,6 +452,18 @@ export default function PrivacyContentCs() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">přihlašovací odkazy (tokeny)</td>
                   <td className="py-2.5">platí 15 minut, poté jsou neplatné</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">propojení s Claude (aplikace, přístup, kdy připojena a použita)</td>
+                  <td className="py-2.5">do odpojení; odpojené smažeme po 30 dnech, všechna se smazáním účtu</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">přístupové klíče Claude</td>
+                  <td className="py-2.5">přístupový klíč platí hodinu, obnovovací 60 dní a při každém použití se vymění</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">záznam změn přes Claude</td>
+                  <td className="py-2.5">12 měsíců, nejpozději do smazání účtu</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">odkaz k potvrzení hlasu z plánování</td>
@@ -688,6 +732,12 @@ export default function PrivacyContentCs() {
             účtenky nejsou veřejně čitelné a veřejné formuláře chráníme před roboty a omezením
             počtu pokusů. Do aplikačních logů nezapisujeme osobní údaje. Databáze i soubory leží
             u poskytovatelů uvedených v kapitole 7 a jsou chráněny přístupovými klíči.
+            Připojení asistenta Claude používá standard OAuth: klíče ukládáme jen jako otisky,
+            připojení lze omezit jen na čtení a zrušit jedním tlačítkem na stránce{' '}
+            <a href="/claude" className={link}>
+              Propojení s Claude
+            </a>
+            .
           </p>
           <p>
             Kdyby přes to všechno došlo k úniku dat, který pro vás znamená riziko, ohlásíme ho
@@ -702,12 +752,37 @@ export default function PrivacyContentCs() {
           icon={<Bot size={20} />}
         >
           <p>
-            Služba nepoužívá žádný systém umělé inteligence ve smyslu nařízení (EU) 2024/1689
-            (akt o umělé inteligenci). Neprobíhá žádné automatizované rozhodování ani
+            Služba sama nepoužívá žádný systém umělé inteligence ve smyslu nařízení (EU)
+            2024/1689 (akt o umělé inteligenci). Neprobíhá žádné automatizované rozhodování ani
             profilování ve smyslu čl. 22 GDPR: výpočet vyrovnání je prostá aritmetika podle
-            zadaných podílů a stejná pravidla platí pro každého. Pokud bychom někdy nějakou
+            zadaných podílů a stejná pravidla platí pro každého. Pokud bychom někdy sami nějakou
             funkci umělé inteligence přidali (třeba čtení účtenek), nejdřív aktualizujeme tyto
             zásady a dozvíte se to dřív, než se funkce zapne.
+          </p>
+          <h3 id="claude" className="font-semibold text-gray-900 pt-2 scroll-mt-24">
+            Propojení s Claude
+          </h3>
+          <p>
+            Přihlášený uživatel si může ke svému účtu připojit asistenta Claude od firmy
+            Anthropic (odkaz{' '}
+            <a href="/claude" className={link}>
+              Propojení s Claude
+            </a>{' '}
+            v patičce). Claude pak s účtem pracuje jeho jménem: čte jen to, co uživatel vidí na
+            webu, a pokud mu to uživatel povolí, dělá změny, které by mohl udělat i sám (třeba
+            přidá výdaj nebo zapíše místo v autě). Žádná pravidla se tím neobcházejí a nic se
+            nerozhoduje automaticky; každý krok zadává uživatel.
+          </p>
+          <p>
+            Co si Claude přes připojení přečte, odchází k Anthropicu. Anthropic tu není náš
+            zpracovatel. Je to služba, kterou si uživatel vybral sám, a údaje zpracovává podle
+            podmínek, které s ní uživatel uzavřel. Anthropic je americká firma. Když se Clauda
+            ptáte na výlet, posíláte mu i jména a částky ostatních, které vidíte, takže se ptejte
+            jen na to, co potřebujete. Pokud chcete jen odpovědi, stačí přístup jen ke čtení.
+          </p>
+          <p>
+            Připojení zrušíte kdykoli na stránce Propojení s Claude; smazáním účtu zaniknou
+            všechna. Připojení, které 60 dní nepoužijete, vyprší samo.
           </p>
         </Section>
 
@@ -741,6 +816,15 @@ export default function PrivacyContentCs() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">7</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">14. 11. 2026</td>
+                  <td className="py-2.5">
+                    Propojení s Claude: připojení asistenta Claude k vlastnímu účtu, údaje o
+                    připojení a záznam změn; Anthropic jako služba, kterou si vybírá uživatel;
+                    doplnění kapitol 3, 4, 6, 7, 8, 9, 14 a 15.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">6</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">14. 10. 2026</td>
