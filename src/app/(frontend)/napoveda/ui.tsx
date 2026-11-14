@@ -38,6 +38,11 @@ const HELP_PAGES_CS: HelpPageEntry[] = [
     lead: 'Odkaz do e-mailu, Microsoft, Google či Apple a propojení přes „Jsi to ty?“.',
   },
   {
+    href: '/napoveda/claude',
+    title: 'Propojení s Claude',
+    lead: 'Ptej se Clauda na svoje chaty a nech ho přidat výdaj nebo se zapsat do auta.',
+  },
+  {
     href: '/napoveda/prehled',
     title: 'Podrobný přehled a výpočty',
     lead: 'Tabulka všech účastníků a matematika, která za ní stojí.',
@@ -71,6 +76,11 @@ const HELP_PAGES_EN: HelpPageEntry[] = [
     lead: 'A link in your email, Microsoft, Google or Apple, and linking via "Is that you?".',
   },
   {
+    href: '/napoveda/claude',
+    title: 'Connect Claude',
+    lead: 'Ask Claude about your trips and let it add an expense or take a car seat for you.',
+  },
+  {
     href: '/napoveda/prehled',
     title: 'Detailed overview and the math',
     lead: 'A table of all participants and the math behind it.',
@@ -82,7 +92,7 @@ const HELP_PAGES_EN: HelpPageEntry[] = [
   },
 ]
 
-/** The six detail pages (title + lead) in the given locale. */
+/** The detail pages (title + lead) in the given locale. */
 export function helpPages(locale: AppLocale): HelpPageEntry[] {
   return locale === 'en' ? HELP_PAGES_EN : HELP_PAGES_CS
 }

@@ -13,6 +13,7 @@
     "admin": "Admin",
     "signOut": "Sign out",
     "signIn": "Sign in",
+    "claude": "Connect Claude",
     "installApp": "Install the app"
   },
   "installGuide": {

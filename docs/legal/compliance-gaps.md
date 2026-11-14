@@ -110,6 +110,24 @@ decided further:
     attachment files are readable by any signed-in account and public by
     bucket URL, which would contradict the promise.
 
+15. (2026-11-14) The Claude connector ("Propojení s Claude", remote MCP
+    server at `/api/mcp`, docs/MCP.md) is open to every account and acts as
+    that account with exactly its web rights: the tools call the same REST
+    endpoints and slug API in-process, signed in as the account, so every
+    access rule, privacy scrub and write hook applies unchanged. The
+    controller treats Anthropic as the USER's own choice of tool, not as
+    our processor or recipient: the user connects it, Anthropic acts for
+    the user under the user's terms, and our server only answers the
+    requests Claude sends with the user's token. Consequences: no
+    Anthropic row in the processor table, no DPA; the policy (version 7)
+    says plainly that what Claude reads goes to Anthropic, including other
+    participants' names and amounts the user can see, and advises
+    read-only access for questions. Decision 2 is amended, not reversed:
+    the service itself runs no AI and decides nothing automatically. The
+    connection, its hashed tokens and a 12-month change log are new
+    stored data (sections 3, 4, 9); refreshing a connector token counts
+    as account activity for the 2-year dormant-account rule.
+
 ## Blockers: the documents are false until these are fixed
 
 Each item names the claim it unblocks. Order follows risk, matching PRD
@@ -488,3 +506,26 @@ record, the records of processing, both privacy-policy locales (sections 3,
 4, 6, 7, 9, 11 and the version history, version 5) and both `/soukromi`
 page modules. Decision 2 holds: the MCP server is called as a plain API,
 no AI runs on our side. No new decision was needed.
+
+## Addendum 2026-11-14: Claude connector
+
+Every account can connect Claude (claude.ai, the apps, Claude Code) through
+OAuth 2.1 with dynamic client registration and PKCE: consent at
+`/oauth/authorize` (signed-in account, read-only or read and edit), tokens
+stored only as SHA-256 hashes, redirects limited to Claude's callbacks and
+loopback addresses, tokens bound to the issuing origin. The account manages
+and revokes its connections at `/claude` (footer link, signed-in only). The
+tools never re-implement a rule; they go through the web's own API as the
+account (`src/lib/mcp/loopback.ts`), which is what makes decision 6 (locked
+participants), the private-expense circle (decision 14), field-level
+`privateInfo` access and the bank-field scrub hold through Claude. Recorded
+as decision 15. Updated in the same change: both privacy-policy locales
+(sections 3, 4, 6, 7, 8, 9, 14, 15 and the history, version 7) and both
+`/soukromi` modules, both terms-of-use locales (section 5, version 3) and
+both `/podminky` modules, the records of processing, the processors record
+(why Anthropic has no row), the outbound-calls inventory (no new outbound
+call), the DPIA note, the incident procedure (rotating `PAYLOAD_SECRET`
+does not revoke connector tokens) and the retention job (expired tokens,
+revoked grants after 30 days, change log after 12 months, unused clients
+after 30 days). Deleting a user deletes their connector rows in the Users
+beforeDelete hook.

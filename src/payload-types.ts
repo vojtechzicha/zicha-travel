@@ -87,6 +87,10 @@ export interface Config {
     media: Media;
     'rohlik-connections': RohlikConnection;
     'data-requests': DataRequest;
+    'mcp-clients': McpClient;
+    'mcp-grants': McpGrant;
+    'mcp-tokens': McpToken;
+    'mcp-audit': McpAudit;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -123,6 +127,10 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     'rohlik-connections': RohlikConnectionsSelect<false> | RohlikConnectionsSelect<true>;
     'data-requests': DataRequestsSelect<false> | DataRequestsSelect<true>;
+    'mcp-clients': McpClientsSelect<false> | McpClientsSelect<true>;
+    'mcp-grants': McpGrantsSelect<false> | McpGrantsSelect<true>;
+    'mcp-tokens': McpTokensSelect<false> | McpTokensSelect<true>;
+    'mcp-audit': McpAuditSelect<false> | McpAuditSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1311,6 +1319,136 @@ export interface DataRequest {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-clients".
+ */
+export interface McpClient {
+  id: number;
+  clientName: string;
+  redirectUris:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  tokenEndpointAuthMethod: string;
+  grantTypes:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  clientSecretHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Apps (Claude) that people connected to their own account through the connector at /api/mcp. Each person manages theirs on /claude. Deleting a row disconnects the app at once.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-grants".
+ */
+export interface McpGrant {
+  id: number;
+  user: number | User;
+  client?: (number | null) | McpClient;
+  clientName: string;
+  scopes:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  lastUsedAt?: string | null;
+  revokedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-tokens".
+ */
+export interface McpToken {
+  id: number;
+  tokenHash: string;
+  kind: 'code' | 'access' | 'refresh';
+  client: number | McpClient;
+  user?: (number | null) | User;
+  grant?: (number | null) | McpGrant;
+  clientName?: string | null;
+  scopes:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  resource?: string | null;
+  redirectUri?: string | null;
+  codeChallenge?: string | null;
+  expiresAt: string;
+  usedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every write a connected Claude made, with the record before and after. Kept 12 months.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-audit".
+ */
+export interface McpAudit {
+  id: number;
+  user: number | User;
+  grant?: (number | null) | McpGrant;
+  clientName?: string | null;
+  tool: string;
+  action: string;
+  chata?: number | null;
+  targetCollection?: string | null;
+  documentId?: string | null;
+  request?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  before?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  after?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1412,6 +1550,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'data-requests';
         value: number | DataRequest;
+      } | null)
+    | ({
+        relationTo: 'mcp-clients';
+        value: number | McpClient;
+      } | null)
+    | ({
+        relationTo: 'mcp-grants';
+        value: number | McpGrant;
+      } | null)
+    | ({
+        relationTo: 'mcp-tokens';
+        value: number | McpToken;
+      } | null)
+    | ({
+        relationTo: 'mcp-audit';
+        value: number | McpAudit;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2004,6 +2158,72 @@ export interface DataRequestsSelect<T extends boolean = true> {
   status?: T;
   resolvedAt?: T;
   note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-clients_select".
+ */
+export interface McpClientsSelect<T extends boolean = true> {
+  clientName?: T;
+  redirectUris?: T;
+  tokenEndpointAuthMethod?: T;
+  grantTypes?: T;
+  clientSecretHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-grants_select".
+ */
+export interface McpGrantsSelect<T extends boolean = true> {
+  user?: T;
+  client?: T;
+  clientName?: T;
+  scopes?: T;
+  lastUsedAt?: T;
+  revokedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-tokens_select".
+ */
+export interface McpTokensSelect<T extends boolean = true> {
+  tokenHash?: T;
+  kind?: T;
+  client?: T;
+  user?: T;
+  grant?: T;
+  clientName?: T;
+  scopes?: T;
+  resource?: T;
+  redirectUri?: T;
+  codeChallenge?: T;
+  expiresAt?: T;
+  usedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mcp-audit_select".
+ */
+export interface McpAuditSelect<T extends boolean = true> {
+  user?: T;
+  grant?: T;
+  clientName?: T;
+  tool?: T;
+  action?: T;
+  chata?: T;
+  targetCollection?: T;
+  documentId?: T;
+  request?: T;
+  before?: T;
+  after?: T;
   updatedAt?: T;
   createdAt?: T;
 }

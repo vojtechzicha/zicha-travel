@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 25. 8. 2026 (verze 2)
+Účinnost od: 14. 11. 2026 (verze 3)
 
 ## 1. Co je zicha.travel a kdo ho provozuje
 
@@ -72,6 +72,11 @@ zapsal někdo jiný. Přitom platí:
   citlivými položkami (léky, zdravotní služby) ani soubory, ke kterým
   nemáte práva,
 - potvrzením výdaje stvrzujete, že souhlasí s tím, co se stalo.
+
+Když si k účtu připojíte asistenta Claude, odpovídáte za to, co přes něj
+uděláte, stejně jako kdybyste to udělali sami na webu. Údaje ostatních,
+které přes něj čtete, používejte jen k organizaci výletu a vyúčtování.
+Připojení můžete kdykoli zrušit na stránce Propojení s Claude.
 
 Obsah, který nahrajete, zůstává váš. Dáváte nám licenci ho uložit a
 zobrazovat členům chaty, protože jinak by služba nefungovala; licence trvá,
@@ -159,6 +164,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
+| 3 | 14. 11. 2026 | Propojení s Claude: odpovědnost za to, co uživatel udělá přes připojeného asistenta (kapitola 5). |
 | 2 | 25. 8. 2026 | Hlasování při plánování výletu doplněno jako další způsob vzniku účtu (kapitola 4). |
 | 1 | 16. 8. 2026 | První zveřejněná verze. |
 

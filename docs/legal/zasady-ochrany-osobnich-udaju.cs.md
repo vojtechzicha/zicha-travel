@@ -2,7 +2,7 @@
 
 Služba zicha.travel
 
-Účinnost od: 14. 10. 2026 (verze 6)
+Účinnost od: 14. 11. 2026 (verze 7)
 
 ## 1. Kdo je správce
 
@@ -74,6 +74,13 @@ na kterou položku (nebo na celý seznam) neskládá a kdo to nastavil. Po
 uzavření seznamu z něj vznikne výdaj ve vyúčtování, rozdělený podle toho,
 kdo se na co skládá.
 
+**Propojení s Claude:** pokud si ke svému účtu připojíte asistenta Claude
+(kapitola 15), ukládáme, která aplikace je připojená, jaký přístup jste jí
+dali (jen čtení, nebo i úpravy), kdy jste ji připojili a kdy ji naposledy
+použila. Přístupové klíče ukládáme jen jako otisk (hash), ne v čitelné
+podobě. Každou změnu, kterou Claude za vás udělá, zapisujeme do záznamu
+změn: co se změnilo a jak záznam vypadal před změnou a po ní.
+
 **O návštěvnících:** technické záznamy o požadavcích (IP adresa v provozních
 lozích hostingu), cookies popsané v kapitole 11 a anonymní statistiky
 popsané v kapitole 12. U veřejných formulářů (přihlášení, žádost o
@@ -101,6 +108,11 @@ může ho kdykoli zrušit.
 podmínek užití (čl. 6 odst. 1 písm. b GDPR): bez e-mailu vám nepošleme
 přihlašovací odkaz a bez záznamu o vašich výdajích nefunguje pravidlo, že si
 je můžete sami upravit.
+
+**Propojení s Claude.** Připojení si zapínáte sami a kdykoli ho zrušíte.
+Připojení a jeho klíče zpracováváme k plnění smlouvy, stejně jako váš účet.
+Záznam změn vedeme z oprávněného zájmu: abyste vy i správce chaty mohli
+zpětně zjistit, co Claude změnil, a opravit to.
 
 **E-maily.** Posíláme jen provozní zprávy: přihlašovací odkazy, potvrzení
 hlasu při plánování výletu, upozornění správcům chaty na nové hlasy při
@@ -167,6 +179,13 @@ ani správci chaty, ani pokladník, pokud v rozdělení sami nejsou. Protože se
 takový výdaj platí přímo plátci, zobrazuje se členům jeho rozdělení
 bankovní spojení plátce; založením soukromého výdaje s tím plátce počítá.
 
+Přihlášený uživatel si může ke svému účtu připojit asistenta Claude
+(kapitola 15). Claude pak vidí totéž co on na webu, nic navíc: soukromé
+výdaje, cizí bankovní spojení nebo finance zamčených účastníků jen tehdy,
+když je vidí i ten uživatel. Co si Claude přečte, odchází k firmě Anthropic,
+kterou si uživatel sám vybral. Pokud s ním jedete na výlet, může se tam
+dostat i vaše jméno a částky, které vidí.
+
 Správci chaty vidí všechny údaje své chaty. My jako provozovatel máme
 přístup ke všemu, ale používáme ho jen k provozu, podpoře a plnění těchto
 zásad.
@@ -197,6 +216,10 @@ stahuje prohlížeč přímo od Rohlíku (`cdn.rohlik.cz`), který se tak také
 dozví vaši IP adresu. Odkazy na Google Kalendář a Google
 Mapy otevíráte sami.
 
+Anthropic, provozovatel asistenta Claude, v tabulce schválně není: nepracuje
+pro nás. Když si Claude připojíte, předáváte mu údaje vy, podle svých
+podmínek u Anthropicu (kapitola 15).
+
 Údaje nikomu neprodáváme a nikomu je nepředáváme k reklamě.
 
 ## 8. Předávání mimo EU
@@ -206,7 +229,9 @@ poskytovatelé (Vercel, Resend, Cloudflare, Microsoft, Google, Apple) jsou
 americké firmy;
 předání je kryto rozhodnutím Evropské komise o odpovídající ochraně (Data
 Privacy Framework), případně standardními smluvními doložkami. Podrobnosti
-ke konkrétnímu poskytovateli vám na vyžádání pošleme.
+ke konkrétnímu poskytovateli vám na vyžádání pošleme. Asistent Claude
+běží u americké firmy Anthropic; údaje mu ale předává uživatel, který si ho
+připojil, ne my (kapitola 15).
 
 ## 9. Jak dlouho údaje uchováváme
 
@@ -215,13 +240,16 @@ ke konkrétnímu poskytovateli vám na vyžádání pošleme.
 | záznam výletu (jména, program, výdaje, zálohy, vyrovnání) | po dobu provozu služby, jako společný archiv party |
 | bankovní spojení účastníků | smažeme do 12 měsíců od vyrovnání výletu |
 | účtenky | smažeme do 12 měsíců od vyrovnání výletu |
-| účet, který se 2 roky nepřihlásil | smažeme včetně vazeb |
+| účet, který se 2 roky nepřihlásil (používání přes Claude se počítá jako přihlášení) | smažeme včetně vazeb |
 | žádosti o propojení včetně důvodu zamítnutí | smažeme do 12 měsíců od rozhodnutí |
 | hlasy z plánování výletu | součást záznamu výletu, po dobu provozu služby |
 | nákupní seznam a objednávka piva chaty | součást záznamu výletu, po dobu provozu služby |
 | propojení pokladníka s Rohlíkem (šifrované tokeny) | do zrušení propojení, nejpozději se smazáním účtu |
 | nepotvrzené hlasy z plánování (jméno, výběr, účet, který je má potvrdit) | smažeme do 12 měsíců od potvrzení, nejpozději do 12 měsíců od vyúčtování výletu |
 | přihlašovací odkazy (tokeny) | platí 15 minut, poté jsou neplatné |
+| propojení s Claude (aplikace, přístup, kdy připojena a použita) | do odpojení; odpojené smažeme po 30 dnech, všechna se smazáním účtu |
+| přístupové klíče Claude | přístupový klíč platí hodinu, obnovovací 60 dní a při každém použití se vymění |
+| záznam změn přes Claude | 12 měsíců, nejpozději do smazání účtu |
 | odkaz k potvrzení hlasu z plánování | platí 7 dní; hlas sám nepropadá, uloží se při jakémkoli přihlášení |
 | surové statistické události | 12 měsíců, poté jen souhrnná čísla |
 | provozní logy hostingu | krátkodobě, podle nastavení poskytovatele |
@@ -331,7 +359,9 @@ vlastním přihlášením a krátkou platností přihlášení (2 hodiny), banko
 spojení a účtenky nejsou veřejně čitelné a veřejné formuláře chráníme před
 roboty a omezením počtu pokusů. Do aplikačních logů nezapisujeme osobní
 údaje. Databáze i soubory leží u poskytovatelů uvedených v kapitole 7 a jsou
-chráněny přístupovými klíči.
+chráněny přístupovými klíči. Připojení asistenta Claude používá standard
+OAuth: klíče ukládáme jen jako otisky, připojení lze omezit jen na čtení a
+zrušit jedním tlačítkem na stránce Propojení s Claude.
 
 Kdyby přes to všechno došlo k úniku dat, který pro vás znamená riziko,
 ohlásíme ho Úřadu pro ochranu osobních údajů do 72 hodin a vás budeme přímo
@@ -339,13 +369,32 @@ informovat, pokud je riziko vysoké.
 
 ## 15. Automatizované rozhodování a umělá inteligence
 
-Služba nepoužívá žádný systém umělé inteligence ve smyslu nařízení (EU)
-2024/1689 (akt o umělé inteligenci). Neprobíhá žádné automatizované
+Služba sama nepoužívá žádný systém umělé inteligence ve smyslu nařízení
+(EU) 2024/1689 (akt o umělé inteligenci). Neprobíhá žádné automatizované
 rozhodování ani profilování ve smyslu čl. 22 GDPR: výpočet vyrovnání je
 prostá aritmetika podle zadaných podílů a stejná pravidla platí pro každého.
-Pokud bychom někdy nějakou funkci umělé inteligence přidali (třeba čtení
-účtenek), nejdřív aktualizujeme tyto zásady a dozvíte se to dřív, než se
-funkce zapne.
+Pokud bychom někdy sami nějakou funkci umělé inteligence přidali (třeba
+čtení účtenek), nejdřív aktualizujeme tyto zásady a dozvíte se to dřív, než
+se funkce zapne.
+
+### Propojení s Claude
+
+Přihlášený uživatel si může ke svému účtu připojit asistenta Claude od
+firmy Anthropic (odkaz Propojení s Claude v patičce). Claude pak s účtem
+pracuje jeho jménem: čte jen to, co uživatel vidí na webu, a pokud mu to
+uživatel povolí, dělá změny, které by mohl udělat i sám (třeba přidá výdaj
+nebo zapíše místo v autě). Žádná pravidla se tím neobcházejí a nic se
+nerozhoduje automaticky; každý krok zadává uživatel.
+
+Co si Claude přes připojení přečte, odchází k Anthropicu. Anthropic tu není
+náš zpracovatel. Je to služba, kterou si uživatel vybral sám, a údaje
+zpracovává podle podmínek, které s ní uživatel uzavřel. Anthropic je
+americká firma. Když se Clauda ptáte na výlet, posíláte mu i jména a částky
+ostatních, které vidíte, takže se ptejte jen na to, co potřebujete. Pokud
+chcete jen odpovědi, stačí přístup jen ke čtení.
+
+Připojení zrušíte kdykoli na stránce Propojení s Claude; smazáním účtu
+zaniknou všechna. Připojení, které 60 dní nepoužijete, vyprší samo.
 
 ## 16. Změny těchto zásad
 
@@ -363,6 +412,7 @@ Vojtěch Zicha,
 
 | Verze | Účinnost | Co se změnilo |
 | --- | --- | --- |
+| 7 | 14. 11. 2026 | Propojení s Claude: připojení asistenta Claude k vlastnímu účtu, údaje o připojení a záznam změn; Anthropic jako služba, kterou si vybírá uživatel; doplnění kapitol 3, 4, 6, 7, 8, 9, 14 a 15. |
 | 6 | 14. 10. 2026 | Objednávka sudového piva: sudy a výčep, které účastníci vyberou z ceníku obchodu, a shrnutí objednávky pro pokladníka; kdo se na co skládá a výdaj z uzavřeného seznamu; doplnění kapitol 3, 4, 6 a 9. |
 | 5 | 13. 10. 2026 | Společný nákup: nákupní seznam chaty a jeho propojení s Rohlíkem přes účet pokladníka; Rohlík jako nový příjemce, cookie `rohlik-oauth-state` a doplnění kapitol 3, 4, 6, 7, 9 a 11. |
 | 4 | 30. 8. 2026 | Nepotvrzené hlasy z plánování: hlas zadaný bez přihlášení čeká na potvrzení jako samostatný záznam a uloží se při jakémkoli přihlášení; potvrzovací e-mail, cookie `oauth-vote-intent` a doplnění kapitol 4, 9 a 12. |

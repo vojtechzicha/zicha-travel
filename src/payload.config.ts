@@ -13,6 +13,7 @@ import { adminTranslations } from './i18n/adminTranslations'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { McpAudit, McpClients, McpGrants, McpTokens } from './collections/McpConnector'
 import { RohlikConnections } from './collections/RohlikConnections'
 import { Chatas } from './collections/Chatas'
 import { Participants } from './collections/Participants'
@@ -95,6 +96,10 @@ export default buildConfig({
     Media,
     RohlikConnections,
     DataRequests,
+    McpClients,
+    McpGrants,
+    McpTokens,
+    McpAudit,
   ],
   editor: lexicalEditor(),
   // Outgoing mail (magic-link logins). Gated on RESEND_API_KEY — without it

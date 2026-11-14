@@ -59,11 +59,22 @@ inventáře (`inventar-odchozich-volani.md`) ve stejném PR.
 - **Příjemci:** Supabase, Vercel, Resend (e-maily), Microsoft, Google a
   Apple (každý vlastní správce svého přihlášení), Rohlík (samostatný správce
   pokladníkova účtu, OAuth).
-- **Výmaz:** účet 2 roky bez přihlášení (cron, včetně vazeb); rozhodnuté
+- **Propojení s Claude (konektor `/api/mcp`):** u uživatele, který si
+  připojí asistenta Claude, záznam připojení (aplikace, oprávnění, kdy
+  připojeno a naposledy použito; kolekce MCP Grants), OAuth klienti a
+  tokeny jen jako otisky (MCP Clients, MCP Tokens) a záznam změn přes
+  konektor s podobou záznamu před a po (MCP Audit). Základ: plnění smlouvy,
+  u záznamu změn oprávněný zájem na dohledatelnosti a opravě. Data, která
+  si Claude přečte, předává Anthropicu uživatel sám; Anthropic není náš
+  zpracovatel ani příjemce (rozhodnutí 15 v `compliance-gaps.md`).
+- **Výmaz:** účet 2 roky bez přihlášení (cron, včetně vazeb; obnovení
+  tokenu konektoru Claude se počítá jako přihlášení); rozhodnuté
   žádosti o propojení 12 měsíců po rozhodnutí; nepotvrzené hlasy 12 měsíců
   po potvrzení a nejpozději s vyúčtováním výletu (stejný cron); smazáním
   účtu mizí i jeho nepotvrzené hlasy; propojení s Rohlíkem mizí odpojením
-  a se smazáním účtu.
+  a se smazáním účtu; propojení s Claude: prošlé tokeny denně, odpojená
+  připojení 30 dní po odpojení, záznam změn po 12 měsících, nepoužití
+  OAuth klienti po 30 dnech, vše se smazáním účtu.
 
 ## 3. Provoz, bezpečnost a statistiky
 

@@ -1,5 +1,5 @@
 // English content of /podminky: the terms of use, transcribed from
-// docs/legal/terms-of-use.en.md (version 2, effective 2026-08-25; the
+// docs/legal/terms-of-use.en.md (version 3, effective 2026-11-14; the
 // version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale.
 
@@ -30,7 +30,7 @@ export default function TermsContentEn() {
       isHub
       icon={<ScrollText size={44} className="text-primary-light" />}
       title="Terms of use"
-      lead="zicha.travel · Effective from 25 August 2026 (version 2)"
+      lead="zicha.travel · Effective from 14 November 2026 (version 3)"
     >
       <div className="flex flex-col gap-6">
         <Section
@@ -148,6 +148,12 @@ export default function TermsContentEn() {
               <>by confirming an expense you affirm it matches what happened.</>,
             ]}
           />
+          <p>
+            If you connect the Claude assistant to your account, you answer for what you do through
+            it, exactly as if you had done it yourself on the web. Use the data of others that you
+            read through it only to organise the trip and settle up. You can disconnect at any time on
+            the Connect Claude page.
+          </p>
           <p>
             Content you upload remains yours. You give us a licence to store it and show it to
             the chata&rsquo;s members, because the service cannot work otherwise; the licence
@@ -298,6 +304,14 @@ export default function TermsContentEn() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">3</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">14 November 2026</td>
+                  <td className="py-2.5">
+                    Claude connection: users answer for what they do through a connected assistant
+                    (section 5).
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">2</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">25 August 2026</td>

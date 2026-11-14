@@ -1,5 +1,5 @@
 // Czech content of /podminky: the terms of use, transcribed from
-// docs/legal/podminky-uziti.cs.md (version 2, effective 2026-08-25; the
+// docs/legal/podminky-uziti.cs.md (version 3, effective 2026-11-14; the
 // version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale.
 
@@ -30,7 +30,7 @@ export default function TermsContentCs() {
       isHub
       icon={<ScrollText size={44} className="text-primary-light" />}
       title="Podmínky užití"
-      lead="Služba zicha.travel · Účinnost od 25. 8. 2026 (verze 2)"
+      lead="Služba zicha.travel · Účinnost od 14. 11. 2026 (verze 3)"
     >
       <div className="flex flex-col gap-6">
         <Section
@@ -143,6 +143,12 @@ export default function TermsContentCs() {
               <>potvrzením výdaje stvrzujete, že souhlasí s tím, co se stalo.</>,
             ]}
           />
+          <p>
+            Když si k účtu připojíte asistenta Claude, odpovídáte za to, co přes něj uděláte, stejně
+            jako kdybyste to udělali sami na webu. Údaje ostatních, které přes něj čtete, používejte
+            jen k organizaci výletu a vyúčtování. Připojení můžete kdykoli zrušit na stránce Propojení
+            s Claude.
+          </p>
           <p>
             Obsah, který nahrajete, zůstává váš. Dáváte nám licenci ho uložit a zobrazovat
             členům chaty, protože jinak by služba nefungovala; licence trvá, dokud obsah
@@ -285,6 +291,14 @@ export default function TermsContentCs() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">3</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">14. 11. 2026</td>
+                  <td className="py-2.5">
+                    Propojení s Claude: odpovědnost za to, co uživatel udělá přes připojeného asistenta
+                    (kapitola 5).
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">2</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">25. 8. 2026</td>

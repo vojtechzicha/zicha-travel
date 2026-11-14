@@ -1,5 +1,5 @@
 // English content of /soukromi: the full privacy policy, transcribed from
-// docs/legal/privacy-policy.en.md (version 6, effective 2026-10-14; the
+// docs/legal/privacy-policy.en.md (version 7, effective 2026-11-14; the
 // version history section tracks the changes). Edit wording
 // there first, then mirror it here; page.tsx only picks a locale. The one
 // interactive element is the consent button in section 12.
@@ -38,7 +38,7 @@ export default function PrivacyContentEn() {
       isHub
       icon={<ShieldCheck size={44} className="text-primary-light" />}
       title="Privacy policy"
-      lead="zicha.travel · Effective from 14 October 2026 (version 6)"
+      lead="zicha.travel · Effective from 14 November 2026 (version 7)"
     >
       <div className="flex flex-col gap-6">
         <Section id="spravce" title="1. Who the controller is" icon={<UserCog size={20} />}>
@@ -137,6 +137,14 @@ export default function PrivacyContentEn() {
             in for what.
           </p>
           <p>
+            <strong>Claude connection:</strong> if you connect the Claude assistant to your
+            account (<a href="#ai" className={link}>section 15</a>), we store which app is
+            connected, the access you gave it (read only, or read and edit), when you connected
+            it and when it was last used. We store its access keys only as a fingerprint (hash),
+            never readable. Every change Claude makes for you goes into a change log: what
+            changed and how the record looked before and after.
+          </p>
+          <p>
             <strong>About visitors:</strong> technical request records (IP address in the
             hosting provider&rsquo;s operational logs), the cookies described in section 11 and
             the anonymous statistics described in section 12. On public forms (sign-in, claim
@@ -174,6 +182,13 @@ export default function PrivacyContentEn() {
             </a>{' '}
             (Art. 6(1)(b) GDPR): without your email we cannot send you a login link, and without
             a record of your expenses the rule that you can edit your own does not work.
+          </p>
+          <p>
+            <strong>Claude connection.</strong> You switch the connection on yourself and can
+            end it at any time. We process the connection and its keys to perform the contract,
+            like your account. We keep the change log on the basis of legitimate interest: so
+            that you and the chata&rsquo;s admins can find out afterwards what Claude changed,
+            and fix it.
           </p>
           <p>
             <strong>Emails.</strong> We send operational messages only: login links,
@@ -255,6 +270,14 @@ export default function PrivacyContentEn() {
             Because such an expense is paid straight to the payer, the members of its split are
             shown the payer&rsquo;s bank details; by creating a private expense the payer
             accepts that.
+          </p>
+          <p>
+            A signed-in user can connect the Claude assistant to their account (
+            <a href="#ai" className={link}>section 15</a>). Claude then sees what that user sees
+            on the web and nothing more: private expenses, other people&rsquo;s bank details or
+            locked participants&rsquo; finances only if the user can see them too. What Claude
+            reads goes to Anthropic, a company the user chose. If you travel with them, that can
+            include your name and the amounts they can see.
           </p>
           <p>
             A chata&rsquo;s admins see all of that chata&rsquo;s data. As the operator we have
@@ -353,6 +376,11 @@ export default function PrivacyContentEn() {
             address the same way. Links to Google Calendar and Google Maps are opened
             by you.
           </p>
+          <p>
+            Anthropic, which runs the Claude assistant, is left out of the table on purpose: it
+            does not work for us. When you connect Claude, you are the one passing data to it,
+            under your own terms with Anthropic (<a href="#ai" className={link}>section 15</a>).
+          </p>
           <p>We do not sell data to anyone and pass it to no one for advertising.</p>
         </Section>
 
@@ -363,7 +391,9 @@ export default function PrivacyContentEn() {
             transfer is covered by
             the European Commission&rsquo;s adequacy decision (the Data Privacy Framework) or by
             standard contractual clauses. We will send you the details for a specific provider
-            on request.
+            on request. The Claude assistant runs at Anthropic, a US company; the data reaches it
+            from the user who connected it, not from us (
+            <a href="#ai" className={link}>section 15</a>).
           </p>
         </Section>
 
@@ -394,7 +424,10 @@ export default function PrivacyContentEn() {
                   <td className="py-2.5">deleted within 12 months of the trip being settled</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="py-2.5 pr-4">an account with no login for 2 years</td>
+                  <td className="py-2.5 pr-4">
+                    an account with no login for 2 years (using it through Claude counts as a
+                    login)
+                  </td>
                   <td className="py-2.5">deleted, including its links</td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -429,6 +462,18 @@ export default function PrivacyContentEn() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">login links (tokens)</td>
                   <td className="py-2.5">valid for 15 minutes, then void</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">Claude connections (app, access, when connected and used)</td>
+                  <td className="py-2.5">until disconnected; disconnected ones deleted after 30 days, all of them with the account</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">Claude access keys</td>
+                  <td className="py-2.5">the access key is valid for an hour, the refresh key for 60 days and replaced on every use</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">change log of edits through Claude</td>
+                  <td className="py-2.5">12 months, at the latest until the account is deleted</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">planning vote confirmation link</td>
@@ -700,7 +745,13 @@ export default function PrivacyContentEn() {
             own sign-in and a short session (2 hours), bank details and receipts are not
             publicly readable, and public forms are protected against bots and by rate limiting.
             We do not write personal data into application logs. The database and files sit with
-            the providers listed in section 7 and are protected by access keys.
+            the providers listed in section 7 and are protected by access keys. Connecting the
+            Claude assistant uses the OAuth standard: we store keys only as fingerprints, a
+            connection can be limited to reading, and one button on the{' '}
+            <a href="/claude" className={link}>
+              Connect Claude
+            </a>{' '}
+            page ends it.
           </p>
           <p>
             If, despite all this, a data breach occurred that poses a risk to you, we would
@@ -715,12 +766,37 @@ export default function PrivacyContentEn() {
           icon={<Bot size={20} />}
         >
           <p>
-            The service uses no artificial intelligence system within the meaning of Regulation
-            (EU) 2024/1689 (the AI Act). There is no automated decision-making or profiling
-            within the meaning of Art. 22 GDPR: the settlement is plain arithmetic over the
-            entered shares, and the same rules apply to everyone. If we ever add an AI feature
-            (say, reading receipts), we will update this policy first, so you will know before
-            the feature turns on.
+            The service itself uses no artificial intelligence system within the meaning of
+            Regulation (EU) 2024/1689 (the AI Act). There is no automated decision-making or
+            profiling within the meaning of Art. 22 GDPR: the settlement is plain arithmetic over
+            the entered shares, and the same rules apply to everyone. If we ever add an AI
+            feature ourselves (say, reading receipts), we will update this policy first, so you
+            will know before the feature turns on.
+          </p>
+          <h3 id="claude" className="font-semibold text-gray-900 pt-2 scroll-mt-24">
+            Claude connection
+          </h3>
+          <p>
+            A signed-in user can connect the Claude assistant made by Anthropic to their account
+            (the{' '}
+            <a href="/claude" className={link}>
+              Connect Claude
+            </a>{' '}
+            link in the footer). Claude then works with the account on their behalf: it reads
+            only what the user sees on the web and, if the user allows it, makes changes the user
+            could make themselves (adding an expense, say, or taking a car seat). No rule is
+            bypassed and nothing is decided automatically; the user asks for every step.
+          </p>
+          <p>
+            What Claude reads through the connection goes to Anthropic. Anthropic is not our
+            processor here. It is a service the user picked, and it handles the data under the
+            terms the user agreed with it. Anthropic is a US company. When you ask Claude about a
+            trip, you also send it the names and amounts of others that you can see, so ask only
+            what you need. If you only want answers, read-only access is enough.
+          </p>
+          <p>
+            You can disconnect at any time on the Connect Claude page; deleting your account ends
+            every connection. A connection left unused for 60 days expires on its own.
           </p>
         </Section>
 
@@ -755,6 +831,15 @@ export default function PrivacyContentEn() {
                 </tr>
               </thead>
               <tbody className="align-top">
+                <tr className="border-b border-gray-100">
+                  <td className="py-2.5 pr-4">7</td>
+                  <td className="py-2.5 pr-4 whitespace-nowrap">14 November 2026</td>
+                  <td className="py-2.5">
+                    Claude connection: connecting the Claude assistant to your own account, the
+                    connection records and the change log; Anthropic as a service the user
+                    chooses; additions to sections 3, 4, 6, 7, 8, 9, 14 and 15.
+                  </td>
+                </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2.5 pr-4">6</td>
                   <td className="py-2.5 pr-4 whitespace-nowrap">14 October 2026</td>

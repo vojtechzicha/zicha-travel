@@ -85,8 +85,10 @@ export async function middleware(request: NextRequest) {
     // but not special paths like /admin, /api, /login etc.
     // /app-start and /offline belong to the PWA layer (launch bridge and
     // offline fallback — see src/lib/pwa.ts); both must reach their own
-    // handlers instead of being swallowed by the slug redirect.
-    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky', '/app-start', '/offline']
+    // handlers instead of being swallowed by the slug redirect. /claude is
+    // the connector page (docs/MCP.md); /oauth/authorize has two segments
+    // and never matches.
+    const SITE_PATHS = ['/', '/login', '/napoveda', '/soukromi', '/podminky', '/claude', '/app-start', '/offline']
     if (pathname.match(/^\/[a-z0-9-]+$/i) && !SITE_PATHS.includes(pathname)) {
       return NextResponse.redirect(new URL('/', request.url))
     }

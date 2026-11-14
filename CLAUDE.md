@@ -275,6 +275,26 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
      confirmation, all rows in the settled-chata pass; user deletion drops
      the user's rows. Tests in `tests/int/pendingVotes.int.spec.ts`
 
+10. **Claude connector** (`src/collections/McpConnector.ts`: `mcp-clients`,
+    `mcp-grants`, `mcp-tokens`, `mcp-audit`, System group, closed to the
+    API) — "Propojení s Claude", a remote MCP server at `/api/mcp` that any
+    account connects to Claude (claude.ai, apps, Claude Code). Full design
+    in `docs/MCP.md`. OAuth 2.1 + PKCE + dynamic registration
+    (`src/lib/mcp/oauth.ts`, store interface in `store.ts`), consent at
+    `/oauth/authorize` (decision via `POST /api/mcp/oauth/decide`), the
+    account's connections at `/claude` (footer, signed-in only), user help
+    `/napoveda/claude`. **Parity rule — binding:** tools never query with
+    rules of their own; they call the site's own REST pipeline and slug API
+    in-process, signed in as the account (`src/lib/mcp/loopback.ts`), so
+    every access rule, hook and privacy scrub applies unchanged. A new web
+    feature gets a tool in `src/lib/mcp/tools/` only by going through its
+    existing endpoint; never add a connector-only write path. Every write
+    goes through `audit()` into `mcp-audit`. Tokens are hashed, not JWTs:
+    rotating `PAYLOAD_SECRET` does not revoke them. Legal: Anthropic is the
+    user's own tool, not our processor (decision 15 in
+    `docs/legal/compliance-gaps.md`, policy v7 ch. 15, terms v3 ch. 5).
+    Tests: `tests/int/mcpOAuth.int.spec.ts`, `mcpConnector.int.spec.ts`
+
 ### Utilities
 
 **calculateStats** (`src/utils/calculateStats.ts`)
@@ -767,7 +787,7 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
 - Help (`src/app/(frontend)/napoveda/`): static server components, linked
   from the footer. `/napoveda` is the hub (per-audience overview, math,
   glossary); the detail guides are `orientace`, `finance`, `vydaje`,
-  `ucet`, `prehled` and `sprava`, each walking through the real UI with
+  `ucet`, `claude`, `prehled` and `sprava`, each walking through the real UI with
   screenshots. Each page is a thin `page.tsx` (localized metadata) that
   renders `content.cs.tsx` or `content.en.tsx` by locale. Shared pieces in
   `ui.tsx` (shell, sections, `Steps`, `Screenshot`, page cards — chrome

@@ -55,6 +55,13 @@ export async function Footer() {
           <InstallAppLink className="hover:text-white transition-colors underline underline-offset-2">
             {t('installApp')}
           </InstallAppLink>
+          {/* "Propojení s Claude" (docs/MCP.md): connecting acts for the
+              signed-in account, so the link is for signed-in visitors */}
+          {user && (
+            <a href="/claude" className="hover:text-white transition-colors underline underline-offset-2">
+              {t('claude')}
+            </a>
+          )}
           <a
             href="/napoveda"
             className="hover:text-white transition-colors underline underline-offset-2"
