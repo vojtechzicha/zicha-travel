@@ -111,18 +111,18 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "mcp_grants" CASCADE;
   DROP TABLE "mcp_tokens" CASCADE;
   DROP TABLE "mcp_audit" CASCADE;
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_mcp_clients_fk";
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_mcp_clients_fk";
   
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_mcp_grants_fk";
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_mcp_grants_fk";
   
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_mcp_tokens_fk";
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_mcp_tokens_fk";
   
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_mcp_audit_fk";
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_mcp_audit_fk";
   
-  DROP INDEX "payload_locked_documents_rels_mcp_clients_id_idx";
-  DROP INDEX "payload_locked_documents_rels_mcp_grants_id_idx";
-  DROP INDEX "payload_locked_documents_rels_mcp_tokens_id_idx";
-  DROP INDEX "payload_locked_documents_rels_mcp_audit_id_idx";
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_mcp_clients_id_idx";
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_mcp_grants_id_idx";
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_mcp_tokens_id_idx";
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_mcp_audit_id_idx";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "mcp_clients_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "mcp_grants_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "mcp_tokens_id";
