@@ -9,6 +9,8 @@ import { SelectedParticipantHeader } from './SelectedParticipantHeader'
 import { ExpensesFeed } from './ExpensesFeed'
 import { ExpenseComposer } from './ExpenseComposer'
 import { PersonView } from './PersonView'
+import { PrepaymentEditor, type PrepaymentPrefill } from './PrepaymentEditor'
+import { getTripPhase } from '../utils/tripData'
 import { FinanceViewSkeleton } from './Skeleton'
 import {
   ClaimBanner,
@@ -80,6 +82,11 @@ export function FinanceView({
     markPaid?: boolean
   } | null>(null)
   const canAuthor = viewer.authenticated && viewer.linkedParticipantIds.length > 0
+  // "Zapsat platbu" (banker / chata admins): null = closed
+  const [prepaymentEditor, setPrepaymentEditor] = useState<{
+    prepayment: Prepayment | null
+    prefill?: PrepaymentPrefill
+  } | null>(null)
 
   // Deep link from the homepage hero ("Přidat výdaj" on the live chata):
   // ?addExpense=1 opens the composer once, then drops the param
@@ -226,6 +233,31 @@ export function FinanceView({
   // When the viewer is neither, the banker card explains that signing in is
   // what reveals the accounts (decision 13).
   const creditorAccountsHidden = !canApproveAll
+
+  // The same circle records payments to and from the banker ("zálohy",
+  // src/lib/prepayments.ts); the Prepayments hook re-checks it server-side
+  const canManagePrepayments = viewer.authenticated && canApproveAll
+  // A settlement row's "Přišlo" is a záloha until the trip is over, then a
+  // doplatek (the editor lets the banker switch either way)
+  const incomingPaymentType = getTripPhase(chata) === 'after' ? 'supplement' : 'advance'
+  const prepaymentUi =
+    canManagePrepayments && prepaymentEditor ? (
+      <PrepaymentEditor
+        chata={chata}
+        participants={participants}
+        jointAccounts={jointAccounts}
+        bankerId={typeof bankerId === 'number' ? bankerId : null}
+        prepayment={prepaymentEditor.prepayment}
+        prefill={prepaymentEditor.prefill}
+        debtors={stats.debtors}
+        creditors={stats.creditors}
+        onClose={() => setPrepaymentEditor(null)}
+        onSaved={async () => {
+          await onDataChanged?.()
+          setPrepaymentEditor(null)
+        }}
+      />
+    ) : null
   const ownJointAccountIds = ownJointAccounts(
     viewer.linkedParticipantIds.map(String),
     jointAccounts,
@@ -503,12 +535,24 @@ export function FinanceView({
             creditorAccountsHidden={creditorAccountsHidden}
             viewer={viewer}
             onPrivateSettle={handlePrivateSettle}
+            onRecordPrepayment={
+              canManagePrepayments
+                ? (prefill) => setPrepaymentEditor({ prepayment: null, prefill })
+                : undefined
+            }
+            onEditPrepayment={
+              canManagePrepayments
+                ? (prepayment) => setPrepaymentEditor({ prepayment })
+                : undefined
+            }
+            incomingPaymentType={incomingPaymentType}
           />
         </section>
       </div>
 
       {overviewLink}
       {authoringUi}
+      {prepaymentUi}
       {claimUi}
     </div>
   )

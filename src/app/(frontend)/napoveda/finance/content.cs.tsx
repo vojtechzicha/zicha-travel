@@ -227,8 +227,15 @@ export default function FinanceContentCs() {
             má poslat. U každého věřitele si rozbalí QR kód s jeho číslem účtu. Kdo bankovní údaje
             nevyplnil, objeví se ve žlutém rámečku s poznámkou, že se mu má zaplatit hotově.
           </p>
+          <p>
+            Když peníze přijdou, pokladník je zapíše přímo tady. U dlužníka klepne na{' '}
+            <strong>Přišlo</strong>, u věřitele po odeslání na <strong>Posláno</strong> a částka se
+            předvyplní celým zůstatkem. Zálohu, doplatek nebo vratku zapíše i tlačítkem{' '}
+            <strong>Zapsat platbu</strong> v Historii plateb. Klepnutím na zapsanou platbu ji upraví
+            nebo smaže.
+          </p>
           <Callout tone="warn">
-            Aplikace platby nesleduje. Když někdo pošle peníze, musí to pokladník zanést jako zálohu
+            Aplikace platby nesleduje. Když někdo pošle peníze, musí to pokladník zapsat jako zálohu
             nebo doplatek, jinak zůstane dluh v přehledu viset.
           </Callout>
         </Section>

@@ -65,6 +65,7 @@ should be able to use it.
 | Trip | `get_chata` (Informace + Účastníci), `get_organization` (beds, cars, transport) |
 | Money | `get_finances` (balances, settlement, banker account, prepayments, breakdowns, private layer), `list_expenses` |
 | Expenses | `create_expense`, `update_expense`, `delete_expense`, `decide_expense`, `mark_private_payment` |
+| Payments (banker, chata admins) | `record_prepayment` (záloha / doplatek / vratka; without an amount a supplement or refund takes the person's whole open balance), `update_prepayment`, `delete_prepayment` |
 | Organizace | `edit_beds` (place / leave), `edit_cars` (offer / update / remove / seat / leave) |
 | Nákup | `get_shopping_list`, `search_rohlik_products`, `add_/update_/delete_shopping_item`, `send_shopping_to_rohlik` |
 | Pivo | `get_beer_order` (optionally with the catalog), `add_/update_/delete_beer_item`, `change_bar_taps`, `email_beer_order_summary` |
@@ -81,7 +82,9 @@ the write tools. Tools are annotated read-only / destructive / open-world
 
 **Left on the web:** receipts (photos need the upload flow), connecting
 Rohlík (browser paste flow), login and registration, and all admin-panel
-work (participants, prepayments, chata settings, rooms and beds). The
+work (participants, joint accounts, chata settings, rooms and beds).
+Payments to and from the banker are NOT admin-only any more: the banker
+records them like on the web. The
 server instructions (`src/lib/mcp/server.ts`) say so, and explain the money
 rules (split modes, 1 Kč threshold, banker pot, invitations, planned,
 "za jiného plátce", private).

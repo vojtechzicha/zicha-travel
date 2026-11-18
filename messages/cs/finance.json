@@ -197,5 +197,53 @@
     "bankerCombineTopup": "Tip: pokladníkovi posíláš i doplatek do pokladny. Obě částky můžeš spojit do jedné platby.",
     "debtFooter": "Nepočítá se do výsledku výše. Platíte si napřímo, pokladna o tom neví.",
     "payerFooter": "Zaplacení si označujete sami, ručně. Společné vyrovnání se tím nemění."
+  },
+  "prepayments": {
+    "recordButton": "Zapsat platbu",
+    "titleNew": "Zapsat platbu",
+    "titleEdit": "Upravit platbu",
+    "edit": "Upravit platbu",
+    "close": "Zavřít",
+    "typeLabel": "Druh platby",
+    "types": {
+      "advance": "Záloha",
+      "supplement": "Doplatek",
+      "refund": "Vratka",
+      "distribution": "Rozdělení přebytku"
+    },
+    "hints": {
+      "advance": "Peníze poslané pokladníkovi předem.",
+      "supplement": "Peníze poslané pokladníkovi při vyúčtování.",
+      "refund": "Přeplatek, který pokladník poslal zpátky.",
+      "distribution": "Přebytek, který pokladník rozdělil."
+    },
+    "fromLabel": "Od koho",
+    "toLabel": "Komu",
+    "pickPerson": "Vyber člověka",
+    "jointAccounts": "Společné účty",
+    "amountLabel": "Částka",
+    "currencySuffix": "Kč",
+    "dateLabel": "Datum",
+    "fullDebt": "Celý dluh {amount}",
+    "fullCredit": "Celý přeplatek {amount}",
+    "noteLabel": "Poznámka",
+    "notePlaceholder": "Nepovinné, třeba „hotově na chatě“",
+    "save": "Uložit",
+    "saving": "Ukládám…",
+    "cancel": "Zrušit",
+    "delete": "Smazat",
+    "deleteConfirm": "Opravdu smazat tuhle platbu?",
+    "deleteYes": "Smazat",
+    "deleteNo": "Nechat",
+    "quickReceived": "Přišlo",
+    "quickReceivedAria": "Zapsat platbu od: {name}",
+    "quickSent": "Posláno",
+    "quickSentAria": "Zapsat vratku pro: {name}",
+    "errors": {
+      "person": "Vyber člověka.",
+      "amount": "Zadej částku v celých korunách.",
+      "forbidden": "Platby zapisuje jen pokladník nebo správce chaty.",
+      "generic": "Uložit se nepovedlo. Zkus to znovu."
+    }
   }
 }

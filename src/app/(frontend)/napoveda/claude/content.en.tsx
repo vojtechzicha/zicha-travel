@@ -80,6 +80,7 @@ export default function ClaudeContentEn() {
                 &quot;Is there an expense waiting for me to confirm? The petrol one is right,
                 confirm it.&quot;
               </>,
+              <>For the banker: &quot;Petr sent me his top-up, record it.&quot;</>,
             ]}
           />
           <p>These stay on the web:</p>
@@ -87,7 +88,7 @@ export default function ClaudeContentEn() {
             items={[
               <>receipt photos,</>,
               <>connecting Rohlík,</>,
-              <>work in the admin panel: participants, advances and chata settings.</>,
+              <>work in the admin panel: participants, joint accounts and chata settings.</>,
             ]}
           />
         </Section>

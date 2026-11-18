@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { ArrowUp, ArrowDown, QrCode, Copy, Check } from 'lucide-react'
+import { ArrowUp, ArrowDown, QrCode, Copy, Check, CheckCheck } from 'lucide-react'
 import { QRPayment } from './QRPayment'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { track } from '@/lib/analytics'
@@ -34,6 +34,32 @@ interface SettlementActionsProps {
   participants: Participant[]
   /** creditor bank fields were withheld from this viewer (not admin/banker) */
   creditorAccountsHidden?: boolean
+  /** banker / chata admin: "Přišlo" / "Posláno" record the payment in one tap */
+  onRecordPayment?: (row: { participantId: number; amount: number; direction: 'in' | 'out' }) => void
+}
+
+/** Small pill next to a settlement row: opens the payment editor prefilled. */
+function QuickRecordButton({
+  label,
+  ariaLabel,
+  onClick,
+}: {
+  label: string
+  ariaLabel: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      className="flex-shrink-0 inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-white/[0.15] px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:border-primary hover:text-primary dark:hover:border-primary-light dark:hover:text-primary-light transition-colors"
+    >
+      <CheckCheck size={13} />
+      {label}
+    </button>
+  )
 }
 
 function CopyableRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
@@ -77,8 +103,10 @@ export function SettlementActions({
   debtors,
   participants,
   creditorAccountsHidden = false,
+  onRecordPayment,
 }: SettlementActionsProps) {
   const t = useTranslations('finance')
+  const tp = useTranslations('finance.prepayments')
   const locale = useLocale() as AppLocale
   const [showQr, setShowQr] = useState<string | null>(null)
 
@@ -99,6 +127,22 @@ export function SettlementActions({
     const activeDebtors = debtors
     const activeCreditors = creditors.filter((c) => c.name !== participant.name)
 
+    // The settlement lists are keyed by name; a quick button needs the id
+    const quickButton = (name: string, amount: number, direction: 'in' | 'out') => {
+      const person = participants.find((p) => p.name === name)
+      // the banker's own surplus row is pot-internal: nothing to record
+      if (!onRecordPayment || !person || person.id === participant.id) return null
+      return (
+        <QuickRecordButton
+          label={direction === 'in' ? tp('quickReceived') : tp('quickSent')}
+          ariaLabel={
+            direction === 'in' ? tp('quickReceivedAria', { name }) : tp('quickSentAria', { name })
+          }
+          onClick={() => onRecordPayment({ participantId: person.id, amount, direction })}
+        />
+      )
+    }
+
     return (
       <div className="grid md:grid-cols-2 gap-6">
           {/* Debtors - people who owe money */}
@@ -115,9 +159,12 @@ export function SettlementActions({
                     className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/[0.12]"
                   >
                     <span className="font-medium">{debtor.name}</span>
-                    <span className="font-bold text-red-600 dark:text-red-400">
-                      {formatCurrency(debtor.amount, locale)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-red-600 dark:text-red-400">
+                        {formatCurrency(debtor.amount, locale)}
+                      </span>
+                      {quickButton(debtor.name, debtor.amount, 'in')}
+                    </div>
                   </div>
                 ))
               ) : (
@@ -193,9 +240,12 @@ export function SettlementActions({
                             </p>
                           </div>
                         </div>
-                        <p className="mt-2 text-xs text-yellow-600 dark:text-amber-300/90">
-                          {t('settlement.noBankDetails')}
-                        </p>
+                        <div className="mt-2 flex items-end justify-between gap-3">
+                          <p className="text-xs text-yellow-600 dark:text-amber-300/90">
+                            {t('settlement.noBankDetails')}
+                          </p>
+                          {quickButton(creditor.name, creditor.amount, 'out')}
+                        </div>
                       </div>
                     )
                   }
@@ -207,18 +257,23 @@ export function SettlementActions({
                       key={creditor.name}
                       className="bg-white dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/[0.12] rounded-xl overflow-hidden"
                     >
-                      <button
-                        onClick={() => setShowQr(isExpanded ? null : creditor.name)}
-                        className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors"
-                      >
-                        <span className="font-medium">{creditor.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-green-600 dark:text-green-400">
-                            {formatCurrency(creditor.amount, locale)}
-                          </span>
-                          <QrCode size={16} className={`text-gray-400 dark:text-slate-500`} />
-                        </div>
-                      </button>
+                      <div className="flex items-center hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors">
+                        <button
+                          onClick={() => setShowQr(isExpanded ? null : creditor.name)}
+                          className="flex-1 min-w-0 p-3 flex items-center justify-between"
+                        >
+                          <span className="font-medium">{creditor.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-green-600 dark:text-green-400">
+                              {formatCurrency(creditor.amount, locale)}
+                            </span>
+                            <QrCode size={16} className={`text-gray-400 dark:text-slate-500`} />
+                          </div>
+                        </button>
+                        {onRecordPayment && (
+                          <div className="pr-3">{quickButton(creditor.name, creditor.amount, 'out')}</div>
+                        )}
+                      </div>
 
                       {isExpanded && (
                         <div className="border-t border-gray-200 dark:border-white/[0.12] p-4 bg-green-50 dark:bg-emerald-500/10">

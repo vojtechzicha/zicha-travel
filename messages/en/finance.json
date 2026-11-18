@@ -197,5 +197,53 @@
     "bankerCombineTopup": "Tip: you are also sending a top-up to the banker. You can join both amounts into one payment.",
     "debtFooter": "Not part of the result above. You pay each other directly and the pot never knows.",
     "payerFooter": "You mark the payments yourselves, by hand. The shared settlement does not change."
+  },
+  "prepayments": {
+    "recordButton": "Record payment",
+    "titleNew": "Record a payment",
+    "titleEdit": "Edit payment",
+    "edit": "Edit payment",
+    "close": "Close",
+    "typeLabel": "Kind of payment",
+    "types": {
+      "advance": "Advance",
+      "supplement": "Top-up",
+      "refund": "Overpayment returned",
+      "distribution": "Surplus paid out"
+    },
+    "hints": {
+      "advance": "Money sent to the banker ahead of time.",
+      "supplement": "Money sent to the banker when settling up.",
+      "refund": "An overpayment the banker sent back.",
+      "distribution": "Surplus the banker paid out."
+    },
+    "fromLabel": "From",
+    "toLabel": "To",
+    "pickPerson": "Choose a person",
+    "jointAccounts": "Joint accounts",
+    "amountLabel": "Amount",
+    "currencySuffix": "CZK",
+    "dateLabel": "Date",
+    "fullDebt": "Whole debt {amount}",
+    "fullCredit": "Whole overpayment {amount}",
+    "noteLabel": "Note",
+    "notePlaceholder": "Optional, e.g. \"cash at the chata\"",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this payment?",
+    "deleteYes": "Delete",
+    "deleteNo": "Keep",
+    "quickReceived": "Paid",
+    "quickReceivedAria": "Record a payment from {name}",
+    "quickSent": "Sent",
+    "quickSentAria": "Record a refund to {name}",
+    "errors": {
+      "person": "Choose a person.",
+      "amount": "Enter the amount in whole crowns.",
+      "forbidden": "Only the banker or a chata admin records payments.",
+      "generic": "Couldn't save. Try again."
+    }
   }
 }

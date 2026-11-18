@@ -15,6 +15,8 @@ import {
   Receipt,
   ArrowLeft,
   Clock,
+  Pencil,
+  Plus,
 } from 'lucide-react'
 import { GlassCard } from './GlassCard'
 import { SettlementActions } from './SettlementActions'
@@ -30,6 +32,7 @@ import type { Participant, Chata, Prepayment, Expense } from '@/payload-types'
 import type { ParticipantStats } from '@/utils/calculateStats'
 import type { FinanceViewer } from '@/lib/financeAccess'
 import type { PrivateSettleItem } from '@/lib/privateExpenses'
+import type { PrepaymentPrefill } from './PrepaymentEditor'
 
 interface PersonViewProps {
   participant: Participant
@@ -48,7 +51,17 @@ interface PersonViewProps {
   viewer?: FinanceViewer | null
   /** marks direct payments on private expenses (docs/PRD-soukromy-vydaj.md) */
   onPrivateSettle?: (items: PrivateSettleItem[], settled: boolean) => Promise<void>
+  /** banker / chata admin: record and edit payments to and from the banker */
+  onRecordPrepayment?: (prefill?: PrepaymentPrefill) => void
+  onEditPrepayment?: (prepayment: Prepayment) => void
+  /** type a settlement row's "Přišlo" prefills (záloha before the trip ends) */
+  incomingPaymentType?: 'advance' | 'supplement'
 }
+
+// Legacy notes often just repeat the type ("Záloha"); those add nothing
+const TYPE_ECHO_NOTES = new Set(['záloha', 'doplatek', 'vratka', 'distribuce'])
+const meaningfulNote = (note: string | null | undefined): string | null =>
+  note && note.trim() && !TYPE_ECHO_NOTES.has(note.trim().toLowerCase()) ? note.trim() : null
 
 export function PersonView({
   participant,
@@ -64,11 +77,49 @@ export function PersonView({
   creditorAccountsHidden = false,
   viewer = null,
   onPrivateSettle,
+  onRecordPrepayment,
+  onEditPrepayment,
+  incomingPaymentType = 'advance',
 }: PersonViewProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
   const [isPlannedBreakdownOpen, setIsPlannedBreakdownOpen] = useState(false)
   const t = useTranslations('finance')
+  const tp = useTranslations('finance.prepayments')
   const locale = useLocale() as AppLocale
+
+  // A recorded payment row opens the editor for the banker / chata admins;
+  // for everybody else it stays the plain row it always was
+  const editable = Boolean(onEditPrepayment)
+  const rowClass = editable
+    ? 'group w-full text-left flex items-center gap-4 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors cursor-pointer'
+    : 'flex items-center gap-4 py-3'
+  const prepaymentRowProps = (p: Prepayment) =>
+    editable
+      ? {
+          role: 'button' as const,
+          tabIndex: 0,
+          title: tp('edit'),
+          onClick: () => onEditPrepayment?.(p),
+          onKeyDown: (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onEditPrepayment?.(p)
+            }
+          },
+        }
+      : {}
+  const editMark = editable ? (
+    <Pencil
+      size={14}
+      className="flex-shrink-0 text-gray-300 group-hover:text-gray-500 dark:text-slate-600 dark:group-hover:text-slate-400 transition-colors"
+    />
+  ) : null
+  const noteLine = (p: Prepayment) => {
+    const note = meaningfulNote(p.note)
+    return note ? (
+      <div className="text-xs font-normal text-gray-400 dark:text-slate-500 truncate">{note}</div>
+    ) : null
+  }
 
   const avatarColor = getAvatarColor(participant.name)
   const balance = stats.balance
@@ -455,13 +506,38 @@ export function PersonView({
             debtors={debtors}
             participants={allParticipants}
             creditorAccountsHidden={creditorAccountsHidden}
+            onRecordPayment={
+              onRecordPrepayment
+                ? ({ participantId, amount, direction }) =>
+                    onRecordPrepayment({
+                      participantId,
+                      amount,
+                      type: direction === 'in' ? incomingPaymentType : 'refund',
+                    })
+                : undefined
+            }
           />
         </GlassCard>
       )}
 
       {/* History Section */}
       <GlassCard padding="medium">
-        <h3 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('personView.paymentHistory')}</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="font-serif text-xl font-bold text-gray-900 dark:text-gray-100">{t('personView.paymentHistory')}</h3>
+          {onRecordPrepayment && (
+            <button
+              type="button"
+              // on someone else's page the payment is theirs by default
+              onClick={() =>
+                onRecordPrepayment(isBanker ? undefined : { participantId: participant.id })
+              }
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 dark:border-primary-light/30 px-3 py-1.5 text-sm font-semibold text-primary dark:text-primary-light hover:bg-primary/5 dark:hover:bg-primary-light/10 transition-colors"
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              {tp('recordButton')}
+            </button>
+          )}
+        </div>
         <div className="divide-y divide-gray-100 dark:divide-white/[0.07]">
           {/* Banker's incoming prepayments */}
           {isBanker &&
@@ -479,7 +555,7 @@ export function PersonView({
                     fromInfo.memberIds.length
                   : p.amount
               return (
-                <div key={`inc-${i}`} className="flex items-center gap-4 py-3">
+                <div key={`inc-${i}`} className={rowClass} {...prepaymentRowProps(p)}>
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       isRefund ? 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400' : 'bg-green-100 text-green-600 dark:bg-emerald-500/15 dark:text-emerald-300'
@@ -487,7 +563,7 @@ export function PersonView({
                   >
                     {isRefund ? <ArrowRight size={16} /> : <ArrowDownLeft size={16} />}
                   </div>
-                  <div className="flex-1 font-medium text-gray-700 dark:text-slate-300">
+                  <div className="flex-1 min-w-0 font-medium text-gray-700 dark:text-slate-300">
                     {isRefund
                       ? t('personView.refundReturned', { name: fromName })
                       : p.type === 'supplement'
@@ -496,10 +572,12 @@ export function PersonView({
                     {isJointAccount && (
                       <span className="text-gray-400 dark:text-slate-500 text-sm"> {t('personView.jointAccountSuffix')}</span>
                     )}
+                    {noteLine(p)}
                   </div>
                   <span className={isRefund ? 'text-red-600 dark:text-red-400 font-bold' : 'text-green-600 dark:text-green-400 font-bold'}>
                     {isRefund ? '-' : '+'} {formatCurrency(Math.abs(countedAmount), locale)}
                   </span>
+                  {editMark}
                 </div>
               )
             })}
@@ -511,7 +589,7 @@ export function PersonView({
             // A joint-account prepayment counts the member's equal share only
             const myShare = attributedShare(p.from, p.amount)
             return (
-              <div key={`prep-${i}`} className="flex items-center gap-4 py-3">
+              <div key={`prep-${i}`} className={rowClass} {...prepaymentRowProps(p)}>
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center ${
                     isRefund ? 'bg-green-100 text-green-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-green-100 text-green-600 dark:bg-emerald-500/15 dark:text-emerald-300'
@@ -523,7 +601,7 @@ export function PersonView({
                     <ArrowRight size={16} className="-rotate-45" />
                   )}
                 </div>
-                <div className="flex-1 font-medium text-gray-700 dark:text-slate-300">
+                <div className="flex-1 min-w-0 font-medium text-gray-700 dark:text-slate-300">
                   {isRefund
                     ? t('personView.refundReturned', { name: bankerName })
                     : p.type === 'supplement'
@@ -532,10 +610,12 @@ export function PersonView({
                   {isJointAccount && (
                     <span className="text-gray-400 dark:text-slate-500 text-sm"> {t('personView.jointAccountYourShare')}</span>
                   )}
+                  {noteLine(p)}
                 </div>
                 <span className="text-green-600 dark:text-green-400 font-bold">
                   {isRefund ? `${t('personView.received')} ` : '+'} {formatCurrency(Math.abs(myShare), locale)}
                 </span>
+                {editMark}
               </div>
             )
           })}
@@ -559,7 +639,7 @@ export function PersonView({
                     <Receipt size={16} />
                   )}
                 </div>
-                <div className="flex-1 font-medium text-gray-700 dark:text-slate-300">
+                <div className="flex-1 min-w-0 font-medium text-gray-700 dark:text-slate-300">
                   {e.title}
                   {isJointAccount && (
                     <span className="text-gray-400 dark:text-slate-500 text-sm">

@@ -235,6 +235,13 @@ export default function FinanceContentEn() {
             account number. Anyone who left their banking details blank appears in a yellow box
             with a note to pay them in cash.
           </p>
+          <p>
+            When money arrives, the banker records it right here. They tap <strong>Paid</strong>{' '}
+            next to a debtor, or <strong>Sent</strong> next to a creditor once the money is out, and
+            the amount is prefilled with the whole balance. The <strong>Record payment</strong>{' '}
+            button in the payment history adds any advance, top-up or returned overpayment. Tapping
+            a recorded payment edits or deletes it.
+          </p>
           <Callout tone="warn">
             The app does not track payments. When someone sends money, the banker has to record it
             as an advance or a top-up. Otherwise the debt keeps hanging in the overview.

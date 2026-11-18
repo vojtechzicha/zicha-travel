@@ -1,8 +1,41 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type Access, type CollectionConfig, type PayloadRequest, type Where } from 'payload'
 import type { Prepayment } from '../payload-types'
-import { adminRoleOnly, chataScopedAccess, refId } from '../lib/access'
+import { canManageChata, isAdminRole, isSuperadmin, refId } from '../lib/access'
 import { normalizePayer } from '../lib/expenseAuthoring'
+import { canManagePrepayments, prepaymentProblem } from '../lib/prepayments'
 import { assertRefsBelongToChata } from '../utils/chataRefIntegrity'
+import { bankerChataIds } from './listItemRules'
+
+// Who records payments between people and the banker (src/lib/prepayments.ts):
+// superadmins, admins of the chata, and the chata's banker, who sees the
+// money arrive and records it from the Finance view or through Claude, never
+// the admin panel. Everybody reads (the balances are public).
+
+/** Does this account own the banker participant of the chata? */
+async function isBankerOf(req: PayloadRequest, chataId: string): Promise<boolean> {
+  if (!req.user) return false
+  return (await bankerChataIds(req.payload, req.user.id)).map(String).includes(chataId)
+}
+
+// Update/delete: superadmin everything, admins their assigned chatas, the
+// banker the chatas they keep the money of. The beforeChange hook re-checks
+// the target chata (a row never moves somewhere its writer has no say).
+const prepaymentWriteAccess: Access = async ({ req }) => {
+  const user = req.user
+  if (!user) return false
+  if (isSuperadmin(user)) return true
+  const chatas: unknown[] = []
+  if (user.role === 'admin') chatas.push(...(user.assignedChatas ?? []))
+  chatas.push(...(await bankerChataIds(req.payload, user.id)))
+  if (chatas.length === 0) return false
+  return { chata: { in: chatas.map(refId) } } as Where
+}
+
+const PROBLEM_MESSAGES = {
+  type: 'Neznámý typ platby',
+  amount: 'Částka musí být nenulová a nejvýš 1 000 000 Kč',
+  sign: 'Záloha a doplatek jdou pokladníkovi (kladná částka), vratka od pokladníka (záporná)',
+} as const
 
 export const Prepayments: CollectionConfig = {
   slug: 'prepayments',
@@ -24,6 +57,32 @@ export const Prepayments: CollectionConfig = {
             : (original as unknown as Record<string, unknown> | undefined)?.[key]
         const chataId = refId(eff('chata'))
         if (!chataId || chataId === 'undefined' || chataId === 'null') return data
+
+        // Who: every signed-in writer must have a say over the target chata
+        // AND, on update, over the chata the row came from. Server-side
+        // writes (no req.user) pass. Create access is "signed in" only, so
+        // this is the check that matters for create.
+        const user = req.user
+        if (user) {
+          const chatas = new Set([chataId])
+          if (original?.chata != null) chatas.add(refId(original.chata))
+          for (const id of chatas) {
+            const allowed = canManagePrepayments({
+              managesChata: canManageChata(user, id),
+              isBanker: await isBankerOf(req, id),
+            })
+            if (!allowed) {
+              throw new APIError('Platby téhle chaty zapisuje jen pokladník nebo správce chaty', 403)
+            }
+          }
+          // The admin panel keeps its free hand (legacy rows of every
+          // shape); the banker's path keeps the sign matching the type
+          if (!isAdminRole(user)) {
+            const problem = prepaymentProblem({ type: eff('type'), amount: eff('amount') })
+            if (problem) throw new APIError(PROBLEM_MESSAGES[problem], 400)
+          }
+        }
+
         const from = normalizePayer(eff('from'))
         await assertRefsBelongToChata({
           req,
@@ -45,10 +104,10 @@ export const Prepayments: CollectionConfig = {
   access: {
     // Public read access for API consumption
     read: () => true,
-    // Admin roles only; admins are limited to their assigned chatas
-    create: adminRoleOnly,
-    update: chataScopedAccess,
-    delete: chataScopedAccess,
+    // Signed in; the beforeChange hook decides (banker or chata admin)
+    create: ({ req: { user } }) => Boolean(user),
+    update: prepaymentWriteAccess,
+    delete: prepaymentWriteAccess,
   },
   fields: [
     {

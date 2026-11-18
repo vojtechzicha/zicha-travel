@@ -163,7 +163,8 @@ export default function SpravaContentCs() {
               </>,
               <>
                 <strong>Prepayments</strong>: zálohy, doplatky a vrácené přeplatky mezi člověkem a
-                pokladníkem. Tohle je místo, kam se zapisuje, že někdo poslal peníze.
+                pokladníkem. Pokladník je zapisuje sám ve Financích (Zapsat platbu, Přišlo, Posláno),
+                tady je vidíš všechny a opravíš cokoli.
               </>,
               <>
                 <strong>Joint Accounts</strong>: společný účet dvou a víc lidí. Co se z něj zaplatí,

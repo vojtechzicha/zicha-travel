@@ -3,6 +3,7 @@ import { refId } from '@/lib/access'
 import { resolveBankAccount } from '@/utils/czechBankAccount'
 import { buildPrivateLayer } from '@/lib/privateExpenses'
 import { defineTool } from '../tool-kit'
+import { canManagePrepaymentsIn } from './prepayments'
 import {
   bankerOf,
   isoDate,
@@ -77,7 +78,8 @@ export const financeTools = [
     description:
       'The Finance view of a chata: per person what they paid, prepaid and should pay (their ' +
       'fair share), the resulting balance (owes / is_owed / settled within 1 Kč), the settlement ' +
-      'lists, the banker and their bank account, and the prepayments. With `participant` (or for ' +
+      'lists, the banker and their bank account, and the prepayments (payments to and from the ' +
+      'banker, with ids for update_prepayment). With `participant` (or for ' +
       'your own participants by default) also the line-by-line fair-share breakdown and the ' +
       'private expenses you settle directly with their payer. Debtors send money to the banker; ' +
       'the banker pays the creditors. Figures of people who keep their finances private (their ' +
@@ -177,13 +179,22 @@ export const financeTools = [
           debtors: rows<any>(stats.debtors).map((d) => ({ name: d.name, amount: round(d.amount) })),
           creditors: rows<any>(stats.creditors).map((c) => ({ name: c.name, amount: round(c.amount) })),
         },
-        prepayments: data.prepayments.map((p) => ({
-          date: isoDate(p.createdAt),
-          from: payerLabel(data, p.from).name,
-          amount: p.amount,
-          type: p.type,
-          note: p.note ?? null,
-        })),
+        // payments between people and the banker; the banker and chata
+        // admins change them with record_/update_/delete_prepayment
+        can_manage_prepayments: canManagePrepaymentsIn(data),
+        prepayments: data.prepayments.map((p) => {
+          const from = payerLabel(data, p.from)
+          return {
+            id: p.id,
+            date: isoDate(p.createdAt),
+            from: from.name,
+            from_id: from.id,
+            from_type: from.type,
+            amount: p.amount,
+            type: p.type,
+            note: p.note ?? null,
+          }
+        }),
         breakdowns,
       }
     },
