@@ -112,8 +112,10 @@ export function PrepaymentEditor({
   const outgoing = isOutgoingType(type)
 
   // One tap for the whole open balance of the chosen person: their debt for
-  // money coming in, their overpayment for a refund
-  const selectedParticipant = sender.startsWith('participants:')
+  // money coming in, their overpayment for a refund. New payments only: the
+  // balance already counts a payment being edited, so offering it as the
+  // replacement amount would double-count (Codex P2 on PR #53)
+  const selectedParticipant = !prepayment && sender.startsWith('participants:')
     ? participants.find((p) => `participants:${p.id}` === sender)
     : undefined
   const openBalance = selectedParticipant
