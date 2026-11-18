@@ -77,7 +77,13 @@ export const Prepayments: CollectionConfig = {
           }
           // The admin panel keeps its free hand (legacy rows of every
           // shape); the banker's path keeps the sign matching the type
-          if (!isAdminRole(user)) {
+          // whenever the amount or the type changes. An untouched pair
+          // passes, so a legacy row's note or date can still be fixed.
+          const pairUnchanged =
+            original != null &&
+            eff('amount') === original.amount &&
+            eff('type') === original.type
+          if (!isAdminRole(user) && !pairUnchanged) {
             const problem = prepaymentProblem({ type: eff('type'), amount: eff('amount') })
             if (problem) throw new APIError(PROBLEM_MESSAGES[problem], 400)
           }

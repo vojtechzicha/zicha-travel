@@ -258,6 +258,32 @@ describe('prepayments: who writes', () => {
     await payload.delete({ collection: 'prepayments', id: row.id, depth: 0, ...asUser(users.chataAdmin) })
   })
 
+  it("the banker fixes a legacy row's note without touching its odd sign, but can't re-sign it wrong", async () => {
+    const legacy = await payload.create({
+      collection: 'prepayments',
+      depth: 0,
+      data: { ...advance(people.kid), amount: -50 },
+    })
+    const noted = await payload.update({
+      collection: 'prepayments',
+      id: legacy.id,
+      depth: 0,
+      data: { note: 'opraveno', amount: -50, type: 'advance' },
+      ...asUser(users.banker),
+    })
+    expect(noted).toMatchObject({ note: 'opraveno', amount: -50, type: 'advance' })
+    await expect(
+      payload.update({
+        collection: 'prepayments',
+        id: legacy.id,
+        depth: 0,
+        data: { amount: -60 },
+        ...asUser(users.banker),
+      }),
+    ).rejects.toThrow()
+    await payload.delete({ collection: 'prepayments', id: legacy.id, depth: 0 })
+  })
+
   it('a former banker loses access once the banker changes', async () => {
     await payload.update({
       collection: 'chatas',

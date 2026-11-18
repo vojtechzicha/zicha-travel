@@ -122,6 +122,7 @@ export function PrepaymentEditor({
   const openAmount = openBalance ? Math.round(openBalance.amount) : null
 
   const amount = /^\d+$/.test(amountText) ? Number(amountText) : null
+  const initialAmountText = prepayment ? String(Math.round(Math.abs(prepayment.amount))) : null
 
   const save = async () => {
     if (!sender) return setError(t('errors.person'))
@@ -137,7 +138,13 @@ export function PrepaymentEditor({
       chata: chata.id,
       from: { relationTo, value: Number(value) },
       type,
-      amount: signedPrepaymentAmount(type, amount),
+      // Editing only the person, date or note keeps the stored amount as it
+      // is: legacy admin rows may carry a sign that disagrees with their
+      // type, and re-signing them would flip the payment's direction
+      amount:
+        prepayment && type === prepayment.type && amountText === initialAmountText
+          ? prepayment.amount
+          : signedPrepaymentAmount(type, amount),
       note: note.trim() || null,
       createdAt: baseDate.toISOString(),
     }
