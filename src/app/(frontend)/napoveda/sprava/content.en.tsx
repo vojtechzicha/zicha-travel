@@ -172,7 +172,8 @@ export default function SpravaContentEn() {
               </>,
               <>
                 <strong>Prepayments</strong>: advances, top-ups and returned overpayments between a
-                person and the banker. This is where you record that someone sent money.
+                person and the banker. The banker records them in Finance (Record payment, Paid,
+                Sent); here you see all of them and can fix anything.
               </>,
               <>
                 <strong>Joint Accounts</strong>: a shared account of two or more people. Whatever

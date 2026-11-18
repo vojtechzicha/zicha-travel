@@ -46,7 +46,7 @@ const splitInput = {
 const rows = <T>(value: T[] | null | undefined): T[] => (Array.isArray(value) ? value : [])
 
 /** The noon of a local date, so the stored day never slips across midnight. */
-function dateToCreatedAt(date: string | undefined, fallback?: string): string | undefined {
+export function dateToCreatedAt(date: string | undefined, fallback?: string): string | undefined {
   if (!date) return fallback
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new ToolError('date must be YYYY-MM-DD.')
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Prague' }).format(new Date())

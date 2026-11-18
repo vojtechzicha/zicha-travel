@@ -76,6 +76,7 @@ export default function ClaudeContentCs() {
               <>„Zapiš mě do Martinova auta dozadu.“</>,
               <>„Přidej na nákup chleba.“</>,
               <>„Mám tu nějaký výdaj k potvrzení? Ten za benzín sedí, potvrď ho.“</>,
+              <>Pro pokladníka: „Petr mi poslal doplatek, zapiš ho.“</>,
             ]}
           />
           <p>Na webu zůstává:</p>
@@ -83,7 +84,7 @@ export default function ClaudeContentCs() {
             items={[
               <>fotky účtenek,</>,
               <>propojení s Rohlíkem,</>,
-              <>práce v administraci: účastníci, zálohy a nastavení chaty.</>,
+              <>práce v administraci: účastníci, společné účty a nastavení chaty.</>,
             ]}
           />
         </Section>

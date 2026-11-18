@@ -153,6 +153,24 @@ A Payload CMS-based expense tracking system for managing group trips and shared 
    - Money transfers between participants and banker
    - Types: advance, supplement, refund, distribution
    - References: Chata, Participant (from)
+   - **Recorded by the banker, not just in admin** ("Zapsat platbu"): the
+     account linked to the chata's banker participant, plus chata admins,
+     create/edit/delete prepayments of that chata from the Finance view and
+     through Claude (`record_/update_/delete_prepayment`). Create access is
+     "signed in"; the beforeChange hook checks banker-or-admin for the target
+     chata AND (on update) the chata the row came from, so the banker can't
+     move a row elsewhere; update/delete access is chata-scoped
+     (`bankerChataIds` from `listItemRules.ts`). Admin-role writers keep their
+     free hand; everybody else must keep the sign matching the type
+     (advance/supplement > 0, refund/distribution < 0, non-zero, ≤ 1 000 000).
+     Pure rules in `src/lib/prepayments.ts`, tests
+     `tests/int/prepaymentsApi.int.spec.ts`. UI: `PrepaymentEditor.tsx`
+     (bottom sheet / modal), opened from the "Zapsat platbu" pill in the
+     Historie plateb card (rows open the editor), and from the "Přišlo" /
+     "Posláno" pills on the banker's settlement lists, prefilled with the
+     whole balance ("Přišlo" is a záloha until the trip is over, then a
+     doplatek). Who sees the controls = `canApproveAll` in FinanceView
+     (chata admins + the banker's account), the same circle as on the server
 
 5. **JointAccounts** (`src/collections/JointAccounts.ts`)
    - "Společný účet" — a shared bank account of 2+ participants, defined per Chata
@@ -677,7 +695,9 @@ Do NOT change this threshold to smaller values like 0.01 - the 1 Kč threshold i
   - `admin`: chata-scoped writes via `Users.assignedChatas` (the legacy
     `chatas.assignedUsers` array was removed; the migration copied its rows
     into `users_rels`)
-  - `user` (frontend accounts): no admin panel; the ONE write exception is
+  - the chata's **banker** (whatever their role) records prepayments of that
+    chata from the frontend (see Prepayments above)
+  - `user` (frontend accounts): no admin panel; the main write exception is
     expense authoring — create expenses in chatas where they own a linked
     participant, update/delete only expenses they authored
     (`Expenses.authoredBy`) or that name one of their participants as the

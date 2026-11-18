@@ -52,7 +52,7 @@ async function removeFixture() {
       depth: 0,
       context: { triggerAfterRead: false },
     })
-    for (const collection of ['expenses', 'shopping-items', 'participants'] as const) {
+    for (const collection of ['expenses', 'prepayments', 'shopping-items', 'participants'] as const) {
       await payload.delete({ collection, where: { chata: { equals: found.id } }, depth: 0 })
     }
     await payload.delete({ collection: 'chatas', id: found.id, depth: 0 })
@@ -370,6 +370,70 @@ describe('writing through the connector = writing on the web', () => {
     expect(tidied.isError, tidied.text).toBe(false)
     const list = await call('carol', 'get_shopping_list', { chata: SLUG })
     expect(list.data.items.find((i: any) => i.title === 'Chleba').quantity).toBe(3)
+  })
+})
+
+describe('payments to and from the banker', () => {
+  it('the banker records, changes and deletes them; others are refused', async () => {
+    const refused = await call('bob', 'record_prepayment', {
+      chata: SLUG,
+      from: 'Bob',
+      type: 'advance',
+      amount: 500,
+    })
+    expect(refused.isError).toBe(true)
+
+    const dry = await call('alice', 'record_prepayment', {
+      chata: SLUG,
+      from: 'Bob',
+      type: 'advance',
+      amount: 500,
+      dry_run: true,
+    })
+    expect(dry.data.would_create).toMatchObject({ amount: 500, stored_amount: 500, type: 'advance' })
+
+    const created = await call('alice', 'record_prepayment', {
+      chata: SLUG,
+      from: 'Bob',
+      type: 'advance',
+      amount: 500,
+      note: 'Záloha',
+    })
+    expect(created.isError, created.text).toBe(false)
+    const id = created.data.created.id
+
+    const bobCannotEdit = await call('bob', 'update_prepayment', { prepayment_id: id, amount: 5 })
+    expect(bobCannotEdit.isError).toBe(true)
+
+    // a refund flips the stored sign
+    const changed = await call('alice', 'update_prepayment', { prepayment_id: id, type: 'refund', amount: 200 })
+    expect(changed.isError, changed.text).toBe(false)
+    expect(changed.data.updated).toMatchObject({ type: 'refund', stored_amount: -200 })
+
+    const finances = await call('alice', 'get_finances', { chata: SLUG })
+    expect(finances.data.can_manage_prepayments).toBe(true)
+    expect(finances.data.prepayments.find((p: any) => p.id === id)).toMatchObject({ from: 'Bob', amount: -200 })
+    const bobView = await call('bob', 'get_finances', { chata: SLUG })
+    expect(bobView.data.can_manage_prepayments).toBe(false)
+
+    const deleted = await call('alice', 'delete_prepayment', { prepayment_id: id })
+    expect(deleted.isError, deleted.text).toBe(false)
+    const log = await call('alice', 'list_recent_changes', { limit: 1 })
+    expect(log.data.changes[0]).toMatchObject({ tool: 'delete_prepayment', action: 'delete' })
+  })
+
+  it("without an amount, a supplement records the person's open debt", async () => {
+    const finances = await call('alice', 'get_finances', { chata: SLUG })
+    const debtor = finances.data.settlement.debtors.find((d: any) => d.name === 'Dan')
+    expect(debtor).toBeTruthy()
+    const dry = await call('alice', 'record_prepayment', {
+      chata: SLUG,
+      from: 'Dan',
+      type: 'supplement',
+      dry_run: true,
+    })
+    expect(dry.isError, dry.text).toBe(false)
+    expect(dry.data.would_create.amount).toBe(Math.round(debtor.amount))
   })
 })
 
