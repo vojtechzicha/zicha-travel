@@ -73,6 +73,11 @@ export async function callApi<T = unknown>(
   for (const [key, value] of Object.entries(options.query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value))
   }
+  // A collection write answers with the written document, populated to the
+  // collection's default depth: an expense's payer came back with its whole
+  // chata (stats included), ~120 kB per call. Tools only need ids, so writes
+  // ask for depth 0 unless a tool says otherwise. Custom endpoints ignore it.
+  if (method !== 'GET' && !url.searchParams.has('depth')) url.searchParams.set('depth', '0')
   const hasBody = options.body !== undefined
   const request = new Request(url, {
     method,

@@ -349,6 +349,20 @@ describe('writing through the connector = writing on the web', () => {
     expect(after.data.expenses[0].approval).toBe('approved')
   })
 
+  it('write tools answer with a compact record, not the populated document', async () => {
+    const created = await call('alice', 'create_expense', { chata: SLUG, title: 'Dřevo', amount: 450 })
+    expect(created.isError, created.text).toBe(false)
+    expect(created.data.created.payer).toEqual({ relationTo: 'participants', value: people.Alice.id })
+    const updated = await call('alice', 'update_expense', { expense_id: created.data.created.id, amount: 460 })
+    expect(updated.isError, updated.text).toBe(false)
+    // the populated payer used to drag the whole chata (stats included) along
+    expect(updated.text.length).toBeLessThan(3000)
+    const item = await call('bob', 'add_shopping_item', { chata: SLUG, title: 'Sůl' })
+    expect(item.isError, item.text).toBe(false)
+    expect(item.text.length).toBeLessThan(3000)
+    expect(typeof item.data.created.chata).toBe('number')
+  })
+
   it("cannot change somebody else's expense", async () => {
     const mine = await call('alice', 'create_expense', { chata: SLUG, title: 'Pivo', amount: 300 })
     const attempt = await call('bob', 'update_expense', { expense_id: mine.data.created.id, amount: 1 })
