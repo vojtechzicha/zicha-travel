@@ -156,10 +156,10 @@ export function SettlementActions({
                 activeDebtors.map((debtor) => (
                   <div
                     key={debtor.name}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/[0.12]"
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/[0.12]"
                   >
-                    <span className="font-medium">{debtor.name}</span>
-                    <div className="flex items-center gap-3">
+                    <span className="font-medium text-gray-900 dark:text-gray-100 min-w-0 truncate">{debtor.name}</span>
+                    <div className="flex flex-shrink-0 items-center gap-3">
                       <span className="font-bold text-red-600 dark:text-red-400">
                         {formatCurrency(debtor.amount, locale)}
                       </span>
@@ -260,10 +260,10 @@ export function SettlementActions({
                       <div className="flex items-center hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-colors">
                         <button
                           onClick={() => setShowQr(isExpanded ? null : creditor.name)}
-                          className="flex-1 min-w-0 p-3 flex items-center justify-between"
+                          className="flex-1 min-w-0 p-3 flex items-center justify-between gap-2"
                         >
-                          <span className="font-medium">{creditor.name}</span>
-                          <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900 dark:text-gray-100 min-w-0 truncate">{creditor.name}</span>
+                          <div className="flex flex-shrink-0 items-center gap-2">
                             <span className="font-bold text-green-600 dark:text-green-400">
                               {formatCurrency(creditor.amount, locale)}
                             </span>

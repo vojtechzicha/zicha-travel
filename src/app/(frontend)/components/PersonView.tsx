@@ -531,7 +531,7 @@ export function PersonView({
               onClick={() =>
                 onRecordPrepayment(isBanker ? undefined : { participantId: participant.id })
               }
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 dark:border-primary-light/30 px-3 py-1.5 text-sm font-semibold text-primary dark:text-primary-light hover:bg-primary/5 dark:hover:bg-primary-light/10 transition-colors"
+              className="flex-shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-primary/30 dark:border-primary-light/30 px-3 py-1.5 text-sm font-semibold text-primary dark:text-primary-light hover:bg-primary/5 dark:hover:bg-primary-light/10 transition-colors"
             >
               <Plus size={15} strokeWidth={2.5} />
               {tp('recordButton')}
